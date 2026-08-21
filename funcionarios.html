@@ -82,14 +82,24 @@
     /* ── Tabela ── */
     .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
     .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .func-table { width: 100%; border-collapse: collapse; min-width: 920px; }
+    .func-table { width: 100%; border-collapse: collapse; min-width: 960px; }
     .func-table thead th { text-align: left; padding: 14px 16px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
     .func-table td { padding: 13px 16px; font-size: 13px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
     .func-table tbody tr:last-child td { border-bottom: none; }
     .func-table tbody tr:hover { background: rgba(255,255,255,0.02); }
-    .td-empresa-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #c4b5fd; background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+    .func-table th:nth-child(1), .func-table td:nth-child(1) { width: 48px; }
+    .func-table th:nth-child(3), .func-table td:nth-child(3) { width: 84px; white-space: nowrap; }
+    .func-table th:nth-child(4), .func-table td:nth-child(4),
+    .func-table th:nth-child(5), .func-table td:nth-child(5),
+    .func-table th:nth-child(8), .func-table td:nth-child(8),
+    .func-table th:nth-child(9), .func-table td:nth-child(9) { white-space: nowrap; }
+    .td-empresa-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: block; }
     .td-nome { font-weight: 700; color: #f1f5f9; }
     .td-muted { color: #64748b; }
+    .copy-cell { display: inline-flex; align-items: center; gap: 6px; }
+    .copy-btn { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; padding: 2px; color: #64748b; cursor: pointer; opacity: 0; transition: opacity 0.12s, color 0.12s; flex-shrink: 0; }
+    .func-table td:hover .copy-btn { opacity: 1; }
+    .copy-btn:hover { color: #c4b5fd; }
     .td-actions { display: flex; gap: 6px; }
     .btn-action { padding: 6px 12px; border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 700; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
     .btn-edit { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.25); color: #c4b5fd; }
@@ -254,7 +264,7 @@
             <tr>
               <th>Empresa</th>
               <th>Nome</th>
-              <th>Data de Nascimento</th>
+              <th>D.N.</th>
               <th>Telefone</th>
               <th>CPF</th>
               <th>Endereço</th>
@@ -359,6 +369,8 @@
 
     const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
     const COMPANY_FLAG = { 'GIP Ecommerce': 'funcionarios_epgip', 'Exposição Paulista': 'funcionarios_exposicao', 'Via Closet': 'funcionarios_viacloset' };
+    const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
+    const COPY_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
     let currentProfile = null;
     let allowedCompanies = [];
@@ -411,6 +423,11 @@
       return true;
     }
 
+    function copyCell(id, field, displayHtml, rawValue) {
+      if (!rawValue) return displayHtml;
+      return `<span class="copy-cell">${displayHtml}<button type="button" class="copy-btn" data-id="${esc(id)}" data-field="${esc(field)}" title="Copiar" aria-label="Copiar">${COPY_ICON}</button></span>`;
+    }
+
     function renderTable() {
       const tbody = document.getElementById('func-tbody');
       const filtered = allRows.filter(passesFilters);
@@ -426,16 +443,17 @@
 
       tbody.innerHTML = filtered.map(r => {
         const tc = tempoDeCasa(r.data_admissao);
+        const dash = '<span class="td-muted">—</span>';
         return `<tr>
-          <td><span class="td-empresa-pill">${esc(r.empresa)}</span></td>
-          <td class="td-nome">${esc(r.nome)}</td>
-          <td>${fmtDate(r.data_nascimento)}</td>
-          <td>${esc(r.telefone) || '<span class="td-muted">—</span>'}</td>
-          <td>${esc(r.cpf) || '<span class="td-muted">—</span>'}</td>
-          <td>${esc(r.endereco) || '<span class="td-muted">—</span>'}</td>
-          <td>${esc(r.email) || '<span class="td-muted">—</span>'}</td>
-          <td>${fmtDate(r.data_admissao)}</td>
-          <td>${esc(tc.label)}</td>
+          <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
+          <td class="td-nome">${copyCell(r.id, 'nome', esc(r.nome), r.nome)}</td>
+          <td>${copyCell(r.id, 'data_nascimento', fmtDate(r.data_nascimento), r.data_nascimento)}</td>
+          <td>${r.telefone ? copyCell(r.id, 'telefone', esc(r.telefone), r.telefone) : dash}</td>
+          <td>${r.cpf ? copyCell(r.id, 'cpf', esc(r.cpf), r.cpf) : dash}</td>
+          <td>${r.endereco ? copyCell(r.id, 'endereco', esc(r.endereco), r.endereco) : dash}</td>
+          <td>${r.email ? copyCell(r.id, 'email', esc(r.email), r.email) : dash}</td>
+          <td>${copyCell(r.id, 'data_admissao', fmtDate(r.data_admissao), r.data_admissao)}</td>
+          <td>${tc.label !== '—' ? copyCell(r.id, 'tempo_de_casa', esc(tc.label), tc.label) : dash}</td>
           <td>
             <div class="td-actions">
               <button class="btn-action btn-edit" data-id="${esc(r.id)}">Editar</button>
@@ -455,6 +473,16 @@
         });
       });
     }
+
+    document.getElementById('func-tbody').addEventListener('click', e => {
+      const btn = e.target.closest('.copy-btn');
+      if (!btn) return;
+      const row = allRows.find(r => r.id === btn.dataset.id);
+      if (!row) return;
+      const value = btn.dataset.field === 'tempo_de_casa' ? tempoDeCasa(row.data_admissao).label : row[btn.dataset.field];
+      if (!value) return;
+      navigator.clipboard.writeText(String(value)).then(() => showToast('Copiado', 'green')).catch(() => showToast('Não foi possível copiar', 'red'));
+    });
 
     async function loadFuncionarios() {
       if (!allowedCompanies.length) {
