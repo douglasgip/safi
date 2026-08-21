@@ -1,0 +1,12 @@
+{
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/resumocontabil", "destination": "/Grupo%20Sacoman%20-%20Painel%20Cont%C3%A1bil.dc.html" },
+    { "source": "/dre", "destination": "/Grupo%20Sacoman%20-%20Painel%20Cont%C3%A1bil.dc.html" },
+    { "source": "/geronia", "destination": "/geronia.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/mapa-societario", "destination": "/mapa-societario.html" }
+  ]
+}

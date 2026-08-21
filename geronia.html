@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | GerônIA</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: #080b14;
+      color: #f1f5f9;
+      overflow: hidden;
+    }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, #1a1060 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%);
+    }
+    .orb {
+      position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform;
+      opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none;
+    }
+    .orb1 { width: 600px; height: 600px; background: #7c3aed; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      33%  { transform: translate(30px, -30px) scale(1.05); }
+      66%  { transform: translate(-20px, 20px) scale(0.95); }
+      100% { transform: translate(0, 0) scale(1); }
+    }
+    .grid-overlay {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* Header */
+    .header {
+      position: relative; z-index: 100; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px; padding: 0 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(8,11,20,0.85);
+      backdrop-filter: blur(20px);
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .btn-back {
+      display: flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      color: #94a3b8; cursor: pointer; text-decoration: none; transition: all 0.15s;
+    }
+    .btn-back:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; flex-shrink: 0; box-shadow: 0 0 0 2px rgba(99,102,241,0.25); }
+    .header-title { font-size: 15px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.2px; }
+    .header-sub { font-size: 9.5px; font-weight: 600; color: #64748b; letter-spacing: 1.5px; text-transform: uppercase; }
+    .header-status { display:flex; align-items:center; gap:6px; font-size:10px; color:#4ade80; font-weight:600; flex-shrink:0; }
+    .header-status-dot { width:6px; height:6px; border-radius:50%; background:#4ade80; box-shadow:0 0 8px rgba(74,222,128,0.7); animation: pulse 1.8s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:.5} 50%{opacity:1} }
+    .btn-menu {
+      display: none; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      color: #94a3b8; cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    }
+    .btn-menu:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+
+    /* Corpo: sidebar de conversas + area de chat */
+    /* Sem z-index aqui de propósito: um valor próprio criaria um novo contexto de
+       empilhamento e prenderia o backdrop/sidebar (fixed, z-index maior) atrás do
+       .header — eles precisam competir direto com o header na raiz da página. */
+    .gr-body-wrap { position: relative; flex: 1; display: flex; min-height: 0; }
+
+    .gr-sidebar {
+      width: 260px; flex-shrink: 0; align-self: stretch; overflow: hidden;
+      display: flex; flex-direction: column; min-height: 0;
+      border-right: 1px solid rgba(255,255,255,0.08);
+      background: rgba(10,14,26,0.5); backdrop-filter: blur(20px);
+      will-change: transform;
+      transition: transform .25s ease;
+    }
+    .gr-sidebar-header { padding: 12px; flex-shrink: 0; display: flex; align-items: center; gap: 8px; }
+    .gr-new-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 10px 12px; background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3);
+      border-radius: 10px; color: #c7d2fe; font-size: 12.8px; font-weight: 700; cursor: pointer;
+      font-family: Inter,sans-serif; transition: background .15s ease, border-color .15s ease, transform .1s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .gr-new-btn:hover { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.45); }
+    .gr-new-btn:active { transform: scale(0.98); }
+    .gr-sidebar-close {
+      display: none; flex-shrink: 0; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 10px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+      color: #94a3b8; cursor: pointer; transition: all .15s ease; -webkit-tap-highlight-color: transparent;
+    }
+    .gr-sidebar-close:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .gr-thread-list {
+      flex: 1; overflow-y: auto; padding: 2px 8px 12px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
+    }
+    .gr-thread-list::-webkit-scrollbar { width: 5px; }
+    .gr-thread-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    .gr-thread-empty { padding: 18px 10px; font-size: 11.5px; color: #475569; text-align: center; line-height: 1.5; }
+    .gr-thread-item {
+      display: flex; align-items: center; gap: 4px; padding: 9px 9px; border-radius: 9px;
+      cursor: pointer; margin-top: 2px; -webkit-tap-highlight-color: transparent;
+    }
+    .gr-thread-item:hover { background: rgba(255,255,255,0.05); }
+    .gr-thread-item.active { background: rgba(99,102,241,0.15); }
+    .gr-thread-title { flex: 1; min-width: 0; font-size: 12.3px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gr-thread-item.active .gr-thread-title { color: #e2e8f0; font-weight: 600; }
+    .gr-thread-del {
+      opacity: 0; flex-shrink: 0; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+      border-radius: 6px; background: transparent; border: none; color: #475569; cursor: pointer;
+      transition: opacity .12s ease, background .12s ease, color .12s ease; -webkit-tap-highlight-color: transparent;
+    }
+    .gr-thread-item:hover .gr-thread-del { opacity: 1; }
+    .gr-thread-del:hover { background: rgba(239,68,68,0.15); color: #f87171; }
+    .gr-sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 150; }
+
+    .gr-sidebar-footer {
+      flex-shrink: 0; display: flex; align-items: center; gap: 10px;
+      padding: 12px; border-top: 1px solid rgba(255,255,255,0.08);
+      transition: background .15s ease;
+    }
+    .gr-sidebar-footer:hover { background: rgba(255,255,255,0.04); }
+    .gr-sidebar-avatar {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg,#f59e0b,#d97706);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: #1a0a00; letter-spacing: 0.3px;
+      box-shadow: 0 2px 8px rgba(245,158,11,0.35);
+    }
+    .gr-sidebar-user-info { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 1px; }
+    .gr-sidebar-user-name { font-size: 12px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gr-sidebar-user-role { font-size: 9px; font-weight: 600; color: #64748b; letter-spacing: 0.4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Chat area */
+    .chat-wrap {
+      position: relative; z-index: 10;
+      flex: 1; display: flex; flex-direction: column; align-items: stretch;
+      overflow: hidden; min-height: 0;
+    }
+    #gr-messages {
+      flex: 1; width: 100%; overflow-y: auto; overflow-x: hidden;
+      display: flex; justify-content: center; align-items: flex-start;
+      padding: 0 20px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.15) transparent;
+    }
+    #gr-messages::-webkit-scrollbar { width: 6px; }
+    #gr-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 10px; }
+    #gr-messages-inner {
+      width: 100%; max-width: 780px;
+      padding: 28px 0 12px; display: flex; flex-direction: column; gap: 16px;
+    }
+
+    .gr-bubble { max-width: 82%; padding: 13px 17px; border-radius: 16px; font-size: 14px; line-height: 1.65; animation: gr-in .28s cubic-bezier(.16,1,.3,1); word-wrap: break-word; }
+    @keyframes gr-in { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .gr-bubble.user { align-self: flex-end; background: linear-gradient(135deg,#f59e0b,#f8b53f); color: #1a0a00; font-weight: 600; border-bottom-right-radius: 4px; white-space: pre-wrap; box-shadow: 0 4px 14px rgba(245,158,11,0.25); }
+    .gr-bubble.assistant { align-self: flex-start; background: rgba(255,255,255,0.055); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.08); border-bottom-left-radius: 4px; }
+    .gr-bubble.assistant p { margin: 0 0 10px; }
+    .gr-bubble.assistant p:last-child { margin-bottom: 0; }
+    .gr-bubble.assistant h3 { font-size: 17px; font-weight: 800; color: #f8fafc; margin: 4px 0 8px; letter-spacing: -.2px; }
+    .gr-bubble.assistant h3:first-child { margin-top: 0; }
+    .gr-bubble.assistant h4 { font-size: 14.5px; font-weight: 700; color: #f1f5f9; margin: 10px 0 5px; }
+    .gr-bubble.assistant h4:first-child { margin-top: 0; }
+    .gr-bubble.assistant strong { font-weight: 700; color: #fbbf24; }
+    .gr-bubble.assistant em { font-style: italic; color: #cbd5e1; }
+    .gr-bubble.assistant ul, .gr-bubble.assistant ol { margin: 3px 0 10px; padding-left: 20px; }
+    .gr-bubble.assistant li { margin-bottom: 5px; }
+    .gr-bubble.assistant li:last-child { margin-bottom: 0; }
+    .gr-table-wrap { overflow-x: auto; margin: 4px 0 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.09); -webkit-overflow-scrolling: touch; }
+    .gr-table-wrap:last-child { margin-bottom: 0; }
+    .gr-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    .gr-table th, .gr-table td { padding: 8px 12px; text-align: left; white-space: nowrap; }
+    .gr-table th { background: rgba(245,158,11,0.1); color: #fbbf24; font-weight: 700; font-size: 10.5px; letter-spacing: .3px; text-transform: uppercase; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .gr-table td { color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.06); font-variant-numeric: tabular-nums; }
+    .gr-table tbody tr:last-child td { border-bottom: none; }
+    .gr-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.025); }
+    .gr-table tbody tr:hover { background: rgba(245,158,11,0.06); }
+
+    .gr-typing-row { display: flex; align-items: center; gap: 9px; align-self: flex-start; padding: 4px 2px; }
+    .gr-typing-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .gr-shimmer { background: linear-gradient(90deg, rgba(148,163,184,0.5) 0%, rgba(148,163,184,0.5) 38%, #ffffff 50%, rgba(148,163,184,0.5) 62%, rgba(148,163,184,0.5) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gr-shimmer-move 1.7s linear infinite; font-weight: 600; font-size: 13.5px; letter-spacing: .15px; }
+    @keyframes gr-shimmer-move { 0% { background-position: 200% center; } 100% { background-position: -60% center; } }
+
+    /* Welcome hero (empty state) */
+    .gr-hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 18px 20px 8px; flex-shrink: 0; }
+    .gr-hero img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; box-shadow: 0 8px 28px rgba(99,102,241,0.35), 0 0 0 3px rgba(99,102,241,0.15); margin-bottom: 14px; }
+    .gr-hero-title { font-size: 20px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.3px; margin-bottom: 6px; }
+    .gr-hero-desc { font-size: 13px; color: #64748b; max-width: 440px; line-height: 1.5; }
+
+    .gr-suggest-row { display: flex; flex-wrap: wrap; gap: 8px; align-self: flex-start; max-width: 82%; }
+    .gr-suggest-btn { padding: 8px 13px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.25); border-radius: 20px; color: #a5b4fc; font-size: 12px; font-weight: 600; cursor: pointer; font-family: Inter,sans-serif; line-height: 1.4; transition: background .15s ease, border-color .15s ease, transform .1s ease; -webkit-tap-highlight-color: transparent; }
+    .gr-suggest-btn:hover { background: rgba(99,102,241,0.16); border-color: rgba(99,102,241,0.45); color: #c7d2fe; }
+    .gr-suggest-btn:active { transform: scale(0.97); }
+
+    #gr-quick { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; max-width: 780px; margin: 0 auto; padding: 4px 20px 18px; flex-shrink: 0; }
+    .gr-qbtn { text-align: left; padding: 11px 15px; background: rgba(99,102,241,0.09); border: 1px solid rgba(99,102,241,0.22); border-radius: 12px; color: #c7d2fe; font-size: 12.8px; font-weight: 600; cursor: pointer; font-family: Inter,sans-serif; line-height: 1.4; transition: background .15s ease, border-color .15s ease, transform .1s ease; -webkit-tap-highlight-color: transparent; flex: 1 1 260px; max-width: 100%; }
+    .gr-qbtn:hover { background: rgba(99,102,241,0.16); border-color: rgba(99,102,241,0.4); }
+    .gr-qbtn:active { transform: scale(0.98); }
+
+    .gr-inputbar { position: relative; z-index: 10; flex-shrink: 0; width: 100%; display: flex; justify-content: center; padding: 0 20px calc(20px + env(safe-area-inset-bottom, 0px)); }
+    .gr-inputrow { display: flex; align-items: flex-end; gap: 10px; width: 100%; max-width: 780px; background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 8px 8px 8px 16px; backdrop-filter: blur(20px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+    #gr-input { flex: 1; background: transparent; border: none; color: #f1f5f9; font-family: Inter,sans-serif; font-size: 14px; outline: none; resize: none; max-height: 140px; min-height: 24px; line-height: 1.5; padding: 8px 0; }
+    #gr-input::placeholder { color: #475569; }
+    #gr-send { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg,#6366f1,#7c5cf0); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform .12s ease, opacity .12s ease; -webkit-tap-highlight-color: transparent; }
+    #gr-send:hover:not(:disabled) { transform: scale(1.06); }
+    #gr-send:active:not(:disabled) { transform: scale(0.94); }
+    #gr-send:disabled { opacity: 0.4; cursor: default; }
+    .gr-disclaimer { font-size: 10px; color: #334155; text-align: center; padding: 8px 12px 0; line-height: 1.4; }
+
+    @media (max-width: 640px) {
+      .header { padding: 0 14px; height: 54px; }
+      .header-title { font-size: 13.5px; }
+      .header-sub { display: none; }
+      .header-status span:last-child { display: none; }
+      .btn-menu { display: flex; }
+      .gr-sidebar {
+        position: fixed; top: 54px; bottom: 0; left: 0; width: 270px; max-width: 80vw;
+        transform: translateX(-100%); z-index: 200; box-shadow: 8px 0 30px rgba(0,0,0,0.4);
+      }
+      .gr-sidebar.open { transform: translateX(0); }
+      .gr-sidebar-backdrop.show { display: block; top: 54px; }
+      .gr-sidebar-close { display: flex; }
+      #gr-messages { padding: 0 14px; }
+      #gr-messages-inner { padding: 18px 0 10px; gap: 12px; }
+      .gr-bubble { font-size: 13.6px; max-width: 90%; padding: 11px 14px; }
+      .gr-hero img { width: 52px; height: 52px; }
+      .gr-hero-title { font-size: 17px; }
+      .gr-hero-desc { font-size: 12.3px; }
+      #gr-quick { padding: 4px 14px 14px; }
+      .gr-qbtn { flex: 1 1 100%; font-size: 12.3px; padding: 10px 13px; }
+      .gr-suggest-btn { font-size: 11.6px; padding: 7px 12px; }
+      .gr-inputbar { padding: 0 14px calc(14px + env(safe-area-inset-bottom, 0px)); }
+      #gr-input { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="grid-overlay"></div>
+
+  <header class="header">
+    <div class="header-left">
+      <button id="gr-menu-btn" class="btn-menu" aria-label="Conversas">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" class="btn-back" aria-label="Voltar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      </a>
+      <img class="header-avatar" src="/public/GerônIA.png" alt="GerônIA">
+      <div style="min-width:0">
+        <div class="header-title">GerônIA</div>
+        <div class="header-sub">Conselheiro do Grupo Sacoman</div>
+      </div>
+    </div>
+    <div class="header-status"><span class="header-status-dot"></span><span>Online</span></div>
+  </header>
+
+  <div class="gr-body-wrap">
+    <div class="gr-sidebar-backdrop" id="gr-sidebar-backdrop"></div>
+    <aside class="gr-sidebar" id="gr-sidebar">
+      <div class="gr-sidebar-header">
+        <button class="gr-new-btn" id="gr-new-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova conversa
+        </button>
+        <button class="gr-sidebar-close" id="gr-sidebar-close" aria-label="Fechar conversas">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="gr-thread-list" id="gr-thread-list"></div>
+      <div class="gr-sidebar-footer" id="gr-sidebar-footer" style="display:none"></div>
+    </aside>
+
+    <div class="chat-wrap">
+      <div id="gr-messages"><div id="gr-messages-inner"></div></div>
+      <div id="gr-quick"></div>
+
+      <div class="gr-inputbar">
+        <div class="gr-inputrow">
+          <textarea id="gr-input" rows="1" placeholder="Pergunte ao GerônIA…"></textarea>
+          <button id="gr-send" aria-label="Enviar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+        </div>
+      </div>
+      <div class="gr-disclaimer">As respostas são baseadas em dados, porém, o GerônIA é uma IA e pode cometer erros.</div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    const EDGE_URL = SUPABASE_URL + '/functions/v1/geronia-chat';
+
+    const QUICK_FULL = [
+      'Como está a margem de contribuição de cada operação frente à meta?',
+      'Qual operação está performando melhor este mês?',
+      'Como está o resultado consolidado do grupo?',
+      'Quais os maiores riscos financeiros no momento?',
+      'O que devo priorizar essa semana?'
+    ];
+    const QUICK_RESTRICTED = [
+      'Como está minha margem de contribuição este mês?',
+      'Meu faturamento está dentro do esperado?',
+      'O que posso fazer para melhorar o resultado da minha operação?',
+      'Como está minha operação comparada à meta?',
+      'Quais pontos de atenção você vê nos meus números?'
+    ];
+
+    var state = { messages: [], profile: null, uid: null, token: null, email: null, loading: false, firstLoad: true, pendingAnimate: null, threadId: null, threads: [], threadGen: 0 };
+
+    function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+
+    function escapeHtml(s){
+      return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function inlineMd(text){
+      text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+      text = text.replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>');
+      text = text.replace(/(^|[^_])_([^_\s][^_]*?)_(?!_)/g, '$1<em>$2</em>');
+      return text;
+    }
+    function isTableSepRow(line){
+      return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(line) && line.indexOf('-') !== -1;
+    }
+    function splitTableRow(line){
+      var t = line.trim();
+      if (t.charAt(0) === '|') t = t.slice(1);
+      if (t.charAt(t.length - 1) === '|') t = t.slice(0, -1);
+      return t.split('|').map(function(c){ return c.trim(); });
+    }
+    function mdToHtml(raw){
+      var text = escapeHtml(raw || '');
+      var lines = text.split(/\r?\n/);
+      var html = '';
+      var listBuffer = null;
+      var paraBuffer = [];
+      function flushList(){
+        if (listBuffer) {
+          var tag = listBuffer.type;
+          html += '<' + tag + '>' + listBuffer.items.map(function(it){ return '<li>' + inlineMd(it) + '</li>'; }).join('') + '</' + tag + '>';
+          listBuffer = null;
+        }
+      }
+      function flushPara(){
+        if (paraBuffer.length) {
+          html += '<p>' + paraBuffer.map(inlineMd).join('<br>') + '</p>';
+          paraBuffer = [];
+        }
+      }
+      for (var i = 0; i < lines.length; i++) {
+        var trimmed = lines[i].trim();
+        if (!trimmed) { flushPara(); flushList(); continue; }
+        if (/^-{3,}$/.test(trimmed)) { flushPara(); flushList(); continue; }
+        if (trimmed.indexOf('|') !== -1 && i + 1 < lines.length && isTableSepRow(lines[i + 1].trim())) {
+          flushPara(); flushList();
+          var headerCells = splitTableRow(trimmed);
+          i += 2;
+          var bodyRows = [];
+          while (i < lines.length && lines[i].trim() !== '' && lines[i].trim().indexOf('|') !== -1) {
+            bodyRows.push(splitTableRow(lines[i].trim()));
+            i++;
+          }
+          i--;
+          html += '<div class="gr-table-wrap"><table class="gr-table"><thead><tr>' +
+            headerCells.map(function(c){ return '<th>' + inlineMd(c) + '</th>'; }).join('') +
+            '</tr></thead><tbody>' +
+            bodyRows.map(function(r){ return '<tr>' + r.map(function(c){ return '<td>' + inlineMd(c) + '</td>'; }).join('') + '</tr>'; }).join('') +
+            '</tbody></table></div>';
+          continue;
+        }
+        var mH4 = trimmed.match(/^#{3,6}\s+(.*)$/);
+        if (mH4) { flushPara(); flushList(); html += '<h4>' + inlineMd(mH4[1]) + '</h4>'; continue; }
+        var mH3 = trimmed.match(/^#{1,2}\s+(.*)$/);
+        if (mH3) { flushPara(); flushList(); html += '<h3>' + inlineMd(mH3[1]) + '</h3>'; continue; }
+        var mUl = trimmed.match(/^[-*]\s+(.*)$/);
+        if (mUl) {
+          flushPara();
+          if (!listBuffer || listBuffer.type !== 'ul') { flushList(); listBuffer = { type:'ul', items:[] }; }
+          listBuffer.items.push(mUl[1]);
+          continue;
+        }
+        var mOl = trimmed.match(/^\d+[.)]\s+(.*)$/);
+        if (mOl) {
+          flushPara();
+          if (!listBuffer || listBuffer.type !== 'ol') { flushList(); listBuffer = { type:'ol', items:[] }; }
+          listBuffer.items.push(mOl[1]);
+          continue;
+        }
+        flushList();
+        paraBuffer.push(trimmed);
+      }
+      flushPara();
+      flushList();
+      return html;
+    }
+
+    function extractSuggestions(raw){
+      raw = raw || '';
+      var m = raw.match(/<<<SUGESTOES>>>([\s\S]*?)<<<FIM_SUGESTOES>>>/);
+      if (!m) return { text: raw, suggestions: [] };
+      var text = (raw.slice(0, m.index) + raw.slice(m.index + m[0].length)).trim();
+      var suggestions = m[1].split(/\r?\n/).map(function(s){ return s.trim().replace(/^[-*]\s*/, ''); }).filter(function(s){ return s.length > 0; });
+      return { text: text, suggestions: suggestions };
+    }
+
+    function typewriterReveal(container, finalHtml){
+      return new Promise(function(resolve){
+        var temp = document.createElement('div');
+        temp.innerHTML = finalHtml;
+        var totalChars = (temp.textContent || '').length;
+        if (totalChars === 0) { container.innerHTML = finalHtml; resolve(); return; }
+        var charsPerTick = Math.max(1, Math.round(totalChars / 90));
+        var shown = 0;
+        function paint(){
+          var clone = temp.cloneNode(true);
+          var remaining = shown;
+          var walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT, null);
+          var node, cut = false;
+          while ((node = walker.nextNode())) {
+            if (cut) { node.nodeValue = ''; continue; }
+            var len = node.nodeValue.length;
+            if (remaining >= len) { remaining -= len; }
+            else { node.nodeValue = node.nodeValue.slice(0, remaining); remaining = 0; cut = true; }
+          }
+          container.innerHTML = '';
+          container.appendChild(clone);
+        }
+        var timer = setInterval(function(){
+          shown += charsPerTick;
+          if (shown >= totalChars) { shown = totalChars; paint(); clearInterval(timer); resolve(); return; }
+          paint();
+          scrollBottom();
+        }, 16);
+      });
+    }
+
+    function autoResize(el){
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+    }
+
+    function firstAccessName(){
+      var p = state.profile || {};
+      var name = (p.full_name || (state.email||'').split('@')[0] || 'Usuário').trim();
+      return name.split(/\s+/)[0];
+    }
+    function hasFullAccess(){
+      var p = state.profile || {};
+      if (p.is_admin) return true;
+      return p.dre_epgip !== false && p.dre_exposicao !== false && p.dre_viacloset !== false;
+    }
+    function quickPrompts(){ return hasFullAccess() ? QUICK_FULL : QUICK_RESTRICTED; }
+    function welcomeText(){
+      return 'Olá, ' + firstAccessName() + '! Eu sou o GerônIA, o conselheiro do painel do Grupo Sacoman — meu nome é uma homenagem a Geraldo e Verônica Sacoman, os fundadores do grupo.\n\nEstou aqui para ajudar você a entender os números, tirar dúvidas e dar direcionamentos sobre o negócio, com base nos dados reais do painel. Pode perguntar sobre faturamento, margens, metas e desempenho das operações que você tem acesso.\n\nEm que posso ajudar?';
+    }
+
+    function scrollBottom(){
+      var el = document.getElementById('gr-messages');
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+
+    // ---- Sidebar de conversas ----
+    function openSidebarMobile(){
+      var el = document.getElementById('gr-sidebar');
+      var bd = document.getElementById('gr-sidebar-backdrop');
+      if (el) el.classList.add('open');
+      if (bd) bd.classList.add('show');
+    }
+    function closeSidebarMobile(){
+      var el = document.getElementById('gr-sidebar');
+      var bd = document.getElementById('gr-sidebar-backdrop');
+      if (el) el.classList.remove('open');
+      if (bd) bd.classList.remove('show');
+    }
+
+    function renderSidebar(){
+      var listEl = document.getElementById('gr-thread-list');
+      if (!listEl) return;
+      if (!state.threads.length) {
+        listEl.innerHTML = '<div class="gr-thread-empty">Nenhuma conversa ainda.<br>Comece uma abaixo.</div>';
+        return;
+      }
+      listEl.innerHTML = state.threads.map(function(t){
+        var active = t.id === state.threadId ? ' active' : '';
+        return '<div class="gr-thread-item' + active + '" data-id="' + esc(t.id) + '">' +
+          '<span class="gr-thread-title">' + esc(t.title || 'Conversa') + '</span>' +
+          '<button class="gr-thread-del" data-id="' + esc(t.id) + '" aria-label="Excluir conversa" title="Excluir conversa">' +
+          '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+          '</button></div>';
+      }).join('');
+      Array.prototype.forEach.call(listEl.querySelectorAll('.gr-thread-item'), function(el){
+        el.addEventListener('click', function(){ openThread(el.getAttribute('data-id')); });
+      });
+      Array.prototype.forEach.call(listEl.querySelectorAll('.gr-thread-del'), function(btn){
+        btn.addEventListener('click', function(e){ deleteThread(btn.getAttribute('data-id'), e); });
+      });
+    }
+
+    function openThread(id){
+      if (id === state.threadId) { closeSidebarMobile(); return Promise.resolve(); }
+      state.threadGen++; // invalida qualquer sendMessage() da conversa anterior ainda em voo
+      return sb.from('geronia_conversations').select('role,content,created_at').eq('thread_id', id).order('created_at', { ascending: true }).then(function(res){
+        var rows = (res && res.data) || [];
+        state.threadId = id;
+        state.messages = rows.map(function(r){ return { role: r.role, content: r.content }; });
+        state.firstLoad = rows.length === 0;
+        state.pendingAnimate = null;
+        state.loading = false;
+        render();
+        renderSidebar();
+        closeSidebarMobile();
+      });
+    }
+
+    function renderSidebarFooter(){
+      var el = document.getElementById('gr-sidebar-footer');
+      if (!el) return;
+      var p = state.profile || {};
+      var name = (p.full_name || (state.email || '').split('@')[0] || 'Usuário').trim();
+      var parts = name.split(/\s+/);
+      var initials = parts.length >= 2 ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase() : name.slice(0, 2).toUpperCase();
+      el.innerHTML =
+        '<div class="gr-sidebar-avatar">' + esc(initials) + '</div>' +
+        '<div class="gr-sidebar-user-info">' +
+          '<div class="gr-sidebar-user-name">' + esc(name) + '</div>' +
+          (p.role ? '<div class="gr-sidebar-user-role">' + esc(p.role) + '</div>' : '') +
+        '</div>';
+      el.style.display = 'flex';
+      if (window.UserMenu) window.UserMenu.attach(el, sb);
+    }
+
+    function newThread(){
+      state.threadGen++; // invalida qualquer sendMessage() da conversa anterior ainda em voo
+      state.threadId = null;
+      state.messages = [];
+      state.firstLoad = true;
+      state.pendingAnimate = null;
+      state.loading = false;
+      render();
+      renderSidebar();
+      closeSidebarMobile();
+      var input = document.getElementById('gr-input');
+      if (input) input.focus();
+    }
+
+    function deleteThread(id, evt){
+      if (evt) evt.stopPropagation();
+      if (!window.confirm('Excluir esta conversa? Essa ação não pode ser desfeita.')) return;
+      sb.from('geronia_threads').delete().eq('id', id).then(function(res){
+        if (res && res.error) { alert('Não foi possível excluir a conversa. Tente novamente.'); return; }
+        state.threads = state.threads.filter(function(t){ return t.id !== id; });
+        if (state.threadId === id) {
+          if (state.threads.length) { openThread(state.threads[0].id); }
+          else { newThread(); }
+        } else {
+          renderSidebar();
+        }
+      }).catch(function(){
+        alert('Não foi possível excluir a conversa. Tente novamente.');
+      });
+    }
+
+    function render(){
+      var msgsEl = document.getElementById('gr-messages-inner');
+      if (!msgsEl) return;
+      var html = '';
+      if (state.firstLoad) {
+        html += '<div class="gr-hero"><img src="/public/GerônIA.png" alt="GerônIA"><div class="gr-hero-title">Olá, ' + esc(firstAccessName()) + '</div><div class="gr-hero-desc">' + esc('Sou o GerônIA, o conselheiro do painel do Grupo Sacoman. Pergunte sobre faturamento, margens, metas e desempenho das operações.') + '</div></div>';
+      }
+      var animateMsg = state.pendingAnimate;
+      var lastMsg = state.messages.length ? state.messages[state.messages.length - 1] : null;
+      state.messages.forEach(function(m){
+        if (animateMsg && m === animateMsg) return;
+        if (m.role === 'user') {
+          html += '<div class="gr-bubble user">' + esc(m.content) + '</div>';
+        } else {
+          var extracted = extractSuggestions(m.content);
+          html += '<div class="gr-bubble assistant">' + mdToHtml(extracted.text) + '</div>';
+          if (m === lastMsg && !state.loading && extracted.suggestions.length) {
+            html += '<div class="gr-suggest-row">' + extracted.suggestions.map(function(q){
+              return '<button class="gr-suggest-btn" data-q="' + esc(q) + '">' + esc(q) + '</button>';
+            }).join('') + '</div>';
+          }
+        }
+      });
+      if (state.loading) {
+        html += '<div id="gr-typing" class="gr-typing-row"><img src="/public/GerônIA.png" class="gr-typing-avatar" alt=""><span class="gr-shimmer">Gerôn está pensando...</span></div>';
+      }
+      msgsEl.innerHTML = html;
+      Array.prototype.forEach.call(msgsEl.querySelectorAll('.gr-suggest-btn'), function(btn){
+        btn.addEventListener('click', function(){ sendMessage(btn.getAttribute('data-q')); });
+      });
+
+      var quickEl = document.getElementById('gr-quick');
+      if (quickEl) {
+        if (state.messages.length === 0 && !state.loading) {
+          quickEl.style.display = 'flex';
+          quickEl.innerHTML = quickPrompts().map(function(q){
+            return '<button class="gr-qbtn" data-q="' + esc(q) + '">' + esc(q) + '</button>';
+          }).join('');
+          Array.prototype.forEach.call(quickEl.querySelectorAll('.gr-qbtn'), function(btn){
+            btn.addEventListener('click', function(){ sendMessage(btn.getAttribute('data-q')); });
+          });
+        } else {
+          quickEl.style.display = 'none';
+          quickEl.innerHTML = '';
+        }
+      }
+
+      var sendBtn = document.getElementById('gr-send');
+      if (sendBtn) sendBtn.disabled = state.loading;
+
+      if (animateMsg) {
+        state.pendingAnimate = null;
+        var bubble = document.createElement('div');
+        bubble.className = 'gr-bubble assistant';
+        msgsEl.appendChild(bubble);
+        scrollBottom();
+        var extractedAnim = extractSuggestions(animateMsg.content);
+        typewriterReveal(bubble, mdToHtml(extractedAnim.text)).then(function(){
+          scrollBottom();
+          if (!state.loading && extractedAnim.suggestions.length) {
+            var row = document.createElement('div');
+            row.className = 'gr-suggest-row';
+            row.innerHTML = extractedAnim.suggestions.map(function(q){
+              return '<button class="gr-suggest-btn" data-q="' + esc(q) + '">' + esc(q) + '</button>';
+            }).join('');
+            msgsEl.appendChild(row);
+            Array.prototype.forEach.call(row.querySelectorAll('.gr-suggest-btn'), function(btn){
+              btn.addEventListener('click', function(){ sendMessage(btn.getAttribute('data-q')); });
+            });
+            scrollBottom();
+          }
+        });
+      } else {
+        scrollBottom();
+      }
+    }
+
+    function sendMessage(text){
+      text = (text || '').trim();
+      if (!text || state.loading) return;
+      var input = document.getElementById('gr-input');
+      if (input) { input.value = ''; autoResize(input); }
+      var myGen = state.threadGen;
+      state.messages.push({ role:'user', content:text });
+      state.firstLoad = false;
+      state.loading = true;
+      render();
+
+      (window.UserMenu ? window.UserMenu.freshToken(sb, state.token) : Promise.resolve(state.token)).then(function(token){
+        state.token = token;
+        return fetch(EDGE_URL, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
+          body: JSON.stringify({ message:text, thread_id: state.threadId })
+        });
+      }).then(function(r){ return r.json(); }).then(function(data){
+        if (state.threadGen !== myGen) { state.loading = false; return; } // usuário trocou de conversa enquanto isso, ignora
+        state.loading = false;
+        var reply = { role:'assistant', content: data && data.reply ? data.reply : 'Desculpe, não consegui processar sua pergunta agora. Tente novamente em instantes.' };
+        state.messages.push(reply);
+        state.pendingAnimate = reply;
+        if (data && data.thread_id) {
+          var isNew = state.threadId !== data.thread_id;
+          state.threadId = data.thread_id;
+          if (isNew) {
+            state.threads.unshift({ id: data.thread_id, title: data.thread_title || text.slice(0, 60), updated_at: new Date().toISOString() });
+          } else {
+            var t = state.threads.find(function(x){ return x.id === data.thread_id; });
+            if (t) t.updated_at = new Date().toISOString();
+            state.threads.sort(function(a, b){ return new Date(b.updated_at) - new Date(a.updated_at); });
+          }
+          if (state.threads.length > 20) state.threads = state.threads.slice(0, 20);
+          renderSidebar();
+        }
+        render();
+      }).catch(function(){
+        if (state.threadGen !== myGen) { state.loading = false; return; }
+        state.loading = false;
+        var reply = { role:'assistant', content:'Erro de conexão com o GerônIA. Tente novamente em instantes.' };
+        state.messages.push(reply);
+        state.pendingAnimate = reply;
+        render();
+      });
+    }
+
+    document.getElementById('gr-send').addEventListener('click', function(){
+      sendMessage(document.getElementById('gr-input').value);
+    });
+    document.getElementById('gr-input').addEventListener('keydown', function(e){
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(this.value); }
+    });
+    document.getElementById('gr-input').addEventListener('input', function(){ autoResize(this); });
+    document.getElementById('gr-new-btn').addEventListener('click', newThread);
+    document.getElementById('gr-menu-btn').addEventListener('click', openSidebarMobile);
+    document.getElementById('gr-sidebar-backdrop').addEventListener('click', closeSidebarMobile);
+    document.getElementById('gr-sidebar-close').addEventListener('click', closeSidebarMobile);
+
+    document.getElementById('gr-messages-inner').innerHTML = '<div class="gr-hero"><img src="/public/GerônIA.png" alt="GerônIA"><div class="gr-hero-title">Carregando…</div></div>';
+
+    sb.auth.getSession().then(async ({ data }) => {
+      if (!data.session) { window.location.replace('/login'); return; }
+      state.uid = data.session.user.id;
+      state.token = data.session.access_token;
+      state.email = data.session.user.email;
+
+      const [profRes, threadsRes] = await Promise.all([
+        sb.from('user_profiles').select('*').eq('id', state.uid).single(),
+        sb.from('geronia_threads').select('id,title,updated_at').eq('user_id', state.uid).order('updated_at', { ascending:false }).limit(20)
+      ]);
+      state.profile = (profRes && profRes.data) || {};
+      state.threads = (threadsRes && threadsRes.data) || [];
+      renderSidebar();
+      renderSidebarFooter();
+
+      if (state.threads.length) {
+        await openThread(state.threads[0].id);
+      } else {
+        state.firstLoad = true;
+        render();
+      }
+      var input = document.getElementById('gr-input');
+      if (input) input.focus();
+
+      // Veio de um "Pedir explicação do Gerôn" (clique duplo num número na Home)
+      var askedQ = new URLSearchParams(window.location.search).get('q');
+      if (askedQ) {
+        history.replaceState(null, '', window.location.pathname);
+        sendMessage(askedQ);
+      }
+    }).catch(function(){
+      document.getElementById('gr-messages-inner').innerHTML = '<div class="gr-bubble assistant">Não foi possível carregar o GerônIA agora. Verifique se você está logado e tente novamente.</div>';
+    });
+  </script>
+
+</body>
+</html>

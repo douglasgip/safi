@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Mapa Societário</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column;
+      background: #080b14; color: #f1f5f9;
+      overflow: hidden;
+    }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, #1a1060 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%);
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #7c3aed; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header {
+      position: relative; z-index: 100; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px; padding: 0 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(8,11,20,0.85);
+      backdrop-filter: blur(20px);
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #msoc-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #msoc-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-title-block { display: flex; align-items: center; gap: 9px; }
+    .header-title { font-size: 14px; font-weight: 800; color: #f1f5f9; }
+    .header-restricted { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: .3px; color: #c4b5fd; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); padding: 3px 9px; border-radius: 6px; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(139,92,246,0.12); color: #c4b5fd; }
+
+    .main { position: relative; z-index: 10; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+
+    .subtabs { display: flex; gap: 6px; padding: 14px 24px 0; flex-shrink: 0; }
+    .subtab-btn { padding: 9px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 9px 9px 0 0; color: #64748b; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s; }
+    .subtab-btn.active { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+    .subtab-btn:not(.active):hover { color: #cbd5e1; }
+
+    /* ══ Canvas / árvore ══ */
+    .map-scroll { flex: 1; min-height: 0; overflow: auto; position: relative; padding: 30px; cursor: grab; }
+    .map-scroll.map-grabbing { cursor: grabbing; user-select: none; }
+    .map-sizer { width: 1500px; height: 760px; position: relative; }
+    .map-inner { position: absolute; inset: 0; transform-origin: 0 0; transition: transform .2s ease; }
+    .map-node { position: absolute; background: rgba(15,23,42,0.85); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; backdrop-filter: blur(12px); box-shadow: 0 8px 28px rgba(0,0,0,0.45); overflow: hidden; transition: box-shadow .18s ease, border-color .18s ease; }
+    .map-node-root { display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, rgba(139,92,246,0.18), rgba(99,102,241,0.08)); border-color: rgba(139,92,246,0.35); font-weight: 800; font-size: 15px; color: #f1f5f9; letter-spacing: -.2px; cursor: default; }
+    .map-node-co { cursor: pointer; }
+    .map-node-co:hover { border-color: rgba(139,92,246,0.4); box-shadow: 0 8px 28px rgba(0,0,0,0.45), 0 0 0 1px rgba(139,92,246,0.15); }
+    .map-node-head { padding: 14px 16px; display: flex; align-items: flex-start; gap: 10px; }
+    .map-node-icon { width: 34px; height: 34px; border-radius: 9px; background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; font-weight: 800; }
+    .map-node-titles { min-width: 0; flex: 1; }
+    .map-node-name { font-size: 13px; font-weight: 800; color: #f1f5f9; letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .map-node-regime { font-size: 9px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; margin-top: 3px; display: inline-block; padding: 2px 7px; border-radius: 4px; }
+    .map-node-regime.simples { color: #4ade80; background: rgba(74,222,128,0.1); }
+    .map-node-regime.lucro   { color: #fbbf24; background: rgba(251,191,36,0.1); }
+    .map-node-hint { font-size: 9.5px; color: #475569; padding: 0 16px 10px; }
+    .map-node-details { max-height: 0; overflow: hidden; transition: max-height .3s cubic-bezier(.16,1,.3,1); border-top: 1px solid rgba(255,255,255,0.07); }
+    .map-node.expanded .map-node-details { max-height: 420px; }
+    .map-node.expanded { box-shadow: 0 16px 44px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.2); z-index: 5; }
+    .map-node-details-inner { padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 10px; }
+    .map-detail-row { display: flex; flex-direction: column; gap: 3px; }
+    .map-detail-label { font-size: 8.5px; font-weight: 700; color: #475569; letter-spacing: 1.2px; text-transform: uppercase; }
+    .map-detail-value { font-size: 12px; color: #e2e8f0; font-variant-numeric: tabular-nums; }
+    .map-socio-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: #cbd5e1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); padding: 4px 9px; border-radius: 20px; margin: 0 5px 5px 0; }
+    .map-socio-pct { color: #c4b5fd; font-weight: 700; }
+    .map-tag { display: inline-flex; font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); padding: 3px 8px; border-radius: 6px; margin: 0 5px 5px 0; }
+    .map-canais { display: flex; flex-wrap: wrap; gap: 8px; }
+    .map-canal-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .map-canal-logo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
+    .map-canal-label { font-size: 8px; color: #64748b; font-weight: 600; letter-spacing: .2px; }
+
+    .map-controls { position: absolute; right: 14px; bottom: 14px; z-index: 20; display: flex; flex-direction: column; gap: 6px; }
+    .map-ctrl-btn { width: 34px; height: 34px; border-radius: 9px; background: rgba(15,23,42,0.9); border: 1px solid rgba(255,255,255,0.12); color: #cbd5e1; font-size: 16px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
+    .map-ctrl-btn:hover { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.35); color: #fff; }
+
+    .map-notice { margin: 0 24px 14px; padding: 10px 16px; background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.2); border-radius: 10px; font-size: 11.5px; color: #a78bfa; display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    .holding-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
+    .holding-card { max-width: 420px; text-align: center; padding: 40px 32px; background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); }
+    .holding-icon { width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 16px; background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; display: flex; align-items: center; justify-content: center; }
+    .holding-title { font-size: 17px; font-weight: 800; color: #f1f5f9; margin-bottom: 8px; }
+    .holding-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+
+    #msoc-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 768px) {
+      .header { padding: 0 14px; }
+      .header-logo-full { height: 24px; }
+      .header-title { font-size: 12.5px; }
+      .subtabs { padding: 10px 12px 0; }
+      .map-scroll { padding: 14px; }
+      .map-notice { margin: 0 12px 10px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="msoc-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="msoc-sidebar">
+    <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07)">
+      <div id="msoc-sidebar-user" style="display:flex;align-items:center;gap:12px;margin-bottom:4px"></div>
+      <div style="font-size:9px;font-weight:600;color:#334155;letter-spacing:2px;text-transform:uppercase;margin-top:12px">Navegação</div>
+    </div>
+    <div style="padding:12px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
+      <a href="/" class="dc-sidebar-nav-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+      <a href="/resumocontabil" id="msoc-sidebar-resumo" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Resumo Contábil
+      </a>
+      <a href="/dre" id="msoc-sidebar-dre" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        DRE
+      </a>
+      <a href="/geronia" class="dc-sidebar-nav-btn">
+        <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
+        GerônIA
+      </a>
+      <a href="/mapa-societario" class="dc-sidebar-nav-btn active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
+        Mapa Societário
+      </a>
+    </div>
+    <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
+      <a href="/admin" id="msoc-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+        Admin
+      </a>
+    </div>
+  </aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="msoc-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none">
+        <img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full">
+      </a>
+      <div class="header-title-block">
+        <span class="header-title">Mapa Societário</span>
+        <span class="header-restricted">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Acesso restrito
+        </span>
+      </div>
+    </div>
+    <div id="msoc-nav-user-info" style="display:none"></div>
+  </header>
+
+  <div id="msoc-loading">Carregando…</div>
+
+  <main class="main" id="msoc-main" style="display:none">
+    <div class="subtabs">
+      <button class="subtab-btn active" id="subtab-mapa" onclick="setSubtab('mapa')">Mapa Societário</button>
+      <button class="subtab-btn" id="subtab-holding" onclick="setSubtab('holding')">Holding</button>
+    </div>
+
+    <div class="map-notice" id="view-mapa">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+      Informação confidencial de uso restrito. Clique numa empresa pra ver os detalhes.
+    </div>
+    <div class="map-scroll" id="view-mapa-2">
+      <div class="map-sizer">
+        <div class="map-inner" id="map-inner">
+          <svg id="map-lines" width="1500" height="760" style="position:absolute;inset:0;pointer-events:none">
+            <defs>
+              <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M0,0 L10,5 L0,10 z" fill="rgba(139,92,246,0.5)"></path>
+              </marker>
+            </defs>
+          </svg>
+          <div class="map-node map-node-root" style="left:640px;top:30px;width:220px;height:64px">Grupo Sacoman</div>
+          <div id="map-nodes"></div>
+        </div>
+      </div>
+      <div class="map-controls">
+        <button class="map-ctrl-btn" onclick="mapZoom(0.15)" aria-label="Aumentar zoom">+</button>
+        <button class="map-ctrl-btn" onclick="mapZoom(-0.15)" aria-label="Diminuir zoom">−</button>
+        <button class="map-ctrl-btn" onclick="mapZoomReset()" aria-label="Restaurar zoom" style="font-size:11px">1:1</button>
+      </div>
+    </div>
+
+    <div class="holding-wrap" id="view-holding" style="display:none">
+      <div class="holding-card">
+        <div class="holding-icon">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="9" y="3" width="6" height="18" rx="1"/><rect x="17" y="7" width="4" height="14" rx="1"/></svg>
+        </div>
+        <div class="holding-title">Em construção</div>
+        <div class="holding-desc">A estruturação da holding ainda está sendo definida. Assim que o desenho estiver pronto, essa aba vai mostrar a nova estrutura societária proposta.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function redirect(path) { window.location.replace(path); }
+
+    function setSubtab(tab) {
+      document.getElementById('subtab-mapa').classList.toggle('active', tab === 'mapa');
+      document.getElementById('subtab-holding').classList.toggle('active', tab === 'holding');
+      document.getElementById('view-mapa').style.display   = tab === 'mapa' ? 'flex' : 'none';
+      document.getElementById('view-mapa-2').style.display = tab === 'mapa' ? 'block' : 'none';
+      document.getElementById('view-holding').style.display = tab === 'holding' ? 'flex' : 'none';
+    }
+
+    // ── Pan (scroll nativo) + zoom ──
+    let mapScale = 1;
+    function applyMapScale() { document.getElementById('map-inner').style.transform = 'scale(' + mapScale + ')'; }
+    function mapZoom(delta) { mapScale = Math.min(1.6, Math.max(0.4, mapScale + delta)); applyMapScale(); }
+    function mapZoomReset() { mapScale = 1; applyMapScale(); document.getElementById('view-mapa-2').scrollTo({left:0, top:0}); }
+
+    // ── Clicar e arrastar num ponto vazio pra navegar (estilo Miro) ──
+    (function(){
+      var scrollEl = document.getElementById('view-mapa-2');
+      var dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+      scrollEl.addEventListener('mousedown', function(e){
+        if (e.target.closest('.map-node') || e.target.closest('.map-controls')) return;
+        dragging = true;
+        startX = e.clientX; startY = e.clientY;
+        startLeft = scrollEl.scrollLeft; startTop = scrollEl.scrollTop;
+        scrollEl.classList.add('map-grabbing');
+        e.preventDefault();
+      });
+      window.addEventListener('mousemove', function(e){
+        if (!dragging) return;
+        scrollEl.scrollLeft = startLeft - (e.clientX - startX);
+        scrollEl.scrollTop = startTop - (e.clientY - startY);
+      });
+      window.addEventListener('mouseup', function(){
+        if (dragging) { dragging = false; scrollEl.classList.remove('map-grabbing'); }
+      });
+    })();
+
+    const NODE_W = 240;
+    const NODE_X = [70, 350, 630, 910, 1190];
+    const NODE_Y = 250;
+    const ROOT_CENTER_X = 750, ROOT_BOTTOM_Y = 94;
+
+    const MARCA_LOGOS = {
+      'Via Closet': '/public/viacloset_logo.png',
+      'Exposição Paulista': '/public/exposicaopaulista_logo.png',
+      'GIP Ecommerce': '/public/gipecommerce_logo.png'
+    };
+    const CANAL_LOGOS = {
+      'Shopee': '/public/Shopee.png',
+      'Mercado Livre': '/public/Mercado Livre.png',
+      'Shein': '/public/Shein.jpg',
+      'TikTok Shop': '/public/TikTok Shop.avif',
+      'Magalu': '/public/Magalu.jfif',
+      'Temu': '/public/Temu.png',
+      'GIP': '/public/gipecommerce_logo.png'
+    };
+    function canalHtml(nome, label, logoOverride) {
+      const logo = logoOverride || CANAL_LOGOS[nome];
+      const lbl = label || nome;
+      if (logo) {
+        return `<div class="map-canal-item" title="${esc(nome)}"><img class="map-canal-logo" src="${logo}" alt="${esc(nome)}"><span class="map-canal-label">${esc(lbl)}</span></div>`;
+      }
+      return `<div class="map-canal-item"><span class="map-tag" style="margin:0">${esc(lbl)}</span></div>`;
+    }
+
+    function fmtDate(d) {
+      if (!d) return '—';
+      const [y,m,day] = d.split('-');
+      return day + '/' + m + '/' + y;
+    }
+
+    function renderNodes(empresas) {
+      const nodesEl = document.getElementById('map-nodes');
+      const linesEl = document.getElementById('map-lines');
+
+      let linesHtml = '';
+      let nodesHtml = '';
+
+      empresas.forEach((e, i) => {
+        const x = NODE_X[i % NODE_X.length];
+        const cx = x + NODE_W / 2;
+        linesHtml += `<path d="M ${ROOT_CENTER_X} ${ROOT_BOTTOM_Y} C ${ROOT_CENTER_X} ${ROOT_BOTTOM_Y+90}, ${cx} ${NODE_Y-70}, ${cx} ${NODE_Y}" stroke="rgba(139,92,246,0.35)" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>`;
+
+        const nome = e.nome_fantasia || e.nome_empresarial;
+        const initials = nome.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+        const regimeClass = e.regime_tributario === 'Lucro Real' ? 'lucro' : 'simples';
+        const socios = (e.socios || []).map(s => `<span class="map-socio-pill">${esc(s.nome)} <span class="map-socio-pct">${s.percentual}%</span></span>`).join('');
+        const operacoes = (e.operacoes || []).map(o => {
+          const logo = o === 'Loja Física' && e.marca ? MARCA_LOGOS[e.marca] : null;
+          return logo ? canalHtml(e.marca, o, logo) : `<span class="map-tag">${esc(o)}</span>`;
+        }).join('');
+        const canais = (e.canais || []).map(c => canalHtml(c)).join('');
+
+        nodesHtml += `
+          <div class="map-node map-node-co" id="msoc-node-${i}" style="left:${x}px;top:${NODE_Y}px;width:${NODE_W}px" onclick="toggleNode(${i})">
+            <div class="map-node-head">
+              <div class="map-node-icon">${esc(initials)}</div>
+              <div class="map-node-titles">
+                <div class="map-node-name">${esc(nome)}</div>
+                <span class="map-node-regime ${regimeClass}">${esc(e.regime_tributario)}</span>
+              </div>
+            </div>
+            <div class="map-node-hint">Clique para ver detalhes</div>
+            <div class="map-node-details">
+              <div class="map-node-details-inner">
+                <div class="map-detail-row">
+                  <div class="map-detail-label">Razão Social</div>
+                  <div class="map-detail-value">${esc(e.nome_empresarial)}</div>
+                </div>
+                <div class="map-detail-row">
+                  <div class="map-detail-label">CNPJ</div>
+                  <div class="map-detail-value">${esc(e.cnpj)}</div>
+                </div>
+                <div class="map-detail-row">
+                  <div class="map-detail-label">Sócio(s)</div>
+                  <div>${socios || '<span class="map-detail-value">—</span>'}</div>
+                </div>
+                ${operacoes ? `<div class="map-detail-row"><div class="map-detail-label">Operações</div><div class="map-canais">${operacoes}</div></div>` : ''}
+                ${canais ? `<div class="map-detail-row"><div class="map-detail-label">Canais</div><div class="map-canais">${canais}</div></div>` : ''}
+                <div class="map-detail-row">
+                  <div class="map-detail-label">Data de Abertura</div>
+                  <div class="map-detail-value">${fmtDate(e.data_abertura)}</div>
+                </div>
+              </div>
+            </div>
+          </div>`;
+      });
+
+      linesEl.insertAdjacentHTML('beforeend', linesHtml);
+      nodesEl.innerHTML = nodesHtml;
+    }
+
+    function toggleNode(i) {
+      const el = document.getElementById('msoc-node-' + i);
+      if (el) el.classList.toggle('expanded');
+    }
+
+    // ── Sidebar mobile ──
+    function msocSidebarOpen() {
+      document.getElementById('msoc-sidebar').classList.add('open');
+      document.getElementById('msoc-sidebar-backdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function msocSidebarClose() {
+      document.getElementById('msoc-sidebar').classList.remove('open');
+      document.getElementById('msoc-sidebar-backdrop').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.getElementById('msoc-hamburger').addEventListener('click', msocSidebarOpen);
+    document.getElementById('msoc-sidebar-backdrop').addEventListener('click', msocSidebarClose);
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return redirect('/login');
+
+      const { data: profRows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (profRows && profRows[0]) || null;
+      const allowed = !!prof && (prof.is_admin || prof.can_mapa_societario === true);
+      if (!allowed) return redirect('/');
+
+      if (prof.is_admin) {
+        const a = document.getElementById('msoc-sidebar-admin'); if (a) a.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_resumo !== false) {
+        const s = document.getElementById('msoc-sidebar-resumo'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_dre !== false) {
+        const s = document.getElementById('msoc-sidebar-dre'); if (s) s.style.display = 'flex';
+      }
+
+      const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
+      const parts = name.split(/\s+/);
+      const initials = parts.length >= 2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+      const sidebarUserEl = document.getElementById('msoc-sidebar-user');
+      if (sidebarUserEl) {
+        sidebarUserEl.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#6d28d9);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0">'+initials+'</div>'
+          +'<div style="display:flex;flex-direction:column;gap:1px;min-width:0">'
+          +'<div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+esc(name)+'</div>'
+          +(prof.role ? '<div style="font-size:9px;font-weight:600;color:#64748b;white-space:nowrap">'+(prof.is_admin?'&#9670; ':'')+esc(prof.role)+'</div>' : '')
+          +'</div>';
+        if (window.UserMenu) window.UserMenu.attach(sidebarUserEl, sb);
+      }
+
+      const { data: empresas, error } = await sb
+        .from('mapa_societario_empresas')
+        .select('*')
+        .order('ordem', { ascending: true });
+
+      document.getElementById('msoc-loading').style.display = 'none';
+      document.getElementById('msoc-main').style.display = 'flex';
+      document.getElementById('msoc-main').style.flexDirection = 'column';
+
+      if (error || !empresas || !empresas.length) {
+        document.getElementById('view-mapa-2').innerHTML = '<div style="padding:40px;text-align:center;color:#64748b;font-size:13px">Não foi possível carregar o mapa societário agora.</div>';
+        return;
+      }
+      renderNodes(empresas);
+    }
+
+    init();
+  </script>
+</body>
+</html>

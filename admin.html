@@ -1,0 +1,890 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Admin</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      background: #080b14;
+      color: #f1f5f9;
+    }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background: radial-gradient(ellipse at 20% 50%, #1a1060 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+                  radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+                  linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%);
+    }
+
+    .orb {
+      position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform;
+      opacity: 0.15; animation: drift linear infinite; z-index: 0; pointer-events: none;
+    }
+    .orb1 { width: 500px; height: 500px; background: #7c3aed; top: -100px; left: -100px; animation-duration: 20s; }
+    .orb2 { width: 400px; height: 400px; background: #1d4ed8; bottom: -80px; right: -80px; animation-duration: 25s; animation-delay: -8s; }
+    .orb3 { width: 300px; height: 300px; background: #f59e0b; top: 40%; right: 10%; animation-duration: 30s; animation-delay: -15s; opacity: 0.07; }
+    @keyframes drift {
+      0%   { transform: translate(0,0) scale(1); }
+      33%  { transform: translate(30px,-30px) scale(1.05); }
+      66%  { transform: translate(-20px,20px) scale(0.95); }
+      100% { transform: translate(0,0) scale(1); }
+    }
+
+    .grid-overlay {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ── Header ── */
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 32px;
+      background: rgba(8,11,20,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .header-brand { display: flex; align-items: center; gap: 12px; }
+    .header-logo-full { height: 34px; width: auto; object-fit: contain; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .btn-logout {
+      padding: 7px 16px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+      color: #94a3b8; font-family: 'Inter', sans-serif;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-logout:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+
+    /* ── Main ── */
+    .main {
+      position: relative; z-index: 10;
+      max-width: 1100px; margin: 0 auto;
+      padding: 40px 24px;
+      animation: fadeUp 0.5s cubic-bezier(.16,1,.3,1) both;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Panel ── */
+    .panel {
+      background: rgba(15,23,42,0.75);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07);
+    }
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 22px 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .panel-header-left { display: flex; flex-direction: column; gap: 3px; }
+    .panel-header-label { font-size: 9px; font-weight: 700; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+    .panel-header-title { font-size: 20px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+
+    /* ── Botão Novo ── */
+    .btn-new {
+      display: flex; align-items: center; gap: 8px;
+      padding: 11px 20px;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #d97706 100%);
+      border: none; border-radius: 11px;
+      color: #1a0a00; font-family: 'Inter', sans-serif;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 0 #92400e, 0 6px 16px rgba(245,158,11,0.25), 0 2px 4px rgba(0,0,0,0.2);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .btn-new:hover  { transform: translateY(-1px); box-shadow: 0 5px 0 #92400e, 0 8px 20px rgba(245,158,11,0.3); }
+    .btn-new:active { transform: translateY(2px);  box-shadow: 0 2px 0 #92400e, 0 3px 8px rgba(245,158,11,0.15); }
+
+    /* ── Tabela ── */
+    .user-table { width: 100%; border-collapse: collapse; }
+    .user-table thead th {
+      padding: 12px 20px; text-align: left;
+      font-size: 9px; font-weight: 700; color: #475569;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      background: rgba(10,15,30,0.6);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .user-table thead th:first-child { border-radius: 0; }
+    .user-table tbody tr {
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      transition: background 0.12s;
+    }
+    .user-table tbody tr:last-child { border-bottom: none; }
+    .user-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .user-table td {
+      padding: 16px 20px;
+      font-size: 13px; color: #cbd5e1;
+      vertical-align: middle;
+    }
+    .user-table td.td-email { color: #f1f5f9; font-weight: 600; }
+    .user-table td.td-role { color: #94a3b8; font-size: 12px; }
+
+    /* ── Badges de permissão ── */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 9px; border-radius: 5px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+    }
+    .badge-yes { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25); }
+    .badge-no  { background: rgba(100,116,139,0.12); color: #475569; border: 1px solid rgba(100,116,139,0.15); }
+    .badge-admin { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
+
+    /* ── Ações ── */
+    .td-actions { display: flex; align-items: center; gap: 8px; }
+    .btn-action {
+      padding: 6px 12px; border-radius: 7px;
+      font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600;
+      cursor: pointer; transition: all 0.12s; border: 1px solid;
+    }
+    .btn-edit {
+      background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25); color: #60a5fa;
+    }
+    .btn-edit:hover { background: rgba(59,130,246,0.2); }
+    .btn-delete {
+      background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2); color: #f87171;
+    }
+    .btn-delete:hover { background: rgba(239,68,68,0.18); }
+
+    /* ── Estado vazio ── */
+    .empty-state {
+      padding: 60px 20px; text-align: center;
+      color: #334155; font-size: 14px;
+    }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+      align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal-card {
+      width: 100%; max-width: 480px;
+      background: rgba(12,18,38,0.97);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 24px;
+      padding: 36px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04) inset, 0 32px 64px rgba(0,0,0,0.7);
+      animation: modalIn 0.25s cubic-bezier(.16,1,.3,1);
+      max-height: 90vh; overflow-y: auto;
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(10px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-title { font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; letter-spacing: -0.3px; }
+    .modal-sub { font-size: 12px; color: #475569; margin-bottom: 28px; }
+
+    /* ── Campos do formulário ── */
+    .field { margin-bottom: 16px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 600;
+      color: #64748b; margin-bottom: 6px; letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+    .field input, .field select {
+      width: 100%; padding: 12px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.09);
+      border-radius: 11px; color: #f1f5f9;
+      font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+      outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+    }
+    .field input::placeholder { color: #334155; }
+    .field input:focus, .field select:focus {
+      border-color: rgba(245,158,11,0.45);
+      background: rgba(255,255,255,0.07);
+      box-shadow: 0 0 0 3px rgba(245,158,11,0.1);
+    }
+    .field select { cursor: pointer; }
+    .field select option { background: #0f172a; }
+
+    /* Campo senha com olho */
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 44px; }
+    .pw-eye {
+      position: absolute; right: 0; top: 0; height: 100%; width: 44px;
+      background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: #334155; transition: color 0.15s;
+    }
+    .pw-eye:hover { color: #64748b; }
+
+    /* ── Seção de permissões ── */
+    .perm-section {
+      margin: 22px 0 0;
+      padding: 18px; border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+    .perm-section-label {
+      font-size: 9px; font-weight: 700; color: #475569;
+      letter-spacing: 2px; text-transform: uppercase; margin-bottom: 14px;
+    }
+    .perm-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .perm-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .perm-name { font-size: 13px; font-weight: 500; color: #cbd5e1; }
+    .perm-sub  { font-size: 11px; color: #475569; margin-top: 1px; }
+
+    /* Toggle pill */
+    .toggle-wrap { display: flex; align-items: center; gap: 0; }
+    .toggle-btn {
+      padding: 5px 14px; font-family: 'Inter', sans-serif;
+      font-size: 11px; font-weight: 700; cursor: pointer;
+      border: 1px solid rgba(255,255,255,0.1); transition: all 0.15s;
+    }
+    .toggle-btn:first-child { border-radius: 8px 0 0 8px; border-right: none; }
+    .toggle-btn:last-child  { border-radius: 0 8px 8px 0; }
+    .toggle-btn.active-yes { background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.4); color: #34d399; }
+    .toggle-btn.active-no  { background: rgba(100,116,139,0.15); border-color: rgba(100,116,139,0.2); color: #475569; }
+    .toggle-btn.inactive   { background: transparent; color: #334155; }
+
+    /* DRE sub-permissões */
+    .dre-ops {
+      margin-top: 12px; padding: 14px;
+      border-radius: 10px; background: rgba(59,130,246,0.05);
+      border: 1px solid rgba(59,130,246,0.12);
+    }
+    .dre-ops-label { font-size: 9px; font-weight: 700; color: #3b82f6; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 10px; }
+
+    /* ── Botões do modal ── */
+    .modal-actions { display: flex; gap: 10px; margin-top: 28px; }
+    .btn-submit {
+      flex: 1; padding: 14px;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 40%, #d97706 100%);
+      border: none; border-radius: 12px;
+      color: #1a0a00; font-family: 'Inter', sans-serif;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      box-shadow: 0 4px 0 #92400e, 0 6px 14px rgba(245,158,11,0.2);
+      transition: transform 0.1s, box-shadow 0.1s;
+      position: relative;
+    }
+    .btn-submit:hover   { transform: translateY(-1px); }
+    .btn-submit:active  { transform: translateY(2px); box-shadow: 0 2px 0 #92400e; }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+    .btn-cancel {
+      padding: 14px 22px; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1); border-radius: 12px;
+      color: #64748b; font-family: 'Inter', sans-serif;
+      font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,0.08); color: #94a3b8; }
+
+    /* ── Erro e toast ── */
+    .modal-error {
+      display: none; background: rgba(239,68,68,0.12);
+      border: 1px solid rgba(239,68,68,0.3); border-radius: 10px;
+      padding: 10px 14px; color: #fca5a5; font-size: 12px; font-weight: 500;
+      margin-bottom: 16px; line-height: 1.4;
+    }
+    .modal-error.visible { display: block; animation: shake 0.35s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
+
+    .toast {
+      position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 14px 24px;
+      font-size: 13px; font-weight: 600; color: #f1f5f9;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      z-index: 200; opacity: 0; transition: opacity 0.2s;
+      display: flex; align-items: center; gap: 10px;
+      white-space: nowrap;
+    }
+    .toast.visible { opacity: 1; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .toast-dot.green  { background: #34d399; }
+    .toast-dot.red    { background: #f87171; }
+
+    /* ── Spinner ── */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid rgba(0,0,0,0.2); border-top-color: #1a0a00;
+      border-radius: 50%; animation: spin 0.7s linear infinite;
+      vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Loading ── */
+    .loading-row td {
+      padding: 50px 20px; text-align: center;
+      color: #334155; font-size: 13px;
+    }
+
+    /* Modal de confirmação */
+    .confirm-overlay {
+      display: none; position: fixed; inset: 0; z-index: 150;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+      align-items: center; justify-content: center;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-card {
+      background: rgba(12,18,38,0.98); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 32px 28px; max-width: 380px; text-align: center;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+      animation: modalIn 0.2s cubic-bezier(.16,1,.3,1);
+    }
+    .confirm-icon { font-size: 32px; margin-bottom: 12px; }
+    .confirm-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }
+    .confirm-text  { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
+    .confirm-actions { display: flex; gap: 10px; }
+    .btn-confirm-delete {
+      flex: 1; padding: 12px;
+      background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 11px; color: #f87171;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-confirm-delete:hover { background: rgba(239,68,68,0.25); }
+    .btn-confirm-cancel {
+      flex: 1; padding: 12px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 11px; color: #64748b;
+      font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-confirm-cancel:hover { background: rgba(255,255,255,0.08); }
+
+    /* ── Tabela com scroll horizontal no mobile ── */
+    .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+    @media (max-width: 640px) {
+      .header { padding: 14px 16px; }
+      .header-logo-full { height: 26px; }
+      .header-sub { display: none; }
+      .main { padding: 20px 12px; }
+      .panel-header { padding: 16px 16px; flex-wrap: wrap; gap: 12px; }
+      .panel-header-title { font-size: 17px; }
+      .btn-new { padding: 9px 14px; font-size: 12px; }
+      .user-table thead th,
+      .user-table td { padding: 12px 12px; font-size: 12px; }
+      .modal-overlay { padding: 12px; align-items: flex-end; }
+      .modal-card { border-radius: 20px 20px 16px 16px; padding: 24px 18px; max-height: 92vh; }
+      .modal-actions { flex-direction: column; }
+      .btn-cancel { padding: 12px; }
+      .confirm-card { margin: 16px; padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div class="grid-overlay"></div>
+
+<!-- Header -->
+<header class="header">
+  <a href="/" class="header-brand" style="text-decoration:none">
+    <img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full">
+    <div class="header-sub">Gestão de Acessos</div>
+  </a>
+  <div class="header-right">
+    <a href="/" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#94a3b8;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;text-decoration:none;transition:all 0.15s" onmouseover="this.style.background='rgba(255,255,255,0.09)';this.style.color='#f1f5f9'" onmouseout="this.style.background='rgba(255,255,255,0.05)';this.style.color='#94a3b8'">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      Voltar ao Painel
+    </a>
+    <div id="nav-user-info" style="display:none;align-items:center;gap:10px;padding:5px 12px 5px 6px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.09);border-radius:10px;transition:background .15s ease" onmouseover="this.style.background='rgba(255,255,255,0.09)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'"></div>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main">
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-header-label">Administração</div>
+        <div class="panel-header-title">Usuários do Painel</div>
+      </div>
+      <button class="btn-new" onclick="openCreateModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Usuário
+      </button>
+    </div>
+
+    <div class="table-scroll">
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Nome / E-mail</th>
+          <th>Função</th>
+          <th>Resumo Contábil</th>
+          <th>DRE</th>
+          <th>Operações DRE</th>
+          <th style="width:140px">Ações</th>
+        </tr>
+      </thead>
+      <tbody id="users-tbody">
+        <tr class="loading-row"><td colspan="6">Carregando usuários...</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+</main>
+
+<!-- Modal Criar/Editar -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-card">
+    <div class="modal-title" id="modal-title">Novo Usuário</div>
+    <div class="modal-sub" id="modal-sub">Preencha os dados de acesso</div>
+
+    <div class="modal-error" id="modal-error"></div>
+
+    <form id="user-form" autocomplete="off">
+      <input type="hidden" id="edit-id">
+
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="f-email" placeholder="usuario@email.com" required>
+      </div>
+
+      <div class="field">
+        <label id="pw-label">Senha</label>
+        <div class="pw-wrap">
+          <input type="password" id="f-password" placeholder="••••••••" autocomplete="new-password">
+          <button type="button" class="pw-eye" onclick="togglePw('f-password', this)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="field">
+          <label>Nome completo</label>
+          <input type="text" id="f-name" placeholder="Ex: Guilherme">
+        </div>
+        <div class="field">
+          <label>Função / Cargo</label>
+          <input type="text" id="f-role" placeholder="Ex: COO">
+        </div>
+      </div>
+
+      <!-- Permissões de visualização -->
+      <div class="perm-section">
+        <div class="perm-section-label">Visualização</div>
+
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Resumo Contábil</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-resumo">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('resumo', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('resumo', false)">Não</button>
+          </div>
+        </div>
+
+        <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div>
+              <div class="perm-name">DRE</div>
+            </div>
+            <div class="toggle-wrap" id="toggle-dre">
+              <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('dre', true)">Sim</button>
+              <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('dre', false)">Não</button>
+            </div>
+          </div>
+
+          <div class="dre-ops" id="dre-ops">
+            <div class="dre-ops-label">Operações visíveis no DRE</div>
+
+            <div class="perm-row">
+              <div class="perm-name">GIP Ecommerce</div>
+              <div class="toggle-wrap" id="toggle-epgip">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('epgip', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('epgip', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Exposição</div>
+              <div class="toggle-wrap" id="toggle-exposicao">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('exposicao', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('exposicao', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Via Closet</div>
+              <div class="toggle-wrap" id="toggle-viacloset">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('viacloset', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('viacloset', false)">Não</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permissões de acesso restrito -->
+      <div class="perm-section">
+        <div class="perm-section-label">Acesso restrito</div>
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Mapa Societário</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">CNPJs, sócios e participação — visível por padrão só pra ninguém</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-mapasoc">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('mapasoc', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('mapasoc', false)">Não</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="submit" class="btn-submit" id="btn-submit">Salvar</button>
+        <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Confirmar Exclusão -->
+<div class="confirm-overlay" id="confirm-modal">
+  <div class="confirm-card">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title">Remover usuário?</div>
+    <div class="confirm-text" id="confirm-text">Esta ação removerá o acesso permanentemente.</div>
+    <div class="confirm-actions">
+      <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span class="toast-dot" id="toast-dot"></span>
+  <span id="toast-msg"></span>
+</div>
+
+<script>
+const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+const ADMIN_EMAIL   = 'douglasgip24@gmail.com';
+const FN_BASE       = `${SUPABASE_URL}/functions/v1`;
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+let currentSession = null;
+let deleteTarget   = null;
+const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false };
+
+// ── Auth ──────────────────────────────────────────────
+async function init() {
+  const { data } = await sb.auth.getSession();
+  if (!data.session) return redirect('/login');
+  if (data.session.user.email !== ADMIN_EMAIL) return redirect('/');
+  currentSession = data.session;
+  loadUsers();
+
+  const { data: profRows } = await sb.from('user_profiles').select('full_name,role,is_admin').eq('id', data.session.user.id).limit(1);
+  const prof = (profRows && profRows[0]) || null;
+  const name = (prof?.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
+  const parts = name.split(/\s+/);
+  const initials = parts.length >= 2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+  const userEl = document.getElementById('nav-user-info');
+  if (userEl) {
+    userEl.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#1a0a00;flex-shrink:0;letter-spacing:0.3px;box-shadow:0 2px 8px rgba(245,158,11,0.35)">'+initials+'</div>'
+      +'<div style="display:flex;flex-direction:column;gap:1px;min-width:0">'
+      +'<div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+name+'</div>'
+      +(prof?.role ? '<div style="font-size:9px;font-weight:600;color:#64748b;letter-spacing:0.5px;white-space:nowrap">'+(prof.is_admin?'&#9670; ':'')+prof.role+'</div>' : '')
+      +'</div>';
+    userEl.style.display = 'flex';
+    if (window.UserMenu) window.UserMenu.attach(userEl, sb);
+  }
+}
+
+function redirect(path) { window.location.replace(path); }
+
+async function logout() {
+  await sb.auth.signOut();
+  redirect('/login');
+}
+
+// ── Carregar usuários ─────────────────────────────────
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Carregando...</td></tr>';
+
+  const { data, error } = await sb
+    .from('user_profiles')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) { tbody.innerHTML = `<tr class="loading-row"><td colspan="6">Erro ao carregar: ${error.message}</td></tr>`; return; }
+  if (!data.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Nenhum usuário cadastrado.</td></tr>'; return; }
+
+  window._usersMap = {};
+  data.forEach(u => { window._usersMap[u.id] = u; });
+
+  tbody.innerHTML = data.map(u => {
+    const dreOps = u.can_dre
+      ? [u.dre_epgip ? '<span class="badge badge-yes">GIP</span>' : '', u.dre_exposicao ? '<span class="badge badge-yes">Exposição</span>' : '', u.dre_viacloset ? '<span class="badge badge-yes">Via Closet</span>' : ''].filter(Boolean).join(' ') || '<span class="badge badge-no">Nenhuma</span>'
+      : '<span style="color:#334155;font-size:12px">—</span>';
+
+    const isAdmin = u.is_admin;
+    const actions = isAdmin
+      ? `<div class="td-actions">
+          <button class="btn-action btn-edit" data-id="${esc(u.id)}">Editar</button>
+          <span style="font-size:11px;color:#475569;font-style:italic;margin-left:6px">Admin</span>
+        </div>`
+      : `<div class="td-actions">
+          <button class="btn-action btn-edit" data-id="${esc(u.id)}">Editar</button>
+          <button class="btn-action btn-delete" data-id="${esc(u.id)}">Remover</button>
+        </div>`;
+
+    return `<tr>
+      <td class="td-email">
+        ${u.full_name ? `<div style="font-size:13px;font-weight:700;color:#f1f5f9">${esc(u.full_name)}</div>` : ''}
+        <div style="font-size:11px;color:#64748b;margin-top:1px">${esc(u.email)}</div>
+      </td>
+      <td class="td-role">${esc(u.role || '—')}</td>
+      <td>${u.can_resumo ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
+      <td>${u.can_dre ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
+      <td>${dreOps}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('');
+
+  tbody.querySelectorAll('.btn-edit').forEach(btn => {
+    btn.addEventListener('click', () => openEditModal(window._usersMap[btn.dataset.id]));
+  });
+  tbody.querySelectorAll('.btn-delete').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const u = window._usersMap[btn.dataset.id];
+      confirmDelete(u.id, u.email);
+    });
+  });
+}
+
+function esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Toggles ──────────────────────────────────────────
+function setToggle(key, val) {
+  toggleState[key] = val;
+  const wrap = document.getElementById(`toggle-${key}`);
+  wrap.querySelectorAll('.toggle-btn').forEach(btn => {
+    const bVal = btn.dataset.val === 'true';
+    btn.className = 'toggle-btn ' + (bVal === val ? (val ? 'active-yes' : 'active-no') : 'inactive');
+  });
+  if (key === 'dre') {
+    document.getElementById('dre-ops').style.display = val ? 'block' : 'none';
+  }
+}
+
+// ── Modal Criar ───────────────────────────────────────
+function openEditById(id) { openEditModal(window._usersMap[id]); }
+
+function openCreateModal() {
+  document.getElementById('modal-title').textContent = 'Novo Usuário';
+  document.getElementById('modal-sub').textContent   = 'Preencha os dados de acesso';
+  document.getElementById('pw-label').textContent    = 'Senha';
+  document.getElementById('f-password').required     = true;
+  document.getElementById('f-password').placeholder  = '••••••••';
+  document.getElementById('edit-id').value           = '';
+  document.getElementById('user-form').reset();
+  ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
+  setToggle('mapasoc', false);
+  document.getElementById('modal-error').className   = 'modal-error';
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('f-email').focus();
+}
+
+function openEditModal(u) {
+  const isSelf = currentSession && u.id === currentSession.user.id;
+  document.getElementById('modal-title').textContent = 'Editar Usuário';
+  document.getElementById('modal-sub').textContent   = u.email;
+  document.getElementById('pw-label').textContent    = 'Nova Senha (deixe vazio para manter)';
+  document.getElementById('f-password').required     = false;
+  document.getElementById('f-password').placeholder  = 'Deixe vazio para não alterar';
+  document.getElementById('edit-id').value           = u.id;
+  document.getElementById('f-email').value           = u.email;
+  document.getElementById('f-email').disabled        = isSelf;
+  document.getElementById('f-email').title           = isSelf ? 'Este é o e-mail de admin do sistema — não pode ser alterado por aqui.' : '';
+  document.getElementById('f-name').value            = u.full_name || '';
+  document.getElementById('f-role').value            = u.role || '';
+  document.getElementById('f-password').value        = '';
+  setToggle('resumo',    u.can_resumo);
+  setToggle('dre',       u.can_dre);
+  setToggle('epgip',     u.dre_epgip);
+  setToggle('exposicao', u.dre_exposicao);
+  setToggle('viacloset', u.dre_viacloset);
+  setToggle('mapasoc',   !!u.can_mapa_societario);
+  document.getElementById('modal-error').className   = 'modal-error';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+}
+
+// ── Submit formulário ─────────────────────────────────
+document.getElementById('user-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn   = document.getElementById('btn-submit');
+  const errEl = document.getElementById('modal-error');
+  errEl.className = 'modal-error';
+
+  const editId   = document.getElementById('edit-id').value;
+  const email    = document.getElementById('f-email').value.trim();
+  const password = document.getElementById('f-password').value;
+  const fullName = document.getElementById('f-name').value.trim();
+  const role     = document.getElementById('f-role').value.trim();
+
+  if (!editId && !password) { showModalError('Informe uma senha.'); return; }
+  if (password && password.length < 6) { showModalError('Senha deve ter ao menos 6 caracteres.'); return; }
+
+  btn.disabled  = true;
+  btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+  const body = {
+    full_name:    fullName,
+    role,
+    can_resumo:   toggleState.resumo,
+    can_dre:      toggleState.dre,
+    dre_epgip:    toggleState.epgip,
+    dre_exposicao: toggleState.exposicao,
+    dre_viacloset: toggleState.viacloset,
+    can_mapa_societario: toggleState.mapasoc,
+  };
+
+  let fnUrl, fnBody;
+  if (!editId) {
+    fnUrl  = `${FN_BASE}/admin-create-user`;
+    fnBody = { email, password, ...body };
+  } else {
+    fnUrl  = `${FN_BASE}/admin-update-user`;
+    fnBody = { user_id: editId, email, ...body };
+    if (password) fnBody.password = password;
+  }
+
+  try {
+    const token = await window.UserMenu.freshToken(sb, currentSession.access_token);
+    const res = await fetch(fnUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(fnBody),
+    });
+    const json = await res.json();
+    if (!res.ok || json.error) { showModalError(json.error || 'Erro desconhecido.'); }
+    else {
+      closeModal();
+      showToast(editId ? 'Usuário atualizado' : 'Usuário criado com sucesso', 'green');
+      loadUsers();
+    }
+  } catch (err) {
+    showModalError('Falha de conexão. Tente novamente.');
+  }
+
+  btn.disabled  = false;
+  btn.innerHTML = 'Salvar';
+});
+
+function showModalError(msg) {
+  const el = document.getElementById('modal-error');
+  el.textContent = msg;
+  el.className = 'modal-error visible';
+}
+
+// ── Exclusão ─────────────────────────────────────────
+function confirmDelete(id, email) {
+  deleteTarget = id;
+  document.getElementById('confirm-text').textContent = `O acesso de ${email} será removido permanentemente.`;
+  document.getElementById('confirm-modal').classList.add('open');
+
+  document.getElementById('btn-confirm-delete').onclick = async () => {
+    closeConfirm();
+    try {
+      const token = await window.UserMenu.freshToken(sb, currentSession.access_token);
+      const res = await fetch(`${FN_BASE}/admin-delete-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ user_id: deleteTarget }),
+      });
+      const json = await res.json();
+      if (json.error) showToast(json.error, 'red');
+      else { showToast('Usuário removido', 'red'); loadUsers(); }
+    } catch { showToast('Falha ao remover.', 'red'); }
+  };
+}
+
+function closeConfirm() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  deleteTarget = null;
+}
+
+// ── Toast ─────────────────────────────────────────────
+let _toastTimer;
+function showToast(msg, color = 'green') {
+  const el  = document.getElementById('toast');
+  const dot = document.getElementById('toast-dot');
+  const txt = document.getElementById('toast-msg');
+  dot.className = `toast-dot ${color}`;
+  txt.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+// ── Toggle senha ──────────────────────────────────────
+function togglePw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.style.color = show ? '#f59e0b' : '#334155';
+  btn.querySelector('svg').innerHTML = show
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+
+// ── Fechar modal clicando fora ────────────────────────
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+init();
+</script>
+</body>
+</html>

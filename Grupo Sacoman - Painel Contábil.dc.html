@@ -1,0 +1,1981 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  (function(){
+    var _sb = supabase.createClient(
+      'https://ujsoqyhkebasszwtexmp.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c'
+    );
+    _sb.auth.getSession().then(function(r){
+      if(!r.data.session){ window.location.replace('/login'); return; }
+      var uid = r.data.session.user.id;
+      var key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+      fetch('https://ujsoqyhkebasszwtexmp.supabase.co/rest/v1/user_profiles?select=full_name,role,is_admin,can_resumo,can_dre,dre_epgip,dre_exposicao,dre_viacloset&id=eq.'+uid, {headers:{'apikey':key,'Authorization':'Bearer '+r.data.session.access_token}})
+        .then(function(res){ return res.json(); })
+        .then(function(rows){
+          var p = rows && rows[0] ? rows[0] : {};
+          var name = p.full_name || r.data.session.user.email.split('@')[0];
+          var parts = name.trim().split(/\s+/);
+          var initials = parts.length >= 2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+          var el = document.getElementById('dc-sidebar-user');
+          if(el){
+            el.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#d97706);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#1a0a00;flex-shrink:0;letter-spacing:0.3px;box-shadow:0 2px 8px rgba(245,158,11,0.35)">'+initials+'</div>'
+              +'<div style="display:flex;flex-direction:column;gap:1px;min-width:0">'
+              +'<div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+name+'</div>'
+              +(p.role ? '<div style="font-size:9px;font-weight:600;color:#64748b;letter-spacing:0.5px;white-space:nowrap">'+(p.is_admin?'&#9670; ':'')+p.role+'</div>' : '')
+              +'</div>';
+            if (window.UserMenu) window.UserMenu.attach(el, _sb);
+          }
+          // Botao admin — so aparece para is_admin
+          var sidebarAdmin = document.getElementById('dc-sidebar-admin');
+          if(sidebarAdmin && p.is_admin){ sidebarAdmin.style.display = 'flex'; }
+        });
+    });
+    window._sbClient = _sb;
+    window._sbLogout = function(){
+      _sb.auth.signOut().then(function(){ window.location.replace('/login'); });
+    };
+  })();
+</script>
+<script src="/user-menu.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    body { margin:0; background:#0b0f1a; font-family:'Inter',sans-serif; color:#f1f5f9; }
+    * { box-sizing:border-box; }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:#1e293b; }
+    ::-webkit-scrollbar-thumb { background:#334155; border-radius:3px; }
+    select option { background:#1e293b; color:#f1f5f9; }
+    button:hover { filter:brightness(0.93); }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+
+    /* Fundo ambiente — igual ao resto do app (Home, GerônIA, Admin, Mapa Societário) */
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, #1a1060 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%);
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #7c3aed; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+  </style>
+  <script>
+    function dcSidebarOpen() {
+      document.getElementById('dc-sidebar').classList.add('open');
+      document.getElementById('dc-sidebar-backdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function dcSidebarClose() {
+      document.getElementById('dc-sidebar').classList.remove('open');
+      document.getElementById('dc-sidebar-backdrop').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    function dcSidebarSelectTab(n) {
+      dcSidebarClose();
+      setTimeout(function() {
+        var btn = document.getElementById('dc-tab-btn-' + n);
+        // getComputedStyle guarda contra clique programático em aba escondida por permissão
+        // (o botão da sidebar já fica oculto, mas isso é defesa extra do lado do clique).
+        if (btn && getComputedStyle(btn).display !== 'none') btn.click();
+      }, 50);
+    }
+  </script>
+  <style>
+
+    /* ══ SIDEBAR ══ */
+    .dc-sidebar-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 990;
+      background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
+    }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991;
+      background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09);
+      overflow-y: auto; will-change: transform;
+      transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1);
+      display: flex; flex-direction: column;
+    }
+    .dc-sidebar.open { transform: translateX(0); }
+    #dc-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    #dc-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .dc-sidebar-nav-btn {
+      display: flex; align-items: center; gap: 12px;
+      width: 100%; padding: 13px 20px; background: transparent;
+      border: none; border-radius: 10px; cursor: pointer;
+      font-family: Inter, sans-serif; font-size: 14px; font-weight: 600;
+      color: #94a3b8; text-align: left; text-decoration: none;
+    }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .dc-mobile-filter { display: none; }
+
+    /* ══ MOBILE ══ */
+    @media (max-width: 768px) {
+      #dc-nav-right { display: none !important; }
+      #dc-tab-bar   { display: none !important; }
+      .dc-mobile-filter { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+      #resumo-tab-outer { padding: 16px 14px !important; }
+      #dre-tab-outer    { padding: 16px 14px !important; }
+      #resumo-empresas-grid { grid-template-columns: 1fr !important; }
+      .dc-resumo-meta { display: none !important; }
+      #resumo-totais-5col { display: flex !important; overflow-x: auto; gap: 0; min-width: max-content; }
+      #resumo-totais-5col > div { min-width: 140px; flex-shrink: 0; }
+      #dre-hero-kpi-card { max-width: 100% !important; padding: 18px 16px !important; }
+      #dre-kpi-6col { grid-template-columns: 1fr !important; gap: 14px !important; }
+      #dre-kpi-6col > div { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.07) !important; padding: 0 0 14px 0 !important; }
+      #dre-kpi-6col > div:last-child { border-bottom: none !important; padding-bottom: 0 !important; }
+      #dre-minicards-grid { grid-template-columns: 1fr !important; }
+      .dc-op-label { display: none; }
+      .dc-op-logo { width: 26px !important; height: 26px !important; }
+      /* botão de operação: mais quadrado, só logo */
+      .dc-op-btn { padding: 8px !important; border-radius: 10px !important; gap: 0 !important; }
+      #dre-charts-2col { grid-template-columns: 1fr !important; }
+      #dre-ind-3col { grid-template-columns: 1fr !important; }
+      canvas { max-height: 180px !important; }
+    }
+
+  </style>
+
+  <!-- ══ GERÔNIA — CONSELHEIRO IA ══ -->
+  <style>
+    #geronia-btn { position:fixed; right:22px; bottom:22px; width:58px; height:58px; border-radius:29px; background:#0b0f1a; box-shadow:0 8px 24px rgba(99,102,241,0.45), 0 0 0 1px rgba(255,255,255,0.06); border:none; cursor:pointer; z-index:9998; display:flex; align-items:center; justify-content:flex-start; overflow:hidden; transition:width .32s cubic-bezier(.16,1,.3,1), transform .18s ease, box-shadow .18s ease; padding:0; -webkit-tap-highlight-color:transparent; }
+    #geronia-btn:hover { width:148px; transform:scale(1.03); box-shadow:0 10px 30px rgba(99,102,241,0.55), 0 0 0 1px rgba(255,255,255,0.1); }
+    #geronia-btn:active { transform:scale(0.97); }
+    #geronia-btn .geronia-btn-avatar { width:58px; height:58px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+    #geronia-btn .geronia-btn-label { font-family:'Inter',sans-serif; font-size:13px; font-weight:800; color:#f1f5f9; white-space:nowrap; padding-left:14px; padding-right:16px; opacity:0; transition:opacity .2s ease .08s; }
+    #geronia-btn:hover .geronia-btn-label { opacity:1; }
+    #geronia-panel { position:fixed; right:22px; bottom:92px; width:384px; max-width:calc(100vw - 24px); height:min(608px, calc(100vh - 130px)); background:#0f1626; border:1px solid rgba(255,255,255,0.09); border-radius:20px; box-shadow:0 24px 70px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03); z-index:9998; display:flex; flex-direction:column; overflow:hidden; font-family:Inter,sans-serif; opacity:0; transform:translateY(14px) scale(.97); pointer-events:none; transition:opacity .24s cubic-bezier(.16,1,.3,1), transform .24s cubic-bezier(.16,1,.3,1); }
+    #geronia-panel.open { opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+    #geronia-header { display:flex; align-items:center; gap:10px; padding:14px 16px; border-bottom:1px solid rgba(255,255,255,0.07); background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(139,92,246,0.07)); flex-shrink:0; }
+    #geronia-messages { flex:1; overflow-y:auto; overflow-x:hidden; padding:16px; display:flex; flex-direction:column; gap:12px; scrollbar-width:thin; scrollbar-color:rgba(255,255,255,0.15) transparent; }
+    #geronia-messages::-webkit-scrollbar { width:5px; }
+    #geronia-messages::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:10px; }
+    .geronia-bubble { max-width:90%; padding:10px 14px; border-radius:14px; font-size:13.2px; line-height:1.6; animation:geronia-bubble-in .28s cubic-bezier(.16,1,.3,1); word-wrap:break-word; }
+    .geronia-bubble.user { align-self:flex-end; background:linear-gradient(135deg,#f59e0b,#f8b53f); color:#1a0a00; font-weight:600; border-bottom-right-radius:4px; white-space:pre-wrap; box-shadow:0 3px 10px rgba(245,158,11,0.25); }
+    .geronia-bubble.assistant { align-self:flex-start; background:rgba(255,255,255,0.055); color:#e2e8f0; border:1px solid rgba(255,255,255,0.08); border-bottom-left-radius:4px; }
+    .geronia-bubble.assistant p { margin:0 0 8px; }
+    .geronia-bubble.assistant p:last-child { margin-bottom:0; }
+    .geronia-bubble.assistant h3 { font-size:15px; font-weight:800; color:#f8fafc; margin:2px 0 6px; letter-spacing:-.1px; }
+    .geronia-bubble.assistant h3:first-child { margin-top:0; }
+    .geronia-bubble.assistant h4 { font-size:13.5px; font-weight:700; color:#f1f5f9; margin:8px 0 4px; }
+    .geronia-bubble.assistant h4:first-child { margin-top:0; }
+    .geronia-bubble.assistant strong { font-weight:700; color:#fbbf24; }
+    .geronia-bubble.assistant em { font-style:italic; color:#cbd5e1; }
+    .geronia-bubble.assistant ul, .geronia-bubble.assistant ol { margin:2px 0 8px; padding-left:19px; }
+    .geronia-bubble.assistant li { margin-bottom:4px; }
+    .geronia-bubble.assistant li:last-child { margin-bottom:0; }
+    .geronia-table-wrap { overflow-x:auto; margin:4px 0 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.09); -webkit-overflow-scrolling:touch; }
+    .geronia-table-wrap:last-child { margin-bottom:0; }
+    .geronia-table { border-collapse:collapse; width:100%; font-size:11.5px; }
+    .geronia-table th, .geronia-table td { padding:7px 10px; text-align:left; white-space:nowrap; }
+    .geronia-table th { background:rgba(245,158,11,0.1); color:#fbbf24; font-weight:700; font-size:10px; letter-spacing:.3px; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,0.1); }
+    .geronia-table td { color:#e2e8f0; border-bottom:1px solid rgba(255,255,255,0.06); font-variant-numeric:tabular-nums; }
+    .geronia-table tbody tr:last-child td { border-bottom:none; }
+    .geronia-table tbody tr:nth-child(even) { background:rgba(255,255,255,0.025); }
+    .geronia-table tbody tr:hover { background:rgba(245,158,11,0.06); }
+    @keyframes geronia-bubble-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .geronia-typing-row { display:flex; align-items:center; gap:8px; align-self:flex-start; padding:2px 2px; }
+    .geronia-typing-avatar { width:22px; height:22px; border-radius:50%; object-fit:cover; flex-shrink:0; }
+    .geronia-shimmer { background:linear-gradient(90deg, rgba(148,163,184,0.5) 0%, rgba(148,163,184,0.5) 38%, #ffffff 50%, rgba(148,163,184,0.5) 62%, rgba(148,163,184,0.5) 100%); background-size:200% 100%; -webkit-background-clip:text; background-clip:text; color:transparent; animation:geronia-shimmer-move 1.7s linear infinite; font-weight:600; font-size:12.5px; letter-spacing:.15px; }
+    @keyframes geronia-shimmer-move { 0% { background-position:200% center; } 100% { background-position:-60% center; } }
+    .geronia-suggest-row { display:flex; flex-wrap:wrap; gap:6px; align-self:flex-start; max-width:90%; }
+    .geronia-suggest-btn { padding:7px 12px; background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.25); border-radius:18px; color:#a5b4fc; font-size:11.3px; font-weight:600; cursor:pointer; font-family:Inter,sans-serif; line-height:1.4; transition:background .15s ease, border-color .15s ease, transform .1s ease; -webkit-tap-highlight-color:transparent; }
+    .geronia-suggest-btn:hover { background:rgba(99,102,241,0.16); border-color:rgba(99,102,241,0.45); color:#c7d2fe; }
+    .geronia-suggest-btn:active { transform:scale(0.97); }
+    #geronia-quick { display:flex; flex-direction:column; gap:6px; padding:2px 16px 12px; }
+    .geronia-qbtn { text-align:left; padding:10px 13px; background:rgba(99,102,241,0.09); border:1px solid rgba(99,102,241,0.22); border-radius:10px; color:#c7d2fe; font-size:12.3px; font-weight:600; cursor:pointer; font-family:Inter,sans-serif; line-height:1.4; transition:background .15s ease, border-color .15s ease, transform .1s ease; -webkit-tap-highlight-color:transparent; }
+    .geronia-qbtn:hover { background:rgba(99,102,241,0.16); border-color:rgba(99,102,241,0.4); }
+    .geronia-qbtn:active { transform:scale(0.98); }
+    #geronia-inputrow { display:flex; align-items:flex-end; gap:8px; padding:12px 14px; border-top:1px solid rgba(255,255,255,0.07); flex-shrink:0; }
+    #geronia-input { flex:1; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:10px 12px; color:#f1f5f9; font-family:Inter,sans-serif; font-size:13px; outline:none; resize:none; max-height:96px; min-height:40px; line-height:1.4; transition:border-color .15s ease, background .15s ease; }
+    #geronia-input:focus { border-color:rgba(99,102,241,0.55); background:rgba(255,255,255,0.07); }
+    #geronia-send { width:40px; height:40px; border-radius:11px; background:linear-gradient(135deg,#6366f1,#7c5cf0); border:none; color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:transform .12s ease, opacity .12s ease; -webkit-tap-highlight-color:transparent; }
+    #geronia-send:hover:not(:disabled) { transform:scale(1.06); }
+    #geronia-send:active:not(:disabled) { transform:scale(0.94); }
+    #geronia-send:disabled { opacity:0.45; cursor:default; }
+    #geronia-disclaimer { font-size:9.5px; color:#475569; text-align:center; padding:0 12px 10px; line-height:1.4; flex-shrink:0; }
+    @media (max-width: 480px) {
+      #geronia-panel { right:10px; left:10px; width:auto; bottom:calc(84px + env(safe-area-inset-bottom, 0px)); height:min(78vh, calc(100vh - 110px)); border-radius:18px; }
+      #geronia-btn { right:16px; bottom:calc(16px + env(safe-area-inset-bottom, 0px)); width:54px; height:54px; }
+      #geronia-input { font-size:16px; }
+      .geronia-bubble { font-size:13.5px; max-width:92%; }
+    }
+  </style>
+  <script>
+  (function(){
+    var EDGE_URL = 'https://ujsoqyhkebasszwtexmp.supabase.co/functions/v1/geronia-chat';
+    var QUICK_FULL = [
+      'Como está a margem de contribuição de cada operação frente à meta?',
+      'Qual operação está performando melhor este mês?',
+      'Como está o resultado consolidado do grupo?',
+      'Quais os maiores riscos financeiros no momento?',
+      'O que devo priorizar essa semana?'
+    ];
+    var QUICK_RESTRICTED = [
+      'Como está minha margem de contribuição este mês?',
+      'Meu faturamento está dentro do esperado?',
+      'O que posso fazer para melhorar o resultado da minha operação?',
+      'Como está minha operação comparada à meta?',
+      'Quais pontos de atenção você vê nos meus números?'
+    ];
+
+    var state = { open:false, initialized:false, initializing:false, messages:[], profile:null, uid:null, token:null, email:null, loading:false, firstLoad:true, pendingAnimate:null, threadId:null };
+
+
+    function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+
+    // ---- Markdown leve -> HTML (negrito, itálico, h3/h4, listas) ----
+    function escapeHtml(s){
+      return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function inlineMd(text){
+      text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+      text = text.replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>');
+      text = text.replace(/(^|[^_])_([^_\s][^_]*?)_(?!_)/g, '$1<em>$2</em>');
+      return text;
+    }
+
+    function isTableSepRow(line){
+      return /^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?$/.test(line) && line.indexOf('-') !== -1;
+    }
+    function splitTableRow(line){
+      var t = line.trim();
+      if (t.charAt(0) === '|') t = t.slice(1);
+      if (t.charAt(t.length - 1) === '|') t = t.slice(0, -1);
+      return t.split('|').map(function(c){ return c.trim(); });
+    }
+    function mdToHtml(raw){
+      var text = escapeHtml(raw || '');
+      var lines = text.split(/\r?\n/);
+      var html = '';
+      var listBuffer = null;
+      var paraBuffer = [];
+
+      function flushList(){
+        if (listBuffer) {
+          var tag = listBuffer.type;
+          html += '<' + tag + '>' + listBuffer.items.map(function(it){ return '<li>' + inlineMd(it) + '</li>'; }).join('') + '</' + tag + '>';
+          listBuffer = null;
+        }
+      }
+      function flushPara(){
+        if (paraBuffer.length) {
+          html += '<p>' + paraBuffer.map(inlineMd).join('<br>') + '</p>';
+          paraBuffer = [];
+        }
+      }
+
+      for (var i = 0; i < lines.length; i++) {
+        var trimmed = lines[i].trim();
+        if (!trimmed) { flushPara(); flushList(); continue; }
+        if (/^-{3,}$/.test(trimmed)) { flushPara(); flushList(); continue; }
+        if (trimmed.indexOf('|') !== -1 && i + 1 < lines.length && isTableSepRow(lines[i + 1].trim())) {
+          flushPara(); flushList();
+          var headerCells = splitTableRow(trimmed);
+          i += 2;
+          var bodyRows = [];
+          while (i < lines.length && lines[i].trim() !== '' && lines[i].trim().indexOf('|') !== -1) {
+            bodyRows.push(splitTableRow(lines[i].trim()));
+            i++;
+          }
+          i--;
+          html += '<div class="geronia-table-wrap"><table class="geronia-table"><thead><tr>' +
+            headerCells.map(function(c){ return '<th>' + inlineMd(c) + '</th>'; }).join('') +
+            '</tr></thead><tbody>' +
+            bodyRows.map(function(r){ return '<tr>' + r.map(function(c){ return '<td>' + inlineMd(c) + '</td>'; }).join('') + '</tr>'; }).join('') +
+            '</tbody></table></div>';
+          continue;
+        }
+
+        var mH4 = trimmed.match(/^#{3,6}\s+(.*)$/);
+        if (mH4) { flushPara(); flushList(); html += '<h4>' + inlineMd(mH4[1]) + '</h4>'; continue; }
+
+        var mH3 = trimmed.match(/^#{1,2}\s+(.*)$/);
+        if (mH3) { flushPara(); flushList(); html += '<h3>' + inlineMd(mH3[1]) + '</h3>'; continue; }
+
+        var mUl = trimmed.match(/^[-*]\s+(.*)$/);
+        if (mUl) {
+          flushPara();
+          if (!listBuffer || listBuffer.type !== 'ul') { flushList(); listBuffer = { type:'ul', items:[] }; }
+          listBuffer.items.push(mUl[1]);
+          continue;
+        }
+
+        var mOl = trimmed.match(/^\d+[.)]\s+(.*)$/);
+        if (mOl) {
+          flushPara();
+          if (!listBuffer || listBuffer.type !== 'ol') { flushList(); listBuffer = { type:'ol', items:[] }; }
+          listBuffer.items.push(mOl[1]);
+          continue;
+        }
+
+        flushList();
+        paraBuffer.push(trimmed);
+      }
+      flushPara();
+      flushList();
+      return html;
+    }
+
+    function extractSuggestions(raw){
+      raw = raw || '';
+      var m = raw.match(/<<<SUGESTOES>>>([\s\S]*?)<<<FIM_SUGESTOES>>>/);
+      if (!m) return { text: raw, suggestions: [] };
+      var text = (raw.slice(0, m.index) + raw.slice(m.index + m[0].length)).trim();
+      var suggestions = m[1].split(/\r?\n/).map(function(s){ return s.trim().replace(/^[-*]\s*/, ''); }).filter(function(s){ return s.length > 0; });
+      return { text: text, suggestions: suggestions };
+    }
+
+    // ---- Efeito de digitação fluida sobre HTML já renderizado (sem quebrar tags) ----
+    function typewriterReveal(container, finalHtml){
+      return new Promise(function(resolve){
+        var temp = document.createElement('div');
+        temp.innerHTML = finalHtml;
+        var totalChars = (temp.textContent || '').length;
+        if (totalChars === 0) { container.innerHTML = finalHtml; resolve(); return; }
+
+        var charsPerTick = Math.max(1, Math.round(totalChars / 90));
+        var shown = 0;
+
+        function paint(){
+          var clone = temp.cloneNode(true);
+          var remaining = shown;
+          var walker = document.createTreeWalker(clone, NodeFilter.SHOW_TEXT, null);
+          var node, cut = false;
+          while ((node = walker.nextNode())) {
+            if (cut) { node.nodeValue = ''; continue; }
+            var len = node.nodeValue.length;
+            if (remaining >= len) { remaining -= len; }
+            else { node.nodeValue = node.nodeValue.slice(0, remaining); remaining = 0; cut = true; }
+          }
+          container.innerHTML = '';
+          container.appendChild(clone);
+        }
+
+        var timer = setInterval(function(){
+          shown += charsPerTick;
+          if (shown >= totalChars) {
+            shown = totalChars;
+            paint();
+            clearInterval(timer);
+            resolve();
+            return;
+          }
+          paint();
+          scrollBottom();
+        }, 16);
+      });
+    }
+
+    function autoResize(el){
+      el.style.height = 'auto';
+      el.style.height = Math.min(el.scrollHeight, 96) + 'px';
+    }
+
+    function firstAccessName(){
+      var p = state.profile || {};
+      var name = (p.full_name || (state.email||'').split('@')[0] || 'Usuário').trim();
+      return name.split(/\s+/)[0];
+    }
+
+    function hasFullAccess(){
+      var p = state.profile || {};
+      if (p.is_admin) return true;
+      return p.dre_epgip !== false && p.dre_exposicao !== false && p.dre_viacloset !== false;
+    }
+
+    function quickPrompts(){ return hasFullAccess() ? QUICK_FULL : QUICK_RESTRICTED; }
+
+    function welcomeText(){
+      return 'Olá, ' + firstAccessName() + '! Eu sou o GerônIA, o conselheiro do painel do Grupo Sacoman — meu nome é uma homenagem a Geraldo e Verônica Sacoman, os fundadores do grupo.\n\nEstou aqui para ajudar você a entender os números, tirar dúvidas e dar direcionamentos sobre o negócio, com base nos dados reais do painel. Pode perguntar sobre faturamento, margens, metas e desempenho das operações que você tem acesso.\n\nEm que posso ajudar?';
+    }
+
+    function ensureInit(){
+      if (state.initialized) return Promise.resolve();
+      if (state.initializing) return state._initPromise;
+      state.initializing = true;
+      var sb = window._sbClient;
+      state._initPromise = sb.auth.getSession().then(function(r){
+        if (!r.data.session) return Promise.reject(new Error('no session'));
+        state.uid = r.data.session.user.id;
+        state.token = r.data.session.access_token;
+        state.email = r.data.session.user.email;
+        return sb.from('user_profiles').select('*').eq('id', state.uid).single();
+      }).then(function(res){
+        state.profile = (res && res.data) || {};
+        return sb.from('geronia_threads').select('id').eq('user_id', state.uid).order('updated_at', { ascending:false }).limit(1);
+      }).then(function(res){
+        var t = res && res.data && res.data[0];
+        if (!t) {
+          state.firstLoad = true;
+          state.messages = [];
+          state.initialized = true;
+          state.initializing = false;
+          return null;
+        }
+        state.threadId = t.id;
+        return sb.from('geronia_conversations').select('role,content,created_at').eq('thread_id', t.id).order('created_at', { ascending:true });
+      }).then(function(res){
+        if (res === null) return;
+        var rows = (res && res.data) || [];
+        state.firstLoad = rows.length === 0;
+        state.messages = rows.map(function(r){ return { role:r.role, content:r.content }; });
+        state.initialized = true;
+        state.initializing = false;
+      }).catch(function(err){
+        state.initializing = false;
+        throw err;
+      });
+      return state._initPromise;
+    }
+
+    function scrollBottom(){
+      var el = document.getElementById('geronia-messages');
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+
+    function render(){
+      var msgsEl = document.getElementById('geronia-messages');
+      if (!msgsEl) return;
+      var html = '';
+      if (state.firstLoad) {
+        html += '<div class="geronia-bubble assistant">' + mdToHtml(welcomeText()) + '</div>';
+      }
+      var animateMsg = state.pendingAnimate;
+      var lastMsg = state.messages.length ? state.messages[state.messages.length - 1] : null;
+      state.messages.forEach(function(m){
+        if (animateMsg && m === animateMsg) return;
+        if (m.role === 'user') {
+          html += '<div class="geronia-bubble user">' + esc(m.content) + '</div>';
+        } else {
+          var extracted = extractSuggestions(m.content);
+          html += '<div class="geronia-bubble assistant">' + mdToHtml(extracted.text) + '</div>';
+          if (m === lastMsg && !state.loading && extracted.suggestions.length) {
+            html += '<div class="geronia-suggest-row">' + extracted.suggestions.map(function(q){
+              return '<button class="geronia-suggest-btn" data-q="' + esc(q) + '">' + esc(q) + '</button>';
+            }).join('') + '</div>';
+          }
+        }
+      });
+      if (state.loading) {
+        html += '<div id="geronia-typing" class="geronia-typing-row"><img src="/public/GerônIA.png" class="geronia-typing-avatar" alt=""><span class="geronia-shimmer">Gerôn está pensando...</span></div>';
+      }
+      msgsEl.innerHTML = html;
+      Array.prototype.forEach.call(msgsEl.querySelectorAll('.geronia-suggest-btn'), function(btn){
+        btn.addEventListener('click', function(){ sendMessage(btn.getAttribute('data-q')); });
+      });
+
+      var quickEl = document.getElementById('geronia-quick');
+      if (quickEl) {
+        if (state.messages.length === 0 && !state.loading) {
+          quickEl.style.display = 'flex';
+          quickEl.innerHTML = quickPrompts().map(function(q){
+            return '<button class="geronia-qbtn" data-q="' + esc(q) + '">' + esc(q) + '</button>';
+          }).join('');
+          Array.prototype.forEach.call(quickEl.querySelectorAll('.geronia-qbtn'), function(btn){
+            btn.addEventListener('click', function(){ sendMessage(btn.getAttribute('data-q')); });
+          });
+        } else {
+          quickEl.style.display = 'none';
+          quickEl.innerHTML = '';
+        }
+      }
+
+      var sendBtn = document.getElementById('geronia-send');
+      if (sendBtn) sendBtn.disabled = state.loading;
+
+      if (animateMsg) {
+        state.pendingAnimate = null;
+        var bubble = document.createElement('div');
+        bubble.className = 'geronia-bubble assistant';
+        msgsEl.appendChild(bubble);
+        scrollBottom();
+        var extractedAnim = extractSuggestions(animateMsg.content);
+        typewriterReveal(bubble, mdToHtml(extractedAnim.text)).then(function(){
+          scrollBottom();
+          if (!state.loading && extractedAnim.suggestions.length) {
+            var row = document.createElement('div');
+            row.className = 'geronia-suggest-row';
+            row.innerHTML = extractedAnim.suggestions.map(function(q){
+              return '<button class="geronia-suggest-btn" data-q="' + esc(q) + '">' + esc(q) + '</button>';
+            }).join('');
+            msgsEl.appendChild(row);
+            Array.prototype.forEach.call(row.querySelectorAll('.geronia-suggest-btn'), function(btn){
+              btn.addEventListener('click', function(){ sendMessage(btn.getAttribute('data-q')); });
+            });
+            scrollBottom();
+          }
+        });
+      } else {
+        scrollBottom();
+      }
+    }
+
+    function sendMessage(text){
+      text = (text || '').trim();
+      if (!text || state.loading) return;
+      var input = document.getElementById('geronia-input');
+      if (input) { input.value = ''; autoResize(input); }
+      state.messages.push({ role:'user', content:text });
+      state.firstLoad = false;
+      state.loading = true;
+      render();
+
+      (window._sbClient && window.UserMenu ? window.UserMenu.freshToken(window._sbClient, state.token) : Promise.resolve(state.token)).then(function(token){
+        state.token = token;
+        return fetch(EDGE_URL, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
+          body: JSON.stringify({ message:text, thread_id: state.threadId })
+        });
+      }).then(function(r){ return r.json(); }).then(function(data){
+        state.loading = false;
+        var reply = { role:'assistant', content: data && data.reply ? data.reply : 'Desculpe, não consegui processar sua pergunta agora. Tente novamente em instantes.' };
+        state.messages.push(reply);
+        state.pendingAnimate = reply;
+        if (data && data.thread_id) state.threadId = data.thread_id;
+        render();
+      }).catch(function(){
+        state.loading = false;
+        var reply = { role:'assistant', content:'Erro de conexão com o GerônIA. Tente novamente em instantes.' };
+        state.messages.push(reply);
+        state.pendingAnimate = reply;
+        render();
+      });
+    }
+
+    function openPanel(pendingQuestion){
+      var panel = document.getElementById('geronia-panel');
+      if (!panel) return;
+      panel.classList.add('open');
+      state.open = true;
+      if (!state.initialized) {
+        document.getElementById('geronia-messages').innerHTML = '<div id="geronia-typing">Carregando…</div>';
+        ensureInit().then(function(){
+          render();
+          if (pendingQuestion) sendMessage(pendingQuestion);
+        }).catch(function(){
+          document.getElementById('geronia-messages').innerHTML = '<div class="geronia-bubble assistant">Não foi possível carregar o GerônIA agora. Verifique se você está logado e tente novamente.</div>';
+        });
+      } else {
+        render();
+        if (pendingQuestion) sendMessage(pendingQuestion);
+      }
+    }
+
+    // Ponte usada pelo popover "Pedir explicação do Gerôn" (clique duplo num número).
+    window.askGeron = function(question){ openPanel(question); };
+
+    function closePanel(){
+      var panel = document.getElementById('geronia-panel');
+      if (panel) panel.classList.remove('open');
+      state.open = false;
+    }
+
+    function newThread(){
+      state.threadId = null;
+      state.messages = [];
+      state.firstLoad = true;
+      state.pendingAnimate = null;
+      render();
+      var input = document.getElementById('geronia-input');
+      if (input) input.focus();
+    }
+
+    function buildDom(){
+      var btn = document.createElement('button');
+      btn.id = 'geronia-btn';
+      btn.setAttribute('aria-label', 'Abrir GerônIA');
+      btn.innerHTML = '<img class="geronia-btn-avatar" src="/public/GerônIA.png" alt="GerônIA"><span class="geronia-btn-label">Gerôn</span>';
+      btn.addEventListener('click', function(){ state.open ? closePanel() : openPanel(); });
+
+      var panel = document.createElement('div');
+      panel.id = 'geronia-panel';
+      panel.innerHTML =
+        '<div id="geronia-header">' +
+          '<div style="width:34px;height:34px;border-radius:50%;overflow:hidden;flex-shrink:0">' +
+            '<img src="/public/GerônIA.png" alt="GerônIA" style="width:100%;height:100%;object-fit:cover">' +
+          '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:14px;font-weight:800;color:#f1f5f9">GerônIA</div>' +
+            '<div style="font-size:9.5px;color:#94a3b8;font-weight:600;letter-spacing:0.3px">Conselheiro do Grupo Sacoman</div>' +
+          '</div>' +
+          '<a href="/geronia" aria-label="Abrir página completa" title="Abrir página completa" style="background:transparent;border:none;color:#64748b;cursor:pointer;padding:4px;flex-shrink:0;display:flex;text-decoration:none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>' +
+          '<button id="geronia-new" aria-label="Nova conversa" title="Nova conversa" style="background:transparent;border:none;color:#64748b;cursor:pointer;padding:4px;flex-shrink:0;display:flex"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>' +
+          '<button id="geronia-close" aria-label="Fechar" style="background:transparent;border:none;color:#64748b;cursor:pointer;padding:4px;flex-shrink:0"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' +
+        '</div>' +
+        '<div id="geronia-messages"></div>' +
+        '<div id="geronia-quick"></div>' +
+        '<div id="geronia-inputrow">' +
+          '<textarea id="geronia-input" rows="1" placeholder="Pergunte ao GerônIA…"></textarea>' +
+          '<button id="geronia-send" aria-label="Enviar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>' +
+        '</div>' +
+        '<div id="geronia-disclaimer">As respostas são baseadas em dados, porém, o GerônIA é uma IA e pode cometer erros.</div>';
+
+      document.body.appendChild(btn);
+      document.body.appendChild(panel);
+
+      document.getElementById('geronia-close').addEventListener('click', closePanel);
+      document.getElementById('geronia-new').addEventListener('click', newThread);
+      var sendBtn = document.getElementById('geronia-send');
+      var input = document.getElementById('geronia-input');
+      sendBtn.addEventListener('click', function(){ sendMessage(input.value); });
+      input.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input.value); }
+      });
+      input.addEventListener('input', function(){ autoResize(input); });
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+      var tries = 0;
+      var iv = setInterval(function(){
+        tries++;
+        if (window._sbClient) {
+          clearInterval(iv);
+          buildDom();
+        } else if (tries > 100) {
+          clearInterval(iv);
+        }
+      }, 100);
+    });
+  })();
+  </script>
+</helmet>
+
+<div id="perm-overlay" style="position:fixed;inset:0;z-index:9999;background:#0b0f1a;display:flex;align-items:center;justify-content:center">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px">
+    <img src="/public/favicon.png" style="width:40px;height:40px;opacity:0.7;animation:permPulse 1.4s ease infinite">
+    <div style="width:32px;height:2px;background:rgba(245,158,11,0.3);border-radius:2px;overflow:hidden;position:relative">
+      <div style="position:absolute;left:-100%;width:100%;height:100%;background:#f59e0b;border-radius:2px;animation:permBar 1.2s ease infinite"></div>
+    </div>
+  </div>
+  <style>
+    @keyframes permPulse{0%,100%{opacity:.4}50%{opacity:.9}}
+    @keyframes permBar{0%{left:-100%}100%{left:100%}}
+  </style>
+</div>
+<div style="min-height:100vh;font-family:Inter,sans-serif;position:relative">
+
+  <div class="bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="grid-overlay"></div>
+
+  <!-- ══ SIDEBAR MOBILE ══ -->
+  <div class="dc-sidebar-backdrop" id="dc-sidebar-backdrop" data-action="sidebar-close"></div>
+  <div class="dc-sidebar" id="dc-sidebar">
+    <!-- User info -->
+    <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07)">
+      <div id="dc-sidebar-user" style="display:flex;align-items:center;gap:12px;margin-bottom:4px"></div>
+      <div style="font-size:9px;font-weight:600;color:#334155;letter-spacing:2px;text-transform:uppercase;margin-top:12px">Navegação</div>
+    </div>
+    <!-- Nav items -->
+    <div style="padding:12px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
+      <a href="/" class="dc-sidebar-nav-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+      <button class="dc-sidebar-nav-btn" id="dc-sidebar-btn-0" data-action="sidebar-tab-0" style="display:{{ sidebarTab0Display }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Resumo Contábil
+      </button>
+      <button class="dc-sidebar-nav-btn" id="dc-sidebar-btn-1" data-action="sidebar-tab-1" style="display:{{ sidebarTab1Display }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        DRE
+      </button>
+      <a href="/geronia" class="dc-sidebar-nav-btn">
+        <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
+        GerônIA
+      </a>
+      <a href="/mapa-societario" class="dc-sidebar-nav-btn" style="display:{{ sidebarMapaSocDisplay }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
+        Mapa Societário
+      </a>
+    </div>
+    <!-- Bottom actions -->
+    <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;gap:8px">
+      <a href="/admin" id="dc-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+        Admin
+      </a>
+    </div>
+  </div>
+
+  <!-- ══ HEADER ══ -->
+  <div style="background:rgba(8,11,20,0.92);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 32px;position:sticky;top:0;z-index:100;backdrop-filter:blur(20px)">
+    <div style="display:flex;align-items:center;justify-content:space-between;height:60px">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button id="dc-hamburger" data-action="sidebar-open" aria-label="Menu">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <a href="/" style="text-decoration:none;display:flex;align-items:center">
+          <img src="/public/logo cheia.png" alt="SAFI" style="height:34px;width:auto;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.4))">
+        </a>
+      </div>
+      <div id="dc-nav-right" style="display:flex;align-items:center;gap:8px">
+        <div id="dc-period-label" style="font-size:15px;font-weight:700;color:#f59e0b;white-space:nowrap">{{ periodLabel }}</div>
+        <sc-if value="{{ tab0Active }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;align-items:center;gap:10px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 16px 9px 14px">
+            <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap">Competência</span>
+            <div style="position:relative;display:inline-flex;align-items:center">
+              <select value="{{ monthStart }}" onChange="{{ setMonthComp }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;outline:none;padding-right:18px;letter-spacing:-0.2px">
+                <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7">
+                  <option value="{{ mo.idx }}">{{ mo.label }}</option>
+                </sc-for>
+              </select>
+              <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none;flex-shrink:0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ tab1Active }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ setYTD }}" style="padding:9px 16px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:Inter,sans-serif;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;letter-spacing:1px;transition:all 0.15s">YTD</button>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 16px 9px 14px">
+            <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap">De</span>
+            <div style="position:relative;display:inline-flex;align-items:center">
+              <select value="{{ monthStart }}" onChange="{{ setMonthStart }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;outline:none;padding-right:18px;letter-spacing:-0.2px">
+                <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7">
+                  <option value="{{ mo.idx }}">{{ mo.label }}</option>
+                </sc-for>
+              </select>
+              <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none;flex-shrink:0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap">Até</span>
+            <div style="position:relative;display:inline-flex;align-items:center">
+              <select value="{{ monthEnd }}" onChange="{{ setMonthEnd }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;outline:none;padding-right:18px;letter-spacing:-0.2px">
+                <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7">
+                  <option value="{{ mo.idx }}">{{ mo.label }}</option>
+                </sc-for>
+              </select>
+              <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none;flex-shrink:0" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    <div id="dc-tab-bar" style="display:flex;gap:0;margin-top:-1px">
+      <button id="dc-tab-btn-0" onClick="{{ setTab0 }}" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid {{ tab0BorderColor }};color:{{ tab0TextColor }};font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;display:{{ tab0Display }}">Resumo Contábil</button>
+      <button id="dc-tab-btn-1" onClick="{{ setTab1 }}" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid {{ tab1BorderColor }};color:{{ tab1TextColor }};font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;display:{{ tab1Display }}">DRE</button>
+    </div>
+  </div>
+
+  <!-- ══ TAB 1: RESUMO CONTÁBIL ══ -->
+  <sc-if value="{{ tab0Active }}" hint-placeholder-val="{{ true }}">
+    <div id="resumo-tab-outer" style="padding:28px 32px;animation:fadeIn 0.25s ease;position:relative;z-index:10">
+
+      <!-- Filtro mobile — Competência (só aparece em mobile) -->
+      <div class="dc-mobile-filter" style="align-items:center;gap:10px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 16px 9px 14px">
+        <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap">Competência</span>
+        <div style="position:relative;display:inline-flex;align-items:center">
+          <select value="{{ monthStart }}" onChange="{{ setMonthComp }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;outline:none;padding-right:18px">
+            <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7"><option value="{{ mo.idx }}">{{ mo.label }}</option></sc-for>
+          </select>
+          <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <div style="width:2px;height:14px;background:#f59e0b;border-radius:2px"></div>
+        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Seção 1</span>
+        <span style="font-size:13px;font-weight:500;color:#94a3b8">Resumo Contábil por Empresa</span>
+        <span class="dc-resumo-meta" style="margin-left:auto;display:flex;align-items:center;gap:12px">
+          <span style="font-size:10px;color:#334155">Carregado às {{ loadedAt }}</span>
+          <span style="font-size:10px;color:#475569">Clique nos cards para somar no consolidado</span>
+        </span>
+      </div>
+
+      <div id="resumo-empresas-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:10px">
+        <sc-for list="{{ empresas }}" as="emp" hint-placeholder-count="5">
+          <div onClick="{{ emp.toggle }}" style="background:{{ emp.cardBg }};border:1px solid {{ emp.cardBorder }};border-radius:14px;padding:16px;cursor:pointer;box-shadow:{{ emp.cardShadow }};opacity:{{ emp.cardOpacity }};transform:{{ emp.cardTransform }};transition:all 0.18s cubic-bezier(.16,1,.3,1);backdrop-filter:blur(16px)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px">
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="width:8px;height:8px;border-radius:50%;background:{{ emp.selDot }};display:inline-block;flex-shrink:0"></span>
+                <div style="font-size:18px;font-weight:800;color:#f1f5f9">{{ emp.nome }}</div>
+              </div>
+              <div style="font-size:8px;font-weight:600;color:{{ emp.regimeColor }};background:{{ emp.regimeBg }};padding:2px 7px;border-radius:3px;margin-top:3px">{{ emp.regimeShort }}</div>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:10px"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+              <div>
+                <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px">Despesa</div>
+                <div style="font-size:11px;font-weight:500;color:#cbd5e1;font-variant-numeric:tabular-nums">{{ emp.despesaFmt }}</div>
+              </div>
+              <div>
+                <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px">Alíquota</div>
+                <div style="font-size:11px;font-weight:700;color:#f59e0b">{{ emp.aliquotaFmt }}</div>
+              </div>
+              <div>
+                <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px">Entrada</div>
+                <div style="font-size:11px;font-weight:600;color:#f87171;font-variant-numeric:tabular-nums">{{ emp.entradaFmt }}</div>
+              </div>
+              <div>
+                <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px">Saída</div>
+                <div style="font-size:11px;font-weight:600;color:#4ade80;font-variant-numeric:tabular-nums">{{ emp.saidaFmt }}</div>
+              </div>
+            </div>
+            <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:10px"></div>
+            <div style="margin-bottom:8px">
+              <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:3px">Resultado</div>
+              <div style="font-size:20px;font-weight:800;color:{{ emp.resultadoColor }};letter-spacing:-0.5px;font-variant-numeric:tabular-nums">{{ emp.resultadoFmt }}</div>
+              <sc-if value="{{ emp.momHasPrev }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:10px;font-weight:600;color:{{ emp.momColor }};margin-top:4px;letter-spacing:0.2px">{{ emp.momFmt }} vs mês ant.</div>
+              </sc-if>
+            </div>
+            <div>
+              <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px">Estoque Contábil</div>
+              <div style="font-size:11px;font-weight:500;color:#94a3b8;font-variant-numeric:tabular-nums">{{ emp.estoqueFmt }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Totais -->
+      <div style="background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px 22px;margin-bottom:28px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <span style="font-size:8px;font-weight:700;color:#94a3b8;letter-spacing:2px;text-transform:uppercase">Consolidado do Grupo</span>
+          <span style="font-size:9px;font-weight:600;color:#475569">Somando {{ totals.selLabel }}</span>
+        </div>
+        <div id="resumo-totais-5col" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0">
+          <div style="padding-right:20px;border-right:1px solid rgba(255,255,255,0.08)">
+            <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:3px">Despesa Total</div>
+            <div style="font-size:15px;font-weight:700;color:#e2e8f0;font-variant-numeric:tabular-nums">{{ totals.despesaFmt }}</div>
+          </div>
+          <div style="padding:0 20px;border-right:1px solid rgba(255,255,255,0.08)">
+            <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:3px">Entrada Total</div>
+            <div style="font-size:15px;font-weight:700;color:#f87171;font-variant-numeric:tabular-nums">{{ totals.entradaFmt }}</div>
+          </div>
+          <div style="padding:0 20px;border-right:1px solid rgba(255,255,255,0.08)">
+            <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:3px">Saída Total</div>
+            <div style="font-size:15px;font-weight:700;color:#4ade80;font-variant-numeric:tabular-nums">{{ totals.saidaFmt }}</div>
+          </div>
+          <div style="padding:0 20px;border-right:1px solid rgba(255,255,255,0.08)">
+            <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:3px">Resultado</div>
+            <div style="font-size:20px;font-weight:800;color:{{ totals.resultadoColor }};letter-spacing:-0.5px;font-variant-numeric:tabular-nums">{{ totals.resultadoFmt }}</div>
+          </div>
+          <div style="padding-left:20px">
+            <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:3px">Estoque Contábil</div>
+            <div style="font-size:15px;font-weight:700;color:#94a3b8;font-variant-numeric:tabular-nums">{{ totals.estoqueFmt }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- § Gráficos -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <div style="width:2px;height:14px;background:#f59e0b;border-radius:2px"></div>
+        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Seção 2</span>
+        <span style="font-size:13px;font-weight:500;color:#94a3b8">Gráficos Interativos</span>
+      </div>
+
+      <div style="margin-bottom:28px">
+        <div style="background:rgba(15,23,42,0.7);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:18px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Entrada / Saída / Despesa por Empresa</div>
+            <button onClick="{{ openBarChart }}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-size:14px;width:26px;height:26px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0" title="Expandir">⤢</button>
+          </div>
+          <div style="display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap">
+            <sc-for list="{{ barSeriesBtns }}" as="sb" hint-placeholder-count="3">
+              <button onClick="{{ sb.toggleFn }}" style="padding:3px 9px;background:{{ sb.bg }};border:1px solid {{ sb.border }};color:{{ sb.color }};font-family:Inter,sans-serif;font-size:10px;font-weight:600;border-radius:3px;cursor:pointer">{{ sb.label }}</button>
+            </sc-for>
+
+          </div>
+          <div style="height:220px"><canvas id="chart-bar"></canvas></div>
+        </div>
+      </div>
+
+      <!-- § Alertas -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+        <div style="width:2px;height:14px;background:#f59e0b;border-radius:2px"></div>
+        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Seção 3</span>
+        <span style="font-size:13px;font-weight:500;color:#94a3b8">Destaques e Alertas</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:32px">
+        <sc-for list="{{ alertas }}" as="al" hint-placeholder-count="5">
+          <div style="background:rgba(15,23,42,0.65);border:1px solid rgba(255,255,255,0.07);border-left:3px solid {{ al.cor }};border-radius:10px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px;backdrop-filter:blur(8px)">
+            <span style="font-size:20px;flex-shrink:0;margin-top:1px">{{ al.icon }}</span>
+            <div style="flex:1;min-width:0">
+              <div style="font-size:12px;font-weight:700;color:{{ al.cor }};margin-bottom:6px">{{ al.label }}</div>
+              <div style="font-size:12px;color:#94a3b8;line-height:1.65">{{ al.text }}</div>
+              <button onClick="{{ al.askFn }}" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 12px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:16px;color:#c4b5fd;font-family:'Inter',sans-serif;font-size:10.5px;font-weight:700;cursor:pointer;transition:background .15s ease,border-color .15s ease" onmouseover="this.style.background='rgba(139,92,246,0.18)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.background='rgba(139,92,246,0.1)';this.style.borderColor='rgba(139,92,246,0.3)'">
+                <img src="/public/GerônIA.png" alt="" style="width:13px;height:13px;border-radius:50%;object-fit:cover">
+                Perguntar ao Gerôn
+              </button>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+    </div>
+  </sc-if>
+
+  <!-- ══ TAB 2: DRE — dark theme ══ -->
+  <sc-if value="{{ tab1Active }}" hint-placeholder-val="{{ false }}">
+    <div id="dre-tab-outer" style="padding:24px 32px;min-height:calc(100vh - 60px);animation:fadeIn 0.25s ease;position:relative;z-index:10">
+
+      <!-- Filtro mobile — De/Até (só aparece em mobile) -->
+      <div class="dc-mobile-filter" style="gap:8px;align-items:center;margin-bottom:12px">
+        <button onClick="{{ setYTD }}" style="padding:8px 14px;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);color:#f59e0b;font-family:Inter,sans-serif;font-size:12px;font-weight:700;border-radius:10px;cursor:pointer;letter-spacing:1px">YTD</button>
+        <div style="display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:8px 14px 8px 12px">
+          <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">De</span>
+          <div style="position:relative;display:inline-flex;align-items:center">
+            <select value="{{ monthStart }}" onChange="{{ setMonthStart }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;outline:none;padding-right:16px">
+              <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7"><option value="{{ mo.idx }}">{{ mo.label }}</option></sc-for>
+            </select>
+            <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase">Até</span>
+          <div style="position:relative;display:inline-flex;align-items:center">
+            <select value="{{ monthEnd }}" onChange="{{ setMonthEnd }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:13px;font-weight:600;cursor:pointer;outline:none;padding-right:16px">
+              <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7"><option value="{{ mo.idx }}">{{ mo.label }}</option></sc-for>
+            </select>
+            <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtro de operações -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+        <span style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase;flex-shrink:0">Operações:</span>
+        <sc-for list="{{ coButtons }}" as="btn" hint-placeholder-count="3">
+          <button class="dc-op-btn" onClick="{{ btn.toggleFn }}" style="padding:5px 13px;background:{{ btn.bg }};border:1px solid {{ btn.border }};color:{{ btn.color }};font-family:Inter,sans-serif;font-size:11px;font-weight:600;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.18s cubic-bezier(.16,1,.3,1);box-shadow:{{ btn.shadow }}">
+            <img src="{{ btn.logo }}" class="dc-op-logo" style="width:18px;height:18px;object-fit:contain;border-radius:2px;flex-shrink:0" /><span class="dc-op-label">{{ btn.label }}</span>
+          </button>
+        </sc-for>
+        <span style="font-size:10px;color:#475569;margin-left:auto">{{ selLabel }}</span>
+      </div>
+
+      <!-- ══ Bloco central: Indicadores + cards por operação, alinhados na mesma largura ══ -->
+      <div id="dre-summary-wrap" style="max-width:960px;margin:0 auto">
+
+      <!-- ══ HERO KPI — 3 indicadores ══ -->
+      <div id="dre-hero-kpi-card" style="background:rgba(15,23,42,0.82);border:1px solid rgba(255,255,255,0.09);border-radius:16px;padding:24px 28px;margin-bottom:16px;backdrop-filter:blur(20px);box-shadow:0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <div style="width:3px;height:16px;background:linear-gradient(180deg,#f59e0b,#d97706);border-radius:2px"></div>
+            <span style="font-size:11px;font-weight:800;color:#f1f5f9;letter-spacing:0.5px">Indicadores do Período</span>
+          </div>
+          <span style="font-size:9px;font-weight:600;color:#475569;letter-spacing:0.5px;background:rgba(255,255,255,0.05);padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;gap:5px">
+            <span style="text-transform:uppercase">{{ periodLabel }}</span>
+            <span style="color:#334155">·</span>
+            <span style="text-transform:none;letter-spacing:0;font-weight:600">{{ selLabel }}</span>
+          </span>
+        </div>
+        <div id="dre-kpi-6col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0">
+          <div style="padding-right:22px;border-right:1px solid rgba(255,255,255,0.07)">
+            <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Faturamento</div>
+            <div id="kpi-fat" data-ask="{{ dreKPI.fatAsk }}" style="font-size:22px;font-weight:800;color:#f8fafc;letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.fatFmt }}</div>
+          </div>
+          <div style="padding:0 22px;border-right:1px solid rgba(255,255,255,0.07)">
+            <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Margem</div>
+            <div id="kpi-mc-pct" data-ask="{{ dreKPI.mcAsk }}" style="font-size:22px;font-weight:800;color:#38bdf8;letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.mcPct }}</div>
+            <div id="kpi-mc-fmt" data-ask="{{ dreKPI.mcAsk }}" style="font-size:9px;color:#94a3b8;margin-top:3px;cursor:pointer">{{ dreKPI.mcFmt }}</div>
+          </div>
+          <div style="padding-left:22px">
+            <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Resultado</div>
+            <div id="kpi-res" data-ask="{{ dreKPI.resAsk }}" style="font-size:24px;font-weight:800;color:{{ dreKPI.resColor }};letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.resFmt }}</div>
+            <div id="kpi-res-pct" data-ask="{{ dreKPI.resAsk }}" style="font-size:9px;color:#94a3b8;margin-top:3px;cursor:pointer">{{ dreKPI.resPct }} da receita</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Mini-cards por operação ══ -->
+      <div id="dre-minicards-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;overflow:hidden;max-height:{{ companyKPIsMaxH }};opacity:{{ companyKPIsOpacity }};margin-bottom:{{ companyKPIsMB }};transition:max-height .4s cubic-bezier(.16,1,.3,1), opacity .32s ease, margin-bottom .4s cubic-bezier(.16,1,.3,1)">
+        <sc-for list="{{ companyKPIs }}" as="ck" hint-placeholder-count="3">
+          <div style="background:rgba(15,23,42,0.78);border:1px solid rgba(255,255,255,0.08);border-left:3px solid {{ ck.color }};border-radius:12px;padding:18px 18px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:10px">
+              <img src="{{ ck.logo }}" style="width:20px;height:20px;object-fit:contain;border-radius:2px;flex-shrink:0" />
+              <span style="font-size:11px;font-weight:700;color:#f1f5f9;letter-spacing:-0.2px">{{ ck.label }}</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+              <div>
+                <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Faturamento</div>
+                <div id="ck-fat-{{ ck.idx }}" data-ask="{{ ck.fatAsk }}" style="font-size:14px;font-weight:800;color:#f8fafc;letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.fatFmt }}</div>
+              </div>
+              <div>
+                <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Resultado</div>
+                <div id="ck-res-{{ ck.idx }}" data-ask="{{ ck.resAsk }}" style="font-size:13px;font-weight:800;color:{{ ck.resColor }};letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.resFmt }}</div>
+              </div>
+              <div>
+                <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Margem</div>
+                <div id="ck-mc-{{ ck.idx }}" data-ask="{{ ck.mcAsk }}" style="font-size:13px;font-weight:800;color:#38bdf8;letter-spacing:-0.3px;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.mcPct }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      </div>
+      <!-- ══ ANÁLISE GRÁFICA ══ -->
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
+        <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
+        <span style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase">Análise Gráfica</span>
+      </div>
+
+      <!-- Evolução Mensal — full width -->
+      <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:12px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Evolução Mensal — 2026</div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <sc-for list="{{ metricBtns }}" as="mb" hint-placeholder-count="3">
+              <button onClick="{{ mb.setFn }}" style="padding:3px 9px;background:{{ mb.bg }};border:1px solid {{ mb.border }};color:{{ mb.color }};font-family:Inter,sans-serif;font-size:10px;font-weight:600;cursor:pointer;border-radius:{{ mb.radius }}">{{ mb.label }}</button>
+            </sc-for>
+            <button onClick="{{ openDreEvoChart }}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-size:13px;width:24px;height:24px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;margin-left:4px">⤢</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+          <sc-for list="{{ dreChartLegend }}" as="leg" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:5px">
+              <img src="{{ leg.logo }}" style="width:16px;height:16px;object-fit:contain;border-radius:2px;flex-shrink:0" />
+              <span style="font-size:10px;color:{{ leg.color }};font-weight:600">{{ leg.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:220px"><canvas id="chart-dre-evo"></canvas></div>
+      </div>
+
+      <!-- Margem + Faturamento por Operação -->
+      <div id="dre-charts-2col" style="display:grid;grid-template-columns:1fr 300px;gap:10px;margin-bottom:10px">
+        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Margem — 2026</div>
+            <button onClick="{{ openDreMargemChart }}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-size:13px;width:24px;height:24px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">⤢</button>
+          </div>
+          <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+            <sc-for list="{{ dreChartLegend }}" as="leg" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:5px">
+                <img src="{{ leg.logo }}" style="width:15px;height:15px;object-fit:contain;border-radius:2px;flex-shrink:0" />
+                <span style="font-size:10px;color:{{ leg.color }};font-weight:600">{{ leg.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:180px"><canvas id="chart-dre-margem"></canvas></div>
+        </div>
+        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Faturamento por Operação · {{ periodLabel }}</div>
+            <button onClick="{{ openDrePieChart }}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-size:13px;width:24px;height:24px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">⤢</button>
+          </div>
+          <div style="display:flex;gap:10px;margin-bottom:8px;flex-wrap:wrap;justify-content:center">
+            <sc-for list="{{ drePieLegend }}" as="leg" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:4px">
+                <img src="{{ leg.logo }}" style="width:14px;height:14px;object-fit:contain;border-radius:2px;flex-shrink:0" />
+                <span style="font-size:10px;color:{{ leg.color }};font-weight:600">{{ leg.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="height:180px"><canvas id="chart-dre-pie"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Evolução do Resultado — full width -->
+      <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:16px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Evolução do Resultado — 2026 · arraste para comparar períodos</div>
+          <button onClick="{{ openLineChart }}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-size:13px;width:24px;height:24px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">⤢</button>
+        </div>
+        <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
+          <sc-for list="{{ dreChartLegend }}" as="leg" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:5px">
+              <img src="{{ leg.logo }}" style="width:15px;height:15px;object-fit:contain;border-radius:2px;flex-shrink:0" />
+              <span style="font-size:10px;color:{{ leg.color }};font-weight:600">{{ leg.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="height:170px"><canvas id="chart-line"></canvas></div>
+      </div>
+
+      <!-- ══ INDICADORES CALCULADOS ══ -->
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
+        <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
+        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Indicadores Calculados</span>
+      </div>
+      <div id="dre-ind-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
+        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
+          <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Ponto de Equilíbrio</div>
+          <div id="ind-pe" data-ask="{{ indicadores.peAsk }}" style="font-size:22px;font-weight:800;color:#f8fafc;letter-spacing:-0.5px;margin-bottom:5px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ indicadores.peOpFmt }}</div>
+          <div style="font-size:10px;color:#94a3b8">Receita mínima para cobrir os gastos fixos</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
+          <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Carga Tributária</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+            <div id="ind-trib" data-ask="{{ indicadores.tribAsk }}" style="font-size:20px;font-weight:800;color:#f8fafc;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ indicadores.tribFmt }}</div>
+            <div style="font-size:12px;font-weight:700;color:#f87171">{{ indicadores.tribPct }}</div>
+          </div>
+          <div style="font-size:10px;color:#94a3b8">ICMS, Simples/DAS e demais impostos</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
+          <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Custo da Mercadoria (CMV)</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
+            <div id="ind-cmv" data-ask="{{ indicadores.cmvAsk }}" style="font-size:20px;font-weight:800;color:#f8fafc;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ indicadores.cmvFmt }}</div>
+            <div style="font-size:12px;font-weight:700;color:#fb923c">{{ indicadores.cmvPct }}</div>
+          </div>
+          <div style="font-size:10px;color:#94a3b8">Peso do produto vendido sobre a receita</div>
+        </div>
+      </div>
+
+      <!-- ══ TABELA DRE ══ -->
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
+        <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
+        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Demonstrativo de Resultados — DRE</span>
+      </div>
+      <div id="dre-table-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;margin-bottom:24px">
+      <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;backdrop-filter:blur(12px);min-width:560px">
+        <div style="display:grid;grid-template-columns:1fr 180px 72px 80px;background:rgba(10,15,30,0.9);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 20px">
+          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase">Conta</div>
+          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase;text-align:right">Valor · {{ periodLabel }}</div>
+          <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase;text-align:right" title="Análise Vertical">AV%</div>
+          <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:1px;text-transform:uppercase;text-align:right" title="Análise Horizontal">AH% {{ ahBaseLabel }}</div>
+        </div>
+        <sc-for list="{{ dreRows }}" as="row" hint-placeholder-count="26">
+          <div style="display:grid;grid-template-columns:1fr 180px 72px 80px;padding:{{ row.rowPadding }};background:{{ row.rowBg }};border-bottom:{{ row.rowBorderBottom }}">
+            <div style="padding-left:{{ row.paddingLeft }};font-size:{{ row.labelFontSize }};font-weight:{{ row.labelFontWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.labelLetterSpacing }};text-transform:{{ row.labelTransform }}">{{ row.label }}</div>
+            <div data-ask="{{ row.ask }}" style="font-size:11px;font-weight:{{ row.valueFontWeight }};color:{{ row.valueColor }};text-align:right;font-variant-numeric:tabular-nums;cursor:{{ row.askCursor }}" title="{{ row.askTitle }}">{{ row.valueFmt }}</div>
+            <div data-ask="{{ row.ask }}" style="font-size:10px;color:#64748b;text-align:right;cursor:{{ row.askCursor }}">{{ row.av }}</div>
+            <div data-ask="{{ row.ask }}" style="font-size:10px;color:{{ row.ahColor }};text-align:right;font-weight:600;cursor:{{ row.askCursor }}">{{ row.ah }}</div>
+          </div>
+        </sc-for>
+      </div>
+      </div>
+
+    </div>
+  </sc-if>
+
+  <!-- ══ MODAL ══ -->
+  <sc-if value="{{ modalOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeIfBackdrop }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:500;display:flex;align-items:center;justify-content:center">
+      <div style="background:#1e293b;border:1px solid #334155;border-radius:10px;padding:24px;width:92vw;height:88vh;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,0.6)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-shrink:0">
+          <div style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:1.5px;text-transform:uppercase">{{ modalTitle }}</div>
+          <button onClick="{{ closeModal }}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;font-size:16px;width:30px;height:30px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">✕</button>
+        </div>
+        <sc-if value="{{ modalIsCompanyChart }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:18px;margin-bottom:12px;flex-wrap:wrap;flex-shrink:0">
+            <sc-for list="{{ dreChartLegend }}" as="ml" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:6px">
+                <img src="{{ ml.logo }}" style="width:22px;height:22px;object-fit:contain;border-radius:3px;flex-shrink:0" />
+                <span style="font-size:12px;color:{{ ml.color }};font-weight:600">{{ ml.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ modalIsSeriesChart }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;gap:18px;margin-bottom:12px;flex-wrap:wrap;flex-shrink:0">
+            <sc-for list="{{ barLegend }}" as="bl" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="width:14px;height:14px;border-radius:3px;background:{{ bl.color }};flex-shrink:0"></div>
+                <span style="font-size:12px;color:{{ bl.color }};font-weight:600">{{ bl.label }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="flex:1;min-height:0"><canvas id="chart-modal"></canvas></div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+
+<!-- ══ POPUP: RESUMO CONTÁBIL EM CONSTRUÇÃO ══ -->
+<div id="popup-construcao" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);backdrop-filter:blur(4px)">
+  <div style="background:#0f172a;border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:36px 40px;max-width:420px;width:90%;box-shadow:0 32px 80px rgba(0,0,0,0.6);animation:popIn 0.35s cubic-bezier(.16,1,.3,1) both;text-align:center">
+    <div style="width:52px;height:52px;border-radius:14px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 20px">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:10px">Tela em construção</div>
+    <div style="font-size:13px;color:#94a3b8;line-height:1.6;margin-bottom:28px">Desconsidere as informações exibidas nesta tela por enquanto.</div>
+    <button id="popup-fechar" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border:none;border-radius:10px;padding:12px 32px;color:#1a0a00;font-family:Inter,sans-serif;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #92400e,0 6px 16px rgba(245,158,11,0.3);transition:transform 0.1s,box-shadow 0.1s">Entendido</button>
+  </div>
+</div>
+<style>
+  @keyframes popIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+</style>
+
+<!-- ══ SCRIPTS DE CONTROLE (fora do x-dc) ══ -->
+<script>
+  // Botão Sair
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('[data-action="logout"]');
+    if (btn && window._sbClient) {
+      window._sbClient.auth.signOut().then(function() {
+        window.location.replace('/login');
+      });
+    }
+  });
+
+  // Sidebar mobile (hambúrguer) — delegado fora do x-dc para não depender
+  // do parser de onclick do framework dentro da árvore templada.
+  document.addEventListener('click', function(e) {
+    if (e.target.closest('[data-action="sidebar-open"]')) { dcSidebarOpen(); return; }
+    if (e.target.closest('[data-action="sidebar-close"]')) { dcSidebarClose(); return; }
+    if (e.target.closest('[data-action="sidebar-tab-0"]')) { dcSidebarSelectTab(0); return; }
+    if (e.target.closest('[data-action="sidebar-tab-1"]')) { dcSidebarSelectTab(1); return; }
+  });
+
+  // Popup "Tela em construção" — só no Resumo Contábil
+  (function() {
+    var path = window.location.pathname;
+    if (path === '/resumocontabil' || path === '/' || path === '') {
+      var overlay = document.getElementById('popup-construcao');
+      overlay.style.display = 'flex';
+      document.getElementById('popup-fechar').addEventListener('click', function() {
+        overlay.style.display = 'none';
+      });
+    }
+  })();
+</script>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: 6, monthEnd: 6, selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'] };
+  _c = {};
+
+  _months = ['Jan/2026','Fev/2026','Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026'];
+  // Rótulos/cores por empresa "crua" (usados no Resumo Contábil e como fallback) — nomes dos responsáveis
+  _coLabels = {'EP':'EP','GIP':'Guilherme','Exposicao':'Isabela','ViaCloset':'Juliane','Consolidado':'Consolidado','RP':'RP'};
+  _coColors = {'EP':'#ffffff','GIP':'#ffffff','Exposicao':'#fff115','ViaCloset':'#d4526e','Consolidado':'#1E293B','RP':'#6B7280'};
+  _lineCoColors = {'EP':'#ffffff','GIP':'#ffffff','Exposicao':'#fff115','ViaCloset':'#c0c0c0','Consolidado':'#f59e0b','RP':'#6B7280'};
+  // Entidades da DRE: EP + Guilherme(GIP) são consolidados numa única operação "GIP Ecommerce"
+  _dreList = ['EPGIP','Exposicao','ViaCloset','Consolidado'];
+  _members = {'EPGIP':['EP','GIP'],'Exposicao':['Exposicao'],'ViaCloset':['ViaCloset'],'Consolidado':['Consolidado']};
+  _dreLabels = {'EPGIP':'GIP Ecommerce','Exposicao':'Exposição','ViaCloset':'Via Closet','Consolidado':'Consolidado'};
+  _dreColors = {'EPGIP':'#ffffff','Exposicao':'#fff115','ViaCloset':'#d4526e','Consolidado':'#1E293B'};
+  _dreOutlineColors = {};
+  _dreLogos = {'EPGIP':'/public/gipecommerce_logo.png','Exposicao':'/public/exposicaopaulista_logo.png','ViaCloset':'/public/viacloset_logo.png','Consolidado':'/public/favicon.png'};
+  _expand(co){ return this._members[co] || [co]; }
+
+  _eData = [];
+  _resumoMap = {};
+  _dreDataMap = {};
+  _alertasArr = [];
+  _empMap = {};
+
+  _SUPA_URL = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+  _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+
+  _getEData(mes) {
+    return ['EP','GIP','Exposicao','ViaCloset','RP'].map(id => {
+      const r=(this._resumoMap[id]||{})[mes]||{}, e=this._empMap[id]||{};
+      return {id,nome:e.nome||id,regimeShort:e.regime_short||'—',regimeBg:e.regime_bg||'#f9fafb',regimeColor:e.regime_color||'#374151',despesa:+r.despesa||0,entrada:+r.entrada||0,saida:+r.saida||0,resultado:+r.resultado||0,aliquota:e.aliquota||'—',estoque:+r.estoque||0};
+    });
+  }
+  _fmt(n) { return 'R$ ' + Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  _fmtShort(n) {
+    const a=Math.abs(n), s=n<0?'-':'';
+    if(a>=1e6) return s+'R$ '+(a/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' mi';
+    if(a>=1e3) return s+'R$ '+(a/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+'k';
+    return s+'R$ '+a.toLocaleString('pt-BR',{maximumFractionDigits:0});
+  }
+  _alpha(hex, a) { const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16); return `rgba(${r},${g},${b},${a})`; }
+
+  _animNum(el,to,D){
+    if(!el||isNaN(to))return;
+    const s=performance.now();
+    const go=now=>{const t=Math.min((now-s)/D,1),e=t<1?1-Math.pow(2,-10*t):1;el.textContent=this._fmtShort(to*e);if(t<1)requestAnimationFrame(go);};
+    requestAnimationFrame(go);
+  }
+  _animPct(el,to,D,sfx){
+    if(!el||isNaN(to))return;
+    const s=performance.now(),sx=sfx||'%';
+    const go=now=>{const t=Math.min((now-s)/D,1),e=t<1?1-Math.pow(2,-10*t):1;el.textContent=(to*e).toFixed(1).replace('.',',')+sx;if(t<1)requestAnimationFrame(go);};
+    requestAnimationFrame(go);
+  }
+  _animKPIs(){
+    const {selectedCos,monthStart,monthEnd}=this.state;
+    const ms=Math.min(monthStart,monthEnd),me=Math.max(monthStart,monthEnd);
+    const calc=this._dreCalcRange(selectedCos,ms+1,me+1);
+    const mcRatio=calc.rb>0?calc.mc/calc.rb:0;
+    const impostos=calc.icms+calc.das+calc.oi;
+    const peOp=mcRatio>0?Math.round(calc.gop/mcRatio):0;
+    const D=480,g=id=>document.getElementById(id);
+    // Hero KPIs
+    this._animNum(g('kpi-fat'),calc.rb,D);
+    this._animPct(g('kpi-mc-pct'),mcRatio*100,D);
+    this._animNum(g('kpi-mc-fmt'),calc.mc,D);
+    this._animNum(g('kpi-res'),calc.res,D);
+    this._animPct(g('kpi-res-pct'),calc.rb>0?calc.res/calc.rb*100:0,D,' da receita');
+    // Mini-cards
+    selectedCos.forEach((co,i)=>{
+      const c=this._dreCalcRange([co],ms+1,me+1),mcR=c.rb>0?c.mc/c.rb:0;
+      this._animNum(g('ck-fat-'+i),c.rb,D);
+      this._animNum(g('ck-res-'+i),c.res,D);
+      this._animPct(g('ck-mc-'+i),mcR*100,D);
+    });
+    // Indicadores
+    this._animNum(g('ind-pe'),peOp,D);
+    this._animNum(g('ind-trib'),impostos,D);
+    this._animNum(g('ind-cmv'),calc.cmv,D);
+  }
+
+  async componentDidMount() {
+    if(window.Chart&&!window._lcOlReg){window.Chart.register({id:'lcOl',beforeDatasetDraw(c,a){const d=c.data.datasets[a.index];if(!d._ol)return;c.ctx.save();c.ctx.shadowColor=d._olc||'rgba(255,255,255,0.6)';c.ctx.shadowBlur=5;c.ctx.shadowOffsetX=0;c.ctx.shadowOffsetY=0;},afterDatasetDraw(c,a){if(!c.data.datasets[a.index]._ol)return;c.ctx.restore();}});window._lcOlReg=true;}
+    const B = this._SUPA_URL;
+    // Busca session para token de usuario
+    let accessToken = this._SUPA_KEY;
+    let userId = null;
+    try { const sr = await window._sbClient.auth.getSession(); accessToken = sr.data.session?.access_token||this._SUPA_KEY; userId = sr.data.session?.user?.id||null; } catch(_){}
+    const hU = {'apikey': this._SUPA_KEY, 'Authorization': `Bearer ${accessToken}`};
+    try {
+      const requests = [
+        fetch(`${B}/rest/v1/empresas?select=*&order=ordem`, {headers:hU}),
+        fetch(`${B}/rest/v1/resumo_mensal?select=*&ano=eq.2026&order=empresa_id`, {headers:hU}),
+        fetch(`${B}/rest/v1/dre_consolidado?select=*&ano=eq.2026&order=mes`, {headers:hU}),
+        fetch(`${B}/rest/v1/alertas?select=*&ativo=eq.true&order=ordem`, {headers:hU}),
+        userId ? fetch(`${B}/rest/v1/user_profiles?select=*&id=eq.${userId}`, {headers:hU}) : Promise.resolve(null)
+      ];
+      const [r1,r2,r3,r4,r5] = await Promise.all(requests);
+      const [emps,resumo,dre,alertas] = await Promise.all([r1.json(),r2.json(),r3.json(),r4.json()]);
+      const profArr = r5 ? await r5.json() : [];
+      const prof = profArr[0] || null;
+      this._userProfile = prof;
+      window._userProfile = prof;
+      emps.forEach(e => this._empMap[e.id] = e);
+      resumo.forEach(r => {
+        if(!this._resumoMap[r.empresa_id]) this._resumoMap[r.empresa_id] = {};
+        this._resumoMap[r.empresa_id][r.mes] = r;
+      });
+      dre.forEach(d => { this._dreDataMap[`${d.empresa_id}-${d.mes}`] = d; });
+      this._alertasArr = alertas;
+      this._loadedAt = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      // Aplica restricoes de permissao
+      if (prof && !prof.is_admin) {
+        // Filtra empresas DRE
+        const dreAllow = [];
+        if (prof.dre_epgip !== false)    dreAllow.push('EPGIP');
+        if (prof.dre_exposicao !== false) dreAllow.push('Exposicao');
+        if (prof.dre_viacloset !== false) dreAllow.push('ViaCloset');
+        if (dreAllow.length > 1)         dreAllow.push('Consolidado');
+        this._dreList = dreAllow.length ? dreAllow : ['EPGIP'];
+        // Filtra state selectedCos
+        let selCos = this.state.selectedCos.filter(co => dreAllow.includes(co));
+        if (!selCos.length) selCos = dreAllow.filter(co=>co!=='Consolidado').slice(0,1);
+        // Filtra resumoSel (cards Resumo Contabil)
+        const resumoAllow = [];
+        if (prof.dre_epgip !== false)    resumoAllow.push('EP','GIP');
+        if (prof.dre_exposicao !== false) resumoAllow.push('Exposicao');
+        if (prof.dre_viacloset !== false) resumoAllow.push('ViaCloset');
+        resumoAllow.push('RP');
+        let selResumo = this.state.resumoSel.filter(id => resumoAllow.includes(id));
+        if (!selResumo.length) selResumo = resumoAllow;
+        // Tab
+        let tab = this.state.tab;
+        if (prof.can_dre === false && tab === 1)    tab = 0;
+        if (prof.can_resumo === false && tab === 0) tab = 1;
+        this.setState({tab, selectedCos: selCos, resumoSel: selResumo});
+      } else {
+        this.setState({});
+      }
+    } catch(e) { console.error('Supabase error:',e); }
+    const ov=document.getElementById('perm-overlay'); if(ov) ov.style.display='none';
+    if(window.location.pathname==='/dre'||window.location.hash==='#dre'){document.title='SAFI | DRE';}
+    else{document.title='SAFI | Resumo Contábil';}
+    const initTab=this.state.tab;
+    setTimeout(()=>{ if(initTab===1){this._initDreEvo();this._initDrePie();this._initDreMargem();this._initLine();setTimeout(()=>this._animKPIs(),80);}else{this._initBar();} }, 500);
+    setTimeout(()=>{ if(window.AskGeron) window.AskGeron.attachDelegation(document.getElementById('dre-tab-outer')); }, 500);
+  }
+
+  _dreCalcRange(selectedCos, mesStart, mesEnd) {
+    let rb=0,ec=0,vc=0,exp=0,com=0,dev=0,icms=0,das=0,oi=0,rl=0,cmv=0,iw=0,ocv=0,mc=0,adm=0,pro=0,ocp=0,fol=0,ins=0,op=0,res=0;
+    for (let m = mesStart; m <= mesEnd; m++) {
+      selectedCos.forEach(co => {
+        this._expand(co).forEach(mid => {
+          const d = this._dreDataMap[`${mid}-${m}`];
+          if (!d) return;
+          rb+=+d.receita_bruta||0; ec+=+d.canal_ecommerce||0; vc+=+d.canal_via_closet||0; exp+=+d.canal_exposicao||0;
+          com+=+d.comissoes||0; dev+=+d.devolucoes||0; icms+=+d.icms_grpr||0; das+=+d.simples_das||0; oi+=+d.outros_impostos||0;
+          rl+=+d.receita_liquida||0; cmv+=+d.cmv||0; iw+=+d.comissoes_colaboradores||0; ocv+=+d.outros_custos_variaveis||0;
+          mc+=+d.margem_contribuicao||0; adm+=+d.adm||0; pro+=+d.pro_labore||0; ocp+=+d.ocupacao||0;
+          fol+=+d.pessoal_folha||0; ins+=+d.pessoal_inss||0; op+=+d.pessoal_outros||0; res+=+d.resultado_liquido||0;
+        });
+      });
+    }
+    const ded=com+dev+icms+das+oi, cvar=cmv+iw+ocv, gop=adm+pro+ocp+fol+ins+op;
+    return {rb,ec,vc,exp,com,dev,icms,das,oi,ded,rl,cmv,iw,ocv,cvar,mc,adm,pro,ocp,fol,ins,op,gop,res};
+  }
+
+  _dreRows(selectedCos) {
+    const {monthStart,monthEnd}=this.state;
+    const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
+    const L=me-ms+1;
+    const d=this._dreCalcRange(selectedCos, ms+1, me+1);
+    // Período anterior equivalente (mesmo número de meses, imediatamente antes)
+    const dp=(ms-L>=0)?this._dreCalcRange(selectedCos, ms-L+1, ms):null;
+    const {rb,ec,vc,exp,com,dev,icms,das,oi,ded,rl,cmv,iw,ocv,cvar,mc,adm,pro,ocp,fol,ins,op,gop,res}=d;
+    const av=v=>(rb>0?(v/rb*100).toFixed(1):'0.0').replace('.',',')+'%';
+    const ahv=(c,p)=>{ if(dp==null||p==null||p===0) return '—'; const x=(c-p)/Math.abs(p)*100; return (x>=0?'+':'')+x.toFixed(1).replace('.',',')+'%'; };
+    const ah=k=>ahv(d[k], dp?dp[k]:null);
+    const rows=[];
+    rows.push({t:'H',l:'BLOCO 1 — RECEITA'});
+    rows.push({t:'I',l:'(+) Receita Operacional Bruta',v:rb,a:av(rb),h:ah('rb'),i:0,b:1});
+    if(ec>0) rows.push({t:'S',l:'GIP Ecommerce',v:ec,a:av(ec),h:ah('ec'),i:1});
+    if(vc>0) rows.push({t:'S',l:'Via Closet',v:vc,a:av(vc),h:ah('vc'),i:1});
+    if(exp>0) rows.push({t:'S',l:'Exposição Paulista',v:exp,a:av(exp),h:ah('exp'),i:1});
+    rows.push({t:'I',l:'(−) Deduções da Receita',v:-ded,a:av(ded),h:ah('ded'),i:0});
+    if(com>0) rows.push({t:'S',l:'Comissões / Taxa Maquininha',v:-com,a:av(com),h:ah('com'),i:1});
+    if(dev>0) rows.push({t:'S',l:'Devoluções / Cancelamentos',v:-dev,a:av(dev),h:ah('dev'),i:1});
+    if(icms>0) rows.push({t:'S',l:'ICMS / GRPR',v:-icms,a:av(icms),h:ah('icms'),i:1});
+    if(das>0) rows.push({t:'S',l:'Simples / DAS',v:-das,a:av(das),h:ah('das'),i:1});
+    if(oi>0) rows.push({t:'S',l:'Outros Impostos',v:-oi,a:av(oi),h:ah('oi'),i:1});
+    rows.push({t:'R',l:'(=) Receita Líquida',v:rl,a:av(rl),h:ah('rl'),i:0});
+    rows.push({t:'H',l:'BLOCO 2 — CUSTOS VARIÁVEIS'});
+    rows.push({t:'I',l:'(−) Custos Variáveis',v:-cvar,a:av(cvar),h:ah('cvar'),i:0,b:1});
+    rows.push({t:'S',l:'CMV — Custo da Mercadoria',v:-cmv,a:av(cmv),h:ah('cmv'),i:1});
+    if(iw>0) rows.push({t:'S',l:'Comissões de Colaboradores',v:-iw,a:av(iw),h:ah('iw'),i:1});
+    if(ocv>0) rows.push({t:'S',l:'Outros Custos Variáveis',v:-ocv,a:av(ocv),h:ah('ocv'),i:1});
+    rows.push({t:'R',l:'(=) Margem de Contribuição',v:mc,a:av(mc),h:ah('mc'),i:0});
+    rows.push({t:'H',l:'BLOCO 3 — OPERACIONAL'});
+    rows.push({t:'I',l:'(−) Gastos Operacionais',v:-gop,a:av(gop),h:ah('gop'),i:0,b:1});
+    if(adm>0) rows.push({t:'S',l:'Despesas Administrativas & Outros',v:-adm,a:av(adm),h:ah('adm'),i:1});
+    if(pro>0) rows.push({t:'S',l:'Pró-Labore',v:-pro,a:av(pro),h:ah('pro'),i:1});
+    if(ocp>0) rows.push({t:'S',l:'Despesas de Ocupação / Aluguel',v:-ocp,a:av(ocp),h:ah('ocp'),i:1});
+    rows.push({t:'I',l:'Despesas de Pessoal',v:-(fol+ins+op),a:av(fol+ins+op),h:ahv(fol+ins+op, dp?dp.fol+dp.ins+dp.op:null),i:1});
+    rows.push({t:'S',l:'Folha de Pagamento',v:-fol,a:av(fol),h:ah('fol'),i:2});
+    rows.push({t:'S',l:'INSS / FGTS',v:-ins,a:av(ins),h:ah('ins'),i:2});
+    if(op>0) rows.push({t:'S',l:'Outros Encargos',v:-op,a:av(op),h:ah('op'),i:2});
+    rows.push({t:'R',l:'(=) Resultado Líquido',v:res,a:av(res),h:ah('res'),i:0});
+    return rows;
+  }
+
+  // DRE: soma os membros da entidade (ex.: EPGIP = EP + Guilherme)
+  _coMonthly(co, metric) {
+    const members=this._expand(co);
+    return this._months.map((_,i) => {
+      let rb=0,mc=0,rl=0,res=0,any=false;
+      members.forEach(mid=>{
+        const d=this._dreDataMap[`${mid}-${i+1}`];
+        if(!d) return; any=true;
+        rb+=+d.receita_bruta||0; mc+=+d.margem_contribuicao||0; rl+=+d.receita_liquida||0; res+=+d.resultado_liquido||0;
+      });
+      if(!any) return null;
+      if (metric==='margem') return rb>0 ? +(mc/rb*100).toFixed(1) : null;
+      if (metric==='receita') return rl;
+      return res;
+    });
+  }
+
+  // Margem % por entidade da DRE (soma ponderada dos membros)
+  get _margens() {
+    const r={};
+    this._dreList.forEach(co => {
+      const members=this._expand(co);
+      r[co]=this._months.map((_,i)=>{
+        let rb=0,mc=0,any=false;
+        members.forEach(mid=>{const d=this._dreDataMap[`${mid}-${i+1}`]; if(!d)return; any=true; rb+=+d.receita_bruta||0; mc+=+d.margem_contribuicao||0;});
+        return any&&rb>0?+(mc/rb*100).toFixed(1):null;
+      });
+    });
+    return r;
+  }
+
+  get _lineResultados() {
+    const dreRawAll=['EP','GIP','Exposicao','ViaCloset'];
+    const dreRawMembers={'EPGIP':['EP','GIP'],'Exposicao':['Exposicao'],'ViaCloset':['ViaCloset'],'Consolidado':dreRawAll};
+    const r={};
+    this._dreList.forEach(co => {
+      const members=dreRawMembers[co]||[];
+      r[co]=this._months.map((_,i)=>{
+        let total=0,any=false;
+        members.forEach(mid=>{ const d=this._dreDataMap[`${mid}-${i+1}`]; if(d){any=true;total+=+d.resultado_liquido||0;} });
+        return any?total:null;
+      });
+    });
+    return r;
+  }
+
+  _sOpts(cb) { const t={color:'#475569',font:{family:'Inter',size:10}}; if(cb)t.callback=cb; return {grid:{color:'rgba(30,58,95,0.35)'},ticks:t}; }
+  _bOpts() { return {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},animation:{duration:350}}; }
+
+  _gc(el){return window.Chart&&window.Chart.getChart?window.Chart.getChart(el):null;}
+  _initBar() {
+    const el=document.getElementById('chart-bar'); if(!el||!window.Chart)return;
+    const {resumoSel,barSeries}=this.state;
+    const eData=this._getEData(this.state.monthStart+1);
+    const rows=eData.filter(e=>resumoSel.includes(e.id));
+    const datasets=[];
+    if(barSeries.includes('entrada')) datasets.push({label:'Entrada',data:rows.map(e=>e.entrada),backgroundColor:'rgba(220,38,38,0.65)',borderColor:'#dc2626',borderWidth:1,borderRadius:3});
+    if(barSeries.includes('saida'))   datasets.push({label:'Saída',  data:rows.map(e=>e.saida),  backgroundColor:'rgba(22,163,74,0.65)', borderColor:'#16a34a',borderWidth:1,borderRadius:3});
+    if(barSeries.includes('despesa')) datasets.push({label:'Despesa',data:rows.map(e=>e.despesa),backgroundColor:'rgba(245,158,11,0.65)',borderColor:'#f59e0b',borderWidth:1,borderRadius:3});
+    const lbs=rows.map(e=>this._coLabels[e.id]||e.nome||e.id);
+    const ex=this._gc(el);
+    if(ex){ex.data.labels=lbs;ex.data.datasets=datasets;ex.update();this._c.bar=ex;return;}
+    if(this._c.bar)try{this._c.bar.destroy();}catch(e){}
+    this._c.bar=new window.Chart(el,{type:'bar',data:{labels:lbs,datasets},options:{...this._bOpts(),scales:{x:this._sOpts(),y:this._sOpts(v=>'R$'+(v/1000).toFixed(0)+'k')}}});
+  }
+
+  _cSt(co){const f=this._dreColors[co]||'#6b7280';const ol=this._dreOutlineColors[co];const h=!!ol;return{f,b:f,pfill:f,pborder:h?ol:f,pbw:h?2:0,shadow:h,sc:h?'rgba(255,255,255,0.65)':null};}
+
+  _initLine() {
+    const el=document.getElementById('chart-line'); if(!el||!window.Chart)return;
+    const {selectedCos,monthStart,monthEnd}=this.state;
+    const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
+    const lRes=this._lineResultados;
+    const datasets=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(lRes[co]||[]).slice(ms,me+1),borderColor:s.b,backgroundColor:this._alpha(s.f,0.12),borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:4,fill:selectedCos.length===1,tension:0.4,_ol:s.shadow,_olc:s.sc};});
+    const ex=this._gc(el);
+    if(ex){ex.data.labels=this._months.slice(ms,me+1);ex.data.datasets=datasets;ex.update();this._c.line=ex;this._bindLineAsk(el);return;}
+    if(this._c.line)try{this._c.line.destroy();}catch(e){};
+    const drag={active:false,startIdx:null,endIdx:null};
+    const dragPlugin={id:'dragRange',afterDraw(chart){
+      if(drag.startIdx===null||drag.endIdx===null)return;
+      const {ctx,data}=chart;
+      const i0=Math.min(drag.startIdx,drag.endIdx), i1=Math.max(drag.startIdx,drag.endIdx);
+      if(i0===i1)return;
+      const meta=chart.getDatasetMeta(0);
+      if(!meta||!meta.data||!meta.data[i0]||!meta.data[i1])return;
+      const x0=meta.data[i0].x, x1=meta.data[i1].x;
+      const top=chart.chartArea.top, bottom=chart.chartArea.bottom;
+      const v0=data.datasets[0].data[i0], v1=data.datasets[0].data[i1], diff=v1-v0;
+      const col=diff>0?'rgba(34,197,94,0.15)':diff<0?'rgba(220,38,38,0.15)':'rgba(255,255,255,0.1)';
+      const tcol=diff>0?'#16a34a':diff<0?'#dc2626':'#94a3b8';
+      ctx.save();
+      ctx.fillStyle=col;
+      ctx.fillRect(x0,top,x1-x0,bottom-top);
+      ctx.strokeStyle=tcol; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.strokeRect(x0,top,x1-x0,bottom-top);
+      ctx.setLineDash([]);
+      const sign=diff>0?'+':''; const label=sign+'R$'+(diff/1000).toFixed(1)+'k';
+      const mx=(x0+x1)/2, my=(top+bottom)/2;
+      ctx.font='bold 13px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fillRect(mx-46,my-14,92,28);
+      ctx.fillStyle=tcol; ctx.fillText(label,mx,my);
+      ctx.restore();
+    }};
+    const getIdx=(evt)=>{
+      const chart=this._c.line; if(!chart)return null;
+      const rect=el.getBoundingClientRect();
+      const clientX=evt.touches?evt.touches[0].clientX:evt.clientX;
+      const xVal=clientX-rect.left;
+      const meta=chart.getDatasetMeta(0); if(!meta||!meta.data)return null;
+      let best=null,bd=Infinity;
+      for(let i=0;i<meta.data.length;i++){const d=Math.abs(xVal-meta.data[i].x);if(d<bd){bd=d;best=i;}}
+      return best;
+    };
+    el.addEventListener('mousedown',e=>{drag.active=true;drag.startIdx=getIdx(e);drag.endIdx=drag.startIdx;this._c.line&&this._c.line.draw();});
+    el.addEventListener('mousemove',e=>{if(!drag.active)return;drag.endIdx=getIdx(e);this._c.line&&this._c.line.draw();});
+    const endDrag=()=>{drag.active=false;};
+    el.addEventListener('mouseup',endDrag);
+    el.addEventListener('mouseleave',()=>{if(drag.active){endDrag();this._c.line&&this._c.line.draw();}});
+    this._c.line=new window.Chart(el,{type:'line',data:{labels:this._months.slice(ms,me+1),datasets},options:{...this._bOpts(),scales:{x:this._sD(),y:this._sD(v=>'R$'+(v/1000).toFixed(0)+'k')}},plugins:[dragPlugin]});
+    this._bindLineAsk(el);
+    el.style.cursor='crosshair';
+  }
+  _bindLineAsk(el){
+    this._bindChartAsk(el, ()=>this._c.line, (chart,p)=>{
+      const ds=chart.data.datasets[p.datasetIndex];
+      const label=chart.data.labels[p.index];
+      const value=ds.data[p.index];
+      const opLabel=ds.label;
+      if(value==null)return null;
+      return `Pode me explicar o Resultado de ${this._fmtShort(value)} da ${opLabel} em ${label}? O que aconteceu nesse mês?`;
+    });
+  }
+
+  _buildDreEvoData() {
+    const {selectedCos,chartMetric,monthStart,monthEnd}=this.state;
+    const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
+    const isBRL=chartMetric!=='margem';
+    const sliceLabels=this._months.slice(ms,me+1);
+    const datasets=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:this._coMonthly(co,chartMetric).slice(ms,me+1),backgroundColor:this._alpha(s.f,0.72),borderColor:s.pborder,borderWidth:s.pbw||1,borderRadius:3,_ol:s.shadow,_olc:s.sc};});
+    return {labels:sliceLabels,datasets,isBRL};
+  }
+  _sD(cb){const t={color:'#94a3b8',font:{family:'Inter',size:10}};if(cb)t.callback=cb;return{grid:{color:'rgba(148,163,184,0.1)'},ticks:t};}
+  _initDreEvo() {
+    const el=document.getElementById('chart-dre-evo'); if(!el||!window.Chart)return;
+    const {labels,datasets,isBRL}=this._buildDreEvoData();
+    const cb=v=>isBRL?'R$'+(v/1000).toFixed(0)+'k':v+'%';
+    const ex=this._gc(el);
+    if(ex){ex.data.labels=labels;ex.data.datasets=datasets;ex.options.scales.y.ticks.callback=cb;ex.update();this._c.evo=ex;this._bindEvoAsk(el);return;}
+    if(this._c.evo)try{this._c.evo.destroy();}catch(e){}
+    this._c.evo=new window.Chart(el,{type:'bar',data:{labels,datasets},options:{...this._bOpts(),scales:{x:this._sD(),y:this._sD(cb)}}});
+    this._bindEvoAsk(el);
+  }
+  // Clique duplo num ponto do gráfico mostra o mesmo popover "Pedir explicação do
+  // Gerôn" usado nos números — a pergunta some se o usuário não clicar no botão.
+  _bindChartAsk(el, getChart, buildQuestion){
+    if(!el || el.dataset.askBound)return;
+    el.dataset.askBound='1';
+    el.style.cursor='pointer';
+    el.title='Clique duas vezes para perguntar ao Gerôn';
+    el.addEventListener('dblclick',(evt)=>{
+      const chart=getChart(); if(!chart)return;
+      const pts=chart.getElementsAtEventForMode(evt,'nearest',{intersect:true},true);
+      if(!pts.length)return;
+      const q=buildQuestion(chart,pts[0]);
+      if(!q)return;
+      if(window.AskGeron) window.AskGeron.popover(evt.clientX,evt.clientY,q);
+    });
+  }
+  _bindEvoAsk(el){
+    this._bindChartAsk(el, ()=>this._c.evo, (chart,p)=>{
+      const ds=chart.data.datasets[p.datasetIndex];
+      const label=chart.data.labels[p.index];
+      const value=ds.data[p.index];
+      const opLabel=ds.label;
+      const metric=this.state.chartMetric;
+      const metricLabel={resultado:'Resultado',receita:'Faturamento',margem:'Margem'}[metric]||'valor';
+      const valFmt=metric==='margem'?(Number(value).toFixed(1).replace('.',',')+'%'):this._fmtShort(value);
+      return `Pode me explicar o ${metricLabel} de ${valFmt} da ${opLabel} em ${label}? O que aconteceu nesse mês?`;
+    });
+  }
+
+  _initDrePie() {
+    const el=document.getElementById('chart-dre-pie'); if(!el||!window.Chart)return;
+    const {selectedCos,monthStart,monthEnd}=this.state;
+    const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
+    const data=selectedCos.map(co=>{let t=0;for(let m=ms+1;m<=me+1;m++){this._expand(co).forEach(mid=>{const d=this._dreDataMap[`${mid}-${m}`];if(d)t+=+d.receita_bruta||0;});}return t;});
+    const labels=selectedCos.map(co=>this._dreLabels[co]||co);
+    const colors=selectedCos.map(co=>this._alpha(this._dreColors[co]||'#6b7280',0.85));
+    const borders=selectedCos.map(co=>this._dreOutlineColors[co]||this._dreColors[co]||'#6b7280');
+    const ex=this._gc(el);
+    if(ex){ex.data.labels=labels;ex.data.datasets[0].data=data;ex.data.datasets[0].backgroundColor=colors;ex.data.datasets[0].borderColor=borders;ex.update();this._c.pie=ex;this._bindPieAsk(el);return;}
+    if(this._c.pie)try{this._c.pie.destroy();}catch(e){}
+    this._c.pie=new window.Chart(el,{type:'pie',data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2}]},options:{...this._bOpts()}});
+    this._bindPieAsk(el);
+  }
+  _bindPieAsk(el){
+    this._bindChartAsk(el, ()=>this._c.pie, (chart,p)=>{
+      const opLabel=chart.data.labels[p.index];
+      const value=chart.data.datasets[0].data[p.index];
+      const {monthStart,monthEnd}=this.state;
+      const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
+      const periodLabel=ms===me?this._months[ms]:`${this._months[ms]} – ${this._months[me]}`;
+      return `Pode me explicar o Faturamento de ${this._fmtShort(value)} da ${opLabel} no período ${periodLabel}? Como isso se compara com as outras operações?`;
+    });
+  }
+
+  _initDreMargem() {
+    const el=document.getElementById('chart-dre-margem'); if(!el||!window.Chart)return;
+    const {selectedCos,monthStart,monthEnd}=this.state;
+    const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
+    const mgs=this._margens;
+    const sliceLabels=this._months.slice(ms,me+1);
+    const datasets=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(mgs[co]||[]).slice(ms,me+1),borderColor:s.b,backgroundColor:this._alpha(s.f,0.08),borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:4,tension:0.4,_ol:s.shadow,_olc:s.sc};});
+    const allVals=datasets.flatMap(ds=>ds.data.filter(v=>v!=null));
+    const yMin=allVals.length?Math.floor(Math.min(...allVals)-2):0;
+    const yMax=allVals.length?Math.ceil(Math.max(...allVals)+2):100;
+    const ex=this._gc(el);
+    if(ex){ex.data.labels=sliceLabels;ex.data.datasets=datasets;ex.options.scales.y.min=yMin;ex.options.scales.y.max=yMax;ex.update();this._c.margem=ex;this._bindMargemAsk(el);return;}
+    if(this._c.margem)try{this._c.margem.destroy();}catch(e){}
+    this._c.margem=new window.Chart(el,{type:'line',data:{labels:sliceLabels,datasets},options:{...this._bOpts(),scales:{x:this._sD(),y:{...this._sD(v=>v+'%'),min:yMin,max:yMax}}}});
+    this._bindMargemAsk(el);
+  }
+  _bindMargemAsk(el){
+    this._bindChartAsk(el, ()=>this._c.margem, (chart,p)=>{
+      const ds=chart.data.datasets[p.datasetIndex];
+      const label=chart.data.labels[p.index];
+      const value=ds.data[p.index];
+      const opLabel=ds.label;
+      if(value==null)return null;
+      return `Pode me explicar a Margem de ${Number(value).toFixed(1).replace('.',',')}% da ${opLabel} em ${label}? Está dentro da meta?`;
+    });
+  }
+
+  _initModal() {
+    const el=document.getElementById('chart-modal'); if(!el||!window.Chart)return;
+    if(this._c.modal)this._c.modal.destroy();
+    const id=this.state.expandedChart;
+    if(!id)return;
+    const bOpts={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+    const sOpts=(cb)=>({grid:{color:'rgba(148,163,184,0.1)'},ticks:{color:'#94a3b8',font:{family:'Inter',size:12},callback:cb||undefined}});
+    if(id==='bar'){
+      const {resumoSel,barSeries}=this.state;
+      const _eD=this._getEData(this.state.monthStart+1);
+      const rows=_eD.filter(e=>resumoSel.includes(e.id));
+      const ds=[];
+      if(barSeries.includes('entrada'))ds.push({label:'Entrada',data:rows.map(e=>e.entrada),backgroundColor:'rgba(220,38,38,0.65)',borderColor:'#dc2626',borderWidth:1,borderRadius:4});
+      if(barSeries.includes('saida'))  ds.push({label:'Saída',  data:rows.map(e=>e.saida),  backgroundColor:'rgba(22,163,74,0.65)', borderColor:'#16a34a',borderWidth:1,borderRadius:4});
+      if(barSeries.includes('despesa'))ds.push({label:'Despesa',data:rows.map(e=>e.despesa),backgroundColor:'rgba(245,158,11,0.65)',borderColor:'#f59e0b',borderWidth:1,borderRadius:4});
+      this._c.modal=new window.Chart(el,{type:'bar',data:{labels:rows.map(e=>this._coLabels[e.id]||e.nome||e.id),datasets:ds},options:{...bOpts,scales:{x:sOpts(),y:sOpts(v=>'R$'+(v/1000).toFixed(0)+'k')}}});
+    } else if(id==='line'){
+      const {selectedCos,monthStart,monthEnd}=this.state;
+      const msL=Math.min(monthStart,monthEnd), meL=Math.max(monthStart,monthEnd);
+      const lRes=this._lineResultados;
+      const ds=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(lRes[co]||[]).slice(msL,meL+1),borderColor:s.b,backgroundColor:this._alpha(s.f,0.07),borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:5,fill:selectedCos.length===1,tension:0.4,_ol:s.shadow,_olc:s.sc};});
+      this._c.modal=new window.Chart(el,{type:'line',data:{labels:this._months.slice(msL,meL+1),datasets:ds},options:{...bOpts,scales:{x:sOpts(),y:sOpts(v=>'R$'+(v/1000).toFixed(0)+'k')}}});
+    } else if(id==='dre-evo'){
+      const {labels,datasets,isBRL}=this._buildDreEvoData();
+      this._c.modal=new window.Chart(el,{type:'bar',data:{labels,datasets},options:{...bOpts,scales:{x:sOpts(),y:sOpts(v=>isBRL?'R$'+(v/1000).toFixed(0)+'k':v+'%')}}});
+    } else if(id==='dre-pie'){
+      const {selectedCos,monthStart,monthEnd}=this.state;
+      const ms2=Math.min(monthStart,monthEnd), me2=Math.max(monthStart,monthEnd);
+      const data=selectedCos.map(co=>{let t=0;for(let m=ms2+1;m<=me2+1;m++){this._expand(co).forEach(mid=>{const d=this._dreDataMap[`${mid}-${m}`];if(d)t+=+d.receita_bruta||0;});}return t;});
+      const labels=selectedCos.map(co=>this._dreLabels[co]||co);
+      const colors=selectedCos.map(co=>this._alpha(this._dreColors[co]||'#6b7280',0.8));
+      const borders=selectedCos.map(co=>this._dreOutlineColors[co]||this._dreColors[co]||'#6b7280');
+      this._c.modal=new window.Chart(el,{type:'pie',data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2}]},options:{...bOpts}});
+    } else if(id==='dre-margem'){
+      const {selectedCos,monthStart,monthEnd}=this.state;
+      const ms3=Math.min(monthStart,monthEnd), me3=Math.max(monthStart,monthEnd);
+      const mgs=this._margens;
+      const sliceLabels3=this._months.slice(ms3,me3+1);
+      const ds=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(mgs[co]||[]).slice(ms3,me3+1),borderColor:s.b,backgroundColor:'transparent',borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:5,tension:0.4,_ol:s.shadow,_olc:s.sc};});
+      const allVals=ds.flatMap(d=>d.data.filter(v=>v!=null));
+      const yMin=allVals.length?Math.floor(Math.min(...allVals)-2):0;
+      const yMax=allVals.length?Math.ceil(Math.max(...allVals)+2):100;
+      this._c.modal=new window.Chart(el,{type:'line',data:{labels:sliceLabels3,datasets:ds},options:{...bOpts,scales:{x:sOpts(),y:{...sOpts(v=>v+'%'),min:yMin,max:yMax}}}});
+    }
+  }
+
+  // DCLogic's componentDidUpdate only receives prevProps (never prevState),
+  // so we snapshot the fields we care about ourselves to detect changes.
+  componentDidUpdate() {
+    const s=this.state;
+    const ps=this._prevSnap||{};
+    this._prevSnap={tab:s.tab,barCos:s.barCos,barSeries:s.barSeries,selectedCos:s.selectedCos,chartMetric:s.chartMetric,monthStart:s.monthStart,monthEnd:s.monthEnd,expandedChart:s.expandedChart,resumoSel:s.resumoSel};
+    const {tab,barCos,barSeries,selectedCos,chartMetric,expandedChart,resumoSel}=s;
+    const tabChg=ps.tab!==tab;
+    const resumoSelChg=JSON.stringify(ps.resumoSel)!==JSON.stringify(resumoSel);
+    const barChg=JSON.stringify(ps.barCos)!==JSON.stringify(barCos)||JSON.stringify(ps.barSeries)!==JSON.stringify(barSeries)||resumoSelChg;
+    const cosChg=JSON.stringify(ps.selectedCos)!==JSON.stringify(selectedCos);
+    const metChg=ps.chartMetric!==chartMetric;
+    const monChg=ps.monthStart!==s.monthStart||ps.monthEnd!==s.monthEnd;
+    const expChg=ps.expandedChart!==expandedChart;
+    if(expChg&&expandedChart){setTimeout(()=>this._initModal(),150);}
+    else if(expChg&&!expandedChart){if(this._c.modal){this._c.modal.destroy();this._c.modal=null;}}
+    if(!expChg&&expandedChart&&(cosChg||metChg||monChg||barChg)){setTimeout(()=>this._initModal(),100);}
+    if(tabChg){setTimeout(()=>{ if(tab===0){this._initBar();}else{this._initDreEvo();this._initDrePie();this._initDreMargem();this._initLine();setTimeout(()=>this._animKPIs(),80);} },150);}
+    else if(tab===0){if(barChg||monChg)setTimeout(()=>this._initBar(),100);}
+    else if(tab===1&&(cosChg||metChg||monChg)){
+      if(cosChg||monChg)setTimeout(()=>this._animKPIs(),30);
+      setTimeout(()=>{ this._initDreEvo(); if(cosChg||monChg){this._initDrePie();this._initDreMargem();this._initLine();} },100);
+    }
+  }
+
+  renderVals() {
+    const {tab,monthStart,monthEnd,selectedCos,chartMetric}=this.state;
+    const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
+    const F=this._fmt.bind(this);
+
+    const rSel=this.state.resumoSel;
+    const eData=this._getEData(ms+1);
+    const eDataPrev=ms>0?this._getEData(ms):null;
+    const _mom=(curr,prev)=>{
+      if(prev==null||Math.abs(prev)<1)return{f:null,c:'#475569'};
+      const p=(curr-prev)/Math.abs(prev)*100;
+      return p>=0?{f:'▲ +'+p.toFixed(1).replace('.',',')+'%',c:'#4ade80'}:{f:'▼ '+Math.abs(p).toFixed(1).replace('.',',')+'%',c:'#f87171'};
+    };
+    const empresas=eData.map(e=>{
+      const on=rSel.includes(e.id), col=this._coColors[e.id]||'#6b7280';
+      const prev=eDataPrev?eDataPrev.find(p=>p.id===e.id):null;
+      const momR=_mom(e.resultado, prev?prev.resultado:null);
+      return {...e,
+        nome:this._coLabels[e.id]||e.nome||e.id,
+        aliquotaFmt:e.id==='EP'?'—':(e.aliquota||'—'),
+        despesaFmt:F(e.despesa),entradaFmt:F(e.entrada),saidaFmt:F(e.saida),resultadoFmt:F(e.resultado),estoqueFmt:F(e.estoque),
+        resultadoColor:e.resultado>=0?'#4ade80':'#f87171',
+        momFmt:momR.f, momColor:momR.c, momHasPrev:momR.f!==null,
+        cardBg:on?'rgba(18,28,52,0.97)':'rgba(15,23,42,0.55)',
+        cardBorder:'rgba(255,255,255,0.1)',
+        cardShadow:on?'inset 3px 0 0 '+col+', 0 6px 22px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.09)':'0 2px 10px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+        cardOpacity:on?'1':'0.72',
+        cardTransform:on?'translateY(-3px)':'none',
+        selDot:on?col:'#d1d5db',
+        toggle:()=>{ const s=this.state.resumoSel; if(s.includes(e.id)){this.setState({resumoSel:s.filter(x=>x!==e.id)});}else{this.setState({resumoSel:[...s,e.id]});} }
+      };
+    });
+    const selE=eData.filter(e=>rSel.includes(e.id));
+    const tots=selE.reduce((a,e)=>({d:a.d+(e.despesa||0),en:a.en+e.entrada,s:a.s+e.saida,r:a.r+e.resultado,est:a.est+(e.estoque||0)}),{d:0,en:0,s:0,r:0,est:0});
+    const totals={despesaFmt:F(tots.d),entradaFmt:F(tots.en),saidaFmt:F(tots.s),resultadoFmt:F(tots.r),estoqueFmt:F(tots.est),resultadoColor:tots.r>=0?'#4ade80':'#f87171',
+      selCount:selE.length, selLabel:selE.length===eData.length?'todas as empresas':`${selE.length} de ${eData.length} empresas`};
+    const months=this._months.map((label,i)=>({label,idx:i}));
+    const alertas=this._alertasArr.length
+      ? this._alertasArr.map(a=>({icon:a.icone,cor:a.cor,label:a.label,text:a.texto,
+          askFn:()=>{ if(window.askGeron) window.askGeron(`Pode me explicar melhor este alerta do painel — "${a.label}": ${a.texto}? O que você recomenda que eu faça a respeito?`); }}))
+      : [{icon:'⏳',cor:'#6b7280',label:'Carregando...',text:'Buscando dados do Supabase.',askFn:()=>{}}];
+
+    const dreIndiv=this._dreList.filter(x=>x!=='Consolidado');
+    const coButtons=dreIndiv.map(c=>{
+      const on=selectedCos.includes(c), col=this._dreColors[c]||'#6b7280';
+      return {
+        label:this._dreLabels[c]||c, logo:this._dreLogos[c]||'', bg:on?'#18283e':'rgba(255,255,255,0.04)', border:on?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.09)',
+        color:on?'#f1f5f9':'#64748b', dot:on?col:'#475569',
+        shadow:on?'inset 3px 0 0 '+col+', 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08)':'none',
+        toggleFn:()=>{
+          const sel=this.state.selectedCos;
+          if(sel.includes(c)){
+            if(sel.length===1)return;
+            this.setState({selectedCos:sel.filter(x=>x!==c)});
+          } else {
+            this.setState({selectedCos:[...sel,c]});
+          }
+        }
+      };
+    });
+
+    const selLabel=selectedCos.length===dreIndiv.length?'(todas as operações)':selectedCos.length===1?'(1 operação)':`(${selectedCos.length} de ${dreIndiv.length} operações)`;
+    const periodLabel=ms===me?this._months[ms]:`${this._months[ms]} – ${this._months[me]}`;
+    const dreChartLegend=selectedCos.map(co=>({logo:this._dreLogos[co]||'',label:this._dreLabels[co]||co,color:this._dreColors[co]||'#6b7280'}));
+    const metricBtns=[
+      {id:'resultado',label:'Resultado',radius:'4px 0 0 4px'},
+      {id:'receita',  label:'Faturamento', radius:'0'},
+      {id:'margem',   label:'Margem',      radius:'0 4px 4px 0'}
+    ].map(b=>({...b,bg:chartMetric===b.id?'rgba(245,158,11,0.15)':'rgba(255,255,255,0.04)',border:chartMetric===b.id?'#f59e0b':'rgba(255,255,255,0.1)',color:chartMetric===b.id?'#f59e0b':'#94a3b8',setFn:()=>this.setState({chartMetric:b.id})}));
+
+    // AH label (base de comparação = período anterior equivalente)
+    const Lp=me-ms+1;
+    const ahBaseLabel=(ms-Lp>=0)?(Lp===1?'vs '+this._months[ms-1].slice(0,3):'vs per. ant.'):'sem base';
+
+    const rawRows=this._dreRows(selectedCos);
+    const dreRows=rawRows.map(r=>{
+      const isH=r.t==='H',isR=r.t==='R',isS=r.t==='S';
+      const ahColor=!r.h||r.h==='—'?'#475569':r.h.startsWith('+')?'#4ade80':'#f87171';
+      const valFmt=r.v==null?'':(r.v<0?'('+F(r.v)+')':F(r.v));
+      const ahTxt=(!isH && r.h && r.h!=='—')?` (variação de ${r.h} em relação ao ${ahBaseLabel.replace('vs ','')})`:'';
+      return {
+        label:r.l,
+        valueFmt:valFmt,
+        ask:(isH||r.v==null)?'':`Pode me explicar o valor de "${r.l}" no DRE — ${valFmt} em ${periodLabel} ${selLabel}${ahTxt}? O que está por trás desse número?`,
+        askCursor:(isH||r.v==null)?'default':'pointer',
+        askTitle:(isH||r.v==null)?'':'Clique duas vezes para perguntar ao Gerôn',
+        av:isH?'':(r.a||'—'),ah:isH?'':(r.h||'—'),
+        rowBg:isH?'rgba(15,23,42,0.6)':isR?'rgba(255,255,255,0.03)':'transparent',
+        rowBorderTop:'none',
+        rowBorderBottom:isH?'1px solid #1e3a5f':'1px solid rgba(255,255,255,0.05)',
+        labelColor:isH?'#64748b':isR?'#f1f5f9':isS?'#94a3b8':'#cbd5e1',
+        labelFontSize:isH?'9px':'12px',
+        labelFontWeight:(isH||isR||r.b)?'700':'400',
+        labelLetterSpacing:isH?'2px':'0',
+        labelTransform:isH?'uppercase':'none',
+        paddingLeft:r.i===2?'52px':r.i===1?'28px':'0',
+        valueColor:r.v==null?'transparent':r.v>=0?'#4ade80':'#f87171',
+        valueFontWeight:isR?'700':'400',
+        ahColor,
+        rowPadding:isH?'9px 20px 7px 20px':isR?'11px 20px':isS?'5px 20px':'8px 20px'
+      };
+    });
+
+    const calc=this._dreCalcRange(selectedCos,ms+1,me+1);
+    const mcRatio=calc.rb>0?calc.mc/calc.rb:0;
+    const peOp=mcRatio>0?Math.round(calc.gop/mcRatio):0;
+    const impostos=calc.icms+calc.das+calc.oi;
+    const pctOf=v=>(calc.rb>0?(v/calc.rb*100):0).toFixed(1).replace('.',',')+'%';
+    const indicadores={
+      peOpFmt:F(peOp),
+      tribFmt:F(impostos), tribPct:pctOf(impostos),
+      cmvFmt:F(calc.cmv), cmvPct:pctOf(calc.cmv),
+      peAsk:`Pode me explicar o Ponto de Equilíbrio de ${F(peOp)} no período ${periodLabel} ${selLabel}? Como chegamos a esse valor e o que significa na prática?`,
+      tribAsk:`Pode me explicar a Carga Tributária de ${F(impostos)} (${pctOf(impostos)} da receita) no período ${periodLabel} ${selLabel}? O que compõe esse valor?`,
+      cmvAsk:`Pode me explicar o CMV (Custo da Mercadoria) de ${F(calc.cmv)} (${pctOf(calc.cmv)} da receita) no período ${periodLabel} ${selLabel}? Está dentro do esperado?`
+    };
+
+    // ══ KPI da DRE — reage aos filtros (operações selecionadas + período) ══
+    const dreKPI={
+      fatFmt:this._fmtShort(calc.rb),
+      rlFmt:this._fmtShort(calc.rl),
+      mcFmt:this._fmtShort(calc.mc), mcPct:(mcRatio*100).toFixed(1).replace('.',',')+'%',
+      resFmt:this._fmtShort(calc.res), resColor:calc.res>=0?'#4ade80':'#f87171',
+      resPct:(calc.rb>0?(calc.res/calc.rb*100):0).toFixed(1).replace('.',',')+'%',
+      gopFmt:this._fmtShort(calc.gop),
+      tribFmt:this._fmtShort(impostos), tribPct:pctOf(impostos),
+      fatAsk:`Pode me explicar o Faturamento de ${this._fmtShort(calc.rb)} no período ${periodLabel} ${selLabel}? O que está por trás desse número?`,
+      mcAsk:`Pode me explicar a Margem de ${(mcRatio*100).toFixed(1).replace('.',',')}% (${this._fmtShort(calc.mc)}) no período ${periodLabel} ${selLabel}? Está dentro da meta?`,
+      resAsk:`Pode me explicar o Resultado de ${this._fmtShort(calc.res)} no período ${periodLabel} ${selLabel}? O que está impactando esse resultado?`
+    };
+    const companyKPIs=selectedCos.map((co,i)=>{
+      const c=this._dreCalcRange([co],ms+1,me+1);
+      const mcR=c.rb>0?c.mc/c.rb:0;
+      const coLabel=this._dreLabels[co]||co;
+      return {idx:i,logo:this._dreLogos[co]||'',label:coLabel,color:this._dreColors[co]||'#6b7280',fatFmt:this._fmtShort(c.rb),rlFmt:this._fmtShort(c.rl),resFmt:this._fmtShort(c.res),resColor:c.res>=0?'#4ade80':'#f87171',mcPct:c.rb>0?(mcR*100).toFixed(1).replace('.',',')+'%':'—',
+        fatAsk:`Pode me explicar o Faturamento de ${this._fmtShort(c.rb)} da ${coLabel} no período ${periodLabel}?`,
+        resAsk:`Pode me explicar o Resultado de ${this._fmtShort(c.res)} da ${coLabel} no período ${periodLabel}? O que está impactando esse resultado?`,
+        mcAsk:`Pode me explicar a Margem de ${c.rb>0?(mcR*100).toFixed(1).replace('.',','):'0'}% da ${coLabel} no período ${periodLabel}? Está dentro da meta?`};
+    });
+
+    const {barCos,barSeries}=this.state;
+    const seriesDefs=[{id:'entrada',label:'Entrada',color:'#dc2626'},{id:'saida',label:'Saída',color:'#16a34a'},{id:'despesa',label:'Despesa',color:'#f59e0b'}];
+    const barSeriesBtns=seriesDefs.map(s=>({
+      label:s.label, bg:barSeries.includes(s.id)?this._alpha(s.color,0.15):'rgba(255,255,255,0.04)',
+      border:barSeries.includes(s.id)?s.color:'rgba(255,255,255,0.1)', color:barSeries.includes(s.id)?s.color:'#475569',
+      toggleFn:()=>{const sel=this.state.barSeries;if(sel.includes(s.id)){if(sel.length===1)return;this.setState({barSeries:sel.filter(x=>x!==s.id)});}else{this.setState({barSeries:[...sel,s.id]});}}
+    }));
+    const allBarIndiv=eData.map(e=>e.id);
+    const allBarCos=['Consolidado',...allBarIndiv];
+    const barCosBtns=allBarCos.map(co=>({
+      label:this._coLabels[co]||co, bg:barCos.includes(co)?'rgba(245,158,11,0.1)':'transparent',
+      border:barCos.includes(co)?'#f59e0b':'rgba(255,255,255,0.1)', color:barCos.includes(co)?'#f59e0b':'#475569',
+      toggleFn:()=>{
+        const sel=this.state.barCos;
+        let next;
+        if(co==='Consolidado'){
+          next=sel.includes('Consolidado')?allBarIndiv.slice(0,1):[...allBarCos];
+        } else {
+          if(sel.includes(co)){
+            next=sel.filter(x=>x!==co&&x!=='Consolidado');
+            if(next.length===0)next=allBarIndiv.filter(x=>x!==co).slice(0,1);
+          } else {
+            const withNew=[...sel.filter(x=>x!=='Consolidado'),co];
+            const allSel=allBarIndiv.every(x=>withNew.includes(x));
+            next=allSel?[...allBarCos]:withNew;
+          }
+        }
+        this.setState({barCos:next});
+      }
+    }));
+    const barLegend=seriesDefs.filter(s=>barSeries.includes(s.id)).map(s=>({label:s.label,color:s.color}));
+    const modalIsCompanyChart=this.state.expandedChart!=='bar';
+    const modalIsSeriesChart=this.state.expandedChart==='bar';
+
+    return {
+      tab0Active:tab===0,tab1Active:tab===1,
+      tab0BorderColor:tab===0?'#f59e0b':'transparent',
+      tab1BorderColor:tab===1?'#f59e0b':'transparent',
+      tab0TextColor:tab===0?'#d97706':'#9ca3af',
+      tab1TextColor:tab===1?'#d97706':'#9ca3af',
+      tab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'block':'none';})(),
+      tab1Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_dre!==false)?'block':'none';})(),
+      sidebarTab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'flex':'none';})(),
+      sidebarTab1Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_dre!==false)?'flex':'none';})(),
+      sidebarMapaSocDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_mapa_societario===true))?'flex':'none';})(),
+      periodLabel,currentMonthLabel:periodLabel,monthStart:ms,monthEnd:me,loadedAt:this._loadedAt||'...',
+      companyKPIsDisplay:selectedCos.length>=2?'grid':'none',
+      companyKPIsMaxH:selectedCos.length>=2?'600px':'0px',
+      companyKPIsOpacity:selectedCos.length>=2?1:0,
+      companyKPIsMB:selectedCos.length>=2?'14px':'0px',
+      months,empresas,totals,alertas,coButtons,selLabel,metricBtns,dreRows,indicadores,dreKPI,ahBaseLabel,companyKPIs,
+      barSeriesBtns,barCosBtns,dreChartLegend,drePieLegend:dreChartLegend,barLegend,modalIsCompanyChart,modalIsSeriesChart,
+      modalOpen:!!this.state.expandedChart,
+      modalTitle:{bar:'Entrada / Saída / Despesa por Empresa',line:'Evolução do Resultado — 2026','dre-evo':'Evolução Mensal — 2026','dre-pie':'Faturamento por Operação','dre-margem':'Margem por Operação'}[this.state.expandedChart]||'',
+      closeModal:()=>this.setState({expandedChart:null}),
+      closeIfBackdrop:e=>{if(e.target===e.currentTarget)this.setState({expandedChart:null});},
+      openBarChart:()=>this.setState({expandedChart:'bar'}),
+      openLineChart:()=>this.setState({expandedChart:'line'}),
+      openDreEvoChart:()=>this.setState({expandedChart:'dre-evo'}),
+      openDrePieChart:()=>this.setState({expandedChart:'dre-pie'}),
+      openDreMargemChart:()=>this.setState({expandedChart:'dre-margem'}),
+      setTab0:()=>{window.history.pushState({},'','/resumocontabil');document.title='SAFI | Resumo Contábil';this.setState({tab:0});},
+      setTab1:()=>{window.history.pushState({},'','/dre');document.title='SAFI | DRE';this.setState({tab:1});},
+      setMonthComp:e=>{const v=parseInt(e.target.value);this.setState({monthStart:v,monthEnd:v});},
+      setMonthStart:e=>{const v=parseInt(e.target.value);this.setState({monthStart:v,monthEnd:Math.max(v,this.state.monthEnd)});},
+      setMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({monthEnd:v,monthStart:Math.min(v,this.state.monthStart)});},
+      setYTD:()=>{this.setState({monthStart:0,monthEnd:this._months.length-1});}
+    };
+  }
+}
+</script>
+</body>
+</html>
