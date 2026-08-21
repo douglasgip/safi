@@ -716,6 +716,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
         Mapa Societário
       </a>
+      <a href="/funcionarios" class="dc-sidebar-nav-btn" style="display:{{ sidebarFuncionariosDisplay }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Funcionários
+      </a>
     </div>
     <!-- Bottom actions -->
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07);display:flex;flex-direction:column;gap:8px">
@@ -1951,6 +1955,7 @@ class Component extends DCLogic {
       sidebarTab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'flex':'none';})(),
       sidebarTab1Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_dre!==false)?'flex':'none';})(),
       sidebarMapaSocDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_mapa_societario===true))?'flex':'none';})(),
+      sidebarFuncionariosDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_funcionarios===true))?'flex':'none';})(),
       periodLabel,currentMonthLabel:periodLabel,monthStart:ms,monthEnd:me,loadedAt:this._loadedAt||'...',
       companyKPIsDisplay:selectedCos.length>=2?'grid':'none',
       companyKPIsMaxH:selectedCos.length>=2?'600px':'0px',

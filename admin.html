@@ -562,6 +562,47 @@
             <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('mapasoc', false)">Não</button>
           </div>
         </div>
+
+        <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div>
+              <div class="perm-name">Funcionários</div>
+              <div style="font-size:10.5px;color:#64748b;margin-top:2px">Cadastro de colaboradores — dados pessoais, visível por padrão só pra ninguém</div>
+            </div>
+            <div class="toggle-wrap" id="toggle-funcionarios">
+              <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('funcionarios', true)">Sim</button>
+              <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('funcionarios', false)">Não</button>
+            </div>
+          </div>
+
+          <div class="dre-ops" id="funcionarios-ops" style="display:none">
+            <div class="dre-ops-label">Empresas visíveis em Funcionários</div>
+
+            <div class="perm-row">
+              <div class="perm-name">GIP Ecommerce</div>
+              <div class="toggle-wrap" id="toggle-func-epgip">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('func-epgip', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('func-epgip', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Exposição Paulista</div>
+              <div class="toggle-wrap" id="toggle-func-exposicao">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('func-exposicao', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('func-exposicao', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Via Closet</div>
+              <div class="toggle-wrap" id="toggle-func-viacloset">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('func-viacloset', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('func-viacloset', false)">Não</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -602,7 +643,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 let currentSession = null;
 let deleteTarget   = null;
-const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false };
+const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false };
 
 // ── Auth ──────────────────────────────────────────────
 async function init() {
@@ -707,6 +748,9 @@ function setToggle(key, val) {
   if (key === 'dre') {
     document.getElementById('dre-ops').style.display = val ? 'block' : 'none';
   }
+  if (key === 'funcionarios') {
+    document.getElementById('funcionarios-ops').style.display = val ? 'block' : 'none';
+  }
 }
 
 // ── Modal Criar ───────────────────────────────────────
@@ -722,6 +766,7 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset'].forEach(k => setToggle(k, false));
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-email').focus();
@@ -747,6 +792,10 @@ function openEditModal(u) {
   setToggle('exposicao', u.dre_exposicao);
   setToggle('viacloset', u.dre_viacloset);
   setToggle('mapasoc',   !!u.can_mapa_societario);
+  setToggle('funcionarios',    !!u.can_funcionarios);
+  setToggle('func-epgip',      !!u.funcionarios_epgip);
+  setToggle('func-exposicao',  !!u.funcionarios_exposicao);
+  setToggle('func-viacloset',  !!u.funcionarios_viacloset);
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
 }
@@ -783,6 +832,10 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     dre_exposicao: toggleState.exposicao,
     dre_viacloset: toggleState.viacloset,
     can_mapa_societario: toggleState.mapasoc,
+    can_funcionarios:       toggleState.funcionarios,
+    funcionarios_epgip:     toggleState['func-epgip'],
+    funcionarios_exposicao: toggleState['func-exposicao'],
+    funcionarios_viacloset: toggleState['func-viacloset'],
   };
 
   let fnUrl, fnBody;

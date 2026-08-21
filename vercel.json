@@ -7,6 +7,7 @@
     { "source": "/geronia", "destination": "/geronia.html" },
     { "source": "/login", "destination": "/login.html" },
     { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/mapa-societario", "destination": "/mapa-societario.html" }
+    { "source": "/mapa-societario", "destination": "/mapa-societario.html" },
+    { "source": "/funcionarios", "destination": "/funcionarios.html" }
   ]
 }
