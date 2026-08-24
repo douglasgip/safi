@@ -51,9 +51,11 @@ Exemplo do que NÃO fazer: se o usuário perguntou sobre o crescimento do GIP e 
 Só relembre algo já dito se o usuário pedir explicitamente (ex: "repete", "resume o que você disse", "e sobre aquilo que falamos antes?").
 
 ## REGRA CRÍTICA DE CONFIDENCIALIDADE (nunca viole)
-O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO". Você só pode falar sobre as operações que ele tem permissão de ver. Se a pergunta ATUAL pedir dados de uma operação fora do acesso dele, recuse educadamente essa pergunta específica e ofereça ajuda apenas sobre o que ele tem acesso. Nunca revele, compare ou deixe vazar números de operações fora do acesso do usuário — nem de forma indireta.
+O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO". Você só pode falar sobre as operações e os tipos de dado (financeiro, funcionários) que ele tem permissão de ver. Se a pergunta ATUAL pedir dados fora do acesso dele, recuse educadamente essa pergunta específica e ofereça ajuda apenas sobre o que ele tem acesso. Nunca revele, compare ou deixe vazar números ou informações fora do acesso do usuário — nem de forma indireta.
 
-IMPORTANTE — não repita a recusa à toa: essa recusa vale apenas para a pergunta que realmente pediu dados fora do acesso. Se a pergunta atual já é sobre uma operação permitida (ou é uma pergunta genérica, de acompanhamento, ou não pede dado nenhum), responda direto ao que foi perguntado — não reabra nem relembre uma recusa de uma mensagem anterior do histórico. Cada resposta deve tratar apenas da pergunta atual, sem recapitular avisos já dados.
+Sobre funcionários especificamente: mesmo quando você tiver acesso ao quadro de colaboradores, você só recebe nome, empresa e data de admissão — nunca CPF, telefone, endereço ou e-mail. Nunca afirme ter esses dados nem os invente, mesmo se perguntarem diretamente.
+
+IMPORTANTE — não repita a recusa à toa: essa recusa vale apenas para a pergunta que realmente pediu dados fora do acesso. Se a pergunta atual já é sobre algo permitido (ou é uma pergunta genérica, de acompanhamento, ou não pede dado nenhum), responda direto ao que foi perguntado — não reabra nem relembre uma recusa de uma mensagem anterior do histórico. Cada resposta deve tratar apenas da pergunta atual, sem recapitular avisos já dados.
 
 ## QUEM É O GRUPO SACOMAN
 Grupo varejista de moda do Paraná, fundado na década de 1960 em Marialva-PR por Geraldo Sacoman (n. 1944) e Verônica Sacoman, com a loja Exposição Paulista. A filha Juliane Sacoman (n. 1977) assumiu a loja aos 17 anos. Com o marido Sérgio Navarrete, tornou-se co-CEO. Depois abriram a Via Closet (Marialva, ticket mais alto) e, em 2020, na pandemia, criaram a GIP Ecommerce, hoje a maior em faturamento. O filho dos CEOs, Guilherme Navarrete, está assumindo a gestão gradualmente. Diferencial competitivo do grupo: preço baixo e variedade.
@@ -90,12 +92,15 @@ Maiores oportunidades: (1) Atacado (B2B) — alavanca principal de crescimento, 
 Sistemas: ERP atual IdWorks (migrando para Olist). Logística terceirizada pelos marketplaces (a empresa tem uma van própria para buscar fardos). Estoque próprio em todas as operações.`
 
 // ============ Mapeamentos de dados ============
-const OP_EMPRESA_IDS: Record<string, string[]> = {
+type OpKey = 'EPGIP' | 'Exposicao' | 'ViaCloset'
+const ALL_OPS: OpKey[] = ['EPGIP', 'Exposicao', 'ViaCloset']
+
+const OP_EMPRESA_IDS: Record<OpKey, string[]> = {
   EPGIP: ['EP', 'GIP'],
   Exposicao: ['Exposicao'],
   ViaCloset: ['ViaCloset'],
 }
-const OP_LABEL: Record<string, string> = {
+const OP_LABEL: Record<OpKey, string> = {
   EPGIP: 'GIP Ecommerce',
   Exposicao: 'Exposição Paulista',
   ViaCloset: 'Via Closet',
@@ -104,6 +109,11 @@ const MES_NOME = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho'
 
 function fmtR(n: number) {
   return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function fmtDateBR(iso: string) {
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
 }
 
 function sumRows(rows: any[]) {
@@ -125,6 +135,47 @@ function opSummaryText(label: string, rowsByMes: Record<number, any[]>) {
     lines.push(`  ${MES_NOME[mes]}/2026: faturamento ${fmtR(s.receita_bruta)}, receita líquida ${fmtR(s.receita_liquida)}, margem de contribuição ${fmtR(s.margem_contribuicao)} (${mcPct}%), resultado líquido ${fmtR(s.resultado_liquido)}, impostos recolhidos ${fmtR(impostos)}.`)
   }
   return `${label}:\n${lines.join('\n')}`
+}
+
+function funcSummaryText(labels: string[], rows: any[]) {
+  const todayBR = fmtDateBR(new Date().toISOString().slice(0, 10))
+  const byEmpresa: Record<string, any[]> = {}
+  for (const label of labels) byEmpresa[label] = []
+  for (const r of rows) if (byEmpresa[r.empresa]) byEmpresa[r.empresa].push(r)
+
+  const lines = labels.map(label => {
+    const list = byEmpresa[label]
+    if (!list.length) return `  ${label}: nenhum colaborador cadastrado.`
+    const detalhes = list
+      .map(r => r.nome + (r.data_admissao ? ` (admitido em ${fmtDateBR(r.data_admissao)})` : ' (data de admissão ainda não cadastrada)'))
+      .join('; ')
+    return `  ${label}: ${list.length} colaborador(es) — ${detalhes}`
+  })
+
+  return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; use essas datas de admissão para calcular tempo de casa quando perguntarem):\n${lines.join('\n')}`
+}
+
+// ============ Resolução de permissões por operação ============
+// Mesmo formato de permissão é usado hoje por DRE e Funcionários (e deve ser reaproveitado
+// por futuras telas como Fluxo de Caixa): uma chave geral liga/desliga o domínio inteiro
+// (ex: can_dre) e três sub-flags escolhem quais operações ficam visíveis dentro dele.
+// DRE é opt-out (visível por padrão, exceto se explicitamente false) e Funcionários é
+// opt-in (oculto por padrão, exceto se explicitamente true) — mesmo comportamento já usado
+// no admin.html e nas telas do painel, replicado aqui em código.
+interface PermissionDomain {
+  domainFlag: boolean | null | undefined
+  domainDefaultAllowed: boolean
+  opFlags: Record<OpKey, boolean | null | undefined>
+  opRequiresExplicitTrue: boolean
+}
+
+function resolveAllowedOps(isAdmin: boolean, domain: PermissionDomain): OpKey[] {
+  if (isAdmin) return [...ALL_OPS]
+  const domainAllowed = domain.domainFlag ?? domain.domainDefaultAllowed
+  if (!domainAllowed) return []
+  return ALL_OPS.filter(op =>
+    domain.opRequiresExplicitTrue ? domain.opFlags[op] === true : domain.opFlags[op] !== false
+  )
 }
 
 // Remove recapitulação: se a resposta nova começar reproduzindo (quase) literalmente a
@@ -182,58 +233,82 @@ Deno.serve(async (req: Request) => {
     if (!prof) return json({ error: 'Perfil não encontrado' }, 403)
 
     const firstName = (prof.full_name || caller.email?.split('@')[0] || 'Usuário').trim().split(/\s+/)[0]
+    const userLabel = `${prof.full_name || firstName} (${prof.role || 'sem cargo definido'})`
 
-    // Operacoes permitidas
-    const allowedOps: string[] = []
-    if (prof.is_admin || prof.dre_epgip !== false) allowedOps.push('EPGIP')
-    if (prof.is_admin || prof.dre_exposicao !== false) allowedOps.push('Exposicao')
-    if (prof.is_admin || prof.dre_viacloset !== false) allowedOps.push('ViaCloset')
-    if (!allowedOps.length) return json({ error: 'Sem acesso a nenhuma operação' }, 403)
+    // ---- Permissões: DRE (financeiro) ----
+    const dreOps = resolveAllowedOps(prof.is_admin, {
+      domainFlag: prof.can_dre,
+      domainDefaultAllowed: true,
+      opFlags: { EPGIP: prof.dre_epgip, Exposicao: prof.dre_exposicao, ViaCloset: prof.dre_viacloset },
+      opRequiresExplicitTrue: false,
+    })
 
-    // Bloco 3 — acesso
-    let block3: string
-    if (allowedOps.length === 3) {
-      block3 = `O usuário logado é ${prof.full_name || firstName} (${prof.role || 'sem cargo definido'}). Nível de acesso: TOTAL — pode ver todas as operações (GIP Ecommerce, Exposição Paulista e Via Closet) e o consolidado do grupo.`
+    let dreAccessText: string
+    if (!dreOps.length) {
+      dreAccessText = `Acesso a dados FINANCEIROS (DRE): NENHUM. Não inclua, estime ou compare nenhum número de faturamento, receita, margem ou resultado de nenhuma operação nem do consolidado — informe educadamente que essa permissão não está liberada se perguntarem.`
+    } else if (dreOps.length === ALL_OPS.length) {
+      dreAccessText = `Acesso a dados FINANCEIROS (DRE): TOTAL — todas as operações (GIP Ecommerce, Exposição Paulista, Via Closet) e o consolidado do grupo.`
     } else {
-      const opsTxt = allowedOps.map(o => OP_LABEL[o]).join(', ')
-      block3 = `O usuário logado é ${prof.full_name || firstName} (${prof.role || 'sem cargo definido'}). Nível de acesso: RESTRITO — SOMENTE a(s) operação(ões) "${opsTxt}". Você NÃO pode falar, comparar, estimar ou mencionar dados de nenhuma outra operação nem do consolidado do grupo. Se a pergunta ATUAL pedir dados fora disso, recuse educadamente só essa pergunta e ofereça ajuda sobre ${opsTxt}. Se a pergunta atual já for sobre ${opsTxt} (ou for só um acompanhamento), responda direto — não repita recusas de mensagens anteriores da conversa.`
+      const labels = dreOps.map(op => OP_LABEL[op]).join(', ')
+      dreAccessText = `Acesso a dados FINANCEIROS (DRE): RESTRITO a "${labels}". Você NÃO pode falar, comparar, estimar ou mencionar números de nenhuma outra operação nem do consolidado do grupo. Se a pergunta atual pedir dados fora disso, recuse educadamente só essa pergunta e ofereça ajuda sobre ${labels}.`
     }
 
-    // Bloco 4 — dados financeiros filtrados
-    const empresaIds = allowedOps.flatMap(o => OP_EMPRESA_IDS[o])
-    const { data: dreRows } = await sb
-      .from('dre_consolidado')
-      .select('empresa_id, mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
-      .eq('ano', 2026)
-      .in('empresa_id', empresaIds)
-
-    const opTexts: string[] = []
-    for (const op of allowedOps) {
-      const ids = OP_EMPRESA_IDS[op]
-      const rowsByMes: Record<number, any[]> = {}
-      for (const r of dreRows || []) {
-        if (!ids.includes(r.empresa_id)) continue
-        if (!rowsByMes[r.mes]) rowsByMes[r.mes] = []
-        rowsByMes[r.mes].push(r)
-      }
-      opTexts.push(opSummaryText(OP_LABEL[op], rowsByMes))
-    }
-
-    let consolidadoTxt = ''
-    if (allowedOps.length === 3) {
-      const { data: consRows } = await sb
+    let dreDataText = ''
+    if (dreOps.length) {
+      const empresaIds = dreOps.flatMap(op => OP_EMPRESA_IDS[op])
+      const { data: dreRows } = await sb
         .from('dre_consolidado')
-        .select('mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
-        .eq('ano', 2026).eq('empresa_id', 'Consolidado')
-      const rowsByMes: Record<number, any[]> = {}
-      for (const r of consRows || []) {
-        if (!rowsByMes[r.mes]) rowsByMes[r.mes] = []
-        rowsByMes[r.mes].push(r)
+        .select('empresa_id, mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
+        .eq('ano', 2026)
+        .in('empresa_id', empresaIds)
+
+      const opTexts = dreOps.map(op => {
+        const ids = OP_EMPRESA_IDS[op]
+        const rowsByMes: Record<number, any[]> = {}
+        for (const r of dreRows || []) {
+          if (!ids.includes(r.empresa_id)) continue
+          ;(rowsByMes[r.mes] ??= []).push(r)
+        }
+        return opSummaryText(OP_LABEL[op], rowsByMes)
+      })
+
+      let consolidadoTxt = ''
+      if (dreOps.length === ALL_OPS.length) {
+        const { data: consRows } = await sb
+          .from('dre_consolidado')
+          .select('mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
+          .eq('ano', 2026).eq('empresa_id', 'Consolidado')
+        const rowsByMes: Record<number, any[]> = {}
+        for (const r of consRows || []) (rowsByMes[r.mes] ??= []).push(r)
+        consolidadoTxt = '\n\n' + opSummaryText('CONSOLIDADO DO GRUPO', rowsByMes)
       }
-      consolidadoTxt = '\n\n' + opSummaryText('CONSOLIDADO DO GRUPO', rowsByMes)
+
+      dreDataText = `DADOS DO PAINEL (série mensal completa de 2026 disponível no painel):\n\n${opTexts.join('\n\n')}${consolidadoTxt}`
     }
 
-    const block4 = `DADOS DO PAINEL (série mensal completa de 2026 disponível no painel):\n\n${opTexts.join('\n\n')}${consolidadoTxt}`
+    // ---- Permissões: Funcionários ----
+    const funcOps = resolveAllowedOps(prof.is_admin, {
+      domainFlag: prof.can_funcionarios,
+      domainDefaultAllowed: false,
+      opFlags: { EPGIP: prof.funcionarios_epgip, Exposicao: prof.funcionarios_exposicao, ViaCloset: prof.funcionarios_viacloset },
+      opRequiresExplicitTrue: true,
+    })
+
+    let funcAccessText: string
+    if (!funcOps.length) {
+      funcAccessText = `Acesso a dados de FUNCIONÁRIOS: NENHUM. Não comente sobre colaboradores, quadro de funcionários ou tempo de casa de ninguém — informe educadamente que essa permissão não está liberada se perguntarem.`
+    } else {
+      const labels = funcOps.map(op => OP_LABEL[op]).join(', ')
+      const scope = funcOps.length === ALL_OPS.length ? 'TOTAL — todas as operações' : `RESTRITO a "${labels}"`
+      funcAccessText = `Acesso a dados de FUNCIONÁRIOS: ${scope}. Você só recebe nome, empresa e data de admissão de cada colaborador — nunca CPF, telefone, endereço ou e-mail (você não tem esses dados, não invente).`
+    }
+
+    let funcDataText = ''
+    if (funcOps.length) {
+      const labels = funcOps.map(op => OP_LABEL[op])
+      const { data: funcRows } = await sb.from('funcionarios').select('empresa, nome, data_admissao').in('empresa', labels)
+      funcDataText = funcSummaryText(labels, funcRows || [])
+    }
 
     // Thread — valida a existente ou cria uma nova (título = início da 1a mensagem)
     let threadId: string | null = null
@@ -249,7 +324,7 @@ Deno.serve(async (req: Request) => {
       threadTitle = newT!.title
     }
 
-    // Bloco 5 — memoria (ultimas 5 trocas = ate 10 mensagens, SOMENTE desta thread)
+    // Memoria (ultimas 5 trocas = ate 10 mensagens, SOMENTE desta thread)
     const { data: history } = await sb
       .from('geronia_conversations')
       .select('role, content, created_at')
@@ -259,9 +334,17 @@ Deno.serve(async (req: Request) => {
     const historyAsc = (history || []).slice().reverse()
     const lastAssistantMsg = [...historyAsc].reverse().find((h: any) => h.role === 'assistant')
 
+    const accessText = [
+      `ACESSO DO USUÁRIO\nO usuário logado é ${userLabel}.`,
+      dreAccessText,
+      funcAccessText,
+      dreDataText,
+      funcDataText,
+    ].filter(Boolean).join('\n\n')
+
     const systemBlocks: Anthropic.Messages.TextBlockParam[] = [
       { type: 'text', text: SYSTEM_FIXED, cache_control: { type: 'ephemeral' } },
-      { type: 'text', text: `ACESSO DO USUÁRIO\n${block3}\n\n${block4}` },
+      { type: 'text', text: accessText },
     ]
 
     const messages: Anthropic.Messages.MessageParam[] = [
