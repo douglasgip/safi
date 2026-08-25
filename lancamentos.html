@@ -55,6 +55,14 @@
     .dc-sidebar.open { transform: translateX(0); }
     .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
     .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(139,92,246,0.12); color: #c4b5fd; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-expand-btn { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; background: transparent; border: none; border-radius: 8px; color: #64748b; cursor: pointer; flex-shrink: 0; }
+    .dc-sidebar-expand-btn:hover { background: rgba(139,92,246,0.1); color: #c4b5fd; }
+    .dc-sidebar-expand-btn svg { transition: transform .15s; }
+    .dc-sidebar-expand-btn.expanded svg { transform: rotate(180deg); }
+    .dc-sidebar-submenu { overflow: hidden; max-height: 0; transition: max-height .2s ease; }
+    .dc-sidebar-submenu.open { max-height: 60px; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
     .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
@@ -74,6 +82,10 @@
     .classe-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.06); }
     .classe-nome { font-size: 13px; font-weight: 800; letter-spacing: .3px; }
     .classe-nome.positivo { color: #4ade80; } .classe-nome.negativo { color: #f87171; }
+    .classe-nome.formula { color: #c4b5fd; }
+    .formula-card { background: rgba(139,92,246,0.07); border-color: rgba(139,92,246,0.22); }
+    .formula-card .classe-head { border-bottom: none; }
+    .campo-row.folha .campo-head { margin-bottom: 0; }
     .classe-total { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
     .classe-body { padding: 4px 18px 14px; }
 
@@ -157,9 +169,24 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Resumo Contábil
       </a>
-      <a href="/dre" id="lc-sidebar-dre" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        DRE
+      <div id="lc-sidebar-dre" class="dc-sidebar-group-row" style="display:none">
+        <a href="/dre" class="dc-sidebar-nav-btn" style="flex:1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          DRE
+        </a>
+        <button class="dc-sidebar-expand-btn expanded" id="lc-dre-expand-btn" onclick="toggleDreSubmenu('lc')" style="display:none" aria-label="Recolher DRE">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="dc-sidebar-submenu open" id="lc-dre-submenu">
+        <a href="/lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn active">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+          Lançamentos
+        </a>
+      </div>
+      <a href="/fluxo-caixa" id="lc-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+        Fluxo de Caixa
       </a>
       <a href="/geronia" class="dc-sidebar-nav-btn">
         <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
@@ -172,14 +199,6 @@
       <a href="/funcionarios" id="lc-sidebar-funcionarios" class="dc-sidebar-nav-btn" style="display:none">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Funcionários
-      </a>
-      <a href="/fluxo-caixa" id="lc-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
-        Fluxo de Caixa
-      </a>
-      <a href="/lancamentos" class="dc-sidebar-nav-btn active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
-        Lançamentos
       </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
@@ -332,16 +351,34 @@
     function renderEntryTree() {
       const el = document.getElementById('entry-tree');
       el.innerHTML = classes.map(classe => {
+        // Classes de fórmula (Receita Líquida, Margem, Resultado) não recebem lançamento —
+        // aparecem só como linha de resultado, calculada ao vivo.
+        if (classe.tipo === 'formula') {
+          return `<div class="classe-card formula-card">
+            <div class="classe-head">
+              <span class="classe-nome formula">${esc(classe.nome)}</span>
+              <span class="classe-total" id="classe-total-${classe.id}">R$ 0,00</span>
+            </div>
+          </div>`;
+        }
         const camposAtivos = camposDaClasse(classe.id).filter(c => c.ativo);
         const camposHtml = camposAtivos.map(campo => {
           const subs = subcamposDoCampo(campo.id).filter(s => s.ativo);
-          const subsHtml = subs.map(s => {
-            const v = valoresAtuais[s.id] || '';
-            return `<div class="subcampo-row">
-              <span class="subcampo-nome">${esc(s.nome)}</span>
-              <input type="number" step="0.01" class="subcampo-input" id="in-${s.id}" data-campo="${campo.id}" value="${v}" oninput="recomputeTotals()">
+          // Campo folha: uma linha só, o input fica direto no campo (como na planilha,
+          // onde Deduções e Custos Variáveis são itens diretos, sem sub-nível).
+          if (campo.folha && subs.length === 1) {
+            const s = subs[0];
+            return `<div class="campo-row folha">
+              <div class="campo-head">
+                <span class="campo-nome">${esc(campo.nome)}</span>
+                <input type="number" step="0.01" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] || ''}" oninput="recomputeTotals()">
+              </div>
             </div>`;
-          }).join('');
+          }
+          const subsHtml = subs.map(s => `<div class="subcampo-row">
+              <span class="subcampo-nome">${esc(s.nome)}</span>
+              <input type="number" step="0.01" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] || ''}" oninput="recomputeTotals()">
+            </div>`).join('');
           return `<div class="campo-row">
             <div class="campo-head">
               <span class="campo-nome">${esc(campo.nome)}</span>
@@ -361,22 +398,49 @@
       recomputeTotals();
     }
 
+    function totalDaClasse(classe) {
+      let total = 0;
+      camposDaClasse(classe.id).filter(c => c.ativo).forEach(campo => {
+        subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
+          const inp = document.getElementById('in-'+s.id);
+          if (inp) total += parseFloat(inp.value)||0;
+        });
+      });
+      return total;
+    }
+
     function recomputeTotals() {
       campos.forEach(campo => {
-        const subs = subcamposDoCampo(campo.id).filter(s => s.ativo);
-        let total = 0;
-        subs.forEach(s => { const inp = document.getElementById('in-'+s.id); if (inp) total += parseFloat(inp.value)||0; });
         const el = document.getElementById('campo-total-'+campo.id);
-        if (el) el.textContent = fmtR(total);
-      });
-      classes.forEach(classe => {
-        const camposAtivos = camposDaClasse(classe.id).filter(c => c.ativo);
+        if (!el) return;
         let total = 0;
-        camposAtivos.forEach(campo => {
-          subcamposDoCampo(campo.id).filter(s=>s.ativo).forEach(s => { const inp=document.getElementById('in-'+s.id); if (inp) total += parseFloat(inp.value)||0; });
+        subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
+          const inp = document.getElementById('in-'+s.id);
+          if (inp) total += parseFloat(inp.value)||0;
         });
+        el.textContent = fmtR(total);
+      });
+
+      const porChave = {};
+      classes.filter(c => c.tipo === 'entrada').forEach(classe => {
+        const total = totalDaClasse(classe);
+        porChave[classe.chave] = total;
         const el = document.getElementById('classe-total-'+classe.id);
         if (el) el.textContent = fmtR(total);
+      });
+
+      // Fórmulas, exatamente como na planilha do Aldemar
+      const rb = porChave['receita_bruta'] || 0;
+      const rl = rb - (porChave['deducoes'] || 0);
+      const mc = rl - (porChave['custos_variaveis'] || 0);
+      const res = mc - (porChave['gastos_operacionais'] || 0);
+      const formulas = { receita_liquida: rl, margem_contribuicao: mc, resultado_liquido: res };
+      classes.filter(c => c.tipo === 'formula').forEach(classe => {
+        const el = document.getElementById('classe-total-'+classe.id);
+        if (!el) return;
+        const v = formulas[classe.chave] || 0;
+        el.textContent = fmtR(v);
+        el.style.color = v >= 0 ? '#4ade80' : '#f87171';
       });
     }
 
@@ -404,6 +468,14 @@
     function renderManageTree() {
       const el = document.getElementById('manage-tree');
       el.innerHTML = classes.map(classe => {
+        if (classe.tipo === 'formula') {
+          return `<div class="classe-card formula-card">
+            <div class="classe-head">
+              <span class="classe-nome formula">${esc(classe.nome)}</span>
+              <span style="font-size:11px;color:#475569">calculado automaticamente</span>
+            </div>
+          </div>`;
+        }
         const camposHtml = camposDaClasse(classe.id).map(campo => {
           const subsHtml = subcamposDoCampo(campo.id).map(s => {
             const locked = !!s.chave;
@@ -435,8 +507,8 @@
                 }
               </div>
             </div>
-            ${subsHtml}
-            <button class="btn-add-inline" onclick="openCreateModal('subcampo','${campo.id}')">+ Adicionar Subcampo</button>
+            ${campo.folha ? '' : subsHtml}
+            <button class="btn-add-inline" onclick="openCreateModal('subcampo','${campo.id}')">${campo.folha ? '+ Detalhar em subcampos' : '+ Adicionar Subcampo'}</button>
           </div>`;
         }).join('');
         return `<div class="classe-card">
@@ -477,12 +549,31 @@
       if (modalCtx.mode === 'create') {
         const list = modalCtx.tipo === 'campo' ? camposDaClasse(modalCtx.parentId) : subcamposDoCampo(modalCtx.parentId);
         const ordem = list.length ? Math.max(...list.map(x=>x.ordem)) + 1 : 1;
-        const payload = modalCtx.tipo === 'campo'
-          ? { classe_id: modalCtx.parentId, nome, ordem }
-          : { campo_id: modalCtx.parentId, nome, ordem };
-        ({ error } = await sb.from(table).insert(payload));
+        if (modalCtx.tipo === 'campo') {
+          // Campo novo nasce folha (1 linha, valor direto) — vira campo com subcampos
+          // se o usuário detalhar depois.
+          const { data: novoCampo, error: campoErr } = await sb.from(table)
+            .insert({ classe_id: modalCtx.parentId, nome, ordem, folha: true }).select('id').single();
+          error = campoErr;
+          if (!error) {
+            ({ error } = await sb.from('lancamentos_subcampos').insert({ campo_id: novoCampo.id, nome, ordem: 1 }));
+          }
+        } else {
+          ({ error } = await sb.from(table).insert({ campo_id: modalCtx.parentId, nome, ordem }));
+          // Detalhar um campo folha: ele deixa de ser folha e passa a mostrar os subcampos.
+          const campoPai = campos.find(c => c.id === modalCtx.parentId);
+          if (!error && campoPai && campoPai.folha) {
+            ({ error } = await sb.from('lancamentos_campos').update({ folha: false }).eq('id', campoPai.id));
+          }
+        }
       } else {
         ({ error } = await sb.from(table).update({ nome }).eq('id', modalCtx.editId));
+        // Campo folha e seu subcampo espelho andam juntos — renomear um renomeia o outro.
+        const campoEditado = modalCtx.tipo === 'campo' ? campos.find(c => c.id === modalCtx.editId) : null;
+        if (!error && campoEditado && campoEditado.folha) {
+          const espelho = subcamposDoCampo(campoEditado.id)[0];
+          if (espelho) ({ error } = await sb.from('lancamentos_subcampos').update({ nome }).eq('id', espelho.id));
+        }
       }
       if (error) {
         const el = document.getElementById('modal-error');
@@ -529,6 +620,13 @@
     }
 
     // ── Sidebar mobile ──
+    function toggleDreSubmenu(prefix) {
+      const submenu = document.getElementById(prefix+'-dre-submenu');
+      const btn = document.getElementById(prefix+'-dre-expand-btn');
+      const isOpen = submenu.classList.toggle('open');
+      if (btn) btn.classList.toggle('expanded', isOpen);
+    }
+
     function lcSidebarOpen() { document.getElementById('lc-sidebar').classList.add('open'); document.getElementById('lc-sidebar-backdrop').classList.add('open'); document.body.style.overflow='hidden'; }
     function lcSidebarClose() { document.getElementById('lc-sidebar').classList.remove('open'); document.getElementById('lc-sidebar-backdrop').classList.remove('open'); document.body.style.overflow=''; }
     document.getElementById('lc-hamburger').addEventListener('click', lcSidebarOpen);
@@ -558,7 +656,7 @@
 
       if (prof.is_admin) { const a=document.getElementById('lc-sidebar-admin'); if(a) a.style.display='flex'; }
       if (prof.is_admin || prof.can_resumo !== false) { const s=document.getElementById('lc-sidebar-resumo'); if(s) s.style.display='flex'; }
-      if (prof.is_admin || prof.can_dre !== false) { const s=document.getElementById('lc-sidebar-dre'); if(s) s.style.display='flex'; }
+      if (prof.is_admin || prof.can_dre !== false) { const s=document.getElementById('lc-sidebar-dre'); if(s) s.style.display='flex'; const b=document.getElementById('lc-dre-expand-btn'); if(b) b.style.display='flex'; }
       if (prof.is_admin || prof.can_mapa_societario === true) { const s=document.getElementById('lc-sidebar-mapasoc'); if(s) s.style.display='flex'; }
       if (prof.is_admin || prof.can_funcionarios === true) { const s=document.getElementById('lc-sidebar-funcionarios'); if(s) s.style.display='flex'; }
       if (prof.is_admin || prof.can_fluxo_caixa === true) { const s=document.getElementById('lc-sidebar-fluxocaixa'); if(s) s.style.display='flex'; }
