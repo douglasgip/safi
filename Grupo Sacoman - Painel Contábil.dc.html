@@ -789,6 +789,7 @@
     <div id="dc-tab-bar" style="display:flex;gap:0;margin-top:-1px">
       <button id="dc-tab-btn-0" onClick="{{ setTab0 }}" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid {{ tab0BorderColor }};color:{{ tab0TextColor }};font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;display:{{ tab0Display }}">Resumo Contábil</button>
       <button id="dc-tab-btn-1" onClick="{{ setTab1 }}" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid {{ tab1BorderColor }};color:{{ tab1TextColor }};font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;display:{{ tab1Display }}">DRE</button>
+      <a href="/fluxo-caixa" id="dc-tab-btn-2" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid transparent;color:#9ca3af;font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;text-decoration:none;display:{{ tabFluxoCaixaDisplay }}">Fluxo de Caixa</a>
     </div>
   </div>
 
@@ -1956,6 +1957,7 @@ class Component extends DCLogic {
       tab1TextColor:tab===1?'#d97706':'#9ca3af',
       tab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'block':'none';})(),
       tab1Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_dre!==false)?'block':'none';})(),
+      tabFluxoCaixaDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_fluxo_caixa===true))?'block':'none';})(),
       sidebarTab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'flex':'none';})(),
       sidebarTab1Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_dre!==false)?'flex':'none';})(),
       sidebarMapaSocDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_mapa_societario===true))?'flex':'none';})(),
