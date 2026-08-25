@@ -603,6 +603,17 @@
             </div>
           </div>
         </div>
+
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Fluxo de Caixa</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Ativos, passivos e caixa do grupo — visível por padrão só pra ninguém</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-fluxocaixa">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('fluxocaixa', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('fluxocaixa', false)">Não</button>
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -643,7 +654,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 let currentSession = null;
 let deleteTarget   = null;
-const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false };
+const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, fluxocaixa: false };
 
 // ── Auth ──────────────────────────────────────────────
 async function init() {
@@ -766,7 +777,7 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','fluxocaixa'].forEach(k => setToggle(k, false));
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-email').focus();
@@ -796,6 +807,7 @@ function openEditModal(u) {
   setToggle('func-epgip',      !!u.funcionarios_epgip);
   setToggle('func-exposicao',  !!u.funcionarios_exposicao);
   setToggle('func-viacloset',  !!u.funcionarios_viacloset);
+  setToggle('fluxocaixa',      !!u.can_fluxo_caixa);
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
 }
@@ -836,6 +848,7 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     funcionarios_epgip:     toggleState['func-epgip'],
     funcionarios_exposicao: toggleState['func-exposicao'],
     funcionarios_viacloset: toggleState['func-viacloset'],
+    can_fluxo_caixa: toggleState.fluxocaixa,
   };
 
   let fnUrl, fnBody;

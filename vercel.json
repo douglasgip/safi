@@ -8,6 +8,7 @@
     { "source": "/login", "destination": "/login.html" },
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/mapa-societario", "destination": "/mapa-societario.html" },
-    { "source": "/funcionarios", "destination": "/funcionarios.html" }
+    { "source": "/funcionarios", "destination": "/funcionarios.html" },
+    { "source": "/fluxo-caixa", "destination": "/fluxo-caixa.html" }
   ]
 }

@@ -161,16 +161,18 @@
       transform: translateY(-6px) scale(1.01);
       box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.3);
     }
-    .card-resumo:hover { border-color: rgba(245,158,11,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.15), 0 0 40px rgba(245,158,11,0.08); }
-    .card-dre:hover    { border-color: rgba(99,102,241,0.35);  box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15), 0 0 40px rgba(99,102,241,0.08); }
+    .card-resumo:hover     { border-color: rgba(245,158,11,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.15), 0 0 40px rgba(245,158,11,0.08); }
+    .card-dre:hover        { border-color: rgba(99,102,241,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15), 0 0 40px rgba(99,102,241,0.08); }
+    .card-fluxocaixa:hover { border-color: rgba(52,211,153,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(52,211,153,0.15), 0 0 40px rgba(52,211,153,0.08); }
 
     .card-icon {
       width: 52px; height: 52px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 20px;
     }
-    .card-icon-resumo { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.1)); border: 1px solid rgba(245,158,11,0.25); }
-    .card-icon-dre    { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(79,70,229,0.1));  border: 1px solid rgba(99,102,241,0.25); }
+    .card-icon-resumo     { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.1)); border: 1px solid rgba(245,158,11,0.25); }
+    .card-icon-dre        { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(79,70,229,0.1));  border: 1px solid rgba(99,102,241,0.25); }
+    .card-icon-fluxocaixa { background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(16,185,129,0.1)); border: 1px solid rgba(52,211,153,0.25); }
 
     .card-title { font-size: 18px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
     .card-desc  { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 24px; }
@@ -180,8 +182,9 @@
       font-size: 12px; font-weight: 600;
       transition: gap 0.2s;
     }
-    .card-resumo .card-arrow { color: #f59e0b; }
-    .card-dre    .card-arrow { color: #818cf8; }
+    .card-resumo     .card-arrow { color: #f59e0b; }
+    .card-dre        .card-arrow { color: #818cf8; }
+    .card-fluxocaixa .card-arrow { color: #34d399; }
     .card:hover .card-arrow { gap: 10px; }
 
     /* Card Gerôn — banner horizontal abaixo dos cards principais */
@@ -292,6 +295,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Funcionários
       </a>
+      <a href="/fluxo-caixa" id="home-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+        Fluxo de Caixa
+      </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
       <a href="/admin" id="home-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
@@ -354,6 +361,21 @@
         </div>
         <div class="card-title">DRE</div>
         <div class="card-desc">Demonstração do Resultado do Exercício com margem, custos e lucro líquido.</div>
+        <div class="card-arrow">
+          Acessar
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
+      <a href="/fluxo-caixa" id="card-fluxocaixa" class="card card-fluxocaixa" style="display:none">
+        <div class="card-icon card-icon-fluxocaixa">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/>
+          </svg>
+        </div>
+        <div class="card-title">Fluxo de Caixa</div>
+        <div class="card-desc">Movimentação de caixa, ativos e passivos do grupo.</div>
         <div class="card-arrow">
           Acessar
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -455,6 +477,11 @@
       if (showFuncionarios) {
         const c=document.getElementById('card-funcionarios'); if(c) c.style.display='';
         const s=document.getElementById('home-sidebar-funcionarios'); if(s) s.style.display='flex';
+      }
+      const showFluxoCaixa = !!prof && (prof.is_admin || prof.can_fluxo_caixa === true);
+      if (showFluxoCaixa) {
+        const c=document.getElementById('card-fluxocaixa'); if(c) c.style.display='';
+        const s=document.getElementById('home-sidebar-fluxocaixa'); if(s) s.style.display='flex';
       }
       loadKPIs(latest.data);
 

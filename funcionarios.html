@@ -200,6 +200,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Funcionários
       </a>
+      <a href="/fluxo-caixa" id="func-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+        Fluxo de Caixa
+      </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
       <a href="/admin" id="func-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
@@ -655,6 +659,9 @@
       }
       if (prof.is_admin || prof.can_mapa_societario === true) {
         const s = document.getElementById('func-sidebar-mapasoc'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_fluxo_caixa === true) {
+        const s = document.getElementById('func-sidebar-fluxocaixa'); if (s) s.style.display = 'flex';
       }
 
       const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
