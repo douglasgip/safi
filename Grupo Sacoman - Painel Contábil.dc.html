@@ -786,11 +786,6 @@
         </sc-if>
       </div>
     </div>
-    <div id="dc-tab-bar" style="display:flex;gap:0;margin-top:-1px">
-      <button id="dc-tab-btn-0" onClick="{{ setTab0 }}" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid {{ tab0BorderColor }};color:{{ tab0TextColor }};font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;display:{{ tab0Display }}">Resumo Contábil</button>
-      <button id="dc-tab-btn-1" onClick="{{ setTab1 }}" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid {{ tab1BorderColor }};color:{{ tab1TextColor }};font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;display:{{ tab1Display }}">DRE</button>
-      <a href="/fluxo-caixa" id="dc-tab-btn-2" style="padding:10px 22px;background:transparent;border:none;border-bottom:2px solid transparent;color:#9ca3af;font-family:Inter,sans-serif;font-size:11px;font-weight:600;cursor:pointer;letter-spacing:1px;text-transform:uppercase;text-decoration:none;display:{{ tabFluxoCaixaDisplay }}">Fluxo de Caixa</a>
-    </div>
   </div>
 
   <!-- ══ TAB 1: RESUMO CONTÁBIL ══ -->
@@ -2007,13 +2002,6 @@ class Component extends DCLogic {
 
     return {
       tab0Active:tab===0,tab1Active:tab===1,
-      tab0BorderColor:tab===0?'#f59e0b':'transparent',
-      tab1BorderColor:tab===1?'#f59e0b':'transparent',
-      tab0TextColor:tab===0?'#d97706':'#9ca3af',
-      tab1TextColor:tab===1?'#d97706':'#9ca3af',
-      tab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'block':'none';})(),
-      tab1Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_dre!==false)?'block':'none';})(),
-      tabFluxoCaixaDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_fluxo_caixa===true))?'block':'none';})(),
       sidebarTab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'flex':'none';})(),
       sidebarTab1Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_dre!==false)?'flex':'none';})(),
       sidebarMapaSocDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_mapa_societario===true))?'flex':'none';})(),
@@ -2035,8 +2023,6 @@ class Component extends DCLogic {
       openDreEvoChart:()=>this.setState({expandedChart:'dre-evo'}),
       openDrePieChart:()=>this.setState({expandedChart:'dre-pie'}),
       openDreMargemChart:()=>this.setState({expandedChart:'dre-margem'}),
-      setTab0:()=>{window.history.pushState({},'','/resumocontabil');document.title='SAFI | Resumo Contábil';this.setState({tab:0});},
-      setTab1:()=>{window.history.pushState({},'','/dre');document.title='SAFI | DRE';this.setState({tab:1});},
       setMonthComp:e=>{const v=parseInt(e.target.value);this.setState({monthStart:v,monthEnd:v});},
       setMonthStart:e=>{const v=parseInt(e.target.value);this.setState({monthStart:v,monthEnd:Math.max(v,this.state.monthEnd)});},
       setMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({monthEnd:v,monthStart:Math.min(v,this.state.monthStart)});},
