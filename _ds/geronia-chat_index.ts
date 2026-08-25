@@ -107,6 +107,13 @@ const OP_LABEL: Record<OpKey, string> = {
 }
 const MES_NOME = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
+// Cada chamada aqui aciona a API paga da Anthropic — sem limite, um loop de
+// frontend ou uso abusivo vira custo direto. Generoso o bastante pro uso normal
+// (uma pergunta a cada poucos segundos numa conversa ativa), curto o bastante
+// pra cortar abuso rápido.
+const RATE_LIMIT_WINDOW_MINUTES = 10
+const RATE_LIMIT_MAX_MESSAGES = 20
+
 function fmtR(n: number) {
   return 'R$ ' + n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -223,6 +230,18 @@ Deno.serve(async (req: Request) => {
     if (!token) return json({ error: 'Não autenticado' }, 401)
     const { data: { user: caller } } = await sb.auth.getUser(token)
     if (!caller) return json({ error: 'Não autenticado' }, 401)
+
+    // Rate limit por usuário — protege contra loop de frontend ou abuso gerando custo de API.
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MINUTES * 60_000).toISOString()
+    const { count: recentMessages } = await sb
+      .from('geronia_conversations')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', caller.id)
+      .eq('role', 'user')
+      .gte('created_at', windowStart)
+    if ((recentMessages ?? 0) >= RATE_LIMIT_MAX_MESSAGES) {
+      return json({ error: `Muitas mensagens em pouco tempo. Aguarde alguns minutos antes de continuar.` }, 429)
+    }
 
     const { message, thread_id } = await req.json()
     if (!message || typeof message !== 'string' || !message.trim()) return json({ error: 'Mensagem vazia' }, 400)

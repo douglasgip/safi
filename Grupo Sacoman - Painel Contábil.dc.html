@@ -555,7 +555,7 @@
         });
       }).then(function(r){ return r.json(); }).then(function(data){
         state.loading = false;
-        var reply = { role:'assistant', content: data && data.reply ? data.reply : 'Desculpe, não consegui processar sua pergunta agora. Tente novamente em instantes.' };
+        var reply = { role:'assistant', content: data && data.reply ? data.reply : (data && data.error ? data.error : 'Desculpe, não consegui processar sua pergunta agora. Tente novamente em instantes.') };
         state.messages.push(reply);
         state.pendingAnimate = reply;
         if (data && data.thread_id) state.threadId = data.thread_id;
