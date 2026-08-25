@@ -614,6 +614,55 @@
             <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('fluxocaixa', false)">Não</button>
           </div>
         </div>
+
+        <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div>
+              <div class="perm-name">Lançamentos</div>
+              <div style="font-size:10.5px;color:#64748b;margin-top:2px">Lançar e editar os dados do DRE — visível por padrão só pra ninguém</div>
+            </div>
+            <div class="toggle-wrap" id="toggle-lancamentos">
+              <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('lancamentos', true)">Sim</button>
+              <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('lancamentos', false)">Não</button>
+            </div>
+          </div>
+
+          <div class="dre-ops" id="lancamentos-ops" style="display:none">
+            <div class="dre-ops-label">Empresas que pode lançar</div>
+
+            <div class="perm-row">
+              <div class="perm-name">EP</div>
+              <div class="toggle-wrap" id="toggle-lanc-ep">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('lanc-ep', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('lanc-ep', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">GIP (Guilherme)</div>
+              <div class="toggle-wrap" id="toggle-lanc-gip">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('lanc-gip', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('lanc-gip', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Exposição Paulista</div>
+              <div class="toggle-wrap" id="toggle-lanc-exposicao">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('lanc-exposicao', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('lanc-exposicao', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Via Closet</div>
+              <div class="toggle-wrap" id="toggle-lanc-viacloset">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('lanc-viacloset', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('lanc-viacloset', false)">Não</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -654,7 +703,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 let currentSession = null;
 let deleteTarget   = null;
-const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, fluxocaixa: false };
+const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, fluxocaixa: false, lancamentos: false, 'lanc-ep': false, 'lanc-gip': false, 'lanc-exposicao': false, 'lanc-viacloset': false };
 
 // ── Auth ──────────────────────────────────────────────
 async function init() {
@@ -762,6 +811,9 @@ function setToggle(key, val) {
   if (key === 'funcionarios') {
     document.getElementById('funcionarios-ops').style.display = val ? 'block' : 'none';
   }
+  if (key === 'lancamentos') {
+    document.getElementById('lancamentos-ops').style.display = val ? 'block' : 'none';
+  }
 }
 
 // ── Modal Criar ───────────────────────────────────────
@@ -777,7 +829,7 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','fluxocaixa'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset'].forEach(k => setToggle(k, false));
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-email').focus();
@@ -808,6 +860,11 @@ function openEditModal(u) {
   setToggle('func-exposicao',  !!u.funcionarios_exposicao);
   setToggle('func-viacloset',  !!u.funcionarios_viacloset);
   setToggle('fluxocaixa',      !!u.can_fluxo_caixa);
+  setToggle('lancamentos',       !!u.can_lancamentos);
+  setToggle('lanc-ep',           !!u.lancamentos_ep);
+  setToggle('lanc-gip',          !!u.lancamentos_gip);
+  setToggle('lanc-exposicao',    !!u.lancamentos_exposicao);
+  setToggle('lanc-viacloset',    !!u.lancamentos_viacloset);
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
 }
@@ -849,6 +906,11 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     funcionarios_exposicao: toggleState['func-exposicao'],
     funcionarios_viacloset: toggleState['func-viacloset'],
     can_fluxo_caixa: toggleState.fluxocaixa,
+    can_lancamentos:       toggleState.lancamentos,
+    lancamentos_ep:        toggleState['lanc-ep'],
+    lancamentos_gip:       toggleState['lanc-gip'],
+    lancamentos_exposicao: toggleState['lanc-exposicao'],
+    lancamentos_viacloset: toggleState['lanc-viacloset'],
   };
 
   let fnUrl, fnBody;

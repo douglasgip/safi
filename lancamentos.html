@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Lançamentos</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column;
+      background: #080b14; color: #f1f5f9;
+    }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, #1a1060 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%);
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #7c3aed; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #lc-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #lc-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-title-block { display: flex; align-items: center; gap: 9px; }
+    .header-title { font-size: 14px; font-weight: 800; color: #f1f5f9; }
+    .header-restricted { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: .3px; color: #c4b5fd; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); padding: 3px 9px; border-radius: 6px; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(139,92,246,0.12); color: #c4b5fd; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+    .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
+
+    .mode-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+    .mode-tab { padding: 10px 18px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; color: #64748b; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s; }
+    .mode-tab.active { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+    .mode-tab:not(.active):hover { color: #cbd5e1; }
+
+    .entry-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+    .entry-filters select, .entry-filters input { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; }
+    .btn-save { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 60%, #7c3aed 100%); border: none; border-radius: 10px; color: #1a0a3d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #5b21b6; transition: transform 0.1s; }
+    .btn-save:hover { transform: translateY(-1px); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .classe-card { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
+    .classe-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .classe-nome { font-size: 13px; font-weight: 800; letter-spacing: .3px; }
+    .classe-nome.positivo { color: #4ade80; } .classe-nome.negativo { color: #f87171; }
+    .classe-total { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .classe-body { padding: 4px 18px 14px; }
+
+    .campo-row { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .campo-row:last-child { border-bottom: none; }
+    .campo-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+    .campo-nome { font-size: 12.5px; font-weight: 700; color: #e2e8f0; }
+    .campo-total { font-size: 12.5px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; }
+    .subcampo-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0 5px 16px; }
+    .subcampo-nome { font-size: 12px; color: #64748b; }
+    .subcampo-input { width: 150px; padding: 7px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+    .subcampo-input:focus { outline: none; border-color: #8b5cf6; background: rgba(139,92,246,0.05); }
+
+    .manage-classe-title { display: flex; align-items: center; gap: 8px; }
+    .manage-campo-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .manage-campo-row.inativo .campo-nome { color: #475569; text-decoration: line-through; }
+    .manage-subcampo-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0 7px 18px; }
+    .manage-subcampo-row.inativo .subcampo-nome { color: #475569; text-decoration: line-through; }
+    .row-actions { display: flex; gap: 5px; flex-shrink: 0; }
+    .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #64748b; cursor: pointer; transition: all .15s; }
+    .icon-btn:hover { background: rgba(139,92,246,0.12); color: #c4b5fd; }
+    .icon-btn.danger:hover { background: rgba(239,68,68,0.12); color: #f87171; }
+    .icon-btn.locked { opacity: 0.35; cursor: not-allowed; }
+    .btn-add-inline { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 6px 12px; background: rgba(139,92,246,0.08); border: 1px dashed rgba(139,92,246,0.3); border-radius: 8px; color: #c4b5fd; font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+    .btn-add-inline:hover { background: rgba(139,92,246,0.14); }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 400px; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 16px; font-weight: 800; color: #f8fafc; margin-bottom: 18px; }
+    .field label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; }
+    .field input { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; }
+    .field input:focus { outline: none; border-color: #8b5cf6; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; }
+    .modal-error.visible { display: block; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-submit { flex: 1; padding: 12px; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 60%, #7c3aed 100%); border: none; border-radius: 10px; color: #1a0a3d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-cancel { padding: 12px 18px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .confirm-overlay { display: none; position: fixed; inset: 0; z-index: 210; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-card { background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 30px 26px; max-width: 380px; text-align: center; }
+    .confirm-title { font-size: 16px; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }
+    .confirm-text { font-size: 13px; color: #64748b; margin-bottom: 22px; line-height: 1.5; }
+    .confirm-actions { display: flex; gap: 10px; }
+    .btn-confirm-delete { flex: 1; padding: 12px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 11px; color: #f87171; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-confirm-cancel { flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 11px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; }
+    .toast.visible { opacity: 1; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+
+    #lc-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 768px) {
+      .header { padding: 0 14px; } .main { padding: 14px; }
+      .subcampo-input { width: 110px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="lc-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="lc-sidebar">
+    <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07)">
+      <div id="lc-sidebar-user" style="display:flex;align-items:center;gap:12px;margin-bottom:4px"></div>
+      <div style="font-size:9px;font-weight:600;color:#334155;letter-spacing:2px;text-transform:uppercase;margin-top:12px">Navegação</div>
+    </div>
+    <div style="padding:12px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
+      <a href="/" class="dc-sidebar-nav-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+      <a href="/resumocontabil" id="lc-sidebar-resumo" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Resumo Contábil
+      </a>
+      <a href="/dre" id="lc-sidebar-dre" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        DRE
+      </a>
+      <a href="/geronia" class="dc-sidebar-nav-btn">
+        <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
+        GerônIA
+      </a>
+      <a href="/mapa-societario" id="lc-sidebar-mapasoc" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
+        Mapa Societário
+      </a>
+      <a href="/funcionarios" id="lc-sidebar-funcionarios" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Funcionários
+      </a>
+      <a href="/fluxo-caixa" id="lc-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+        Fluxo de Caixa
+      </a>
+      <a href="/lancamentos" class="dc-sidebar-nav-btn active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+        Lançamentos
+      </a>
+    </div>
+    <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
+      <a href="/admin" id="lc-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+        Admin
+      </a>
+    </div>
+  </aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="lc-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none">
+        <img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full">
+      </a>
+      <div class="header-title-block">
+        <span class="header-title">Lançamentos</span>
+        <span class="header-restricted">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Acesso restrito
+        </span>
+      </div>
+    </div>
+    <div id="lc-nav-user-info" style="display:none"></div>
+  </header>
+
+  <div id="lc-loading">Carregando…</div>
+
+  <main class="main" id="lc-main" style="display:none">
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-lancar" onclick="setMode('lancar')">Lançar Valores</button>
+      <button class="mode-tab" id="tab-gerenciar" onclick="setMode('gerenciar')">Gerenciar Estrutura</button>
+    </div>
+
+    <!-- ══ MODO: LANÇAR VALORES ══ -->
+    <div id="view-lancar">
+      <div class="no-company-notice" id="no-empresa-notice" style="display:none">
+        Você tem acesso a Lançamentos, mas nenhuma empresa foi liberada para você lançar em Gestão de Acessos.
+      </div>
+      <div class="entry-filters" id="entry-filters" style="display:none">
+        <select id="f-empresa" onchange="loadEntryValues()"></select>
+        <select id="f-mes" onchange="loadEntryValues()">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <input type="number" id="f-ano" value="2026" style="width:90px">
+        <div style="flex:1"></div>
+        <button class="btn-save" id="btn-save-valores" onclick="saveValores()">Salvar Lançamentos</button>
+      </div>
+      <div id="entry-tree"></div>
+    </div>
+
+    <!-- ══ MODO: GERENCIAR ESTRUTURA ══ -->
+    <div id="view-gerenciar" style="display:none">
+      <div id="manage-tree"></div>
+    </div>
+  </main>
+
+  <!-- Modal Campo/Subcampo -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-title">Novo Campo</div>
+      <div class="modal-error" id="modal-error"></div>
+      <form id="entity-form">
+        <div class="field">
+          <label id="modal-field-label">Nome</label>
+          <input type="text" id="f-nome" required>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit">Salvar</button>
+          <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar -->
+  <div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-card">
+      <div class="confirm-title" id="confirm-title">Confirmar</div>
+      <div class="confirm-text" id="confirm-text"></div>
+      <div class="confirm-actions">
+        <button class="btn-confirm-delete" id="btn-confirm-action">Confirmar</button>
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">
+    <span class="toast-dot" id="toast-dot"></span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const EMPRESAS = [
+      { id:'EP', nome:'EP', flag:'lancamentos_ep' },
+      { id:'GIP', nome:'GIP (Guilherme)', flag:'lancamentos_gip' },
+      { id:'Exposicao', nome:'Exposição Paulista (Isabela)', flag:'lancamentos_exposicao' },
+      { id:'ViaCloset', nome:'Via Closet (Juliane)', flag:'lancamentos_viacloset' },
+    ];
+
+    let prof = null;
+    let allowedEmpresas = [];
+    let classes = [], campos = [], subcampos = [];
+    let valoresAtuais = {}; // subcampoId -> valor (para a empresa/mes/ano selecionados)
+    let confirmAction = null;
+
+    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function redirect(path) { window.location.replace(path); }
+    function fmtR(n) { return (n<0?'-':'') + 'R$ ' + Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+    function camposDaClasse(classeId) { return campos.filter(c => c.classe_id === classeId).sort((a,b)=>a.ordem-b.ordem); }
+    function subcamposDoCampo(campoId) { return subcampos.filter(s => s.campo_id === campoId).sort((a,b)=>a.ordem-b.ordem); }
+
+    // ── Modo ──
+    function setMode(mode) {
+      document.getElementById('tab-lancar').classList.toggle('active', mode==='lancar');
+      document.getElementById('tab-gerenciar').classList.toggle('active', mode==='gerenciar');
+      document.getElementById('view-lancar').style.display = mode==='lancar' ? 'block' : 'none';
+      document.getElementById('view-gerenciar').style.display = mode==='gerenciar' ? 'block' : 'none';
+      if (mode==='gerenciar') renderManageTree();
+    }
+
+    // ── Modo Lançar Valores ──
+    function populateEmpresaSelect() {
+      const sel = document.getElementById('f-empresa');
+      sel.innerHTML = allowedEmpresas.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+    }
+
+    async function loadEntryValues() {
+      const empresa = document.getElementById('f-empresa').value;
+      const mes = parseInt(document.getElementById('f-mes').value);
+      const ano = parseInt(document.getElementById('f-ano').value);
+      if (!empresa) return;
+      const { data, error } = await sb.from('lancamentos_valores').select('subcampo_id,valor').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes);
+      valoresAtuais = {};
+      if (!error) (data||[]).forEach(v => { valoresAtuais[v.subcampo_id] = +v.valor||0; });
+      renderEntryTree();
+    }
+
+    function renderEntryTree() {
+      const el = document.getElementById('entry-tree');
+      el.innerHTML = classes.map(classe => {
+        const camposAtivos = camposDaClasse(classe.id).filter(c => c.ativo);
+        const camposHtml = camposAtivos.map(campo => {
+          const subs = subcamposDoCampo(campo.id).filter(s => s.ativo);
+          const subsHtml = subs.map(s => {
+            const v = valoresAtuais[s.id] || '';
+            return `<div class="subcampo-row">
+              <span class="subcampo-nome">${esc(s.nome)}</span>
+              <input type="number" step="0.01" class="subcampo-input" id="in-${s.id}" data-campo="${campo.id}" value="${v}" oninput="recomputeTotals()">
+            </div>`;
+          }).join('');
+          return `<div class="campo-row">
+            <div class="campo-head">
+              <span class="campo-nome">${esc(campo.nome)}</span>
+              <span class="campo-total" id="campo-total-${campo.id}">R$ 0,00</span>
+            </div>
+            ${subsHtml || '<div style="font-size:11.5px;color:#475569;padding-left:16px">Nenhum subcampo cadastrado — crie em "Gerenciar Estrutura".</div>'}
+          </div>`;
+        }).join('');
+        return `<div class="classe-card">
+          <div class="classe-head">
+            <span class="classe-nome ${classe.sinal}">${esc(classe.nome)}</span>
+            <span class="classe-total" id="classe-total-${classe.id}">R$ 0,00</span>
+          </div>
+          <div class="classe-body">${camposHtml || '<div style="font-size:12px;color:#475569;padding:10px 0">Nenhum campo nesta classe.</div>'}</div>
+        </div>`;
+      }).join('');
+      recomputeTotals();
+    }
+
+    function recomputeTotals() {
+      campos.forEach(campo => {
+        const subs = subcamposDoCampo(campo.id).filter(s => s.ativo);
+        let total = 0;
+        subs.forEach(s => { const inp = document.getElementById('in-'+s.id); if (inp) total += parseFloat(inp.value)||0; });
+        const el = document.getElementById('campo-total-'+campo.id);
+        if (el) el.textContent = fmtR(total);
+      });
+      classes.forEach(classe => {
+        const camposAtivos = camposDaClasse(classe.id).filter(c => c.ativo);
+        let total = 0;
+        camposAtivos.forEach(campo => {
+          subcamposDoCampo(campo.id).filter(s=>s.ativo).forEach(s => { const inp=document.getElementById('in-'+s.id); if (inp) total += parseFloat(inp.value)||0; });
+        });
+        const el = document.getElementById('classe-total-'+classe.id);
+        if (el) el.textContent = fmtR(total);
+      });
+    }
+
+    async function saveValores() {
+      const empresa = document.getElementById('f-empresa').value;
+      const mes = parseInt(document.getElementById('f-mes').value);
+      const ano = parseInt(document.getElementById('f-ano').value);
+      if (!empresa) return;
+      const btn = document.getElementById('btn-save-valores');
+      btn.disabled = true; btn.textContent = 'Salvando...';
+
+      const rows = [];
+      subcampos.filter(s => s.ativo).forEach(s => {
+        const inp = document.getElementById('in-'+s.id);
+        if (!inp) return;
+        rows.push({ subcampo_id: s.id, empresa_id: empresa, ano, mes, valor: parseFloat(inp.value)||0, updated_at: new Date().toISOString() });
+      });
+      const { error } = await sb.from('lancamentos_valores').upsert(rows, { onConflict: 'subcampo_id,empresa_id,ano,mes' });
+      btn.disabled = false; btn.textContent = 'Salvar Lançamentos';
+      if (error) showToast(error.message, 'red');
+      else showToast('Lançamentos salvos — o DRE já foi atualizado', 'green');
+    }
+
+    // ── Modo Gerenciar Estrutura ──
+    function renderManageTree() {
+      const el = document.getElementById('manage-tree');
+      el.innerHTML = classes.map(classe => {
+        const camposHtml = camposDaClasse(classe.id).map(campo => {
+          const subsHtml = subcamposDoCampo(campo.id).map(s => {
+            const locked = !!s.chave;
+            return `<div class="manage-subcampo-row ${s.ativo?'':'inativo'}">
+              <span class="subcampo-nome">${esc(s.nome)}</span>
+              <div class="row-actions">
+                <button class="icon-btn" title="Renomear" onclick="openEditModal('subcampo','${s.id}','${esc(s.nome)}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>
+                ${locked
+                  ? `<span class="icon-btn locked" title="Protegido — usado por outras partes do sistema, não pode ser excluído"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>`
+                  : s.ativo
+                    ? `<button class="icon-btn danger" title="Excluir" onclick="confirmToggleAtivo('subcampo','${s.id}','${esc(s.nome)}',false)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>`
+                    : `<button class="icon-btn" title="Reativar" onclick="toggleAtivo('subcampo','${s.id}',true)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>`
+                }
+              </div>
+            </div>`;
+          }).join('');
+          return `<div class="manage-campo-row ${campo.ativo?'':'inativo'}" style="flex-direction:column;align-items:stretch">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span class="campo-nome">${esc(campo.nome)}</span>
+              <div class="row-actions">
+                <button class="icon-btn" title="Renomear" onclick="openEditModal('campo','${campo.id}','${esc(campo.nome)}')">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                </button>
+                ${campo.ativo
+                  ? `<button class="icon-btn danger" title="Excluir" onclick="confirmToggleAtivo('campo','${campo.id}','${esc(campo.nome)}',false)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>`
+                  : `<button class="icon-btn" title="Reativar" onclick="toggleAtivo('campo','${campo.id}',true)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>`
+                }
+              </div>
+            </div>
+            ${subsHtml}
+            <button class="btn-add-inline" onclick="openCreateModal('subcampo','${campo.id}')">+ Adicionar Subcampo</button>
+          </div>`;
+        }).join('');
+        return `<div class="classe-card">
+          <div class="classe-head"><span class="classe-nome ${classe.sinal}">${esc(classe.nome)}</span></div>
+          <div class="classe-body">
+            ${camposHtml}
+            <button class="btn-add-inline" onclick="openCreateModal('campo','${classe.id}')">+ Adicionar Campo</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // ── Modal Novo/Editar ──
+    let modalCtx = null; // {tipo:'campo'|'subcampo', mode:'create'|'edit', parentId, editId}
+    function openCreateModal(tipo, parentId) {
+      modalCtx = { tipo, mode:'create', parentId };
+      document.getElementById('modal-title').textContent = tipo==='campo' ? 'Novo Campo' : 'Novo Subcampo';
+      document.getElementById('f-nome').value = '';
+      document.getElementById('modal-error').className = 'modal-error';
+      document.getElementById('modal').classList.add('open');
+      document.getElementById('f-nome').focus();
+    }
+    function openEditModal(tipo, id, nomeAtual) {
+      modalCtx = { tipo, mode:'edit', editId:id };
+      document.getElementById('modal-title').textContent = tipo==='campo' ? 'Renomear Campo' : 'Renomear Subcampo';
+      document.getElementById('f-nome').value = nomeAtual;
+      document.getElementById('modal-error').className = 'modal-error';
+      document.getElementById('modal').classList.add('open');
+    }
+    function closeModal() { document.getElementById('modal').classList.remove('open'); modalCtx = null; }
+
+    document.getElementById('entity-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const nome = document.getElementById('f-nome').value.trim();
+      if (!nome) return;
+      const table = modalCtx.tipo === 'campo' ? 'lancamentos_campos' : 'lancamentos_subcampos';
+      let error;
+      if (modalCtx.mode === 'create') {
+        const list = modalCtx.tipo === 'campo' ? camposDaClasse(modalCtx.parentId) : subcamposDoCampo(modalCtx.parentId);
+        const ordem = list.length ? Math.max(...list.map(x=>x.ordem)) + 1 : 1;
+        const payload = modalCtx.tipo === 'campo'
+          ? { classe_id: modalCtx.parentId, nome, ordem }
+          : { campo_id: modalCtx.parentId, nome, ordem };
+        ({ error } = await sb.from(table).insert(payload));
+      } else {
+        ({ error } = await sb.from(table).update({ nome }).eq('id', modalCtx.editId));
+      }
+      if (error) {
+        const el = document.getElementById('modal-error');
+        el.textContent = error.message; el.className = 'modal-error visible';
+        return;
+      }
+      closeModal();
+      showToast('Salvo com sucesso', 'green');
+      await loadTaxonomy();
+      renderManageTree();
+    });
+
+    // ── Ativar/Desativar (soft-delete) ──
+    function confirmToggleAtivo(tipo, id, nome, novoAtivo) {
+      confirmAction = () => toggleAtivo(tipo, id, novoAtivo);
+      document.getElementById('confirm-title').textContent = 'Excluir ' + (tipo==='campo'?'Campo':'Subcampo') + '?';
+      document.getElementById('confirm-text').textContent = `"${nome}" some da tela de lançar valores, mas o histórico já lançado continua contando certinho no DRE. Dá pra reativar depois.`;
+      document.getElementById('confirm-modal').classList.add('open');
+      document.getElementById('btn-confirm-action').onclick = () => { closeConfirm(); confirmAction && confirmAction(); };
+    }
+    function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); confirmAction = null; }
+
+    async function toggleAtivo(tipo, id, ativo) {
+      const table = tipo === 'campo' ? 'lancamentos_campos' : 'lancamentos_subcampos';
+      const { error } = await sb.from(table).update({ ativo }).eq('id', id);
+      if (error) { showToast(error.message, 'red'); return; }
+      showToast(ativo ? 'Reativado' : 'Removido', ativo ? 'green' : 'red');
+      await loadTaxonomy();
+      renderManageTree();
+    }
+
+    document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+    document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    // ── Toast ──
+    let _toastTimer;
+    function showToast(msg, color='green') {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-dot').className = `toast-dot ${color}`;
+      document.getElementById('toast-msg').textContent = msg;
+      el.classList.add('visible');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('visible'), 3500);
+    }
+
+    // ── Sidebar mobile ──
+    function lcSidebarOpen() { document.getElementById('lc-sidebar').classList.add('open'); document.getElementById('lc-sidebar-backdrop').classList.add('open'); document.body.style.overflow='hidden'; }
+    function lcSidebarClose() { document.getElementById('lc-sidebar').classList.remove('open'); document.getElementById('lc-sidebar-backdrop').classList.remove('open'); document.body.style.overflow=''; }
+    document.getElementById('lc-hamburger').addEventListener('click', lcSidebarOpen);
+    document.getElementById('lc-sidebar-backdrop').addEventListener('click', lcSidebarClose);
+
+    async function loadTaxonomy() {
+      const [c1,c2,c3] = await Promise.all([
+        sb.from('lancamentos_classes').select('*').order('ordem'),
+        sb.from('lancamentos_campos').select('*').order('ordem'),
+        sb.from('lancamentos_subcampos').select('*').order('ordem'),
+      ]);
+      classes = c1.data || []; campos = c2.data || []; subcampos = c3.data || [];
+    }
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return redirect('/login');
+
+      const { data: profRows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      prof = (profRows && profRows[0]) || null;
+      const allowed = !!prof && (prof.is_admin || prof.can_lancamentos === true);
+      if (!allowed) return redirect('/');
+
+      allowedEmpresas = prof.is_admin ? EMPRESAS : EMPRESAS.filter(e => prof[e.flag] === true);
+      document.getElementById('no-empresa-notice').style.display = allowedEmpresas.length ? 'none' : 'block';
+      document.getElementById('entry-filters').style.display = allowedEmpresas.length ? 'flex' : 'none';
+
+      if (prof.is_admin) { const a=document.getElementById('lc-sidebar-admin'); if(a) a.style.display='flex'; }
+      if (prof.is_admin || prof.can_resumo !== false) { const s=document.getElementById('lc-sidebar-resumo'); if(s) s.style.display='flex'; }
+      if (prof.is_admin || prof.can_dre !== false) { const s=document.getElementById('lc-sidebar-dre'); if(s) s.style.display='flex'; }
+      if (prof.is_admin || prof.can_mapa_societario === true) { const s=document.getElementById('lc-sidebar-mapasoc'); if(s) s.style.display='flex'; }
+      if (prof.is_admin || prof.can_funcionarios === true) { const s=document.getElementById('lc-sidebar-funcionarios'); if(s) s.style.display='flex'; }
+      if (prof.is_admin || prof.can_fluxo_caixa === true) { const s=document.getElementById('lc-sidebar-fluxocaixa'); if(s) s.style.display='flex'; }
+
+      const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
+      const parts = name.split(/\s+/);
+      const initials = parts.length >= 2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+      const sidebarUserEl = document.getElementById('lc-sidebar-user');
+      if (sidebarUserEl) {
+        sidebarUserEl.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#8b5cf6,#6d28d9);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0">'+initials+'</div>'
+          +'<div style="display:flex;flex-direction:column;gap:1px;min-width:0">'
+          +'<div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+esc(name)+'</div>'
+          +(prof.role ? '<div style="font-size:9px;font-weight:600;color:#64748b;white-space:nowrap">'+(prof.is_admin?'&#9670; ':'')+esc(prof.role)+'</div>' : '')
+          +'</div>';
+        if (window.UserMenu) window.UserMenu.attach(sidebarUserEl, sb);
+      }
+
+      await loadTaxonomy();
+      if (allowedEmpresas.length) {
+        populateEmpresaSelect();
+        await loadEntryValues();
+      }
+
+      document.getElementById('lc-loading').style.display = 'none';
+      document.getElementById('lc-main').style.display = 'block';
+    }
+
+    init();
+  </script>
+</body>
+</html>
