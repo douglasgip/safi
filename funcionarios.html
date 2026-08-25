@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="/user-menu.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -78,6 +79,8 @@
     .btn-new { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 60%, #7c3aed 100%); border: none; border-radius: 10px; color: #1a0a3d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #5b21b6, 0 6px 14px rgba(139,92,246,0.2); transition: transform 0.1s, box-shadow 0.1s; white-space: nowrap; }
     .btn-new:hover { transform: translateY(-1px); }
     .btn-new:active { transform: translateY(2px); box-shadow: 0 2px 0 #5b21b6; }
+    .btn-export { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #cbd5e1; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .btn-export:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
 
     /* ── Tabela ── */
     .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
@@ -259,6 +262,10 @@
         <option value="5+">Mais de 5 anos</option>
       </select>
       <div class="filters-spacer"></div>
+      <button class="btn-export" id="btn-export-func" onclick="exportXLSX()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar XLSX
+      </button>
       <button class="btn-new" id="btn-new-func" onclick="openCreateModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Novo Colaborador
@@ -527,6 +534,33 @@
       document.getElementById(id).addEventListener('change', renderTable);
     });
 
+    // ── Exportar XLSX ──
+    function exportXLSX() {
+      const rows = allRows.filter(passesFilters);
+      if (!rows.length) { showToast('Nada para exportar com esses filtros.', 'red'); return; }
+
+      const data = rows.map(r => ({
+        'Empresa': r.empresa,
+        'Nome': r.nome,
+        'Data de Nascimento': fmtDate(r.data_nascimento),
+        'Telefone': r.telefone || '',
+        'CPF': r.cpf || '',
+        'Endereço': r.endereco || '',
+        'E-mail': r.email || '',
+        'Data de Admissão': fmtDate(r.data_admissao),
+        'Tempo de Casa': tempoDeCasa(r.data_admissao).label,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws['!cols'] = [
+        { wch: 18 }, { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 36 }, { wch: 28 }, { wch: 16 }, { wch: 18 },
+      ];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Funcionários');
+      const today = new Date().toISOString().slice(0, 10);
+      XLSX.writeFile(wb, `funcionarios_SAFI_${today}.xlsx`);
+    }
+
     // ── Modal Criar/Editar ──
     function openCreateModal() {
       if (!allowedCompanies.length) return;
@@ -660,6 +694,7 @@
       populateEmpresaFilters();
       document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
       document.getElementById('btn-new-func').style.display = allowedCompanies.length ? 'inline-flex' : 'none';
+      document.getElementById('btn-export-func').style.display = allowedCompanies.length ? 'inline-flex' : 'none';
 
       if (prof.is_admin) {
         const a = document.getElementById('func-sidebar-admin'); if (a) a.style.display = 'flex';
