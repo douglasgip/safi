@@ -1278,6 +1278,18 @@ class Component extends DCLogic {
   _dreOutlineColors = {};
   _dreLogos = {'EPGIP':'/public/gipecommerce_logo.png','Exposicao':'/public/exposicaopaulista_logo.png','ViaCloset':'/public/viacloset_logo.png','Consolidado':'/public/favicon.png'};
   _expand(co){ return this._members[co] || [co]; }
+  // 'Consolidado' tem ajustes manuais próprios (não é soma das 4 empresas base — confirmado
+  // com os dados reais) e por isso nunca entra no Lançamentos. Pra continuar mostrando as
+  // linhas detalhadas nessa visão específica, mapeamos as colunas antigas pro Campo
+  // correspondente na nova taxonomia (mesmo agrupamento usado na migração).
+  _LEGACY_COL_TO_CAMPO = {
+    comissoes:'Comissões / Taxa Maquininha', devolucoes:'Devoluções / Cancelamentos',
+    icms_grpr:'ICMS / GRPR', simples_das:'Simples / DAS', outros_impostos:'Outros Impostos',
+    cmv:'CMV — Custo da Mercadoria', comissoes_colaboradores:'Comissões de Colaboradores',
+    outros_custos_variaveis:'Outros Custos Variáveis', adm:'Despesas Administrativas & Outros',
+    pro_labore:'Pró-Labore', ocupacao:'Despesas de Ocupação / Aluguel',
+    pessoal_folha:'Despesas de Pessoal', pessoal_inss:'Despesas de Pessoal', pessoal_outros:'Despesas de Pessoal'
+  };
 
   _eData = [];
   _resumoMap = {};
@@ -1356,10 +1368,14 @@ class Component extends DCLogic {
         fetch(`${B}/rest/v1/resumo_mensal?select=*&ano=eq.2026&order=empresa_id`, {headers:hU}),
         fetch(`${B}/rest/v1/dre_consolidado?select=*&ano=eq.2026&order=mes`, {headers:hU}),
         fetch(`${B}/rest/v1/alertas?select=*&ativo=eq.true&order=ordem`, {headers:hU}),
-        userId ? fetch(`${B}/rest/v1/user_profiles?select=*&id=eq.${userId}`, {headers:hU}) : Promise.resolve(null)
+        userId ? fetch(`${B}/rest/v1/user_profiles?select=*&id=eq.${userId}`, {headers:hU}) : Promise.resolve(null),
+        fetch(`${B}/rest/v1/lancamentos_classes?select=*&order=ordem`, {headers:hU}),
+        fetch(`${B}/rest/v1/lancamentos_campos?select=*&order=ordem`, {headers:hU}),
+        fetch(`${B}/rest/v1/lancamentos_subcampos?select=*&order=ordem`, {headers:hU}),
+        fetch(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026`, {headers:hU})
       ];
-      const [r1,r2,r3,r4,r5] = await Promise.all(requests);
-      const [emps,resumo,dre,alertas] = await Promise.all([r1.json(),r2.json(),r3.json(),r4.json()]);
+      const [r1,r2,r3,r4,r5,r6,r7,r8,r9] = await Promise.all(requests);
+      const [emps,resumo,dre,alertas,lancClasses,lancCampos,lancSubcampos,lancValores] = await Promise.all([r1.json(),r2.json(),r3.json(),r4.json(),r6.json(),r7.json(),r8.json(),r9.json()]);
       const profArr = r5 ? await r5.json() : [];
       const prof = profArr[0] || null;
       this._userProfile = prof;
@@ -1371,6 +1387,19 @@ class Component extends DCLogic {
       });
       dre.forEach(d => { this._dreDataMap[`${d.empresa_id}-${d.mes}`] = d; });
       this._alertasArr = alertas;
+      // Lançamentos (Classe > Campo > Subcampo > Valor) - alimenta as linhas detalhadas do DRE
+      this._lancClasses = (lancClasses||[]).sort((a,b)=>a.ordem-b.ordem);
+      this._lancCamposPorClasse = {};
+      this._lancCampoIdByNome = {};
+      (lancCampos||[]).sort((a,b)=>a.ordem-b.ordem).forEach(c => {
+        (this._lancCamposPorClasse[c.classe_id] ||= []).push(c);
+        this._lancCampoIdByNome[c.nome] = c.id;
+      });
+      this._lancSubcampos = lancSubcampos||[];
+      this._lancValoresMap = {};
+      (lancValores||[]).forEach(v => {
+        this._lancValoresMap[`${v.subcampo_id}-${v.empresa_id}-${v.mes}`] = +v.valor||0;
+      });
       this._loadedAt = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
       // Aplica restricoes de permissao
       if (prof && !prof.is_admin) {
@@ -1410,22 +1439,45 @@ class Component extends DCLogic {
   }
 
   _dreCalcRange(selectedCos, mesStart, mesEnd) {
-    let rb=0,ec=0,vc=0,exp=0,com=0,dev=0,icms=0,das=0,oi=0,rl=0,cmv=0,iw=0,ocv=0,mc=0,adm=0,pro=0,ocp=0,fol=0,ins=0,op=0,res=0;
+    let rb=0,ec=0,vc=0,exp=0,icms=0,das=0,oi=0,rl=0,cmv=0,mc=0,res=0;
+    const camposTotais = {};
     for (let m = mesStart; m <= mesEnd; m++) {
       selectedCos.forEach(co => {
         this._expand(co).forEach(mid => {
           const d = this._dreDataMap[`${mid}-${m}`];
-          if (!d) return;
-          rb+=+d.receita_bruta||0; ec+=+d.canal_ecommerce||0; vc+=+d.canal_via_closet||0; exp+=+d.canal_exposicao||0;
-          com+=+d.comissoes||0; dev+=+d.devolucoes||0; icms+=+d.icms_grpr||0; das+=+d.simples_das||0; oi+=+d.outros_impostos||0;
-          rl+=+d.receita_liquida||0; cmv+=+d.cmv||0; iw+=+d.comissoes_colaboradores||0; ocv+=+d.outros_custos_variaveis||0;
-          mc+=+d.margem_contribuicao||0; adm+=+d.adm||0; pro+=+d.pro_labore||0; ocp+=+d.ocupacao||0;
-          fol+=+d.pessoal_folha||0; ins+=+d.pessoal_inss||0; op+=+d.pessoal_outros||0; res+=+d.resultado_liquido||0;
+          if (d) {
+            const rbVal = +d.receita_bruta||0;
+            rb += rbVal;
+            // Receita bruta por operação — computado por empresa (substitui as antigas
+            // colunas canal_ecommerce/canal_via_closet/canal_exposicao, redundantes).
+            if (mid==='EP'||mid==='GIP') ec += rbVal;
+            else if (mid==='ViaCloset') vc += rbVal;
+            else if (mid==='Exposicao') exp += rbVal;
+            rl+=+d.receita_liquida||0; mc+=+d.margem_contribuicao||0; res+=+d.resultado_liquido||0;
+            icms+=+d.icms_grpr||0; das+=+d.simples_das||0; oi+=+d.outros_impostos||0; cmv+=+d.cmv||0;
+            // 'Consolidado' não existe no Lançamentos (ajustes manuais próprios) — usa as
+            // colunas antigas direto, mapeadas pro mesmo Campo que os demais usariam.
+            if (mid === 'Consolidado') {
+              Object.keys(this._LEGACY_COL_TO_CAMPO).forEach(col => {
+                const campoId = this._lancCampoIdByNome[this._LEGACY_COL_TO_CAMPO[col]];
+                const val = +d[col]||0;
+                if (campoId && val) camposTotais[campoId] = (camposTotais[campoId]||0) + val;
+              });
+            }
+          }
+          // Linhas detalhadas: somam os Subcampos de Lançamentos por Campo (dinâmico,
+          // reflete o que o Aldemar cadastrar/lançar, sem depender de nomes de coluna fixos).
+          (this._lancSubcampos||[]).forEach(s => {
+            const v = this._lancValoresMap[`${s.id}-${mid}-${m}`];
+            if (v) camposTotais[s.campo_id] = (camposTotais[s.campo_id]||0) + v;
+          });
         });
       });
     }
-    const ded=com+dev+icms+das+oi, cvar=cmv+iw+ocv, gop=adm+pro+ocp+fol+ins+op;
-    return {rb,ec,vc,exp,com,dev,icms,das,oi,ded,rl,cmv,iw,ocv,cvar,mc,adm,pro,ocp,fol,ins,op,gop,res};
+    // Deduções/Custos Variáveis/Gastos Operacionais por subtração — sempre exatos
+    // independente de quantos Campos existirem (a soma dos synced fields é a fonte da verdade).
+    const ded=rb-rl, cvar=rl-mc, gop=mc-res;
+    return {rb,ec,vc,exp,icms,das,oi,ded,rl,cmv,cvar,mc,gop,res,camposTotais};
   }
 
   _dreRows(selectedCos) {
@@ -1435,38 +1487,42 @@ class Component extends DCLogic {
     const d=this._dreCalcRange(selectedCos, ms+1, me+1);
     // Período anterior equivalente (mesmo número de meses, imediatamente antes)
     const dp=(ms-L>=0)?this._dreCalcRange(selectedCos, ms-L+1, ms):null;
-    const {rb,ec,vc,exp,com,dev,icms,das,oi,ded,rl,cmv,iw,ocv,cvar,mc,adm,pro,ocp,fol,ins,op,gop,res}=d;
+    const {rb,ec,vc,exp,icms,das,oi,ded,rl,cmv,cvar,mc,gop,res,camposTotais}=d;
     const av=v=>(rb>0?(v/rb*100).toFixed(1):'0.0').replace('.',',')+'%';
     const ahv=(c,p)=>{ if(dp==null||p==null||p===0) return '—'; const x=(c-p)/Math.abs(p)*100; return (x>=0?'+':'')+x.toFixed(1).replace('.',',')+'%'; };
     const ah=k=>ahv(d[k], dp?dp[k]:null);
     const rows=[];
+
+    const classes = this._lancClasses||[];
+    const camposPorClasse = this._lancCamposPorClasse||{};
+    const findClasse = nome => classes.find(c => c.nome === nome);
+    const campoRows = (classeNome, sinalMult) => {
+      const classe = findClasse(classeNome);
+      if (!classe) return [];
+      return (camposPorClasse[classe.id]||[])
+        .filter(campo => (camposTotais[campo.id]||0) > 0)
+        .map(campo => {
+          const v = camposTotais[campo.id]||0;
+          const pv = dp ? (dp.camposTotais[campo.id]||0) : null;
+          return {t:'S', l:campo.nome, v:sinalMult*v, a:av(v), h:ahv(v,pv), i:1};
+        });
+    };
+
     rows.push({t:'H',l:'BLOCO 1 — RECEITA'});
     rows.push({t:'I',l:'(+) Receita Operacional Bruta',v:rb,a:av(rb),h:ah('rb'),i:0,b:1});
     if(ec>0) rows.push({t:'S',l:'GIP Ecommerce',v:ec,a:av(ec),h:ah('ec'),i:1});
     if(vc>0) rows.push({t:'S',l:'Via Closet',v:vc,a:av(vc),h:ah('vc'),i:1});
     if(exp>0) rows.push({t:'S',l:'Exposição Paulista',v:exp,a:av(exp),h:ah('exp'),i:1});
     rows.push({t:'I',l:'(−) Deduções da Receita',v:-ded,a:av(ded),h:ah('ded'),i:0});
-    if(com>0) rows.push({t:'S',l:'Comissões / Taxa Maquininha',v:-com,a:av(com),h:ah('com'),i:1});
-    if(dev>0) rows.push({t:'S',l:'Devoluções / Cancelamentos',v:-dev,a:av(dev),h:ah('dev'),i:1});
-    if(icms>0) rows.push({t:'S',l:'ICMS / GRPR',v:-icms,a:av(icms),h:ah('icms'),i:1});
-    if(das>0) rows.push({t:'S',l:'Simples / DAS',v:-das,a:av(das),h:ah('das'),i:1});
-    if(oi>0) rows.push({t:'S',l:'Outros Impostos',v:-oi,a:av(oi),h:ah('oi'),i:1});
+    campoRows('Deduções da Receita', -1).forEach(r=>rows.push(r));
     rows.push({t:'R',l:'(=) Receita Líquida',v:rl,a:av(rl),h:ah('rl'),i:0});
     rows.push({t:'H',l:'BLOCO 2 — CUSTOS VARIÁVEIS'});
     rows.push({t:'I',l:'(−) Custos Variáveis',v:-cvar,a:av(cvar),h:ah('cvar'),i:0,b:1});
-    rows.push({t:'S',l:'CMV — Custo da Mercadoria',v:-cmv,a:av(cmv),h:ah('cmv'),i:1});
-    if(iw>0) rows.push({t:'S',l:'Comissões de Colaboradores',v:-iw,a:av(iw),h:ah('iw'),i:1});
-    if(ocv>0) rows.push({t:'S',l:'Outros Custos Variáveis',v:-ocv,a:av(ocv),h:ah('ocv'),i:1});
+    campoRows('Custos Variáveis', -1).forEach(r=>rows.push(r));
     rows.push({t:'R',l:'(=) Margem de Contribuição',v:mc,a:av(mc),h:ah('mc'),i:0});
     rows.push({t:'H',l:'BLOCO 3 — OPERACIONAL'});
     rows.push({t:'I',l:'(−) Gastos Operacionais',v:-gop,a:av(gop),h:ah('gop'),i:0,b:1});
-    if(adm>0) rows.push({t:'S',l:'Despesas Administrativas & Outros',v:-adm,a:av(adm),h:ah('adm'),i:1});
-    if(pro>0) rows.push({t:'S',l:'Pró-Labore',v:-pro,a:av(pro),h:ah('pro'),i:1});
-    if(ocp>0) rows.push({t:'S',l:'Despesas de Ocupação / Aluguel',v:-ocp,a:av(ocp),h:ah('ocp'),i:1});
-    rows.push({t:'I',l:'Despesas de Pessoal',v:-(fol+ins+op),a:av(fol+ins+op),h:ahv(fol+ins+op, dp?dp.fol+dp.ins+dp.op:null),i:1});
-    rows.push({t:'S',l:'Folha de Pagamento',v:-fol,a:av(fol),h:ah('fol'),i:2});
-    rows.push({t:'S',l:'INSS / FGTS',v:-ins,a:av(ins),h:ah('ins'),i:2});
-    if(op>0) rows.push({t:'S',l:'Outros Encargos',v:-op,a:av(op),h:ah('op'),i:2});
+    campoRows('Gastos Operacionais', -1).forEach(r=>rows.push(r));
     rows.push({t:'R',l:'(=) Resultado Líquido',v:res,a:av(res),h:ah('res'),i:0});
     return rows;
   }
