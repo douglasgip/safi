@@ -133,6 +133,11 @@
     .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
     .dc-sidebar-submenu { display: flex; flex-direction: column; }
     .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
     .dc-mobile-filter { display: none; }
 
     /* ══ MOBILE ══ */
@@ -712,6 +717,9 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           DRE
         </button>
+        <button type="button" onClick="{{ toggleSidebarLancamentos }}" class="dc-sidebar-chevron{{ sidebarDreToggleClass }}" aria-label="Recolher/expandir Lançamentos" style="display:{{ sidebarDreToggleDisplay }}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
       <div class="dc-sidebar-submenu">
         <a href="/lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:{{ sidebarLancamentosDisplay }}">
@@ -1268,7 +1276,7 @@
 
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: 6, monthEnd: 6, selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'] };
+  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: 6, monthEnd: 6, selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1' };
   _c = {};
 
   _months = ['Jan/2026','Fev/2026','Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026'];
@@ -2018,7 +2026,10 @@ class Component extends DCLogic {
       sidebarMapaSocDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_mapa_societario===true))?'flex':'none';})(),
       sidebarFuncionariosDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_funcionarios===true))?'flex':'none';})(),
       sidebarFluxoCaixaDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_fluxo_caixa===true))?'flex':'none';})(),
-      sidebarLancamentosDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_lancamentos===true))?'flex':'none';})(),
+      sidebarLancamentosDisplay:(()=>{const p=this._userProfile;const perm=p&&(p.is_admin||p.can_lancamentos===true);return(perm&&!this.state.sidebarLancamentosCollapsed)?'flex':'none';})(),
+      sidebarDreToggleDisplay:(()=>{const p=this._userProfile;return(p&&(p.is_admin||p.can_lancamentos===true))?'flex':'none';})(),
+      sidebarDreToggleClass:this.state.sidebarLancamentosCollapsed?' collapsed':'',
+      toggleSidebarLancamentos:()=>{const v=!this.state.sidebarLancamentosCollapsed;localStorage.setItem('sidebar-lancamentos-collapsed',v?'1':'0');this.setState({sidebarLancamentosCollapsed:v});},
       periodLabel,currentMonthLabel:periodLabel,monthStart:ms,monthEnd:me,loadedAt:this._loadedAt||'...',
       companyKPIsDisplay:selectedCos.length>=2?'grid':'none',
       companyKPIsMaxH:selectedCos.length>=2?'600px':'0px',

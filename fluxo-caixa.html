@@ -66,6 +66,11 @@
     .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
     .dc-sidebar-submenu { display: flex; flex-direction: column; }
     .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
 
     .main { position: relative; z-index: 10; flex: 1; display: flex; flex-direction: column; min-height: 0; }
 
@@ -112,8 +117,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           DRE
         </a>
+        <button type="button" id="fc-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
-      <div class="dc-sidebar-submenu">
+      <div class="dc-sidebar-submenu" id="fc-sidebar-dre-submenu">
         <a href="/lancamentos" id="fc-sidebar-lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
           Lançamentos
@@ -199,6 +207,27 @@
     document.getElementById('fc-hamburger').addEventListener('click', fcSidebarOpen);
     document.getElementById('fc-sidebar-backdrop').addEventListener('click', fcSidebarClose);
 
+    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
+    (function() {
+      var KEY = 'sidebar-lancamentos-collapsed';
+      var btn = document.getElementById('fc-sidebar-dre-toggle');
+      var sub = document.getElementById('fc-sidebar-dre-submenu');
+      if (!btn || !sub) return;
+      var collapsed = localStorage.getItem(KEY) === '1';
+      function apply() {
+        sub.classList.toggle('collapsed', collapsed);
+        btn.classList.toggle('collapsed', collapsed);
+        btn.setAttribute('aria-expanded', String(!collapsed));
+      }
+      apply();
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        collapsed = !collapsed;
+        localStorage.setItem(KEY, collapsed ? '1' : '0');
+        apply();
+      });
+    })();
+
     async function init() {
       const { data } = await sb.auth.getSession();
       if (!data.session) return redirect('/login');
@@ -225,6 +254,7 @@
       }
       if (prof.is_admin || prof.can_lancamentos === true) {
         const s = document.getElementById('fc-sidebar-lancamentos'); if (s) s.style.display = 'flex';
+        const t = document.getElementById('fc-sidebar-dre-toggle'); if (t) t.style.display = 'flex';
       }
 
       const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();

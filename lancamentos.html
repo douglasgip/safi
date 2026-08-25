@@ -58,6 +58,11 @@
     .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
     .dc-sidebar-submenu { display: flex; flex-direction: column; }
     .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
     .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
@@ -169,8 +174,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           DRE
         </a>
+        <button type="button" id="lc-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
-      <div class="dc-sidebar-submenu">
+      <div class="dc-sidebar-submenu" id="lc-sidebar-dre-submenu">
         <a href="/lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn active">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
           Lançamentos
@@ -617,6 +625,27 @@
     document.getElementById('lc-hamburger').addEventListener('click', lcSidebarOpen);
     document.getElementById('lc-sidebar-backdrop').addEventListener('click', lcSidebarClose);
 
+    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
+    (function() {
+      var KEY = 'sidebar-lancamentos-collapsed';
+      var btn = document.getElementById('lc-sidebar-dre-toggle');
+      var sub = document.getElementById('lc-sidebar-dre-submenu');
+      if (!btn || !sub) return;
+      var collapsed = localStorage.getItem(KEY) === '1';
+      function apply() {
+        sub.classList.toggle('collapsed', collapsed);
+        btn.classList.toggle('collapsed', collapsed);
+        btn.setAttribute('aria-expanded', String(!collapsed));
+      }
+      apply();
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        collapsed = !collapsed;
+        localStorage.setItem(KEY, collapsed ? '1' : '0');
+        apply();
+      });
+    })();
+
     async function loadTaxonomy() {
       const [c1,c2,c3] = await Promise.all([
         sb.from('lancamentos_classes').select('*').order('ordem'),
@@ -641,7 +670,7 @@
 
       if (prof.is_admin) { const a=document.getElementById('lc-sidebar-admin'); if(a) a.style.display='flex'; }
       if (prof.is_admin || prof.can_resumo !== false) { const s=document.getElementById('lc-sidebar-resumo'); if(s) s.style.display='flex'; }
-      if (prof.is_admin || prof.can_dre !== false) { const s=document.getElementById('lc-sidebar-dre'); if(s) s.style.display='flex'; }
+      if (prof.is_admin || prof.can_dre !== false) { const s=document.getElementById('lc-sidebar-dre'); if(s) s.style.display='flex'; const t=document.getElementById('lc-sidebar-dre-toggle'); if(t) t.style.display='flex'; }
       if (prof.is_admin || prof.can_mapa_societario === true) { const s=document.getElementById('lc-sidebar-mapasoc'); if(s) s.style.display='flex'; }
       if (prof.is_admin || prof.can_funcionarios === true) { const s=document.getElementById('lc-sidebar-funcionarios'); if(s) s.style.display='flex'; }
       if (prof.is_admin || prof.can_fluxo_caixa === true) { const s=document.getElementById('lc-sidebar-fluxocaixa'); if(s) s.style.display='flex'; }

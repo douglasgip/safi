@@ -108,6 +108,11 @@
     .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
     .dc-sidebar-submenu { display: flex; flex-direction: column; }
     .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
 
     /* Main content */
     .main {
@@ -224,10 +229,33 @@
     .card-geronia-desc { font-size: 12.5px; color: #64748b; line-height: 1.5; }
     .card-geronia-arrow { color: #818cf8; flex-shrink: 0; transition: transform 0.2s; }
     .card-geronia:hover .card-geronia-arrow { transform: translateX(4px); }
-    .card-mapasoc-icon { width: 54px; height: 54px; border-radius: 50%; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .card-mapasoc:hover { border-color: rgba(139,92,246,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.15), 0 0 40px rgba(139,92,246,0.08); }
-    .card-mapasoc:hover .card-geronia-arrow { color: #c4b5fd; }
     .card-mapasoc-badge { display: flex; align-items: center; gap: 4px; font-size: 9.5px; color: #c4b5fd; font-weight: 700; letter-spacing: 0.3px; background: rgba(139,92,246,0.1); padding: 2px 7px; border-radius: 5px; }
+
+    /* Grid secundário — Mapa Societário / Funcionários / Lançamentos */
+    .cards-secondary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 948px; margin-top: 16px; }
+    .card-mini {
+      display: flex; flex-direction: column;
+      background: rgba(15,23,42,0.65);
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 20px 20px 18px;
+      cursor: pointer;
+      text-decoration: none; color: inherit;
+      transition: transform 0.2s cubic-bezier(.16,1,.3,1), box-shadow 0.2s, border-color 0.2s;
+    }
+    .card-mini:hover {
+      transform: translateY(-4px);
+      border-color: rgba(139,92,246,0.35);
+      box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(139,92,246,0.15), 0 0 32px rgba(139,92,246,0.08);
+    }
+    .card-mini-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; flex-shrink: 0; }
+    .card-mini-title-row { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; flex-wrap: wrap; }
+    .card-mini-title { font-size: 14.5px; font-weight: 700; color: #f1f5f9; }
+    .card-mini-desc { font-size: 11.5px; color: #64748b; line-height: 1.5; margin-bottom: 14px; flex: 1; }
+    .card-mini-arrow { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #c4b5fd; transition: gap 0.2s; }
+    .card-mini:hover .card-mini-arrow { gap: 8px; }
 
     .footer {
       position: relative; z-index: 10;
@@ -253,9 +281,10 @@
       .card-geronia-wrap { max-width: 100%; margin-top: 14px; }
       .card-geronia { padding: 16px 18px; gap: 14px; border-radius: 16px; }
       .card-geronia-avatar { width: 44px; height: 44px; }
-      .card-mapasoc-icon { width: 44px; height: 44px; }
       .card-geronia-title { font-size: 14.5px; }
       .card-geronia-desc { font-size: 12px; }
+      .cards-secondary { grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
+      .card-mini { padding: 18px 18px 16px; border-radius: 14px; }
     }
   </style>
 </head>
@@ -287,8 +316,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           DRE
         </a>
+        <button type="button" id="home-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
-      <div class="dc-sidebar-submenu">
+      <div class="dc-sidebar-submenu" id="home-sidebar-dre-submenu">
         <a href="/lancamentos" id="home-sidebar-lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
           Lançamentos
@@ -409,52 +441,53 @@
       </a>
     </div>
 
-    <div class="card-geronia-wrap" id="card-mapasoc" style="display:none">
-      <a href="/mapa-societario" class="card-geronia card-mapasoc">
-        <div class="card-mapasoc-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
-        </div>
-        <div class="card-geronia-body">
-          <div class="card-geronia-title-row">
-            <div class="card-geronia-title">Mapa Societário</div>
-            <div class="card-mapasoc-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Restrito</div>
-          </div>
-          <div class="card-geronia-desc">Estrutura societária das empresas do grupo — CNPJs, sócios e participação.</div>
-        </div>
-        <svg class="card-geronia-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </div>
+    <div class="cards-secondary">
 
-    <div class="card-geronia-wrap" id="card-funcionarios" style="display:none">
-      <a href="/funcionarios" class="card-geronia card-mapasoc">
-        <div class="card-mapasoc-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <a href="/mapa-societario" id="card-mapasoc" class="card-mini" style="display:none">
+        <div class="card-mini-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
         </div>
-        <div class="card-geronia-body">
-          <div class="card-geronia-title-row">
-            <div class="card-geronia-title">Funcionários</div>
-            <div class="card-mapasoc-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Restrito</div>
-          </div>
-          <div class="card-geronia-desc">Cadastro de colaboradores do grupo — dados pessoais e tempo de casa por empresa.</div>
+        <div class="card-mini-title-row">
+          <div class="card-mini-title">Mapa Societário</div>
+          <div class="card-mapasoc-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Restrito</div>
         </div>
-        <svg class="card-geronia-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        <div class="card-mini-desc">Estrutura societária das empresas do grupo — CNPJs, sócios e participação.</div>
+        <div class="card-mini-arrow">
+          Acessar
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
       </a>
-    </div>
 
-    <div class="card-geronia-wrap" id="card-lancamentos" style="display:none">
-      <a href="/lancamentos" class="card-geronia card-mapasoc">
-        <div class="card-mapasoc-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+      <a href="/funcionarios" id="card-funcionarios" class="card-mini" style="display:none">
+        <div class="card-mini-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
-        <div class="card-geronia-body">
-          <div class="card-geronia-title-row">
-            <div class="card-geronia-title">Lançamentos</div>
-            <div class="card-mapasoc-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Restrito</div>
-          </div>
-          <div class="card-geronia-desc">Lance e organize os dados do DRE por Classe, Campo e Subcampo.</div>
+        <div class="card-mini-title-row">
+          <div class="card-mini-title">Funcionários</div>
+          <div class="card-mapasoc-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Restrito</div>
         </div>
-        <svg class="card-geronia-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        <div class="card-mini-desc">Cadastro de colaboradores do grupo — dados pessoais e tempo de casa por empresa.</div>
+        <div class="card-mini-arrow">
+          Acessar
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
       </a>
+
+      <a href="/lancamentos" id="card-lancamentos" class="card-mini" style="display:none">
+        <div class="card-mini-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+        </div>
+        <div class="card-mini-title-row">
+          <div class="card-mini-title">Lançamentos</div>
+          <div class="card-mapasoc-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Restrito</div>
+        </div>
+        <div class="card-mini-desc">Lance e organize os dados do DRE por Classe, Campo e Subcampo.</div>
+        <div class="card-mini-arrow">
+          Acessar
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
     </div>
   </main>
 
@@ -514,6 +547,7 @@
       if (showLancamentos) {
         const c=document.getElementById('card-lancamentos'); if(c) c.style.display='';
         const s=document.getElementById('home-sidebar-lancamentos'); if(s) s.style.display='flex';
+        const t=document.getElementById('home-sidebar-dre-toggle'); if(t) t.style.display='flex';
       }
       loadKPIs(latest.data);
 
@@ -545,6 +579,27 @@
     }
     document.getElementById('home-hamburger').addEventListener('click', homeSidebarOpen);
     document.getElementById('home-sidebar-backdrop').addEventListener('click', homeSidebarClose);
+
+    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
+    (function() {
+      var KEY = 'sidebar-lancamentos-collapsed';
+      var btn = document.getElementById('home-sidebar-dre-toggle');
+      var sub = document.getElementById('home-sidebar-dre-submenu');
+      if (!btn || !sub) return;
+      var collapsed = localStorage.getItem(KEY) === '1';
+      function apply() {
+        sub.classList.toggle('collapsed', collapsed);
+        btn.classList.toggle('collapsed', collapsed);
+        btn.setAttribute('aria-expanded', String(!collapsed));
+      }
+      apply();
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        collapsed = !collapsed;
+        localStorage.setItem(KEY, collapsed ? '1' : '0');
+        apply();
+      });
+    })();
 
     const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];

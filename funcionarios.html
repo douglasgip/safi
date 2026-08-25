@@ -66,6 +66,11 @@
     .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
     .dc-sidebar-submenu { display: flex; flex-direction: column; }
     .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
 
@@ -161,6 +166,20 @@
     #func-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
     .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
 
+    /* ── Gráficos ── */
+    .charts-row { display: none; gap: 18px; margin-top: 18px; }
+    .chart-card { flex: 1; min-width: 260px; background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px 22px; }
+    .chart-title { font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 16px; }
+    .chart-body { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .chart-svg-wrap { flex-shrink: 0; }
+    .chart-legend { flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 9px; }
+    .legend-row { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .legend-logo { width: 18px; height: 18px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+    .legend-label { flex: 1; color: #cbd5e1; font-weight: 600; }
+    .legend-value { color: #64748b; font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+    .chart-empty { color: #475569; font-size: 12.5px; padding: 20px 0; }
+
     @media (max-width: 768px) {
       .header { padding: 0 14px; }
       .header-logo-full { height: 24px; }
@@ -169,6 +188,7 @@
       .filters-bar { flex-direction: column; align-items: stretch; }
       .filter-search { max-width: none; }
       .modal-card { padding: 22px 18px; }
+      .charts-row { flex-direction: column; }
     }
   </style>
 </head>
@@ -199,8 +219,11 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
           DRE
         </a>
+        <button type="button" id="func-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
       </div>
-      <div class="dc-sidebar-submenu">
+      <div class="dc-sidebar-submenu" id="func-sidebar-dre-submenu">
         <a href="/lancamentos" id="func-sidebar-lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:none">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
           Lançamentos
@@ -306,6 +329,17 @@
         </table>
       </div>
     </div>
+
+    <div class="charts-row" id="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Colaboradores por empresa</div>
+        <div class="chart-body" id="chart-empresa-body"></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Tempo de casa</div>
+        <div class="chart-body" id="chart-tempo-body"></div>
+      </div>
+    </div>
   </main>
 
   <!-- Modal Criar/Editar -->
@@ -396,6 +430,13 @@
     const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
     const COMPANY_FLAG = { 'GIP Ecommerce': 'funcionarios_epgip', 'Exposição Paulista': 'funcionarios_exposicao', 'Via Closet': 'funcionarios_viacloset' };
     const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
+    const EMPRESA_COLORS = { 'Exposição Paulista': '#d97706', 'Via Closet': '#e11d48', 'GIP Ecommerce': '#6366f1' };
+    const TENURE_BUCKETS = [
+      { key: 'lt1', label: 'Menos de 1 ano', color: '#c7d2fe' },
+      { key: '1-3', label: '1 a 3 anos', color: '#a5b4fc' },
+      { key: '3-5', label: '3 a 5 anos', color: '#818cf8' },
+      { key: '5+', label: 'Mais de 5 anos', color: '#4f46e5' },
+    ];
     const COPY_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 
     let currentProfile = null;
@@ -429,6 +470,66 @@
       else label = yearsLabel + ' e ' + monthsLabel;
       const bucket = years < 1 ? 'lt1' : (years < 3 ? '1-3' : (years < 5 ? '3-5' : '5+'));
       return { label, bucket };
+    }
+
+    // ── Gráficos de pizza (empresa / tempo de casa) ──
+    function pieSlicesSVG(segments, size) {
+      const total = segments.reduce((s, x) => s + x.value, 0);
+      const r = size / 2;
+      const cx = r, cy = r;
+      if (!total) return '';
+      const nonZero = segments.filter(s => s.value > 0);
+      if (nonZero.length === 1) {
+        return `<circle cx="${cx}" cy="${cy}" r="${r - 1}" fill="${nonZero[0].color}" stroke="#080b14" stroke-width="2"/>`;
+      }
+      let angle = -90;
+      let paths = '';
+      nonZero.forEach(seg => {
+        const sweep = seg.value / total * 360;
+        const a1 = angle * Math.PI / 180;
+        const a2 = (angle + sweep) * Math.PI / 180;
+        const x1 = cx + (r - 1) * Math.cos(a1), y1 = cy + (r - 1) * Math.sin(a1);
+        const x2 = cx + (r - 1) * Math.cos(a2), y2 = cy + (r - 1) * Math.sin(a2);
+        const large = sweep > 180 ? 1 : 0;
+        paths += `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r-1},${r-1} 0 ${large} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${seg.color}" stroke="#080b14" stroke-width="2"/>`;
+        angle += sweep;
+      });
+      return paths;
+    }
+
+    function renderPieCard(containerId, segments, opts) {
+      opts = opts || {};
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      const total = segments.reduce((s, x) => s + x.value, 0);
+      if (!total) {
+        el.innerHTML = '<div class="chart-empty">Sem colaboradores para exibir com os filtros atuais.</div>';
+        return;
+      }
+      const size = 148;
+      const svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${esc(opts.ariaLabel || '')}">${pieSlicesSVG(segments, size)}</svg>`;
+      const legend = segments.map(seg => {
+        const pct = Math.round(seg.value / total * 100);
+        const logo = opts.logos && opts.logos[seg.label] ? `<img class="legend-logo" src="${opts.logos[seg.label]}" alt="">` : '';
+        return `<div class="legend-row"><span class="legend-swatch" style="background:${seg.color}"></span>${logo}<span class="legend-label">${esc(seg.label)}</span><span class="legend-value">${seg.value} · ${pct}%</span></div>`;
+      }).join('');
+      el.innerHTML = `<div class="chart-svg-wrap">${svg}</div><div class="chart-legend">${legend}</div>`;
+    }
+
+    function updateCharts(rows) {
+      const empresaCounts = {};
+      allowedCompanies.forEach(c => empresaCounts[c] = 0);
+      rows.forEach(r => { if (r.empresa in empresaCounts) empresaCounts[r.empresa]++; });
+      const empresaSegments = allowedCompanies.map(c => ({ label: c, value: empresaCounts[c] || 0, color: EMPRESA_COLORS[c] }));
+      renderPieCard('chart-empresa-body', empresaSegments, { logos: MARCA_LOGOS, ariaLabel: 'Colaboradores por empresa' });
+
+      const tenureCounts = { lt1: 0, '1-3': 0, '3-5': 0, '5+': 0 };
+      rows.forEach(r => {
+        const b = tempoDeCasa(r.data_admissao).bucket;
+        if (b && b in tenureCounts) tenureCounts[b]++;
+      });
+      const tenureSegments = TENURE_BUCKETS.map(b => ({ label: b.label, value: tenureCounts[b.key], color: b.color }));
+      renderPieCard('chart-tempo-body', tenureSegments, { ariaLabel: 'Colaboradores por tempo de casa' });
     }
 
     function populateEmpresaFilters() {
@@ -468,6 +569,7 @@
     function renderTable() {
       const tbody = document.getElementById('func-tbody');
       const filtered = allRows.filter(passesFilters);
+      updateCharts(filtered);
 
       if (!allRows.length) {
         tbody.innerHTML = '<tr class="empty-row"><td colspan="10">Nenhum colaborador cadastrado ainda.</td></tr>';
@@ -691,6 +793,27 @@
     document.getElementById('func-hamburger').addEventListener('click', funcSidebarOpen);
     document.getElementById('func-sidebar-backdrop').addEventListener('click', funcSidebarClose);
 
+    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
+    (function() {
+      var KEY = 'sidebar-lancamentos-collapsed';
+      var btn = document.getElementById('func-sidebar-dre-toggle');
+      var sub = document.getElementById('func-sidebar-dre-submenu');
+      if (!btn || !sub) return;
+      var collapsed = localStorage.getItem(KEY) === '1';
+      function apply() {
+        sub.classList.toggle('collapsed', collapsed);
+        btn.classList.toggle('collapsed', collapsed);
+        btn.setAttribute('aria-expanded', String(!collapsed));
+      }
+      apply();
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        collapsed = !collapsed;
+        localStorage.setItem(KEY, collapsed ? '1' : '0');
+        apply();
+      });
+    })();
+
     async function init() {
       const { data } = await sb.auth.getSession();
       if (!data.session) return redirect('/login');
@@ -706,6 +829,7 @@
       document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
       document.getElementById('btn-new-func').style.display = allowedCompanies.length ? 'inline-flex' : 'none';
       document.getElementById('btn-export-func').style.display = allowedCompanies.length ? 'inline-flex' : 'none';
+      document.getElementById('charts-row').style.display = allowedCompanies.length ? 'flex' : 'none';
 
       if (prof.is_admin) {
         const a = document.getElementById('func-sidebar-admin'); if (a) a.style.display = 'flex';
@@ -724,6 +848,7 @@
       }
       if (prof.is_admin || prof.can_lancamentos === true) {
         const s = document.getElementById('func-sidebar-lancamentos'); if (s) s.style.display = 'flex';
+        const t = document.getElementById('func-sidebar-dre-toggle'); if (t) t.style.display = 'flex';
       }
 
       const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
