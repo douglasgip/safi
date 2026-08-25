@@ -2,8 +2,8 @@
 // Deploy target: Supabase project ujsoqyhkebasszwtexmp (painelgerencial_gruposacoman)
 // Secret necessario: ANTHROPIC_API_KEY (definir via `supabase secrets set` ou dashboard)
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Anthropic from 'npm:@anthropic-ai/sdk'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.4'
+import Anthropic from 'npm:@anthropic-ai/sdk@0.120.0'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
