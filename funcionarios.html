@@ -100,6 +100,10 @@
     .copy-btn { display: inline-flex; align-items: center; justify-content: center; background: none; border: none; padding: 2px; color: #64748b; cursor: pointer; opacity: 0; transition: opacity 0.12s, color 0.12s; flex-shrink: 0; }
     .func-table td:hover .copy-btn { opacity: 1; }
     .copy-btn:hover { color: #c4b5fd; }
+    .cpf-real { display: none; letter-spacing: 0.3px; }
+    .cpf-masked { color: #94a3b8; letter-spacing: 1px; }
+    .cpf-cell:hover .cpf-masked { display: none; }
+    .cpf-cell:hover .cpf-real { display: inline; }
     .td-actions { display: flex; gap: 6px; }
     .btn-action { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
     .btn-edit { background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.25); color: #c4b5fd; }
@@ -434,6 +438,15 @@
       return `<span class="copy-cell">${displayHtml}<button type="button" class="copy-btn" data-id="${esc(id)}" data-field="${esc(field)}" title="Copiar" aria-label="Copiar">${COPY_ICON}</button></span>`;
     }
 
+    function cpfCell(id, cpf) {
+      if (!cpf) return '<span class="td-muted">—</span>';
+      return `<span class="copy-cell cpf-cell">` +
+        `<span class="cpf-masked">•••.•••.•••-••</span>` +
+        `<span class="cpf-real">${esc(cpf)}</span>` +
+        `<button type="button" class="copy-btn" data-id="${esc(id)}" data-field="cpf" title="Passe o mouse para ver e copiar" aria-label="Copiar CPF">${COPY_ICON}</button>` +
+        `</span>`;
+    }
+
     function renderTable() {
       const tbody = document.getElementById('func-tbody');
       const filtered = allRows.filter(passesFilters);
@@ -455,7 +468,7 @@
           <td class="td-nome">${copyCell(r.id, 'nome', esc(r.nome), r.nome)}</td>
           <td>${copyCell(r.id, 'data_nascimento', fmtDate(r.data_nascimento), r.data_nascimento)}</td>
           <td>${r.telefone ? copyCell(r.id, 'telefone', esc(r.telefone), r.telefone) : dash}</td>
-          <td>${r.cpf ? copyCell(r.id, 'cpf', esc(r.cpf), r.cpf) : dash}</td>
+          <td>${cpfCell(r.id, r.cpf)}</td>
           <td>${r.endereco ? copyCell(r.id, 'endereco', esc(r.endereco), r.endereco) : dash}</td>
           <td>${r.email ? copyCell(r.id, 'email', esc(r.email), r.email) : dash}</td>
           <td>${copyCell(r.id, 'data_admissao', fmtDate(r.data_admissao), r.data_admissao)}</td>
