@@ -130,6 +130,9 @@
       color: #94a3b8; text-align: left; text-decoration: none;
     }
     .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(245,158,11,0.1); color: #f59e0b; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
     .dc-mobile-filter { display: none; }
 
     /* ══ MOBILE ══ */
@@ -704,10 +707,22 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
         Resumo Contábil
       </button>
-      <button class="dc-sidebar-nav-btn" id="dc-sidebar-btn-1" data-action="sidebar-tab-1" style="display:{{ sidebarTab1Display }}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        DRE
-      </button>
+      <div class="dc-sidebar-group-row">
+        <button class="dc-sidebar-nav-btn" id="dc-sidebar-btn-1" data-action="sidebar-tab-1" style="display:{{ sidebarTab1Display }};flex:1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          DRE
+        </button>
+      </div>
+      <div class="dc-sidebar-submenu">
+        <a href="/lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:{{ sidebarLancamentosDisplay }}">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+          Lançamentos
+        </a>
+      </div>
+      <a href="/fluxo-caixa" class="dc-sidebar-nav-btn" style="display:{{ sidebarFluxoCaixaDisplay }}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+        Fluxo de Caixa
+      </a>
       <a href="/geronia" class="dc-sidebar-nav-btn">
         <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
         GerônIA
@@ -719,14 +734,6 @@
       <a href="/funcionarios" class="dc-sidebar-nav-btn" style="display:{{ sidebarFuncionariosDisplay }}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Funcionários
-      </a>
-      <a href="/fluxo-caixa" class="dc-sidebar-nav-btn" style="display:{{ sidebarFluxoCaixaDisplay }}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
-        Fluxo de Caixa
-      </a>
-      <a href="/lancamentos" class="dc-sidebar-nav-btn" style="display:{{ sidebarLancamentosDisplay }}">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
-        Lançamentos
       </a>
     </div>
     <!-- Bottom actions -->
