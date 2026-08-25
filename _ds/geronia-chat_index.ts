@@ -55,6 +55,8 @@ O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO
 
 Sobre funcionários especificamente: mesmo quando você tiver acesso ao quadro de colaboradores, você só recebe nome, empresa e data de admissão — nunca CPF, telefone, endereço ou e-mail. Nunca afirme ter esses dados nem os invente, mesmo se perguntarem diretamente.
 
+Sobre o detalhamento de Lançamentos especificamente: o detalhamento linha a linha (classe/campo/subcampo que compõe cada número do DRE) só é liberado para quem tem acesso completo às 3 operações. Se o usuário não tiver esse acesso completo, mesmo que ele veja o DRE agregado normalmente, não detalhe nem invente a composição de nenhuma linha — informe educadamente que esse nível de detalhe não está liberado para ele.
+
 IMPORTANTE — não repita a recusa à toa: essa recusa vale apenas para a pergunta que realmente pediu dados fora do acesso. Se a pergunta atual já é sobre algo permitido (ou é uma pergunta genérica, de acompanhamento, ou não pede dado nenhum), responda direto ao que foi perguntado — não reabra nem relembre uma recusa de uma mensagem anterior do histórico. Cada resposta deve tratar apenas da pergunta atual, sem recapitular avisos já dados.
 
 ## QUEM É O GRUPO SACOMAN
@@ -160,6 +162,48 @@ function funcSummaryText(labels: string[], rows: any[]) {
   })
 
   return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; use essas datas de admissão para calcular tempo de casa quando perguntarem):\n${lines.join('\n')}`
+}
+
+function lancamentosDetailText(rows: any[]) {
+  const byOp: Record<OpKey, any[]> = { EPGIP: [], Exposicao: [], ViaCloset: [] }
+  for (const r of rows) {
+    const op = (Object.keys(OP_EMPRESA_IDS) as OpKey[]).find(k => OP_EMPRESA_IDS[k].includes(r.empresa_id))
+    if (op) byOp[op].push(r)
+  }
+
+  const opTexts = ALL_OPS.map(op => {
+    const opRows = byOp[op]
+    if (!opRows.length) return `${OP_LABEL[op]}: sem lançamentos detalhados cadastrados.`
+
+    const byMes: Record<number, any[]> = {}
+    for (const r of opRows) (byMes[r.mes] ??= []).push(r)
+    const meses = Object.keys(byMes).map(Number).sort((a, b) => a - b)
+
+    const mesTexts = meses.map(mes => {
+      const sorted = byMes[mes].slice().sort((a, b) => {
+        const ca = a.lancamentos_subcampos?.lancamentos_campos?.lancamentos_classes?.ordem ?? 0
+        const cb = b.lancamentos_subcampos?.lancamentos_campos?.lancamentos_classes?.ordem ?? 0
+        if (ca !== cb) return ca - cb
+        const fa = a.lancamentos_subcampos?.lancamentos_campos?.ordem ?? 0
+        const fb = b.lancamentos_subcampos?.lancamentos_campos?.ordem ?? 0
+        if (fa !== fb) return fa - fb
+        return (a.lancamentos_subcampos?.ordem ?? 0) - (b.lancamentos_subcampos?.ordem ?? 0)
+      })
+      const lines = sorted
+        .filter(r => Number(r.valor) !== 0)
+        .map(r => {
+          const classe = r.lancamentos_subcampos?.lancamentos_campos?.lancamentos_classes?.nome || '—'
+          const campo = r.lancamentos_subcampos?.lancamentos_campos?.nome || '—'
+          const subcampo = r.lancamentos_subcampos?.nome || '—'
+          return `    ${classe} > ${campo} > ${subcampo}: ${fmtR(Number(r.valor))}`
+        })
+      return `  ${MES_NOME[mes]}/2026:\n${lines.join('\n') || '    sem valores lançados.'}`
+    })
+
+    return `${OP_LABEL[op]}:\n${mesTexts.join('\n')}`
+  })
+
+  return `DETALHAMENTO DE LANÇAMENTOS (linha a linha, por classe > campo > subcampo, série mensal de 2026):\n\n${opTexts.join('\n\n')}`
 }
 
 // ============ Resolução de permissões por operação ============
@@ -329,6 +373,32 @@ Deno.serve(async (req: Request) => {
       funcDataText = funcSummaryText(labels, funcRows || [])
     }
 
+    // ---- Permissões: Lançamentos (detalhamento linha a linha do DRE) ----
+    // Diferente de DRE/Funcionários (liberados operação por operação), o detalhamento de
+    // Lançamentos é tudo-ou-nada: só é liberado para quem tem acesso completo às 3
+    // operações (as 4 empresas de lancamentos_valores), por ser um nível de detalhe mais
+    // sensível que os totais já cobertos pelo bloco de DRE.
+    const lancamentosFullAccess = !!prof.is_admin || (
+      prof.can_lancamentos === true &&
+      prof.lancamentos_ep === true &&
+      prof.lancamentos_gip === true &&
+      prof.lancamentos_exposicao === true &&
+      prof.lancamentos_viacloset === true
+    )
+
+    const lancamentosAccessText = lancamentosFullAccess
+      ? `Acesso ao DETALHAMENTO DE LANÇAMENTOS (linha a linha do DRE, por classe/campo/subcampo): TOTAL — você pode ver a composição completa das 3 operações. Use isso para explicar exatamente o que compõe um número do DRE quando perguntarem "de onde vem esse valor" ou pedirem detalhamento.`
+      : `Acesso ao DETALHAMENTO DE LANÇAMENTOS (linha a linha do DRE, por classe/campo/subcampo): NENHUM. Esse nível de detalhe só é liberado para quem tem acesso completo às 3 operações. Mesmo que o usuário tenha acesso ao DRE agregado, não detalhe nem invente a composição de nenhuma linha — informe educadamente que esse detalhamento não está liberado para ele.`
+
+    let lancamentosDataText = ''
+    if (lancamentosFullAccess) {
+      const { data: lancRows } = await sb
+        .from('lancamentos_valores')
+        .select('empresa_id, mes, valor, lancamentos_subcampos(nome, ordem, lancamentos_campos(nome, ordem, lancamentos_classes(nome, ordem)))')
+        .eq('ano', 2026)
+      lancamentosDataText = lancamentosDetailText(lancRows || [])
+    }
+
     // Thread — valida a existente ou cria uma nova (título = início da 1a mensagem)
     let threadId: string | null = null
     let threadTitle = ''
@@ -357,8 +427,10 @@ Deno.serve(async (req: Request) => {
       `ACESSO DO USUÁRIO\nO usuário logado é ${userLabel}.`,
       dreAccessText,
       funcAccessText,
+      lancamentosAccessText,
       dreDataText,
       funcDataText,
+      lancamentosDataText,
     ].filter(Boolean).join('\n\n')
 
     const systemBlocks: Anthropic.Messages.TextBlockParam[] = [
