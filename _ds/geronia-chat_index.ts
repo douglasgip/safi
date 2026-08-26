@@ -53,7 +53,7 @@ Só relembre algo já dito se o usuário pedir explicitamente (ex: "repete", "re
 ## REGRA CRÍTICA DE CONFIDENCIALIDADE (nunca viole)
 O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO". Você só pode falar sobre as operações e os tipos de dado (financeiro, funcionários) que ele tem permissão de ver. Se a pergunta ATUAL pedir dados fora do acesso dele, recuse educadamente essa pergunta específica e ofereça ajuda apenas sobre o que ele tem acesso. Nunca revele, compare ou deixe vazar números ou informações fora do acesso do usuário — nem de forma indireta.
 
-Sobre funcionários especificamente: mesmo quando você tiver acesso ao quadro de colaboradores, você só recebe nome, empresa e data de admissão — nunca CPF, telefone, endereço ou e-mail. Nunca afirme ter esses dados nem os invente, mesmo se perguntarem diretamente.
+Sobre funcionários especificamente: mesmo quando você tiver acesso ao quadro de colaboradores, você só recebe nome, empresa, data de admissão e data de nascimento — nunca CPF, telefone, endereço ou e-mail. Nunca afirme ter esses dados nem os invente, mesmo se perguntarem diretamente.
 
 Sobre o detalhamento de Lançamentos especificamente: o detalhamento linha a linha (classe/campo/subcampo que compõe cada número do DRE) só é liberado para quem tem acesso completo às 3 operações. Se o usuário não tiver esse acesso completo, mesmo que ele veja o DRE agregado normalmente, não detalhe nem invente a composição de nenhuma linha — informe educadamente que esse nível de detalhe não está liberado para ele.
 
@@ -156,12 +156,16 @@ function funcSummaryText(labels: string[], rows: any[]) {
     const list = byEmpresa[label]
     if (!list.length) return `  ${label}: nenhum colaborador cadastrado.`
     const detalhes = list
-      .map(r => r.nome + (r.data_admissao ? ` (admitido em ${fmtDateBR(r.data_admissao)})` : ' (data de admissão ainda não cadastrada)'))
+      .map(r => {
+        const admissao = r.data_admissao ? `admitido em ${fmtDateBR(r.data_admissao)}` : 'data de admissão não cadastrada'
+        const nascimento = r.data_nascimento ? `nascido em ${fmtDateBR(r.data_nascimento)}` : 'data de nascimento não cadastrada'
+        return `${r.nome} (${admissao}; ${nascimento})`
+      })
       .join('; ')
     return `  ${label}: ${list.length} colaborador(es) — ${detalhes}`
   })
 
-  return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; use essas datas de admissão para calcular tempo de casa quando perguntarem):\n${lines.join('\n')}`
+  return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; use as datas de admissão para calcular tempo de casa e as datas de nascimento para calcular idade quando perguntarem):\n${lines.join('\n')}`
 }
 
 function lancamentosDetailText(rows: any[]) {
@@ -363,13 +367,13 @@ Deno.serve(async (req: Request) => {
     } else {
       const labels = funcOps.map(op => OP_LABEL[op]).join(', ')
       const scope = funcOps.length === ALL_OPS.length ? 'TOTAL — todas as operações' : `RESTRITO a "${labels}"`
-      funcAccessText = `Acesso a dados de FUNCIONÁRIOS: ${scope}. Você só recebe nome, empresa e data de admissão de cada colaborador — nunca CPF, telefone, endereço ou e-mail (você não tem esses dados, não invente).`
+      funcAccessText = `Acesso a dados de FUNCIONÁRIOS: ${scope}. Você só recebe nome, empresa, data de admissão e data de nascimento de cada colaborador — nunca CPF, telefone, endereço ou e-mail (você não tem esses dados, não invente).`
     }
 
     let funcDataText = ''
     if (funcOps.length) {
       const labels = funcOps.map(op => OP_LABEL[op])
-      const { data: funcRows } = await sb.from('funcionarios').select('empresa, nome, data_admissao').in('empresa', labels)
+      const { data: funcRows } = await sb.from('funcionarios').select('empresa, nome, data_admissao, data_nascimento').in('empresa', labels)
       funcDataText = funcSummaryText(labels, funcRows || [])
     }
 
