@@ -111,6 +111,14 @@ const OP_LABEL: Record<OpKey, string> = {
 }
 const MES_NOME = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
+// Seletor de modelo exposto no front (geronia.html) como "Gerôn" / "Gerôn (Aprimorado)".
+// Sonnet custa e demora mais que Haiku, então fica opt-in — o usuário escolhe quando
+// quer respostas mais elaboradas em vez de vir sempre ligado por padrão.
+const MODEL_MAP: Record<string, string> = {
+  standard: 'claude-haiku-4-5',
+  enhanced: 'claude-sonnet-5',
+}
+
 // Cada chamada aqui aciona a API paga da Anthropic — sem limite, um loop de
 // frontend ou uso abusivo vira custo direto. Generoso o bastante pro uso normal
 // (uma pergunta a cada poucos segundos numa conversa ativa), curto o bastante
@@ -293,8 +301,9 @@ Deno.serve(async (req: Request) => {
       return json({ error: `Muitas mensagens em pouco tempo. Aguarde alguns minutos antes de continuar.` }, 429)
     }
 
-    const { message, thread_id } = await req.json()
+    const { message, thread_id, model } = await req.json()
     if (!message || typeof message !== 'string' || !message.trim()) return json({ error: 'Mensagem vazia' }, 400)
+    const anthropicModel = MODEL_MAP[typeof model === 'string' ? model : ''] || MODEL_MAP.standard
 
     // Perfil do usuario
     const { data: profRows } = await sb.from('user_profiles').select('*').eq('id', caller.id).limit(1)
@@ -451,7 +460,7 @@ Deno.serve(async (req: Request) => {
 
     const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
     const resp = await anthropic.messages.create({
-      model: 'claude-haiku-4-5',
+      model: anthropicModel,
       max_tokens: 1024,
       system: systemBlocks,
       messages,

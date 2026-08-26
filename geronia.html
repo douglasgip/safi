@@ -90,6 +90,12 @@
     }
     .btn-menu:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
 
+    .gr-model-toggle { display: flex; align-items: center; gap: 2px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 3px; flex-shrink: 0; }
+    .gr-model-btn { border: none; background: transparent; color: #64748b; font-family: Inter,sans-serif; font-size: 11.5px; font-weight: 700; padding: 6px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; transition: background .15s ease, color .15s ease; -webkit-tap-highlight-color: transparent; }
+    .gr-model-btn:hover { color: #cbd5e1; }
+    .gr-model-btn.active { background: rgba(99,102,241,0.22); color: #c7d2fe; }
+    .gr-model-short { display: none; }
+
     /* Corpo: sidebar de conversas + area de chat */
     /* Sem z-index aqui de propósito: um valor próprio criaria um novo contexto de
        empilhamento e prenderia o backdrop/sidebar (fixed, z-index maior) atrás do
@@ -243,6 +249,9 @@
       .header-sub { display: none; }
       .header-status span:last-child { display: none; }
       .btn-menu { display: flex; }
+      .gr-model-btn { font-size: 10.5px; padding: 6px 8px; }
+      .gr-model-full { display: none; }
+      .gr-model-short { display: inline; }
       .gr-sidebar {
         position: fixed; top: 54px; bottom: 0; left: 0; width: 270px; max-width: 80vw;
         transform: translateX(-100%); z-index: 200; box-shadow: 8px 0 30px rgba(0,0,0,0.4);
@@ -284,6 +293,10 @@
         <div class="header-title">GerônIA</div>
         <div class="header-sub">Conselheiro do Grupo Sacoman</div>
       </div>
+    </div>
+    <div class="gr-model-toggle" id="gr-model-toggle" role="group" aria-label="Modelo do GerônIA">
+      <button type="button" class="gr-model-btn" data-model="standard">Gerôn</button>
+      <button type="button" class="gr-model-btn" data-model="enhanced"><span class="gr-model-full">Gerôn (Aprimorado)</span><span class="gr-model-short">Aprimorado</span></button>
     </div>
     <div class="header-status"><span class="header-status-dot"></span><span>Online</span></div>
   </header>
@@ -339,7 +352,7 @@
       'Quais pontos de atenção você vê nos meus números?'
     ];
 
-    var state = { messages: [], profile: null, uid: null, token: null, email: null, loading: false, firstLoad: true, pendingAnimate: null, threadId: null, threads: [], threadGen: 0 };
+    var state = { messages: [], profile: null, uid: null, token: null, email: null, loading: false, firstLoad: true, pendingAnimate: null, threadId: null, threads: [], threadGen: 0, model: (localStorage.getItem('geronia-model') === 'enhanced' ? 'enhanced' : 'standard') };
 
     function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 
@@ -487,6 +500,25 @@
     function welcomeText(){
       return 'Olá, ' + firstAccessName() + '! Eu sou o GerônIA, o conselheiro do painel do Grupo Sacoman — meu nome é uma homenagem a Geraldo e Verônica Sacoman, os fundadores do grupo.\n\nEstou aqui para ajudar você a entender os números, tirar dúvidas e dar direcionamentos sobre o negócio, com base nos dados reais do painel. Pode perguntar sobre faturamento, margens, metas e desempenho das operações que você tem acesso.\n\nEm que posso ajudar?';
     }
+
+    // ---- Seletor de modelo (Gerôn / Gerôn Aprimorado = Haiku / Sonnet) ----
+    function renderModelToggle(){
+      var el = document.getElementById('gr-model-toggle');
+      if (!el) return;
+      Array.prototype.forEach.call(el.querySelectorAll('.gr-model-btn'), function(btn){
+        btn.classList.toggle('active', btn.getAttribute('data-model') === state.model);
+      });
+    }
+    document.getElementById('gr-model-toggle').addEventListener('click', function(e){
+      var btn = e.target.closest('.gr-model-btn');
+      if (!btn) return;
+      var model = btn.getAttribute('data-model');
+      if (model === state.model) return;
+      state.model = model;
+      localStorage.setItem('geronia-model', model);
+      renderModelToggle();
+    });
+    renderModelToggle();
 
     function scrollBottom(){
       var el = document.getElementById('gr-messages');
@@ -687,7 +719,7 @@
         return fetch(EDGE_URL, {
           method:'POST',
           headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
-          body: JSON.stringify({ message:text, thread_id: state.threadId })
+          body: JSON.stringify({ message:text, thread_id: state.threadId, model: state.model })
         });
       }).then(function(r){ return r.json(); }).then(function(data){
         if (state.threadGen !== myGen) { state.loading = false; return; } // usuário trocou de conversa enquanto isso, ignora
