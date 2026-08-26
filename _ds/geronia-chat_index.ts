@@ -162,20 +162,22 @@ function funcSummaryText(labels: string[], rows: any[]) {
   for (const label of labels) byEmpresa[label] = []
   for (const r of rows) if (byEmpresa[r.empresa]) byEmpresa[r.empresa].push(r)
 
-  const lines = labels.map(label => {
+  // Um colaborador por linha (não um parágrafo só com todos separados por ";") —
+  // empresas com 20-30 colaboradores num blob só de texto fazem o modelo "pular"
+  // nomes ao filtrar por mês/período. Uma linha por pessoa é bem mais fácil de
+  // varrer por completo.
+  const blocks = labels.map(label => {
     const list = byEmpresa[label]
-    if (!list.length) return `  ${label}: nenhum colaborador cadastrado.`
-    const detalhes = list
-      .map(r => {
-        const admissao = r.data_admissao ? `admitido em ${fmtDateBR(r.data_admissao)}` : 'data de admissão não cadastrada'
-        const nascimento = r.data_nascimento ? `nascido em ${fmtDateBR(r.data_nascimento)}` : 'data de nascimento não cadastrada'
-        return `${r.nome} (${admissao}; ${nascimento})`
-      })
-      .join('; ')
-    return `  ${label}: ${list.length} colaborador(es) — ${detalhes}`
+    if (!list.length) return `${label} — 0 colaboradores cadastrados.`
+    const linhas = list.map(r => {
+      const admissao = r.data_admissao ? `admitido em ${fmtDateBR(r.data_admissao)}` : 'data de admissão não cadastrada'
+      const nascimento = r.data_nascimento ? `nascido em ${fmtDateBR(r.data_nascimento)}` : 'data de nascimento não cadastrada'
+      return `  - ${r.nome}: ${admissao}; ${nascimento}`
+    })
+    return `${label} — ${list.length} colaborador(es):\n${linhas.join('\n')}`
   })
 
-  return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; use as datas de admissão para calcular tempo de casa e as datas de nascimento para calcular idade quando perguntarem):\n${lines.join('\n')}`
+  return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; cada colaborador está em uma linha própria — ao responder perguntas que peçam filtrar, contar ou listar por mês/data/período, releia TODAS as linhas de TODAS as empresas listadas abaixo antes de responder, sem pular nenhuma; use as datas de admissão para calcular tempo de casa e as datas de nascimento para calcular idade quando perguntarem):\n\n${blocks.join('\n\n')}`
 }
 
 function lancamentosDetailText(rows: any[]) {
