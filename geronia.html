@@ -90,11 +90,24 @@
     }
     .btn-menu:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
 
-    .gr-model-toggle { display: flex; align-items: center; gap: 2px; padding: 0 0 2px 8px; flex-shrink: 0; }
-    .gr-model-btn { border: none; background: transparent; color: #64748b; font-family: Inter,sans-serif; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 7px; cursor: pointer; white-space: nowrap; transition: background .15s ease, color .15s ease; -webkit-tap-highlight-color: transparent; }
-    .gr-model-btn:hover { color: #cbd5e1; }
-    .gr-model-btn.active { background: rgba(99,102,241,0.22); color: #c7d2fe; }
-    .gr-model-short { display: none; }
+    .gr-model-switch {
+      display: flex; align-items: center; gap: 8px; align-self: flex-start;
+      margin: 2px 0 4px 8px; padding: 3px 10px 3px 4px; border: none; background: transparent;
+      border-radius: 9px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+      transition: background .15s ease;
+    }
+    .gr-model-switch:hover { background: rgba(255,255,255,0.05); }
+    .gr-model-names { position: relative; height: 30px; width: 64px; flex-shrink: 0; }
+    .gr-model-name {
+      position: absolute; left: 0; top: 0; font-family: Inter,sans-serif; white-space: nowrap;
+      transition: transform .3s cubic-bezier(.16,1,.3,1), font-size .3s cubic-bezier(.16,1,.3,1), color .3s ease, opacity .25s ease;
+    }
+    .gr-model-name.is-current { font-size: 14px; font-weight: 800; color: #f1f5f9; transform: translateY(0); opacity: 1; }
+    .gr-model-name.is-other { font-size: 10.5px; font-weight: 700; color: #64748b; transform: translateY(19px); opacity: .85; }
+    .gr-model-switch:hover .gr-model-name.is-other { color: #94a3b8; }
+    .gr-model-swap-icon { color: #64748b; flex-shrink: 0; transition: color .15s ease, transform .3s cubic-bezier(.16,1,.3,1); }
+    .gr-model-switch:hover .gr-model-swap-icon { color: #c7d2fe; }
+    .gr-model-switch.is-enhanced .gr-model-swap-icon { transform: rotate(180deg); }
 
     /* Corpo: sidebar de conversas + area de chat */
     /* Sem z-index aqui de propósito: um valor próprio criaria um novo contexto de
@@ -250,9 +263,8 @@
       .header-sub { display: none; }
       .header-status span:last-child { display: none; }
       .btn-menu { display: flex; }
-      .gr-model-btn { font-size: 10.5px; padding: 6px 8px; }
-      .gr-model-full { display: none; }
-      .gr-model-short { display: inline; }
+      .gr-model-name.is-current { font-size: 12.5px; }
+      .gr-model-name.is-other { font-size: 9.5px; }
       .gr-sidebar {
         position: fixed; top: 54px; bottom: 0; left: 0; width: 270px; max-width: 80vw;
         transform: translateX(-100%); z-index: 200; box-shadow: 8px 0 30px rgba(0,0,0,0.4);
@@ -320,10 +332,13 @@
 
       <div class="gr-inputbar">
         <div class="gr-input-container">
-          <div class="gr-model-toggle" id="gr-model-toggle" role="group" aria-label="Modelo do GerônIA">
-            <button type="button" class="gr-model-btn" data-model="standard">Gerôn</button>
-            <button type="button" class="gr-model-btn" data-model="enhanced"><span class="gr-model-full">Gerôn (Aprimorado)</span><span class="gr-model-short">Aprimorado</span></button>
-          </div>
+          <button type="button" class="gr-model-switch" id="gr-model-switch" aria-label="Trocar modelo do GerônIA">
+            <span class="gr-model-names">
+              <span class="gr-model-name" id="gr-model-name-a">Pleno</span>
+              <span class="gr-model-name" id="gr-model-name-b">Sênior</span>
+            </span>
+            <svg class="gr-model-swap-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="7 10 12 5 17 10"/><polyline points="7 14 12 19 17 14"/></svg>
+          </button>
           <div class="gr-inputrow">
             <textarea id="gr-input" rows="1" placeholder="Pergunte ao GerônIA…"></textarea>
             <button id="gr-send" aria-label="Enviar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
@@ -504,24 +519,28 @@
       return 'Olá, ' + firstAccessName() + '! Eu sou o GerônIA, o conselheiro do painel do Grupo Sacoman — meu nome é uma homenagem a Geraldo e Verônica Sacoman, os fundadores do grupo.\n\nEstou aqui para ajudar você a entender os números, tirar dúvidas e dar direcionamentos sobre o negócio, com base nos dados reais do painel. Pode perguntar sobre faturamento, margens, metas e desempenho das operações que você tem acesso.\n\nEm que posso ajudar?';
     }
 
-    // ---- Seletor de modelo (Gerôn / Gerôn Aprimorado = Haiku / Sonnet) ----
-    function renderModelToggle(){
-      var el = document.getElementById('gr-model-toggle');
-      if (!el) return;
-      Array.prototype.forEach.call(el.querySelectorAll('.gr-model-btn'), function(btn){
-        btn.classList.toggle('active', btn.getAttribute('data-model') === state.model);
-      });
+    // ---- Seletor de modelo (Pleno / Sênior = Haiku / Sonnet) ----
+    // gr-model-name-a é sempre "Pleno" (standard) e gr-model-name-b é sempre "Sênior"
+    // (enhanced) — só as classes is-current/is-other alternam entre eles, e é essa troca
+    // de classe (que muda transform/font-size/cor via transição CSS) que produz a
+    // animação dos dois "trocando de lugar".
+    function renderModelSwitch(){
+      var elA = document.getElementById('gr-model-name-a');
+      var elB = document.getElementById('gr-model-name-b');
+      var wrap = document.getElementById('gr-model-switch');
+      if (!elA || !elB || !wrap) return;
+      var aIsCurrent = state.model === 'standard';
+      elA.className = 'gr-model-name ' + (aIsCurrent ? 'is-current' : 'is-other');
+      elB.className = 'gr-model-name ' + (aIsCurrent ? 'is-other' : 'is-current');
+      wrap.classList.toggle('is-enhanced', state.model === 'enhanced');
+      wrap.setAttribute('aria-label', 'Modelo atual: ' + (aIsCurrent ? 'Pleno' : 'Sênior') + '. Trocar para ' + (aIsCurrent ? 'Sênior' : 'Pleno') + '.');
     }
-    document.getElementById('gr-model-toggle').addEventListener('click', function(e){
-      var btn = e.target.closest('.gr-model-btn');
-      if (!btn) return;
-      var model = btn.getAttribute('data-model');
-      if (model === state.model) return;
-      state.model = model;
-      localStorage.setItem('geronia-model', model);
-      renderModelToggle();
+    document.getElementById('gr-model-switch').addEventListener('click', function(){
+      state.model = state.model === 'standard' ? 'enhanced' : 'standard';
+      localStorage.setItem('geronia-model', state.model);
+      renderModelSwitch();
     });
-    renderModelToggle();
+    renderModelSwitch();
 
     function scrollBottom(){
       var el = document.getElementById('gr-messages');

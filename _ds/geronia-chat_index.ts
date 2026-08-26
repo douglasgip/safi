@@ -40,6 +40,13 @@ Use formatação leve (negrito em números-chave, listas curtas). Não escreva t
 ## QUANDO OS DADOS FOREM INSUFICIENTES
 Nunca invente números. Se puder estimar, deixe explícito que é uma estimativa e mostre a base estatística. Sempre alerte o usuário quando a resposta tiver baixa precisão.
 
+## PRECISÃO EM LISTAS E RESUMOS COMPLETOS (siga à risca)
+Quando pedirem para agrupar, contar ou listar TODOS os itens de um conjunto (ex: todos os colaboradores, todos os lançamentos de um mês), percorra os dados um item por vez, na ordem em que aparecem, sem pular nem duplicar nenhum. Antes de finalizar a resposta, confira se a quantidade total que você listou bate com a quantidade de itens realmente presente nos dados — se não bater, refaça a contagem com calma antes de responder.
+
+Nunca deixe uma anotação de erro visível no meio da resposta (ex: "(erro: data X)"). Se perceber que classificou algo errado enquanto escrevia, corrija silenciosamente e não publique o rascunho errado.
+
+Nunca alegue que os dados estão incompletos, desatualizados ou inconsistentes a menos que isso apareça explicitamente nos dados fornecidos a você (ex: um campo marcado como "não cadastrado"). Não invente um problema de qualidade de dado para justificar uma resposta sua que ficou incompleta — se você errou ou pulou algo, o problema é seu, não dos dados.
+
 ## LIMITES DE ASSUNTO
 Fale exclusivamente sobre temas ligados ao Grupo Sacoman. Se perguntarem sobre assuntos externos, redirecione com educação.
 
@@ -111,7 +118,7 @@ const OP_LABEL: Record<OpKey, string> = {
 }
 const MES_NOME = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
 
-// Seletor de modelo exposto no front (geronia.html) como "Gerôn" / "Gerôn (Aprimorado)".
+// Seletor de modelo exposto no front (geronia.html) como "Pleno" / "Sênior".
 // Sonnet custa e demora mais que Haiku, então fica opt-in — o usuário escolhe quando
 // quer respostas mais elaboradas em vez de vir sempre ligado por padrão.
 const MODEL_MAP: Record<string, string> = {
@@ -177,7 +184,8 @@ function funcSummaryText(labels: string[], rows: any[]) {
     return `${label} — ${list.length} colaborador(es):\n${linhas.join('\n')}`
   })
 
-  return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; cada colaborador está em uma linha própria — ao responder perguntas que peçam filtrar, contar ou listar por mês/data/período, releia TODAS as linhas de TODAS as empresas listadas abaixo antes de responder, sem pular nenhuma; use as datas de admissão para calcular tempo de casa e as datas de nascimento para calcular idade quando perguntarem):\n\n${blocks.join('\n\n')}`
+  const total = rows.length
+  return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; TOTAL: ${total} colaborador(es) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por mês/data/período/empresa, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar ninguém — ao terminar, some quantos você listou e confira se bate com ${total}; se não bater, refaça antes de responder. Use as datas de admissão para calcular tempo de casa e as datas de nascimento para calcular idade quando perguntarem):\n\n${blocks.join('\n\n')}`
 }
 
 function lancamentosDetailText(rows: any[]) {
@@ -463,7 +471,7 @@ Deno.serve(async (req: Request) => {
     const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
     const resp = await anthropic.messages.create({
       model: anthropicModel,
-      max_tokens: 1024,
+      max_tokens: 2048,
       system: systemBlocks,
       messages,
     })
