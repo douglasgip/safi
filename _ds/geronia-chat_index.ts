@@ -468,12 +468,21 @@ Deno.serve(async (req: Request) => {
       { role: 'user' as const, content: message.trim() },
     ]
 
+    // Sonnet 5 roda "pensamento adaptativo" (extended thinking) ligado por padrão. Numa
+    // pergunta grande/complexa (ex: relatório com todos os colaboradores) isso já consumiu
+    // o max_tokens INTEIRO só de pensamento invisível, sem sobrar nada pra resposta de fato
+    // (stop_reason 'max_tokens' com output_tokens_details.thinking_tokens == max_tokens).
+    // Desligamos aqui porque este chat não usa tool use nem raciocínio passo a passo visível
+    // — só respostas de texto direto — então não há ganho em manter ligado, só risco de
+    // consumir o orçamento inteiro sem responder. Haiku 4.5 não tem esse modo (thinking já
+    // vem desligado por padrão), então só aplicamos isso pro Sônior/Sonnet.
     const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
     const resp = await anthropic.messages.create({
       model: anthropicModel,
       max_tokens: 4096,
       system: systemBlocks,
       messages,
+      ...(anthropicModel === MODEL_MAP.enhanced ? { thinking: { type: 'disabled' as const } } : {}),
     })
 
     let replyText = resp.content
