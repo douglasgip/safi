@@ -471,7 +471,7 @@ Deno.serve(async (req: Request) => {
     const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
     const resp = await anthropic.messages.create({
       model: anthropicModel,
-      max_tokens: 2048,
+      max_tokens: 4096,
       system: systemBlocks,
       messages,
     })
@@ -481,6 +481,15 @@ Deno.serve(async (req: Request) => {
       .map(b => b.text)
       .join('\n')
       .trim()
+
+    // Rede de segurança: se por algum motivo a Anthropic devolver conteúdo vazio (já
+    // aconteceu em respostas grandes e demoradas — motivo exato ainda não confirmado),
+    // NUNCA salve nem devolva uma resposta em branco. Loga o stop_reason/usage pra
+    // investigar da próxima vez, e devolve um erro claro em vez de silêncio.
+    if (!replyText) {
+      console.error('geronia-chat: resposta vazia da Anthropic', { model: anthropicModel, stop_reason: resp.stop_reason, usage: resp.usage })
+      return json({ error: 'O GerônIA não conseguiu gerar uma resposta dessa vez (pode ter sido uma pergunta grande demais). Tente novamente ou simplifique a pergunta.' }, 502)
+    }
 
     // Trava anti-recapitulação: se o modelo reabrir a resposta anterior (ex: colou o texto
     // inteiro de novo antes de responder o que foi perguntado agora), corta essa parte fora.
