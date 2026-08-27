@@ -468,22 +468,25 @@ Deno.serve(async (req: Request) => {
       { role: 'user' as const, content: message.trim() },
     ]
 
-    // Sonnet 5 roda "pensamento adaptativo" (extended thinking) ligado por padrão. Numa
-    // pergunta grande/complexa (ex: relatório com todos os colaboradores) isso já consumiu
-    // o max_tokens INTEIRO só de pensamento invisível, sem sobrar nada pra resposta de fato
-    // (stop_reason 'max_tokens' com output_tokens_details.thinking_tokens == max_tokens).
-    // Desligamos aqui porque este chat não usa tool use nem raciocínio passo a passo visível
-    // — só respostas de texto direto — então não há ganho em manter ligado, só risco de
-    // consumir o orçamento inteiro sem responder. Haiku 4.5 não tem esse modo (thinking já
-    // vem desligado por padrão), então só aplicamos isso pro Sônior/Sonnet.
+    // Sonnet 5 roda "pensamento adaptativo" (extended thinking) ligado por padrão. Já
+    // tentamos DESLIGAR isso (thinking: disabled) pra garantir que o max_tokens não fosse
+    // todo consumido em pensamento invisível — mas sem esse rascunho invisível, o modelo
+    // passou a "pensar em voz alta" DENTRO da resposta visível (rascunhos, autocorreções
+    // tipo "Março — correção, 3 aniversariantes" aparecendo no meio do texto pro usuário).
+    // A solução certa é manter o pensamento LIGADO (ele já é bom nisso) e só dar orçamento
+    // de sobra suficiente pra ele pensar E ainda escrever a resposta final limpa — daí o
+    // max_tokens bem mais alto pro Sênior. Streaming evita timeout de requisição não
+    // streamada com max_tokens grande (recomendação oficial da Anthropic pra esse caso).
+    const isEnhanced = anthropicModel === MODEL_MAP.enhanced
     const anthropic = new Anthropic({ apiKey: Deno.env.get('ANTHROPIC_API_KEY')! })
-    const resp = await anthropic.messages.create({
+    const stream = anthropic.messages.stream({
       model: anthropicModel,
-      max_tokens: 4096,
+      max_tokens: isEnhanced ? 16000 : 6144,
       system: systemBlocks,
       messages,
-      ...(anthropicModel === MODEL_MAP.enhanced ? { thinking: { type: 'disabled' as const } } : {}),
+      ...(isEnhanced ? { thinking: { type: 'adaptive' as const } } : {}),
     })
+    const resp = await stream.finalMessage()
 
     let replyText = resp.content
       .filter((b): b is Anthropic.Messages.TextBlock => b.type === 'text')
