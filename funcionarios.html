@@ -100,6 +100,7 @@
     .func-table tbody tr:last-child td { border-bottom: none; }
     .func-table tbody tr:hover { background: rgba(255,255,255,0.02); }
     .func-table th:nth-child(1), .func-table td:nth-child(1) { width: 48px; }
+    .func-table th:nth-child(2), .func-table td:nth-child(2) { width: 160px; }
     .func-table th:nth-child(4), .func-table td:nth-child(4) { width: 84px; white-space: nowrap; }
     .func-table th:nth-child(3), .func-table td:nth-child(3),
     .func-table th:nth-child(5), .func-table td:nth-child(5),
@@ -112,6 +113,22 @@
       box-shadow: -8px 0 12px -8px rgba(0,0,0,0.55);
     }
     .func-table tbody tr:hover td:last-child { background: #141d33; }
+    .func-table th:nth-child(1), .func-table td:nth-child(1),
+    .func-table th:nth-child(2), .func-table td:nth-child(2) {
+      position: sticky;
+      background: #101728;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .func-table td:nth-child(1), .func-table td:nth-child(2) { z-index: 1; }
+    .func-table th:nth-child(1), .func-table th:nth-child(2) { z-index: 3; }
+    .func-table th:nth-child(1), .func-table td:nth-child(1) { left: 0; }
+    .func-table th:nth-child(2), .func-table td:nth-child(2) {
+      left: 48px;
+      box-shadow: 8px 0 12px -8px rgba(0,0,0,0.55);
+    }
+    .func-table tbody tr:hover td:nth-child(1),
+    .func-table tbody tr:hover td:nth-child(2) { background: #141d33; }
     .td-empresa-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: block; }
     .td-nome { font-weight: 700; color: #f1f5f9; }
     .td-muted { color: #64748b; }
@@ -395,7 +412,7 @@
           </div>
           <div class="field">
             <label>Data de Admissão</label>
-            <input type="date" id="f-form-admissao" required>
+            <input type="date" id="f-form-admissao">
           </div>
         </div>
 
@@ -741,13 +758,12 @@
         data_nascimento: document.getElementById('f-form-nascimento').value || null,
         telefone: document.getElementById('f-form-telefone').value.trim() || null,
         cpf: document.getElementById('f-form-cpf').value.trim() || null,
-        data_admissao: document.getElementById('f-form-admissao').value,
+        data_admissao: document.getElementById('f-form-admissao').value || null,
         email: document.getElementById('f-form-email').value.trim() || null,
         endereco: document.getElementById('f-form-endereco').value.trim() || null,
       };
 
       if (!payload.nome) { showModalError('Informe o nome.'); return; }
-      if (!payload.data_admissao) { showModalError('Informe a data de admissão.'); return; }
 
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>Salvando...';
