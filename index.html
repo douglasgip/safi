@@ -703,8 +703,10 @@
           </div>`;
         }).filter(Boolean);
 
-        if (!cardsHtml.length) { kpiBarEl.style.display = 'none'; return; }
-        grid.innerHTML = cardsHtml.join('');
+        if (!visibleCos.length) { kpiBarEl.style.display = 'none'; return; }
+        grid.innerHTML = cardsHtml.length
+          ? cardsHtml.join('')
+          : `<div style="grid-column:1/-1;padding:22px 4px;text-align:center;color:#475569;font-size:12.5px">Sem dados consolidados para ${MESES_FULL[latest.mes - 1]} ainda.</div>`;
         if (window.AskGeron) window.AskGeron.attachDelegation(grid);
         kpiBarEl.style.animation = 'fadeUp 0.5s cubic-bezier(.16,1,.3,1) both';
       } catch(e) {
