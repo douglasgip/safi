@@ -127,11 +127,6 @@
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .welcome-label {
-      font-size: 12px; font-weight: 600; color: #f59e0b;
-      letter-spacing: 3px; text-transform: uppercase;
-      margin-bottom: 12px;
-    }
     .welcome-title {
       font-size: 32px; font-weight: 800; color: #f1f5f9;
       letter-spacing: -0.8px; text-align: center;
@@ -233,6 +228,12 @@
 
     /* Grid secundário — Mapa Societário / Funcionários / Lançamentos */
     .cards-secondary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 948px; margin-top: 16px; }
+    /* Quando o usuário só tem acesso a 1 ou 2 dessas áreas, encolhe e centraliza o grid
+       em vez de deixar o(s) card(s) esticado(s)/soltos numa grade de 3 colunas vazia. */
+    @media (min-width: 769px) {
+      .cards-secondary[data-count="1"] { grid-template-columns: 1fr; max-width: 300px; margin-left: auto; margin-right: auto; }
+      .cards-secondary[data-count="2"] { grid-template-columns: repeat(2, 1fr); max-width: 632px; margin-left: auto; margin-right: auto; }
+    }
     .card-mini {
       display: flex; flex-direction: column;
       background: rgba(15,23,42,0.65);
@@ -268,7 +269,6 @@
       .header-logo-full { height: 26px; }
       .btn-logout span { display: none; }
       .main { padding: 28px 16px 40px; }
-      .welcome-label { font-size: 10px; letter-spacing: 2px; }
       .welcome-title { font-size: 22px; margin-bottom: 6px; }
       .welcome-desc { font-size: 13px; margin-bottom: 32px; }
       #kpi-bar { padding: 16px 16px 14px; margin-bottom: 24px; border-radius: 14px; }
@@ -363,12 +363,11 @@
   </header>
 
   <main class="main">
-    <div class="welcome-label">Painel Financeiro</div>
     <div class="welcome-title">O que você deseja acessar?</div>
     <div class="welcome-desc">Selecione uma das áreas abaixo para continuar</div>
 
     <!-- Snapshot Gerencial DRE -->
-    <div id="kpi-bar" style="display:block;background:rgba(15,23,42,0.72);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px 26px 18px;margin-bottom:36px;backdrop-filter:blur(20px);width:100%;max-width:860px">
+    <div id="kpi-bar" style="display:none;background:rgba(15,23,42,0.72);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px 26px 18px;margin-bottom:36px;backdrop-filter:blur(20px);width:100%;max-width:860px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px">
           <div style="width:2px;height:12px;background:#f59e0b;border-radius:2px"></div>
@@ -498,6 +497,15 @@
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
+    // Encolhe/centraliza o grid de Mapa Societário/Funcionários/Lançamentos conforme
+    // quantos desses o usuário efetivamente enxerga (evita card solto numa grade de 3).
+    function layoutCardsSecondary() {
+      const grid = document.querySelector('.cards-secondary');
+      if (!grid) return;
+      const n = Array.from(grid.children).filter(el => el.style.display !== 'none').length;
+      grid.dataset.count = String(n);
+    }
+
     function showSkeleton(n) {
       const grid = document.getElementById('kpi-grid');
       grid.style.gridTemplateColumns = n===1?'1fr':n===2?'repeat(2,1fr)':'repeat(3,1fr)';
@@ -507,7 +515,6 @@
 
     sb.auth.getSession().then(async ({ data }) => {
       if (!data.session) { window.location.replace('/login'); return; }
-      showSkeleton(3);
       const hdr = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer '+data.session.access_token };
       const [profRows, latest] = await Promise.all([
         fetch(SUPABASE_URL+'/rest/v1/user_profiles?select=*&id=eq.'+data.session.user.id, {headers:hdr}).then(r=>r.json()).catch(()=>[]),
@@ -549,7 +556,15 @@
         const s=document.getElementById('home-sidebar-lancamentos'); if(s) s.style.display='flex';
         const t=document.getElementById('home-sidebar-dre-toggle'); if(t) t.style.display='flex';
       }
-      loadKPIs(latest.data);
+      layoutCardsSecondary();
+
+      // A barra de resumo só existe pra quem tem algum acesso a Resumo/DRE — sem isso
+      // a consulta ao dre_consolidado é bloqueada pelo RLS e o skeleton nunca resolveria.
+      if (showResumo || showDre) {
+        document.getElementById('kpi-bar').style.display = 'block';
+        showSkeleton(3);
+        loadKPIs(latest.data);
+      }
 
       const name = (prof?.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
       const parts = name.split(/\s+/);
@@ -616,9 +631,10 @@
     function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
     async function loadKPIs(latest) {
+      const kpiBarEl = document.getElementById('kpi-bar');
       try {
         const allIds = ['EP','GIP','Exposicao','ViaCloset'];
-        if (!latest) return;
+        if (!latest) { kpiBarEl.style.display = 'none'; return; }
 
         const { data: rows } = await sb
           .from('dre_consolidado')
@@ -627,7 +643,7 @@
           .eq('ano', latest.ano)
           .in('empresa_id', allIds);
 
-        if (!rows || rows.length === 0) return;
+        if (!rows || rows.length === 0) { kpiBarEl.style.display = 'none'; return; }
 
         const byId = {};
         rows.forEach(r => { byId[r.empresa_id] = r; });
@@ -650,7 +666,7 @@
         grid.style.gridTemplateColumns = n === 1 ? '1fr' : n === 2 ? 'repeat(2,1fr)' : 'repeat(3,1fr)';
         grid.style.maxWidth = n === 1 ? '400px' : n === 2 ? '660px' : '';
         grid.style.margin = n < 3 ? '0 auto' : '';
-        grid.innerHTML = visibleCos.map(co => {
+        const cardsHtml = visibleCos.map(co => {
           // Soma todos os membros da entidade
           let fb = 0, rl = 0, mc = 0, res = 0;
           co.ids.forEach(id => {
@@ -685,14 +701,14 @@
               </div>
             </div>
           </div>`;
-        }).join('');
-        if (window.AskGeron) window.AskGeron.attachDelegation(grid);
+        }).filter(Boolean);
 
-        const bar = document.getElementById('kpi-bar');
-        bar.style.display = 'block';
-        bar.style.animation = 'fadeUp 0.5s cubic-bezier(.16,1,.3,1) both';
+        if (!cardsHtml.length) { kpiBarEl.style.display = 'none'; return; }
+        grid.innerHTML = cardsHtml.join('');
+        if (window.AskGeron) window.AskGeron.attachDelegation(grid);
+        kpiBarEl.style.animation = 'fadeUp 0.5s cubic-bezier(.16,1,.3,1) both';
       } catch(e) {
-        // silencioso
+        kpiBarEl.style.display = 'none';
       }
     }
   </script>
