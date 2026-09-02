@@ -188,6 +188,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Funcionários
       </a>
+      <a href="/pedidos" id="msoc-sidebar-pedidos" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Pedidos
+      </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
       <a href="/admin" id="msoc-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
@@ -456,6 +460,9 @@
       }
       if (prof.is_admin || prof.can_dre !== false) {
         const s = document.getElementById('msoc-sidebar-dre'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_pedidos === true) {
+        const s = document.getElementById('msoc-sidebar-pedidos'); if (s) s.style.display = 'flex';
       }
       if (prof.is_admin || prof.can_funcionarios === true) {
         const s = document.getElementById('msoc-sidebar-funcionarios'); if (s) s.style.display = 'flex';

@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Pedidos</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column;
+      background: #080b14; color: #f1f5f9;
+    }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, #4a2a05 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%);
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #f59e0b; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header {
+      position: relative; z-index: 100; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px; padding: 0 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(8,11,20,0.85);
+      backdrop-filter: blur(20px);
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #ped-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #ped-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-title-block { display: flex; align-items: center; gap: 9px; }
+    .header-title { font-size: 14px; font-weight: 800; color: #f1f5f9; }
+    .header-restricted { display: flex; align-items: center; gap: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: .3px; color: #fcd34d; background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); padding: 3px 9px; border-radius: 6px; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(245,158,11,0.12); color: #fcd34d; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    /* ── Filtros ── */
+    .filters-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+    .filter-search { position: relative; flex: 1; min-width: 220px; max-width: 360px; }
+    .filter-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #475569; pointer-events: none; }
+    .filter-search input { width: 100%; padding: 10px 12px 10px 36px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; }
+    .filter-search input::placeholder { color: #475569; }
+    .filter-search input:focus { outline: none; border-color: rgba(245,158,11,0.4); }
+    .filter-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 13px; cursor: pointer; }
+    .filter-select:focus { outline: none; border-color: rgba(245,158,11,0.4); }
+    .filters-spacer { flex: 1; }
+    .btn-new { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #d97706 100%); border: none; border-radius: 10px; color: #1a0a00; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #92400e, 0 6px 14px rgba(245,158,11,0.2); transition: transform 0.1s, box-shadow 0.1s; white-space: nowrap; }
+    .btn-new:hover { transform: translateY(-1px); }
+    .btn-new:active { transform: translateY(2px); box-shadow: 0 2px 0 #92400e; }
+
+    /* ── Tabela ── */
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: calc((100vh - 320px) * 1.25); }
+    .ped-table { width: 100%; border-collapse: collapse; min-width: 1040px; }
+    .ped-table thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 14px 16px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+    .ped-table thead th:last-child { z-index: 3; }
+    .ped-table td { padding: 13px 16px; font-size: 13px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .ped-table tbody tr:last-child td { border-bottom: none; }
+    .ped-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .ped-table th:nth-child(1), .ped-table td:nth-child(1) { width: 48px; }
+    .ped-table th:last-child, .ped-table td:last-child {
+      position: sticky; right: 0;
+      background: #101728;
+      box-shadow: -8px 0 12px -8px rgba(0,0,0,0.55);
+    }
+    .ped-table tbody tr:hover td:last-child { background: #141d33; }
+    .td-empresa-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: block; }
+    .td-fornecedor { font-weight: 700; color: #f1f5f9; }
+    .td-desc { color: #94a3b8; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .td-muted { color: #64748b; }
+    .td-valor { font-variant-numeric: tabular-nums; font-weight: 700; color: #fcd34d; white-space: nowrap; }
+    .td-parcelas { font-size: 12px; color: #94a3b8; white-space: nowrap; }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+    .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .status-aguardando_chegada { background: rgba(148,163,184,0.12); color: #cbd5e1; }
+    .status-aguardando_chegada .dot { background: #94a3b8; }
+    .status-aguardando_pagamento { background: rgba(245,158,11,0.12); color: #fcd34d; }
+    .status-aguardando_pagamento .dot { background: #f59e0b; }
+    .status-pago { background: rgba(52,211,153,0.12); color: #6ee7b7; }
+    .status-pago .dot { background: #34d399; }
+
+    .chegou-toggle { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; font-size: 12px; color: #94a3b8; }
+    .chegou-toggle input { width: 16px; height: 16px; accent-color: #f59e0b; cursor: pointer; }
+
+    .td-actions { display: flex; gap: 6px; }
+    .btn-action { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+    .btn-edit { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fcd34d; }
+    .btn-edit:hover { background: rgba(245,158,11,0.18); }
+    .btn-delete { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
+    .btn-delete:hover { background: rgba(239,68,68,0.18); }
+    .loading-row td, .empty-row td { padding: 50px 20px; text-align: center; color: #334155; font-size: 13px; }
+
+    /* ── Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); animation: modalIn 0.2s cubic-bezier(.16,1,.3,1); }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .modal-title { font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 22px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; letter-spacing: .3px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; }
+    .field textarea { resize: vertical; min-height: 60px; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; font-weight: 500; margin-bottom: 16px; line-height: 1.4; }
+    .modal-error.visible { display: block; animation: shake 0.35s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
+    .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .btn-submit { flex: 1; padding: 13px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #d97706 100%); border: none; border-radius: 12px; color: #1a0a00; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #92400e; }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-cancel:hover { background: rgba(255,255,255,0.08); color: #94a3b8; }
+    .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(0,0,0,0.25); border-top-color: #1a0a00; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Parcelas (dentro do modal) ── */
+    .parcelas-box { border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+    .parcelas-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .parcelas-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .3px; }
+    .parcelas-total { font-size: 13px; font-weight: 800; color: #fcd34d; font-variant-numeric: tabular-nums; }
+    .parcela-row { display: grid; grid-template-columns: 28px 1fr 1fr 32px; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .parcela-num { font-size: 11px; font-weight: 700; color: #64748b; text-align: center; }
+    .parcela-row input { padding: 9px 10px; font-size: 12.5px; }
+    .btn-rm-parcela { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; cursor: pointer; }
+    .btn-rm-parcela:hover { background: rgba(239,68,68,0.18); }
+    .btn-add-parcela { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; color: #fcd34d; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 4px; }
+    .btn-add-parcela:hover { background: rgba(245,158,11,0.18); }
+
+    .confirm-overlay { display: none; position: fixed; inset: 0; z-index: 210; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-card { background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px 28px; max-width: 380px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.7); animation: modalIn 0.2s cubic-bezier(.16,1,.3,1); }
+    .confirm-icon { font-size: 32px; margin-bottom: 12px; }
+    .confirm-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }
+    .confirm-text { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
+    .confirm-actions { display: flex; gap: 10px; }
+    .btn-confirm-delete { flex: 1; padding: 12px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 11px; color: #f87171; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-confirm-delete:hover { background: rgba(239,68,68,0.25); }
+    .btn-confirm-ok { flex: 1; padding: 12px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); border-radius: 11px; color: #fcd34d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-confirm-ok:hover { background: rgba(245,158,11,0.25); }
+    .btn-confirm-cancel { flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 11px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-confirm-cancel:hover { background: rgba(255,255,255,0.08); }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+    .toast.visible { opacity: 1; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .toast-dot.green { background: #34d399; }
+    .toast-dot.red { background: #f87171; }
+
+    #ped-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
+
+    @media (max-width: 768px) {
+      .header { padding: 0 14px; }
+      .header-logo-full { height: 24px; }
+      .header-title { font-size: 12.5px; }
+      .main { padding: 14px; }
+      .filters-bar { flex-direction: column; align-items: stretch; }
+      .filter-search { max-width: none; }
+      .modal-card { padding: 22px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="ped-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="ped-sidebar">
+    <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07)">
+      <div id="ped-sidebar-user" style="display:flex;align-items:center;gap:12px;margin-bottom:4px"></div>
+      <div style="font-size:9px;font-weight:600;color:#334155;letter-spacing:2px;text-transform:uppercase;margin-top:12px">Navegação</div>
+    </div>
+    <div style="padding:12px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
+      <a href="/" class="dc-sidebar-nav-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+      <a href="/resumocontabil" id="ped-sidebar-resumo" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Resumo Contábil
+      </a>
+      <div id="ped-sidebar-dre" class="dc-sidebar-group-row" style="display:none">
+        <a href="/dre" class="dc-sidebar-nav-btn" style="flex:1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          DRE
+        </a>
+        <button type="button" id="ped-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="dc-sidebar-submenu" id="ped-sidebar-dre-submenu">
+        <a href="/lancamentos" id="ped-sidebar-lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+          Lançamentos
+        </a>
+      </div>
+      <a href="/fluxo-caixa" id="ped-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+        Fluxo de Caixa
+      </a>
+      <a href="/geronia" class="dc-sidebar-nav-btn">
+        <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
+        GerônIA
+      </a>
+      <a href="/mapa-societario" id="ped-sidebar-mapasoc" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
+        Mapa Societário
+      </a>
+      <a href="/funcionarios" id="ped-sidebar-funcionarios" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Funcionários
+      </a>
+      <a href="/pedidos" class="dc-sidebar-nav-btn active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Pedidos
+      </a>
+    </div>
+    <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
+      <a href="/admin" id="ped-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+        Admin
+      </a>
+    </div>
+  </aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="ped-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none">
+        <img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full">
+      </a>
+      <div class="header-title-block">
+        <span class="header-title">Pedidos</span>
+        <span class="header-restricted">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Acesso restrito
+        </span>
+      </div>
+    </div>
+    <div id="ped-nav-user-info" style="display:none"></div>
+  </header>
+
+  <div id="ped-loading">Carregando…</div>
+
+  <main class="main" id="ped-main" style="display:none">
+    <div class="no-company-notice" id="no-company-notice" style="display:none">
+      Você tem acesso à tela de Pedidos, mas nenhuma empresa foi liberada para você em Gestão de Acessos. Peça para o admin liberar pelo menos uma empresa.
+    </div>
+
+    <div class="filters-bar">
+      <div class="filter-search">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="f-search" placeholder="Buscar por fornecedor ou descrição...">
+      </div>
+      <select class="filter-select" id="f-empresa">
+        <option value="">Todas as empresas</option>
+      </select>
+      <select class="filter-select" id="f-status">
+        <option value="">Status (todos)</option>
+        <option value="aguardando_chegada">Aguardando chegada</option>
+        <option value="aguardando_pagamento">Aguardando pagamento</option>
+        <option value="pago">Pago</option>
+      </select>
+      <div class="filters-spacer"></div>
+      <button class="btn-new" id="btn-new-ped" onclick="openCreateModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Novo Pedido
+      </button>
+    </div>
+
+    <div class="panel">
+      <div class="table-scroll">
+        <table class="ped-table">
+          <thead>
+            <tr>
+              <th>Empresa</th>
+              <th>Fornecedor</th>
+              <th>Descrição</th>
+              <th>Valor Total</th>
+              <th>Parcelas</th>
+              <th>Data do Pedido</th>
+              <th>Status</th>
+              <th>Chegou</th>
+              <th style="width:130px">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="ped-tbody">
+            <tr class="loading-row"><td colspan="9">Carregando pedidos...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Criar/Editar -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-title">Novo Pedido</div>
+      <div class="modal-sub" id="modal-sub">Preencha os dados do pedido</div>
+
+      <div class="modal-error" id="modal-error"></div>
+
+      <form id="ped-form" autocomplete="off">
+        <input type="hidden" id="edit-id">
+
+        <div class="field">
+          <label>Empresa</label>
+          <select id="f-form-empresa" required></select>
+        </div>
+
+        <div class="field">
+          <label>Fornecedor / Loja</label>
+          <input type="text" id="f-form-fornecedor" placeholder="Nome do fornecedor" required>
+        </div>
+
+        <div class="field">
+          <label>Descrição</label>
+          <textarea id="f-form-descricao" placeholder="O que está sendo pedido"></textarea>
+        </div>
+
+        <div class="field">
+          <label>Data do Pedido</label>
+          <input type="date" id="f-form-data-pedido" required>
+        </div>
+
+        <div class="parcelas-box">
+          <div class="parcelas-head">
+            <div class="parcelas-title">CONDIÇÕES DE PAGAMENTO</div>
+            <div class="parcelas-total" id="parcelas-total">R$ 0</div>
+          </div>
+          <div id="parcelas-list"></div>
+          <button type="button" class="btn-add-parcela" onclick="addParcelaRow()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Adicionar parcela
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="btn-submit">Salvar</button>
+          <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Exclusão -->
+  <div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-card">
+      <div class="confirm-icon" id="confirm-icon">⚠️</div>
+      <div class="confirm-title" id="confirm-title">Remover pedido?</div>
+      <div class="confirm-text" id="confirm-text">Este pedido será removido permanentemente.</div>
+      <div class="confirm-actions" id="confirm-actions">
+        <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="toast-dot" id="toast-dot"></span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
+    const COMPANY_FLAG = { 'GIP Ecommerce': 'pedidos_epgip', 'Exposição Paulista': 'pedidos_exposicao', 'Via Closet': 'pedidos_viacloset' };
+    const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
+    const STATUS_LABEL = { aguardando_chegada: 'Aguardando chegada', aguardando_pagamento: 'Aguardando pagamento', pago: 'Pago' };
+
+    let currentProfile = null;
+    let allowedCompanies = [];
+    let allRows = [];
+    let deleteTarget = null;
+    let parcelaSeq = 0;
+
+    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function redirect(path) { window.location.replace(path); }
+    function fmtDate(d) {
+      if (!d) return '—';
+      const [y,m,day] = d.split('-');
+      return day + '/' + m + '/' + y;
+    }
+    function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    function pedidoStatus(p) {
+      if (!p.chegou) return 'aguardando_chegada';
+      const parcelas = p._parcelas || [];
+      if (parcelas.length && parcelas.every(pc => pc.pago)) return 'pago';
+      return 'aguardando_pagamento';
+    }
+
+    // ── Sidebar mobile ──
+    function pedSidebarOpen() {
+      document.getElementById('ped-sidebar').classList.add('open');
+      document.getElementById('ped-sidebar-backdrop').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function pedSidebarClose() {
+      document.getElementById('ped-sidebar').classList.remove('open');
+      document.getElementById('ped-sidebar-backdrop').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.getElementById('ped-hamburger').addEventListener('click', pedSidebarOpen);
+    document.getElementById('ped-sidebar-backdrop').addEventListener('click', pedSidebarClose);
+
+    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
+    (function() {
+      var KEY = 'sidebar-lancamentos-collapsed';
+      var btn = document.getElementById('ped-sidebar-dre-toggle');
+      var sub = document.getElementById('ped-sidebar-dre-submenu');
+      if (!btn || !sub) return;
+      var collapsed = localStorage.getItem(KEY) === '1';
+      function apply() {
+        sub.classList.toggle('collapsed', collapsed);
+        btn.classList.toggle('collapsed', collapsed);
+        btn.setAttribute('aria-expanded', String(!collapsed));
+      }
+      apply();
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        collapsed = !collapsed;
+        localStorage.setItem(KEY, collapsed ? '1' : '0');
+        apply();
+      });
+    })();
+
+    function populateEmpresaFilters() {
+      const filterSel = document.getElementById('f-empresa');
+      const formSel = document.getElementById('f-form-empresa');
+      filterSel.innerHTML = '<option value="">Todas as empresas</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      formSel.innerHTML = allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    }
+
+    function passesFilters(row) {
+      const search = document.getElementById('f-search').value.trim().toLowerCase();
+      const empresa = document.getElementById('f-empresa').value;
+      const status = document.getElementById('f-status').value;
+      if (empresa && row.empresa !== empresa) return false;
+      if (status && pedidoStatus(row) !== status) return false;
+      if (search) {
+        const haystack = [row.fornecedor, row.descricao, row.empresa].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(search)) return false;
+      }
+      return true;
+    }
+
+    async function loadPedidos() {
+      if (!allowedCompanies.length) {
+        allRows = [];
+        renderTable();
+        return;
+      }
+      const { data, error } = await sb
+        .from('pedidos')
+        .select('*, pedidos_parcelas(id, numero, valor, vencimento, pago, pago_em)')
+        .in('empresa', allowedCompanies)
+        .order('data_pedido', { ascending: false });
+      if (error) {
+        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="9">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        return;
+      }
+      allRows = (data || []).map(r => ({ ...r, _parcelas: (r.pedidos_parcelas || []).slice().sort((a,b) => a.numero - b.numero) }));
+      renderTable();
+    }
+
+    ['f-search','f-empresa','f-status'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderTable);
+      document.getElementById(id).addEventListener('change', renderTable);
+    });
+
+    function renderTable() {
+      const tbody = document.getElementById('ped-tbody');
+      const rows = allRows.filter(passesFilters);
+      if (!allowedCompanies.length) {
+        tbody.innerHTML = '';
+        return;
+      }
+      if (!rows.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Nenhum pedido encontrado.</td></tr>`;
+        return;
+      }
+      const dash = '<span class="td-muted">—</span>';
+      tbody.innerHTML = rows.map(r => {
+        const status = pedidoStatus(r);
+        const parcelas = r._parcelas || [];
+        const pendentes = parcelas.filter(pc => !pc.pago);
+        const proxima = pendentes.slice().sort((a,b) => (a.vencimento||'').localeCompare(b.vencimento||''))[0];
+        let parcelasTxt = dash;
+        if (parcelas.length) {
+          const pagas = parcelas.length - pendentes.length;
+          parcelasTxt = `${parcelas.length}x` + (r.chegou ? ` — ${pagas}/${parcelas.length} pagas` : '') + (proxima ? `<br>próx. venc. ${fmtDate(proxima.vencimento)}` : '');
+        }
+        return `<tr>
+          <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
+          <td class="td-fornecedor">${esc(r.fornecedor)}</td>
+          <td class="td-desc" title="${esc(r.descricao || '')}">${r.descricao ? esc(r.descricao) : dash}</td>
+          <td class="td-valor">${fmtBRL(r.valor_total)}</td>
+          <td class="td-parcelas">${parcelasTxt}</td>
+          <td>${fmtDate(r.data_pedido)}</td>
+          <td><span class="status-badge status-${status}"><span class="dot"></span>${STATUS_LABEL[status]}</span></td>
+          <td>
+            <label class="chegou-toggle">
+              <input type="checkbox" data-id="${esc(r.id)}" class="chk-chegou" ${r.chegou ? 'checked' : ''}>
+              ${r.chegou ? 'Sim' : 'Não'}
+            </label>
+          </td>
+          <td>
+            <div class="td-actions">
+              <button class="btn-action btn-edit" data-id="${esc(r.id)}" title="Editar" aria-label="Editar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+              </button>
+              <button class="btn-action btn-delete" data-id="${esc(r.id)}" title="Remover" aria-label="Remover">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', () => openEditModal(allRows.find(r => r.id === btn.dataset.id)));
+      });
+      tbody.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const row = allRows.find(r => r.id === btn.dataset.id);
+          confirmDelete(row);
+        });
+      });
+      tbody.querySelectorAll('.chk-chegou').forEach(chk => {
+        chk.addEventListener('change', () => {
+          const row = allRows.find(r => r.id === chk.dataset.id);
+          confirmChegada(row, chk);
+        });
+      });
+    }
+
+    // ── Confirmar chegada ──
+    function confirmChegada(row, chkEl) {
+      const marcar = !row.chegou;
+      document.getElementById('confirm-icon').textContent = marcar ? '📦' : '↩️';
+      document.getElementById('confirm-title').textContent = marcar ? 'Pedido chegou?' : 'Desmarcar chegada?';
+      document.getElementById('confirm-text').textContent = marcar
+        ? `Confirma que o pedido de "${row.fornecedor}" chegou? As parcelas passam a aparecer no Fluxo de Caixa como contas a pagar.`
+        : `O pedido de "${row.fornecedor}" volta a ficar como aguardando chegada.`;
+      document.getElementById('confirm-actions').innerHTML = `
+        <button class="btn-confirm-ok" id="btn-confirm-ok">Confirmar</button>
+        <button class="btn-confirm-cancel" id="btn-confirm-cancel-chegada">Cancelar</button>
+      `;
+      document.getElementById('confirm-modal').classList.add('open');
+      document.getElementById('btn-confirm-cancel-chegada').onclick = () => { chkEl.checked = row.chegou; closeConfirm(); };
+      document.getElementById('btn-confirm-ok').onclick = async () => {
+        closeConfirm();
+        const payload = marcar
+          ? { chegou: true, data_chegada: new Date().toISOString().slice(0,10) }
+          : { chegou: false, data_chegada: null };
+        const { error } = await sb.from('pedidos').update(payload).eq('id', row.id);
+        if (error) { showToast(error.message, 'red'); chkEl.checked = row.chegou; return; }
+        showToast(marcar ? 'Pedido marcado como chegou' : 'Chegada desmarcada', 'green');
+        loadPedidos();
+      };
+    }
+    document.getElementById('confirm-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeConfirm();
+    });
+
+    // ── Parcelas (form) ──
+    function updateParcelasTotal() {
+      let total = 0;
+      document.querySelectorAll('.parcela-valor').forEach(inp => { total += (+inp.value || 0); });
+      document.getElementById('parcelas-total').textContent = fmtBRL(total);
+    }
+
+    function addParcelaRow(valor, vencimento) {
+      parcelaSeq++;
+      const id = 'pr-' + parcelaSeq;
+      const list = document.getElementById('parcelas-list');
+      const div = document.createElement('div');
+      div.className = 'parcela-row';
+      div.id = id;
+      const num = list.children.length + 1;
+      div.innerHTML = `
+        <div class="parcela-num">${num}ª</div>
+        <input type="number" step="0.01" min="0" class="parcela-valor" placeholder="Valor" value="${valor != null ? valor : ''}">
+        <input type="date" class="parcela-vencimento" value="${vencimento || ''}">
+        <button type="button" class="btn-rm-parcela" title="Remover parcela" aria-label="Remover parcela">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      `;
+      list.appendChild(div);
+      div.querySelector('.parcela-valor').addEventListener('input', updateParcelasTotal);
+      div.querySelector('.btn-rm-parcela').addEventListener('click', () => {
+        div.remove();
+        renumberParcelas();
+        updateParcelasTotal();
+      });
+      updateParcelasTotal();
+    }
+
+    function renumberParcelas() {
+      document.querySelectorAll('#parcelas-list .parcela-row').forEach((row, i) => {
+        row.querySelector('.parcela-num').textContent = (i + 1) + 'ª';
+      });
+    }
+
+    function clearParcelas() {
+      document.getElementById('parcelas-list').innerHTML = '';
+      updateParcelasTotal();
+    }
+
+    // ── Modal Criar/Editar ──
+    function openCreateModal() {
+      if (!allowedCompanies.length) return;
+      document.getElementById('modal-title').textContent = 'Novo Pedido';
+      document.getElementById('modal-sub').textContent = 'Preencha os dados do pedido';
+      document.getElementById('edit-id').value = '';
+      document.getElementById('ped-form').reset();
+      document.getElementById('f-form-empresa').value = allowedCompanies[0];
+      document.getElementById('f-form-data-pedido').value = new Date().toISOString().slice(0,10);
+      clearParcelas();
+      addParcelaRow();
+      document.getElementById('modal-error').className = 'modal-error';
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function openEditModal(r) {
+      if (!r) return;
+      document.getElementById('modal-title').textContent = 'Editar Pedido';
+      document.getElementById('modal-sub').textContent = r.fornecedor;
+      document.getElementById('edit-id').value = r.id;
+      document.getElementById('f-form-empresa').value = r.empresa;
+      document.getElementById('f-form-fornecedor').value = r.fornecedor || '';
+      document.getElementById('f-form-descricao').value = r.descricao || '';
+      document.getElementById('f-form-data-pedido').value = r.data_pedido || '';
+      clearParcelas();
+      const parcelas = r._parcelas || [];
+      if (parcelas.length) {
+        parcelas.forEach(pc => addParcelaRow(pc.valor, pc.vencimento));
+      } else {
+        addParcelaRow();
+      }
+      document.getElementById('modal-error').className = 'modal-error';
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+    function showModalError(msg) {
+      const el = document.getElementById('modal-error');
+      el.textContent = msg;
+      el.className = 'modal-error visible';
+    }
+
+    document.getElementById('ped-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit');
+      document.getElementById('modal-error').className = 'modal-error';
+
+      const editId = document.getElementById('edit-id').value;
+      const fornecedor = document.getElementById('f-form-fornecedor').value.trim();
+      const dataPedido = document.getElementById('f-form-data-pedido').value;
+      if (!fornecedor) { showModalError('Informe o fornecedor/loja.'); return; }
+      if (!dataPedido) { showModalError('Informe a data do pedido.'); return; }
+
+      const parcelaRows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
+      const parcelas = parcelaRows.map((row, i) => ({
+        numero: i + 1,
+        valor: +row.querySelector('.parcela-valor').value || 0,
+        vencimento: row.querySelector('.parcela-vencimento').value || null,
+      }));
+      if (!parcelas.length) { showModalError('Adicione ao menos uma parcela.'); return; }
+      if (parcelas.some(p => !p.vencimento)) { showModalError('Informe o vencimento de todas as parcelas.'); return; }
+      const valorTotal = parcelas.reduce((s, p) => s + p.valor, 0);
+      if (valorTotal <= 0) { showModalError('Informe o valor de ao menos uma parcela.'); return; }
+
+      const payload = {
+        empresa: document.getElementById('f-form-empresa').value,
+        fornecedor,
+        descricao: document.getElementById('f-form-descricao').value.trim() || null,
+        data_pedido: dataPedido,
+        valor_total: valorTotal,
+      };
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+      let pedidoId = editId;
+      let error;
+      if (editId) {
+        ({ error } = await sb.from('pedidos').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editId));
+      } else {
+        const { data, error: insErr } = await sb.from('pedidos').insert(payload).select('id').single();
+        error = insErr;
+        pedidoId = data && data.id;
+      }
+
+      if (!error && pedidoId) {
+        // Substitui as parcelas: remove as antigas e recria (mais simples e evita
+        // reconciliação de diffs — pedido ainda não chegou na maioria das edições).
+        await sb.from('pedidos_parcelas').delete().eq('pedido_id', pedidoId);
+        const { error: parcErr } = await sb.from('pedidos_parcelas').insert(
+          parcelas.map(p => ({ pedido_id: pedidoId, numero: p.numero, valor: p.valor, vencimento: p.vencimento }))
+        );
+        if (parcErr) error = parcErr;
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar';
+
+      if (error) { showModalError(error.message); return; }
+
+      closeModal();
+      showToast(editId ? 'Pedido atualizado' : 'Pedido cadastrado', 'green');
+      loadPedidos();
+    });
+
+    // ── Exclusão ──
+    function confirmDelete(row) {
+      deleteTarget = row.id;
+      document.getElementById('confirm-icon').textContent = '⚠️';
+      document.getElementById('confirm-title').textContent = 'Remover pedido?';
+      document.getElementById('confirm-text').textContent = `O pedido de "${row.fornecedor}" será removido permanentemente, junto com suas parcelas.`;
+      document.getElementById('confirm-actions').innerHTML = `
+        <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+      `;
+      document.getElementById('confirm-modal').classList.add('open');
+      document.getElementById('btn-confirm-delete').onclick = async () => {
+        const id = deleteTarget;
+        closeConfirm();
+        const { data, error } = await sb.from('pedidos').delete().eq('id', id).select('id');
+        if (error) { showToast(error.message, 'red'); return; }
+        if (!data || !data.length) { showToast('Não foi possível remover — verifique sua permissão para essa empresa.', 'red'); return; }
+        showToast('Pedido removido', 'red');
+        loadPedidos();
+      };
+    }
+    function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); deleteTarget = null; }
+
+    // ── Toast ──
+    let _toastTimer;
+    function showToast(msg, color = 'green') {
+      const el = document.getElementById('toast');
+      document.getElementById('toast-dot').className = `toast-dot ${color}`;
+      document.getElementById('toast-msg').textContent = msg;
+      el.classList.add('visible');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return redirect('/login');
+
+      const { data: profRows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (profRows && profRows[0]) || null;
+      const allowed = !!prof && (prof.is_admin || prof.can_pedidos === true);
+      if (!allowed) return redirect('/');
+      currentProfile = prof;
+
+      allowedCompanies = prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[COMPANY_FLAG[c]] === true);
+      populateEmpresaFilters();
+      document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
+      document.getElementById('btn-new-ped').style.display = allowedCompanies.length ? 'inline-flex' : 'none';
+
+      if (prof.is_admin) {
+        const a = document.getElementById('ped-sidebar-admin'); if (a) a.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_resumo !== false) {
+        const s = document.getElementById('ped-sidebar-resumo'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_dre !== false) {
+        const s = document.getElementById('ped-sidebar-dre'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_mapa_societario === true) {
+        const s = document.getElementById('ped-sidebar-mapasoc'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_funcionarios === true) {
+        const s = document.getElementById('ped-sidebar-funcionarios'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_fluxo_caixa === true) {
+        const s = document.getElementById('ped-sidebar-fluxocaixa'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_lancamentos === true) {
+        const s = document.getElementById('ped-sidebar-lancamentos'); if (s) s.style.display = 'flex';
+        const t = document.getElementById('ped-sidebar-dre-toggle'); if (t) t.style.display = 'flex';
+      }
+
+      const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
+      const parts = name.split(/\s+/);
+      const initials = parts.length >= 2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+      const sidebarUserEl = document.getElementById('ped-sidebar-user');
+      if (sidebarUserEl) {
+        sidebarUserEl.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#d97706);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#1a0a00;flex-shrink:0">'+initials+'</div>'
+          +'<div style="display:flex;flex-direction:column;gap:1px;min-width:0">'
+          +'<div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+esc(name)+'</div>'
+          +(prof.role ? '<div style="font-size:9px;font-weight:600;color:#64748b;white-space:nowrap">'+(prof.is_admin?'&#9670; ':'')+esc(prof.role)+'</div>' : '')
+          +'</div>';
+        if (window.UserMenu) window.UserMenu.attach(sidebarUserEl, sb);
+      }
+
+      document.getElementById('ped-loading').style.display = 'none';
+      document.getElementById('ped-main').style.display = 'block';
+
+      loadPedidos();
+    }
+
+    init();
+  </script>
+</body>
+</html>

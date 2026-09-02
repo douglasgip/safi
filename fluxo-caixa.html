@@ -72,15 +72,40 @@
     .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
     .dc-sidebar-submenu.collapsed { display: none; }
 
-    .main { position: relative; z-index: 10; flex: 1; display: flex; flex-direction: column; min-height: 0; }
+    .main { position: relative; z-index: 10; flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 24px; overflow-y: auto; gap: 20px; }
 
-    .placeholder-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; }
-    .placeholder-card { max-width: 440px; text-align: center; padding: 40px 32px; background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); }
-    .placeholder-icon { width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 16px; background: rgba(52,211,153,0.14); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; display: flex; align-items: center; justify-content: center; }
-    .placeholder-title { font-size: 17px; font-weight: 800; color: #f1f5f9; margin-bottom: 8px; }
-    .placeholder-desc { font-size: 13px; color: #64748b; line-height: 1.6; }
+    .placeholder-wrap { padding: 8px 0 4px; }
+    .placeholder-card { max-width: 100%; text-align: left; padding: 18px 22px; background: rgba(15,23,42,0.5); border: 1px solid rgba(255,255,255,0.07); border-radius: 14px; display: flex; align-items: center; gap: 16px; }
+    .placeholder-icon { width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; background: rgba(52,211,153,0.14); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; display: flex; align-items: center; justify-content: center; }
+    .placeholder-title { font-size: 13.5px; font-weight: 800; color: #f1f5f9; margin-bottom: 3px; }
+    .placeholder-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
 
     #fc-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    /* ── Contas a Pagar (alimentada pelos Pedidos que já chegaram) ── */
+    .cap-section-title { font-size: 13px; font-weight: 800; color: #f1f5f9; margin-bottom: 2px; }
+    .cap-section-desc { font-size: 12px; color: #64748b; margin-bottom: 14px; }
+    .cap-panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
+    .cap-table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: calc(100vh - 420px); min-height: 120px; }
+    .cap-table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    .cap-table thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 13px 16px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+    .cap-table td { padding: 12px 16px; font-size: 13px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; white-space: nowrap; }
+    .cap-table tbody tr:last-child td { border-bottom: none; }
+    .cap-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .cap-empresa-logo { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); display: block; }
+    .cap-fornecedor { font-weight: 700; color: #f1f5f9; }
+    .cap-valor { font-variant-numeric: tabular-nums; font-weight: 700; color: #fcd34d; }
+    .cap-venc { font-variant-numeric: tabular-nums; }
+    .cap-venc.overdue { color: #f87171; font-weight: 700; }
+    .cap-btn-pay { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 8px; color: #6ee7b7; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .cap-btn-pay:hover { background: rgba(52,211,153,0.18); }
+    .cap-empty { padding: 40px 20px; text-align: center; color: #334155; font-size: 13px; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+    .toast.visible { opacity: 1; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .toast-dot.green { background: #34d399; }
+    .toast-dot.red { background: #f87171; }
 
     @media (max-width: 768px) {
       .header { padding: 0 14px; }
@@ -143,6 +168,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         Funcionários
       </a>
+      <a href="/pedidos" id="fc-sidebar-pedidos" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Pedidos
+      </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
       <a href="/admin" id="fc-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
@@ -174,16 +203,48 @@
   <div id="fc-loading">Carregando…</div>
 
   <main class="main" id="fc-main" style="display:none">
+    <div>
+      <div class="cap-section-title">Contas a Pagar</div>
+      <div class="cap-section-desc">Parcelas de pedidos que já chegaram e ainda não foram pagas.</div>
+      <div class="cap-panel">
+        <div class="cap-table-scroll">
+          <table class="cap-table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Fornecedor</th>
+                <th>Parcela</th>
+                <th>Valor</th>
+                <th>Vencimento</th>
+                <th style="width:140px">Ação</th>
+              </tr>
+            </thead>
+            <tbody id="cap-tbody">
+              <tr><td colspan="6" class="cap-empty">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div class="placeholder-wrap">
       <div class="placeholder-card">
         <div class="placeholder-icon">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
         </div>
-        <div class="placeholder-title">Em construção</div>
-        <div class="placeholder-desc">A estrutura de dados do Fluxo de Caixa (ativos, passivos e movimentação) ainda está sendo definida com o Aldemar. Assim que estiver pronta, esta tela vai mostrar a posição de caixa do grupo.</div>
+        <div>
+          <div class="placeholder-title">O resto ainda está em construção</div>
+          <div class="placeholder-desc">A estrutura de ativos, passivos e movimentação completa do Fluxo de Caixa ainda está sendo definida com o Aldemar. Por enquanto, esta tela mostra as Contas a Pagar geradas pelos Pedidos.</div>
+        </div>
       </div>
     </div>
   </main>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="toast-dot" id="toast-dot"></span>
+    <span id="toast-msg"></span>
+  </div>
 
   <script>
     const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
@@ -192,6 +253,77 @@
 
     function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
     function redirect(path) { window.location.replace(path); }
+    function fmtDate(d) {
+      if (!d) return '—';
+      const [y,m,day] = d.split('-');
+      return day + '/' + m + '/' + y;
+    }
+    function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
+
+    let _toastTimer;
+    function showToast(msg, color = 'green') {
+      const el = document.getElementById('toast');
+      if (!el) return;
+      document.getElementById('toast-dot').className = `toast-dot ${color}`;
+      document.getElementById('toast-msg').textContent = msg;
+      el.classList.add('visible');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+    }
+
+    // ── Contas a Pagar (parcelas de pedidos já chegados, ainda não pagas) ──
+    async function loadContasAPagar() {
+      const tbody = document.getElementById('cap-tbody');
+      const { data, error } = await sb
+        .from('pedidos')
+        .select('id, empresa, fornecedor, chegou, pedidos_parcelas(id, numero, valor, vencimento, pago)')
+        .eq('chegou', true);
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="6" class="cap-empty">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        return;
+      }
+      const hoje = new Date().toISOString().slice(0,10);
+      const linhas = [];
+      (data || []).forEach(p => {
+        (p.pedidos_parcelas || []).filter(pc => !pc.pago).forEach(pc => {
+          linhas.push({ pedido: p, parcela: pc });
+        });
+      });
+      linhas.sort((a, b) => (a.parcela.vencimento || '').localeCompare(b.parcela.vencimento || ''));
+
+      if (!linhas.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="cap-empty">Nenhuma conta a pagar no momento.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = linhas.map(({ pedido: p, parcela: pc }) => {
+        const overdue = pc.vencimento && pc.vencimento < hoje;
+        return `<tr>
+          <td><img class="cap-empresa-logo" src="${MARCA_LOGOS[p.empresa] || ''}" alt="${esc(p.empresa)}" title="${esc(p.empresa)}"></td>
+          <td class="cap-fornecedor">${esc(p.fornecedor)}</td>
+          <td>${pc.numero}ª parcela</td>
+          <td class="cap-valor">${fmtBRL(pc.valor)}</td>
+          <td class="cap-venc${overdue ? ' overdue' : ''}">${fmtDate(pc.vencimento)}${overdue ? ' · atrasada' : ''}</td>
+          <td>
+            <button type="button" class="cap-btn-pay" data-id="${esc(pc.id)}">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Marcar pago
+            </button>
+          </td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('.cap-btn-pay').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          btn.disabled = true;
+          const { error } = await sb.from('pedidos_parcelas').update({ pago: true, pago_em: new Date().toISOString().slice(0,10) }).eq('id', btn.dataset.id);
+          if (error) { showToast(error.message, 'red'); btn.disabled = false; return; }
+          showToast('Parcela marcada como paga', 'green');
+          loadContasAPagar();
+        });
+      });
+    }
 
     // ── Sidebar mobile ──
     function fcSidebarOpen() {
@@ -252,6 +384,9 @@
       if (prof.is_admin || prof.can_funcionarios === true) {
         const s = document.getElementById('fc-sidebar-funcionarios'); if (s) s.style.display = 'flex';
       }
+      if (prof.is_admin || prof.can_pedidos === true) {
+        const s = document.getElementById('fc-sidebar-pedidos'); if (s) s.style.display = 'flex';
+      }
       if (prof.is_admin || prof.can_lancamentos === true) {
         const s = document.getElementById('fc-sidebar-lancamentos'); if (s) s.style.display = 'flex';
         const t = document.getElementById('fc-sidebar-dre-toggle'); if (t) t.style.display = 'flex';
@@ -273,6 +408,8 @@
       document.getElementById('fc-loading').style.display = 'none';
       document.getElementById('fc-main').style.display = 'flex';
       document.getElementById('fc-main').style.flexDirection = 'column';
+
+      loadContasAPagar();
     }
 
     init();
