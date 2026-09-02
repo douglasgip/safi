@@ -592,7 +592,7 @@
       document.getElementById('confirm-title').textContent = 'Excluir ' + (tipo==='campo'?'Campo':'Subcampo') + '?';
       document.getElementById('confirm-text').textContent = `"${nome}" some da tela de lançar valores, mas o histórico já lançado continua contando certinho no DRE. Dá pra reativar depois.`;
       document.getElementById('confirm-modal').classList.add('open');
-      document.getElementById('btn-confirm-action').onclick = () => { closeConfirm(); confirmAction && confirmAction(); };
+      document.getElementById('btn-confirm-action').onclick = () => { const action = confirmAction; closeConfirm(); action && action(); };
     }
     function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); confirmAction = null; }
 

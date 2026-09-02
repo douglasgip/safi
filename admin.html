@@ -961,6 +961,7 @@ function confirmDelete(id, email) {
   document.getElementById('confirm-modal').classList.add('open');
 
   document.getElementById('btn-confirm-delete').onclick = async () => {
+    const id = deleteTarget;
     closeConfirm();
     try {
       const token = await window.UserMenu.freshToken(sb, currentSession.access_token);
@@ -970,7 +971,7 @@ function confirmDelete(id, email) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ user_id: deleteTarget }),
+        body: JSON.stringify({ user_id: id }),
       });
       const json = await res.json();
       if (json.error) showToast(json.error, 'red');

@@ -99,11 +99,12 @@
     .func-table tbody tr:last-child td { border-bottom: none; }
     .func-table tbody tr:hover { background: rgba(255,255,255,0.02); }
     .func-table th:nth-child(1), .func-table td:nth-child(1) { width: 48px; }
-    .func-table th:nth-child(3), .func-table td:nth-child(3) { width: 84px; white-space: nowrap; }
-    .func-table th:nth-child(4), .func-table td:nth-child(4),
+    .func-table th:nth-child(4), .func-table td:nth-child(4) { width: 84px; white-space: nowrap; }
+    .func-table th:nth-child(3), .func-table td:nth-child(3),
     .func-table th:nth-child(5), .func-table td:nth-child(5),
-    .func-table th:nth-child(8), .func-table td:nth-child(8),
-    .func-table th:nth-child(9), .func-table td:nth-child(9) { white-space: nowrap; }
+    .func-table th:nth-child(6), .func-table td:nth-child(6),
+    .func-table th:nth-child(9), .func-table td:nth-child(9),
+    .func-table th:nth-child(10), .func-table td:nth-child(10) { white-space: nowrap; }
     .td-empresa-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: block; }
     .td-nome { font-weight: 700; color: #f1f5f9; }
     .td-muted { color: #64748b; }
@@ -313,6 +314,7 @@
             <tr>
               <th>Empresa</th>
               <th>Nome</th>
+              <th>Cargo</th>
               <th>D.N.</th>
               <th>Telefone</th>
               <th>CPF</th>
@@ -324,7 +326,7 @@
             </tr>
           </thead>
           <tbody id="func-tbody">
-            <tr class="loading-row"><td colspan="10">Carregando colaboradores...</td></tr>
+            <tr class="loading-row"><td colspan="11">Carregando colaboradores...</td></tr>
           </tbody>
         </table>
       </div>
@@ -361,6 +363,11 @@
         <div class="field">
           <label>Nome completo</label>
           <input type="text" id="f-form-nome" placeholder="Nome completo" required>
+        </div>
+
+        <div class="field">
+          <label>Cargo</label>
+          <input type="text" id="f-form-cargo" placeholder="Ex: Vendedora, Estoquista, Gerente">
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
@@ -546,7 +553,7 @@
       if (empresa && row.empresa !== empresa) return false;
       if (tempoBucket && tempoDeCasa(row.data_admissao).bucket !== tempoBucket) return false;
       if (search) {
-        const haystack = [row.nome, row.cpf, row.email, row.telefone, row.endereco, row.empresa].filter(Boolean).join(' ').toLowerCase();
+        const haystack = [row.nome, row.cpf, row.email, row.telefone, row.endereco, row.empresa, row.cargo].filter(Boolean).join(' ').toLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
@@ -572,11 +579,11 @@
       updateCharts(filtered);
 
       if (!allRows.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="10">Nenhum colaborador cadastrado ainda.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="11">Nenhum colaborador cadastrado ainda.</td></tr>';
         return;
       }
       if (!filtered.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="10">Nenhum colaborador encontrado com esses filtros.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="11">Nenhum colaborador encontrado com esses filtros.</td></tr>';
         return;
       }
 
@@ -586,6 +593,7 @@
         return `<tr>
           <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
           <td class="td-nome">${copyCell(r.id, 'nome', esc(r.nome), r.nome)}</td>
+          <td>${r.cargo ? copyCell(r.id, 'cargo', esc(r.cargo), r.cargo) : dash}</td>
           <td>${copyCell(r.id, 'data_nascimento', fmtDate(r.data_nascimento), r.data_nascimento)}</td>
           <td>${r.telefone ? copyCell(r.id, 'telefone', esc(r.telefone), r.telefone) : dash}</td>
           <td>${cpfCell(r.id, r.cpf)}</td>
@@ -635,7 +643,7 @@
       }
       const { data, error } = await sb.from('funcionarios').select('*').in('empresa', allowedCompanies).order('nome', { ascending: true });
       if (error) {
-        document.getElementById('func-tbody').innerHTML = `<tr class="empty-row"><td colspan="10">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        document.getElementById('func-tbody').innerHTML = `<tr class="empty-row"><td colspan="11">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       allRows = data || [];
@@ -655,6 +663,7 @@
       const data = rows.map(r => ({
         'Empresa': r.empresa,
         'Nome': r.nome,
+        'Cargo': r.cargo || '',
         'Data de Nascimento': fmtDate(r.data_nascimento),
         'Telefone': r.telefone || '',
         'CPF': r.cpf || '',
@@ -666,7 +675,7 @@
 
       const ws = XLSX.utils.json_to_sheet(data);
       ws['!cols'] = [
-        { wch: 18 }, { wch: 28 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 36 }, { wch: 28 }, { wch: 16 }, { wch: 18 },
+        { wch: 18 }, { wch: 28 }, { wch: 22 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 36 }, { wch: 28 }, { wch: 16 }, { wch: 18 },
       ];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Funcionários');
@@ -693,6 +702,7 @@
       document.getElementById('edit-id').value = r.id;
       document.getElementById('f-form-empresa').value = r.empresa;
       document.getElementById('f-form-nome').value = r.nome || '';
+      document.getElementById('f-form-cargo').value = r.cargo || '';
       document.getElementById('f-form-nascimento').value = r.data_nascimento || '';
       document.getElementById('f-form-telefone').value = r.telefone || '';
       document.getElementById('f-form-cpf').value = r.cpf || '';
@@ -720,6 +730,7 @@
       const payload = {
         empresa: document.getElementById('f-form-empresa').value,
         nome: document.getElementById('f-form-nome').value.trim(),
+        cargo: document.getElementById('f-form-cargo').value.trim() || null,
         data_nascimento: document.getElementById('f-form-nascimento').value || null,
         telefone: document.getElementById('f-form-telefone').value.trim() || null,
         cpf: document.getElementById('f-form-cpf').value.trim() || null,
@@ -757,10 +768,13 @@
       document.getElementById('confirm-text').textContent = `O cadastro de ${row.nome} será removido permanentemente.`;
       document.getElementById('confirm-modal').classList.add('open');
       document.getElementById('btn-confirm-delete').onclick = async () => {
+        const id = deleteTarget;
         closeConfirm();
-        const { error } = await sb.from('funcionarios').delete().eq('id', deleteTarget);
-        if (error) showToast(error.message, 'red');
-        else { showToast('Colaborador removido', 'red'); loadFuncionarios(); }
+        const { data, error } = await sb.from('funcionarios').delete().eq('id', id).select('id');
+        if (error) { showToast(error.message, 'red'); return; }
+        if (!data || !data.length) { showToast('Não foi possível remover — verifique sua permissão para essa empresa.', 'red'); return; }
+        showToast('Colaborador removido', 'red');
+        loadFuncionarios();
       };
     }
     function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); deleteTarget = null; }
