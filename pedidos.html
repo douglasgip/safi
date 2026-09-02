@@ -158,6 +158,10 @@
     .parcelas-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .parcelas-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .3px; }
     .parcelas-total { font-size: 13px; font-weight: 800; color: #fcd34d; font-variant-numeric: tabular-nums; }
+    .parcelas-mode-switch { display: flex; gap: 6px; margin-bottom: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 3px; }
+    .mode-btn { flex: 1; padding: 7px 10px; background: transparent; border: none; border-radius: 7px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; }
+    .mode-btn.active { background: rgba(245,158,11,0.15); color: #fcd34d; }
+    .auto-fields-hint { font-size: 10.5px; color: #64748b; margin: -2px 0 10px; line-height: 1.4; }
     .parcela-row { display: grid; grid-template-columns: 28px 1fr 1fr 32px; gap: 8px; align-items: center; margin-bottom: 8px; }
     .parcela-num { font-size: 11px; font-weight: 700; color: #64748b; text-align: center; }
     .parcela-row input { padding: 9px 10px; font-size: 12.5px; }
@@ -373,11 +377,35 @@
             <div class="parcelas-title">CONDIÇÕES DE PAGAMENTO</div>
             <div class="parcelas-total" id="parcelas-total">R$ 0</div>
           </div>
-          <div id="parcelas-list"></div>
-          <button type="button" class="btn-add-parcela" onclick="addParcelaRow()">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Adicionar parcela
-          </button>
+
+          <div class="parcelas-mode-switch">
+            <button type="button" class="mode-btn active" data-mode="auto" onclick="setParcelaMode('auto')">Automático</button>
+            <button type="button" class="mode-btn" data-mode="custom" onclick="setParcelaMode('custom')">Personalizado</button>
+          </div>
+
+          <div id="auto-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="field" style="margin-bottom:0">
+              <label>Valor Total</label>
+              <input type="number" step="0.01" min="0" id="auto-valor-total" placeholder="0,00">
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label>Nº de Parcelas</label>
+              <input type="number" min="1" step="1" id="auto-num-parcelas" value="1">
+            </div>
+            <div class="field" style="grid-column:1/-1;margin-bottom:2px">
+              <label>Data do 1º Vencimento</label>
+              <input type="date" id="auto-primeiro-vencimento">
+            </div>
+            <div class="auto-fields-hint" style="grid-column:1/-1">As parcelas seguintes vencem no mesmo dia, um mês depois cada uma. Pra vencimentos ou valores diferentes entre parcelas, use "Personalizado".</div>
+          </div>
+
+          <div id="custom-fields" style="display:none">
+            <div id="parcelas-list"></div>
+            <button type="button" class="btn-add-parcela" onclick="addParcelaRow()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Adicionar parcela
+            </button>
+          </div>
         </div>
 
         <div class="modal-actions">
@@ -431,6 +459,16 @@
       return day + '/' + m + '/' + y;
     }
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    // Soma N meses a uma data (YYYY-MM-DD), mantendo o dia — se o mês de destino
+    // não tiver esse dia (ex: 31 de fevereiro), cai pro último dia daquele mês.
+    function addMonths(dateStr, months) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const date = new Date(Date.UTC(y, m - 1 + months, d));
+      if (date.getUTCDate() !== d) date.setUTCDate(0);
+      return date.toISOString().slice(0, 10);
+    }
 
     function pedidoStatus(p) {
       if (!p.chegou) return 'aguardando_chegada';
@@ -657,6 +695,69 @@
       updateParcelasTotal();
     }
 
+    // ── Modo Automático x Personalizado ──
+    // Automático: informa valor total + nº de parcelas + 1º vencimento, e o resto é
+    // gerado sozinho (parcelas iguais, uma por mês). Personalizado: edita parcela por
+    // parcela (é o que já existia antes). As duas geram a mesma lista #parcelas-list
+    // por baixo dos panos — é ela que o submit lê, então nada mais muda ao trocar de modo.
+    let parcelaMode = 'auto';
+
+    function applyParcelaModeUI(mode) {
+      parcelaMode = mode;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+      document.getElementById('auto-fields').style.display = mode === 'auto' ? 'grid' : 'none';
+      document.getElementById('custom-fields').style.display = mode === 'custom' ? 'block' : 'none';
+    }
+
+    function setParcelaMode(mode) {
+      if (mode === parcelaMode) return;
+      if (mode === 'auto') {
+        // Traz o que já estava em Personalizado como ponto de partida do Automático.
+        const rows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
+        const total = rows.reduce((s, r) => s + (+r.querySelector('.parcela-valor').value || 0), 0);
+        const firstVenc = rows.map(r => r.querySelector('.parcela-vencimento').value).filter(Boolean).sort()[0] || '';
+        document.getElementById('auto-valor-total').value = total || '';
+        document.getElementById('auto-num-parcelas').value = rows.length || 1;
+        document.getElementById('auto-primeiro-vencimento').value = firstVenc;
+        applyParcelaModeUI('auto');
+        regenerateAutoParcelas();
+      } else {
+        applyParcelaModeUI('custom');
+      }
+    }
+
+    function regenerateAutoParcelas() {
+      const total = +document.getElementById('auto-valor-total').value || 0;
+      const n = Math.max(1, parseInt(document.getElementById('auto-num-parcelas').value, 10) || 1);
+      const firstDate = document.getElementById('auto-primeiro-vencimento').value;
+      clearParcelas();
+      const base = Math.floor((total / n) * 100) / 100;
+      for (let i = 0; i < n; i++) {
+        const isLast = i === n - 1;
+        const valor = total ? +(isLast ? total - base * (n - 1) : base).toFixed(2) : '';
+        const venc = firstDate ? addMonths(firstDate, i) : '';
+        addParcelaRow(valor, venc);
+      }
+    }
+
+    ['auto-valor-total', 'auto-num-parcelas', 'auto-primeiro-vencimento'].forEach(id => {
+      document.getElementById(id).addEventListener('input', () => { if (parcelaMode === 'auto') regenerateAutoParcelas(); });
+    });
+
+    // Detecta se uma lista de parcelas já salva "cabe" no modo Automático (todas iguais,
+    // exceto a última por causa de arredondamento, vencendo mês a mês) — usado ao editar
+    // um pedido existente, pra abrir no modo certo em vez de sempre cair em Personalizado.
+    function isUniformParcelas(parcelas) {
+      if (!parcelas.length) return false;
+      const first = +parcelas[0].valor;
+      for (let i = 0; i < parcelas.length; i++) {
+        const isLast = i === parcelas.length - 1;
+        if (!isLast && Math.abs(+parcelas[i].valor - first) > 0.01) return false;
+        if (i > 0 && parcelas[i].vencimento !== addMonths(parcelas[0].vencimento, i)) return false;
+      }
+      return true;
+    }
+
     // ── Modal Criar/Editar ──
     function openCreateModal() {
       if (!allowedCompanies.length) return;
@@ -666,8 +767,11 @@
       document.getElementById('ped-form').reset();
       document.getElementById('f-form-empresa').value = allowedCompanies[0];
       document.getElementById('f-form-data-pedido').value = new Date().toISOString().slice(0,10);
-      clearParcelas();
-      addParcelaRow();
+      document.getElementById('auto-valor-total').value = '';
+      document.getElementById('auto-num-parcelas').value = 1;
+      document.getElementById('auto-primeiro-vencimento').value = '';
+      applyParcelaModeUI('auto');
+      regenerateAutoParcelas();
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
     }
@@ -682,11 +786,22 @@
       document.getElementById('f-form-descricao').value = r.descricao || '';
       document.getElementById('f-form-data-pedido').value = r.data_pedido || '';
       clearParcelas();
-      const parcelas = r._parcelas || [];
-      if (parcelas.length) {
+      const parcelas = (r._parcelas || []).slice().sort((a,b) => a.numero - b.numero);
+      if (parcelas.length && isUniformParcelas(parcelas)) {
+        document.getElementById('auto-valor-total').value = r.valor_total;
+        document.getElementById('auto-num-parcelas').value = parcelas.length;
+        document.getElementById('auto-primeiro-vencimento').value = parcelas[0].vencimento;
+        applyParcelaModeUI('auto');
+        regenerateAutoParcelas();
+      } else if (parcelas.length) {
         parcelas.forEach(pc => addParcelaRow(pc.valor, pc.vencimento));
+        applyParcelaModeUI('custom');
       } else {
-        addParcelaRow();
+        document.getElementById('auto-valor-total').value = '';
+        document.getElementById('auto-num-parcelas').value = 1;
+        document.getElementById('auto-primeiro-vencimento').value = '';
+        applyParcelaModeUI('auto');
+        regenerateAutoParcelas();
       }
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
