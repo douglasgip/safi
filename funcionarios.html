@@ -105,6 +105,12 @@
     .func-table th:nth-child(6), .func-table td:nth-child(6),
     .func-table th:nth-child(9), .func-table td:nth-child(9),
     .func-table th:nth-child(10), .func-table td:nth-child(10) { white-space: nowrap; }
+    .func-table th:last-child, .func-table td:last-child {
+      position: sticky; right: 0;
+      background: #101728;
+      box-shadow: -8px 0 12px -8px rgba(0,0,0,0.55);
+    }
+    .func-table tbody tr:hover td:last-child { background: #141d33; }
     .td-empresa-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: block; }
     .td-nome { font-weight: 700; color: #f1f5f9; }
     .td-muted { color: #64748b; }
