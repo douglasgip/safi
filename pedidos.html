@@ -451,6 +451,9 @@
     let allowedCompanies = [];
     let allRows = [];
     let deleteTarget = null;
+    // Ação a rodar se o modal de confirmação for fechado sem confirmar (Cancelar OU
+    // clique no fundo escuro) — usada pra reverter o checkbox "Chegou" nos dois casos.
+    let confirmDismissAction = null;
     let parcelaSeq = 0;
 
     function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -461,6 +464,13 @@
       return day + '/' + m + '/' + y;
     }
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    // "Hoje" no fuso local (não UTC) — toISOString() sozinho retorna a data em UTC,
+    // que já vira o dia seguinte à noite no Brasil (UTC-3).
+    function todayLocal() {
+      const d = new Date();
+      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    }
 
     // Soma N meses a uma data (YYYY-MM-DD), mantendo o dia — se o mês de destino
     // não tiver esse dia (ex: 31 de fevereiro), cai pro último dia daquele mês.
@@ -637,16 +647,22 @@
         <button class="btn-confirm-cancel" id="btn-confirm-cancel-chegada">Cancelar</button>
       `;
       document.getElementById('confirm-modal').classList.add('open');
-      document.getElementById('btn-confirm-cancel-chegada').onclick = () => { chkEl.checked = row.chegou; closeConfirm(); };
+      // O checkbox nativo já vira antes desse modal existir (evento "change") — se o
+      // usuário desistir por aqui, pelo Cancelar OU clicando no fundo, tem que voltar.
+      confirmDismissAction = () => { chkEl.checked = row.chegou; };
+      document.getElementById('btn-confirm-cancel-chegada').onclick = closeConfirm;
       document.getElementById('btn-confirm-ok').onclick = async () => {
+        confirmDismissAction = null;
         closeConfirm();
         const payload = marcar
-          ? { chegou: true, data_chegada: new Date().toISOString().slice(0,10) }
+          ? { chegou: true, data_chegada: todayLocal() }
           : { chegou: false, data_chegada: null };
         const { error } = await sb.from('pedidos').update(payload).eq('id', row.id);
         if (error) { showToast(error.message, 'red'); chkEl.checked = row.chegou; return; }
         showToast(marcar ? 'Pedido marcado como chegou' : 'Chegada desmarcada', 'green');
-        loadPedidos();
+        // Atualiza só essa linha localmente em vez de recarregar tudo de novo.
+        Object.assign(row, payload);
+        renderTable();
       };
     }
     document.getElementById('confirm-modal').addEventListener('click', e => {
@@ -768,7 +784,7 @@
       document.getElementById('edit-id').value = '';
       document.getElementById('ped-form').reset();
       document.getElementById('f-form-empresa').value = allowedCompanies[0];
-      document.getElementById('f-form-data-pedido').value = new Date().toISOString().slice(0,10);
+      document.getElementById('f-form-data-pedido').value = todayLocal();
       document.getElementById('auto-valor-total').value = '';
       document.getElementById('auto-num-parcelas').value = 1;
       document.getElementById('auto-primeiro-vencimento').value = '';
@@ -863,11 +879,16 @@
       if (!error && pedidoId) {
         // Substitui as parcelas: remove as antigas e recria (mais simples e evita
         // reconciliação de diffs — pedido ainda não chegou na maioria das edições).
-        await sb.from('pedidos_parcelas').delete().eq('pedido_id', pedidoId);
-        const { error: parcErr } = await sb.from('pedidos_parcelas').insert(
-          parcelas.map(p => ({ pedido_id: pedidoId, numero: p.numero, valor: p.valor, vencimento: p.vencimento }))
-        );
-        if (parcErr) error = parcErr;
+        const { error: delErr } = await sb.from('pedidos_parcelas').delete().eq('pedido_id', pedidoId);
+        if (delErr) {
+          // Não insere por cima se a limpeza falhou — senão fica parcela antiga + nova duplicada.
+          error = delErr;
+        } else {
+          const { error: parcErr } = await sb.from('pedidos_parcelas').insert(
+            parcelas.map(p => ({ pedido_id: pedidoId, numero: p.numero, valor: p.valor, vencimento: p.vencimento }))
+          );
+          if (parcErr) error = parcErr;
+        }
       }
 
       btn.disabled = false;
@@ -883,6 +904,7 @@
     // ── Exclusão ──
     function confirmDelete(row) {
       deleteTarget = row.id;
+      confirmDismissAction = null;
       document.getElementById('confirm-icon').textContent = '⚠️';
       document.getElementById('confirm-title').textContent = 'Remover pedido?';
       document.getElementById('confirm-text').textContent = `O pedido de "${row.fornecedor}" será removido permanentemente, junto com suas parcelas.`;
@@ -898,10 +920,16 @@
         if (error) { showToast(error.message, 'red'); return; }
         if (!data || !data.length) { showToast('Não foi possível remover — verifique sua permissão para essa empresa.', 'red'); return; }
         showToast('Pedido removido', 'red');
-        loadPedidos();
+        // Remove só essa linha localmente em vez de recarregar tudo de novo.
+        allRows = allRows.filter(r => r.id !== id);
+        renderTable();
       };
     }
-    function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); deleteTarget = null; }
+    function closeConfirm() {
+      document.getElementById('confirm-modal').classList.remove('open');
+      deleteTarget = null;
+      if (confirmDismissAction) { confirmDismissAction(); confirmDismissAction = null; }
+    }
 
     // ── Toast ──
     let _toastTimer;

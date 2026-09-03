@@ -894,11 +894,13 @@ function openEditModal(u) {
   document.getElementById('f-name').value            = u.full_name || '';
   document.getElementById('f-role').value            = u.role || '';
   document.getElementById('f-password').value        = '';
-  setToggle('resumo',    u.can_resumo);
-  setToggle('dre',       u.can_dre);
-  setToggle('epgip',     u.dre_epgip);
-  setToggle('exposicao', u.dre_exposicao);
-  setToggle('viacloset', u.dre_viacloset);
+  // Resumo/DRE e as 3 empresas são opt-out (null = liberado) — !== false preserva
+  // esse default, ao contrário de !! (que trataria null como bloqueado na tela).
+  setToggle('resumo',    u.can_resumo    !== false);
+  setToggle('dre',       u.can_dre       !== false);
+  setToggle('epgip',     u.dre_epgip     !== false);
+  setToggle('exposicao', u.dre_exposicao !== false);
+  setToggle('viacloset', u.dre_viacloset !== false);
   setToggle('mapasoc',   !!u.can_mapa_societario);
   setToggle('funcionarios',    !!u.can_funcionarios);
   setToggle('func-epgip',      !!u.funcionarios_epgip);

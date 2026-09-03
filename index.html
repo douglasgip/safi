@@ -545,8 +545,9 @@
       if (prof?.is_admin) {
         const sab=document.getElementById('home-sidebar-admin'); if(sab) sab.style.display='flex';
       }
-      const showResumo = !prof || prof.is_admin || prof.can_resumo !== false;
-      const showDre    = !prof || prof.is_admin || prof.can_dre    !== false;
+      // !!prof && (...) — igual a toda outra tela: perfil ausente/erro na busca nunca libera acesso.
+      const showResumo = !!prof && (prof.is_admin || prof.can_resumo !== false);
+      const showDre    = !!prof && (prof.is_admin || prof.can_dre    !== false);
       if (showResumo) {
         const c=document.getElementById('card-resumo'); if(c) c.style.display='';
         const s=document.getElementById('home-sidebar-resumo'); if(s) s.style.display='flex';
@@ -677,12 +678,14 @@
         if (tituloEl) tituloEl.textContent = 'Resumo de ' + MESES_FULL[latest.mes - 1];
 
         const prof = window._homeProfile;
-        const visibleCos = (prof && !prof.is_admin) ? DRE_COS.filter(co => {
+        // Sem perfil, nunca mostra nada (mesmo default fail-closed do resto da tela) —
+        // só chega aqui de verdade com prof carregado, mas não confia nisso sem checar.
+        const visibleCos = !prof ? [] : (!prof.is_admin ? DRE_COS.filter(co => {
           if (co.ids.some(id=>id==='EP'||id==='GIP')) return prof.dre_epgip !== false;
           if (co.ids.includes('Exposicao')) return prof.dre_exposicao !== false;
           if (co.ids.includes('ViaCloset')) return prof.dre_viacloset !== false;
           return true;
-        }) : DRE_COS;
+        }) : DRE_COS);
         const grid = document.getElementById('kpi-grid');
         const n = visibleCos.length;
         // Colunas dependem só de quantas operações o usuário vê — o ajuste pra

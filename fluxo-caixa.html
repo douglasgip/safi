@@ -100,6 +100,7 @@
     .cap-btn-pay { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 8px; color: #6ee7b7; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .cap-btn-pay:hover { background: rgba(52,211,153,0.18); }
     .cap-empty { padding: 40px 20px; text-align: center; color: #334155; font-size: 13px; }
+    .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
 
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
     .toast.visible { opacity: 1; }
@@ -206,7 +207,10 @@
     <div>
       <div class="cap-section-title">Contas a Pagar</div>
       <div class="cap-section-desc">Parcelas de pedidos que já chegaram e ainda não foram pagas.</div>
-      <div class="cap-panel">
+      <div class="no-company-notice" id="cap-no-access" style="display:none">
+        As Contas a Pagar vêm dos Pedidos, e você não tem acesso a nenhuma empresa em Pedidos — peça pro admin liberar em Gestão de Acessos pra ver algo aqui.
+      </div>
+      <div class="cap-panel" id="cap-panel">
         <div class="cap-table-scroll">
           <table class="cap-table">
             <thead>
@@ -259,7 +263,19 @@
       return day + '/' + m + '/' + y;
     }
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    // "Hoje" no fuso local (não UTC) — toISOString() sozinho retorna a data em UTC,
+    // que já vira o dia seguinte à noite no Brasil (UTC-3).
+    function todayLocal() {
+      const d = new Date();
+      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    }
     const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
+    // Contas a Pagar vem de Pedidos — usa o mesmo mapeamento empresa->flag de pedidos.html,
+    // já que é essa permissão (não can_fluxo_caixa) que rege o RLS de pedidos/pedidos_parcelas.
+    const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
+    const PEDIDOS_COMPANY_FLAG = { 'GIP Ecommerce': 'pedidos_epgip', 'Exposição Paulista': 'pedidos_exposicao', 'Via Closet': 'pedidos_viacloset' };
+    let pedidosAllowedCompanies = [];
 
     let _toastTimer;
     function showToast(msg, color = 'green') {
@@ -275,15 +291,25 @@
     // ── Contas a Pagar (parcelas de pedidos já chegados, ainda não pagas) ──
     async function loadContasAPagar() {
       const tbody = document.getElementById('cap-tbody');
+      const noAccessEl = document.getElementById('cap-no-access');
+      const panelEl = document.getElementById('cap-panel');
+      if (!pedidosAllowedCompanies.length) {
+        noAccessEl.style.display = 'block';
+        panelEl.style.display = 'none';
+        return;
+      }
+      noAccessEl.style.display = 'none';
+      panelEl.style.display = 'block';
       const { data, error } = await sb
         .from('pedidos')
         .select('id, empresa, fornecedor, chegou, pedidos_parcelas(id, numero, valor, vencimento, pago)')
+        .in('empresa', pedidosAllowedCompanies)
         .eq('chegou', true);
       if (error) {
         tbody.innerHTML = `<tr><td colspan="6" class="cap-empty">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
-      const hoje = new Date().toISOString().slice(0,10);
+      const hoje = todayLocal();
       const linhas = [];
       (data || []).forEach(p => {
         (p.pedidos_parcelas || []).filter(pc => !pc.pago).forEach(pc => {
@@ -317,7 +343,7 @@
       tbody.querySelectorAll('.cap-btn-pay').forEach(btn => {
         btn.addEventListener('click', async () => {
           btn.disabled = true;
-          const { error } = await sb.from('pedidos_parcelas').update({ pago: true, pago_em: new Date().toISOString().slice(0,10) }).eq('id', btn.dataset.id);
+          const { error } = await sb.from('pedidos_parcelas').update({ pago: true, pago_em: todayLocal() }).eq('id', btn.dataset.id);
           if (error) { showToast(error.message, 'red'); btn.disabled = false; return; }
           showToast('Parcela marcada como paga', 'green');
           loadContasAPagar();
@@ -368,6 +394,11 @@
       const prof = (profRows && profRows[0]) || null;
       const allowed = !!prof && (prof.is_admin || prof.can_fluxo_caixa === true);
       if (!allowed) return redirect('/');
+
+      // Contas a Pagar é dado de Pedidos — precisa do can_pedidos + empresas liberadas lá,
+      // não só do can_fluxo_caixa que só controla a tela em si.
+      const canPedidos = prof.is_admin || prof.can_pedidos === true;
+      pedidosAllowedCompanies = canPedidos ? (prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[PEDIDOS_COMPANY_FLAG[c]] === true)) : [];
 
       if (prof.is_admin) {
         const a = document.getElementById('fc-sidebar-admin'); if (a) a.style.display = 'flex';
