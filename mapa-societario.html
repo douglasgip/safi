@@ -269,7 +269,7 @@
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    // esc/fmtDate e a sidebar mobile/colapso do DRE vêm de user-menu.js.
     function redirect(path) { window.location.replace(path); }
 
     function setSubtab(tab) {
@@ -334,12 +334,6 @@
         return `<div class="map-canal-item" title="${esc(nome)}"><img class="map-canal-logo" src="${logo}" alt="${esc(nome)}"><span class="map-canal-label">${esc(lbl)}</span></div>`;
       }
       return `<div class="map-canal-item"><span class="map-tag" style="margin:0">${esc(lbl)}</span></div>`;
-    }
-
-    function fmtDate(d) {
-      if (!d) return '—';
-      const [y,m,day] = d.split('-');
-      return day + '/' + m + '/' + y;
     }
 
     function renderNodes(empresas) {
@@ -408,40 +402,9 @@
       if (el) el.classList.toggle('expanded');
     }
 
-    // ── Sidebar mobile ──
-    function msocSidebarOpen() {
-      document.getElementById('msoc-sidebar').classList.add('open');
-      document.getElementById('msoc-sidebar-backdrop').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-    function msocSidebarClose() {
-      document.getElementById('msoc-sidebar').classList.remove('open');
-      document.getElementById('msoc-sidebar-backdrop').classList.remove('open');
-      document.body.style.overflow = '';
-    }
-    document.getElementById('msoc-hamburger').addEventListener('click', msocSidebarOpen);
-    document.getElementById('msoc-sidebar-backdrop').addEventListener('click', msocSidebarClose);
-
-    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
-    (function() {
-      var KEY = 'sidebar-lancamentos-collapsed';
-      var btn = document.getElementById('msoc-sidebar-dre-toggle');
-      var sub = document.getElementById('msoc-sidebar-dre-submenu');
-      if (!btn || !sub) return;
-      var collapsed = localStorage.getItem(KEY) === '1';
-      function apply() {
-        sub.classList.toggle('collapsed', collapsed);
-        btn.classList.toggle('collapsed', collapsed);
-        btn.setAttribute('aria-expanded', String(!collapsed));
-      }
-      apply();
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        collapsed = !collapsed;
-        localStorage.setItem(KEY, collapsed ? '1' : '0');
-        apply();
-      });
-    })();
+    // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
+    wireSidebarToggle('msoc');
+    wireDreCollapseToggle('msoc');
 
     async function init() {
       const { data } = await sb.auth.getSession();

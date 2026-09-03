@@ -456,21 +456,10 @@
     let confirmDismissAction = null;
     let parcelaSeq = 0;
 
-    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    // esc/fmtDate/todayLocal/showToast e a sidebar mobile/colapso do DRE vêm de user-menu.js
+    // (compartilhado entre todas as telas do painel).
     function redirect(path) { window.location.replace(path); }
-    function fmtDate(d) {
-      if (!d) return '—';
-      const [y,m,day] = d.split('-');
-      return day + '/' + m + '/' + y;
-    }
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-
-    // "Hoje" no fuso local (não UTC) — toISOString() sozinho retorna a data em UTC,
-    // que já vira o dia seguinte à noite no Brasil (UTC-3).
-    function todayLocal() {
-      const d = new Date();
-      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    }
 
     // Soma N meses a uma data (YYYY-MM-DD), mantendo o dia — se o mês de destino
     // não tiver esse dia (ex: 31 de fevereiro), cai pro último dia daquele mês.
@@ -489,40 +478,9 @@
       return 'aguardando_pagamento';
     }
 
-    // ── Sidebar mobile ──
-    function pedSidebarOpen() {
-      document.getElementById('ped-sidebar').classList.add('open');
-      document.getElementById('ped-sidebar-backdrop').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-    function pedSidebarClose() {
-      document.getElementById('ped-sidebar').classList.remove('open');
-      document.getElementById('ped-sidebar-backdrop').classList.remove('open');
-      document.body.style.overflow = '';
-    }
-    document.getElementById('ped-hamburger').addEventListener('click', pedSidebarOpen);
-    document.getElementById('ped-sidebar-backdrop').addEventListener('click', pedSidebarClose);
-
-    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
-    (function() {
-      var KEY = 'sidebar-lancamentos-collapsed';
-      var btn = document.getElementById('ped-sidebar-dre-toggle');
-      var sub = document.getElementById('ped-sidebar-dre-submenu');
-      if (!btn || !sub) return;
-      var collapsed = localStorage.getItem(KEY) === '1';
-      function apply() {
-        sub.classList.toggle('collapsed', collapsed);
-        btn.classList.toggle('collapsed', collapsed);
-        btn.setAttribute('aria-expanded', String(!collapsed));
-      }
-      apply();
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        collapsed = !collapsed;
-        localStorage.setItem(KEY, collapsed ? '1' : '0');
-        apply();
-      });
-    })();
+    // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
+    wireSidebarToggle('ped');
+    wireDreCollapseToggle('ped');
 
     function populateEmpresaFilters() {
       const filterSel = document.getElementById('f-empresa');
@@ -931,16 +889,7 @@
       if (confirmDismissAction) { confirmDismissAction(); confirmDismissAction = null; }
     }
 
-    // ── Toast ──
-    let _toastTimer;
-    function showToast(msg, color = 'green') {
-      const el = document.getElementById('toast');
-      document.getElementById('toast-dot').className = `toast-dot ${color}`;
-      document.getElementById('toast-msg').textContent = msg;
-      el.classList.add('visible');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
-    }
+    // showToast vem de user-menu.js.
 
     document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
 

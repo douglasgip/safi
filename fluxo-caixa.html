@@ -255,38 +255,15 @@
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    // esc/fmtDate/todayLocal/showToast e a sidebar mobile/colapso do DRE vêm de user-menu.js.
     function redirect(path) { window.location.replace(path); }
-    function fmtDate(d) {
-      if (!d) return '—';
-      const [y,m,day] = d.split('-');
-      return day + '/' + m + '/' + y;
-    }
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-
-    // "Hoje" no fuso local (não UTC) — toISOString() sozinho retorna a data em UTC,
-    // que já vira o dia seguinte à noite no Brasil (UTC-3).
-    function todayLocal() {
-      const d = new Date();
-      return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
-    }
     const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
     // Contas a Pagar vem de Pedidos — usa o mesmo mapeamento empresa->flag de pedidos.html,
     // já que é essa permissão (não can_fluxo_caixa) que rege o RLS de pedidos/pedidos_parcelas.
     const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
     const PEDIDOS_COMPANY_FLAG = { 'GIP Ecommerce': 'pedidos_epgip', 'Exposição Paulista': 'pedidos_exposicao', 'Via Closet': 'pedidos_viacloset' };
     let pedidosAllowedCompanies = [];
-
-    let _toastTimer;
-    function showToast(msg, color = 'green') {
-      const el = document.getElementById('toast');
-      if (!el) return;
-      document.getElementById('toast-dot').className = `toast-dot ${color}`;
-      document.getElementById('toast-msg').textContent = msg;
-      el.classList.add('visible');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
-    }
 
     // ── Contas a Pagar (parcelas de pedidos já chegados, ainda não pagas) ──
     async function loadContasAPagar() {
@@ -351,40 +328,9 @@
       });
     }
 
-    // ── Sidebar mobile ──
-    function fcSidebarOpen() {
-      document.getElementById('fc-sidebar').classList.add('open');
-      document.getElementById('fc-sidebar-backdrop').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-    function fcSidebarClose() {
-      document.getElementById('fc-sidebar').classList.remove('open');
-      document.getElementById('fc-sidebar-backdrop').classList.remove('open');
-      document.body.style.overflow = '';
-    }
-    document.getElementById('fc-hamburger').addEventListener('click', fcSidebarOpen);
-    document.getElementById('fc-sidebar-backdrop').addEventListener('click', fcSidebarClose);
-
-    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
-    (function() {
-      var KEY = 'sidebar-lancamentos-collapsed';
-      var btn = document.getElementById('fc-sidebar-dre-toggle');
-      var sub = document.getElementById('fc-sidebar-dre-submenu');
-      if (!btn || !sub) return;
-      var collapsed = localStorage.getItem(KEY) === '1';
-      function apply() {
-        sub.classList.toggle('collapsed', collapsed);
-        btn.classList.toggle('collapsed', collapsed);
-        btn.setAttribute('aria-expanded', String(!collapsed));
-      }
-      apply();
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        collapsed = !collapsed;
-        localStorage.setItem(KEY, collapsed ? '1' : '0');
-        apply();
-      });
-    })();
+    // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
+    wireSidebarToggle('fc');
+    wireDreCollapseToggle('fc');
 
     async function init() {
       const { data } = await sb.auth.getSession();

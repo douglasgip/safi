@@ -226,17 +226,15 @@
     .card-geronia:hover .card-geronia-arrow { transform: translateX(4px); }
     .card-mapasoc-badge { display: flex; align-items: center; gap: 4px; font-size: 9.5px; color: #c4b5fd; font-weight: 700; letter-spacing: 0.3px; background: rgba(139,92,246,0.1); padding: 2px 7px; border-radius: 5px; }
 
-    /* Grid secundário — Mapa Societário / Funcionários / Pedidos / Lançamentos */
-    .cards-secondary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 948px; margin-top: 16px; }
-    /* Quando o usuário só tem acesso a 1, 2 ou 4 dessas áreas, encolhe/reorganiza o grid
-       em vez de deixar o(s) card(s) esticado(s)/soltos numa grade de 3 colunas vazia. */
-    @media (min-width: 769px) {
-      .cards-secondary[data-count="1"] { grid-template-columns: 1fr; max-width: 300px; margin-left: auto; margin-right: auto; }
-      .cards-secondary[data-count="2"] { grid-template-columns: repeat(2, 1fr); max-width: 632px; margin-left: auto; margin-right: auto; }
-      .cards-secondary[data-count="4"] { grid-template-columns: repeat(2, 1fr); max-width: 632px; margin-left: auto; margin-right: auto; }
-    }
+    /* Grid secundário — Mapa Societário / Funcionários / Pedidos / Lançamentos.
+       Flexbox com wrap + centralização em vez de grid: se ajusta sozinho a qualquer
+       quantidade de cards liberados (1, 2, 3, 4...) sem precisar de uma regra CSS nova
+       cada vez que uma área nova é adicionada — cada linha se centraliza por conta própria,
+       então mesmo um card "sobrando" sozinho na última linha fica centralizado, não solto. */
+    .cards-secondary { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; width: 100%; max-width: 948px; margin: 16px auto 0; }
     .card-mini {
       display: flex; flex-direction: column;
+      flex: 1 1 280px; max-width: 300px;
       background: rgba(15,23,42,0.65);
       backdrop-filter: blur(20px) saturate(1.4);
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
@@ -284,8 +282,8 @@
       .card-geronia-avatar { width: 44px; height: 44px; }
       .card-geronia-title { font-size: 14.5px; }
       .card-geronia-desc { font-size: 12px; }
-      .cards-secondary { grid-template-columns: 1fr; gap: 12px; margin-top: 14px; }
-      .card-mini { padding: 18px 18px 16px; border-radius: 14px; }
+      .cards-secondary { gap: 12px; margin-top: 14px; }
+      .card-mini { flex-basis: 100%; max-width: none; padding: 18px 18px 16px; border-radius: 14px; }
     }
   </style>
 </head>
@@ -517,15 +515,6 @@
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    // Encolhe/centraliza o grid de Mapa Societário/Funcionários/Lançamentos conforme
-    // quantos desses o usuário efetivamente enxerga (evita card solto numa grade de 3).
-    function layoutCardsSecondary() {
-      const grid = document.querySelector('.cards-secondary');
-      if (!grid) return;
-      const n = Array.from(grid.children).filter(el => el.style.display !== 'none').length;
-      grid.dataset.count = String(n);
-    }
-
     function showSkeleton(n) {
       const grid = document.getElementById('kpi-grid');
       grid.style.gridTemplateColumns = n===1?'1fr':n===2?'repeat(2,1fr)':'repeat(3,1fr)';
@@ -582,8 +571,6 @@
         const s=document.getElementById('home-sidebar-lancamentos'); if(s) s.style.display='flex';
         const t=document.getElementById('home-sidebar-dre-toggle'); if(t) t.style.display='flex';
       }
-      layoutCardsSecondary();
-
       // A barra de resumo só existe pra quem tem algum acesso a Resumo/DRE — sem isso
       // a consulta ao dre_consolidado é bloqueada pelo RLS e o skeleton nunca resolveria.
       if (showResumo || showDre) {
@@ -607,40 +594,9 @@
       }
     });
 
-    // Sidebar mobile
-    function homeSidebarOpen() {
-      document.getElementById('home-sidebar').classList.add('open');
-      document.getElementById('home-sidebar-backdrop').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-    function homeSidebarClose() {
-      document.getElementById('home-sidebar').classList.remove('open');
-      document.getElementById('home-sidebar-backdrop').classList.remove('open');
-      document.body.style.overflow = '';
-    }
-    document.getElementById('home-hamburger').addEventListener('click', homeSidebarOpen);
-    document.getElementById('home-sidebar-backdrop').addEventListener('click', homeSidebarClose);
-
-    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
-    (function() {
-      var KEY = 'sidebar-lancamentos-collapsed';
-      var btn = document.getElementById('home-sidebar-dre-toggle');
-      var sub = document.getElementById('home-sidebar-dre-submenu');
-      if (!btn || !sub) return;
-      var collapsed = localStorage.getItem(KEY) === '1';
-      function apply() {
-        sub.classList.toggle('collapsed', collapsed);
-        btn.classList.toggle('collapsed', collapsed);
-        btn.setAttribute('aria-expanded', String(!collapsed));
-      }
-      apply();
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        collapsed = !collapsed;
-        localStorage.setItem(KEY, collapsed ? '1' : '0');
-        apply();
-      });
-    })();
+    // Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js)
+    wireSidebarToggle('home');
+    wireDreCollapseToggle('home');
 
     const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -654,7 +610,7 @@
       { ids:['ViaCloset'],   label:'Via Closet',    color:'#d4526e' },
     ];
     const LABEL_MAP = { 'Exposicao': 'Exposição' };
-    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    // esc vem de user-menu.js.
 
     async function loadKPIs(latest) {
       const kpiBarEl = document.getElementById('kpi-bar');

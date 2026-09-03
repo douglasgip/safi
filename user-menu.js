@@ -1,5 +1,73 @@
-// user-menu.js — dropdown compartilhado (Trocar senha / Sair) para o badge de usuário.
-// Usado por: index.html, "Grupo Sacoman - Painel Contábil.dc.html", geronia.html, admin.html
+// user-menu.js — dropdown compartilhado (Trocar senha / Sair) para o badge de usuário,
+// + utilidades comuns às telas (escape de HTML, formatação de data, toast, sidebar
+// mobile, recolher/expandir Lançamentos). Usado por toda tela do painel.
+// fmtBRL fica de fora de propósito: cada tela formata valor em R$ de um jeito
+// diferente (com/sem centavos, com/sem valor absoluto) pro contexto onde aparece.
+
+// ── Utilidades ──
+function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  var p = d.split('-');
+  return p[2] + '/' + p[1] + '/' + p[0];
+}
+
+// "Hoje" no fuso local (não UTC) — toISOString() sozinho retorna a data em UTC,
+// que já vira o dia seguinte à noite no Brasil (UTC-3).
+function todayLocal() {
+  var d = new Date();
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+}
+
+var _sharedToastTimer;
+function showToast(msg, color) {
+  var el = document.getElementById('toast');
+  if (!el) return;
+  var dot = document.getElementById('toast-dot');
+  if (dot) dot.className = 'toast-dot ' + (color || 'green');
+  var msgEl = document.getElementById('toast-msg');
+  if (msgEl) msgEl.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(_sharedToastTimer);
+  _sharedToastTimer = setTimeout(function() { el.classList.remove('visible'); }, 3000);
+}
+
+// Abre/fecha a sidebar mobile — cada tela usa seu próprio prefixo de id
+// (ex: prefix "ped" -> #ped-sidebar, #ped-sidebar-backdrop, #ped-hamburger).
+function wireSidebarToggle(prefix) {
+  var sidebar = document.getElementById(prefix + '-sidebar');
+  var backdrop = document.getElementById(prefix + '-sidebar-backdrop');
+  var hamburger = document.getElementById(prefix + '-hamburger');
+  if (!sidebar || !backdrop || !hamburger) return;
+  function open() { sidebar.classList.add('open'); backdrop.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function close() { sidebar.classList.remove('open'); backdrop.classList.remove('open'); document.body.style.overflow = ''; }
+  hamburger.addEventListener('click', open);
+  backdrop.addEventListener('click', close);
+}
+
+// Recolhe/expande o submenu de Lançamentos sob DRE na sidebar — preferência
+// lembrada entre telas via localStorage.
+function wireDreCollapseToggle(prefix) {
+  var KEY = 'sidebar-lancamentos-collapsed';
+  var btn = document.getElementById(prefix + '-sidebar-dre-toggle');
+  var sub = document.getElementById(prefix + '-sidebar-dre-submenu');
+  if (!btn || !sub) return;
+  var collapsed = localStorage.getItem(KEY) === '1';
+  function apply() {
+    sub.classList.toggle('collapsed', collapsed);
+    btn.classList.toggle('collapsed', collapsed);
+    btn.setAttribute('aria-expanded', String(!collapsed));
+  }
+  apply();
+  btn.addEventListener('click', function(e) {
+    e.preventDefault();
+    collapsed = !collapsed;
+    localStorage.setItem(KEY, collapsed ? '1' : '0');
+    apply();
+  });
+}
+
 (function(){
   var STYLE_ID = 'usermenu-styles';
   function ensureStyles(){

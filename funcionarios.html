@@ -480,14 +480,8 @@
     let allRows = [];
     let deleteTarget = null;
 
-    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    // esc/fmtDate/showToast e a sidebar mobile/colapso do DRE vêm de user-menu.js.
     function redirect(path) { window.location.replace(path); }
-
-    function fmtDate(d) {
-      if (!d) return '—';
-      const [y,m,day] = d.split('-');
-      return day + '/' + m + '/' + y;
-    }
 
     function tempoDeCasa(dataAdmissao) {
       if (!dataAdmissao) return { label: '—', bucket: '' };
@@ -807,54 +801,14 @@
     }
     function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); deleteTarget = null; }
 
-    // ── Toast ──
-    let _toastTimer;
-    function showToast(msg, color = 'green') {
-      const el = document.getElementById('toast');
-      document.getElementById('toast-dot').className = `toast-dot ${color}`;
-      document.getElementById('toast-msg').textContent = msg;
-      el.classList.add('visible');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
-    }
+    // showToast vem de user-menu.js.
 
     document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
     document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 
-    // ── Sidebar mobile ──
-    function funcSidebarOpen() {
-      document.getElementById('func-sidebar').classList.add('open');
-      document.getElementById('func-sidebar-backdrop').classList.add('open');
-      document.body.style.overflow = 'hidden';
-    }
-    function funcSidebarClose() {
-      document.getElementById('func-sidebar').classList.remove('open');
-      document.getElementById('func-sidebar-backdrop').classList.remove('open');
-      document.body.style.overflow = '';
-    }
-    document.getElementById('func-hamburger').addEventListener('click', funcSidebarOpen);
-    document.getElementById('func-sidebar-backdrop').addEventListener('click', funcSidebarClose);
-
-    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
-    (function() {
-      var KEY = 'sidebar-lancamentos-collapsed';
-      var btn = document.getElementById('func-sidebar-dre-toggle');
-      var sub = document.getElementById('func-sidebar-dre-submenu');
-      if (!btn || !sub) return;
-      var collapsed = localStorage.getItem(KEY) === '1';
-      function apply() {
-        sub.classList.toggle('collapsed', collapsed);
-        btn.classList.toggle('collapsed', collapsed);
-        btn.setAttribute('aria-expanded', String(!collapsed));
-      }
-      apply();
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        collapsed = !collapsed;
-        localStorage.setItem(KEY, collapsed ? '1' : '0');
-        apply();
-      });
-    })();
+    // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
+    wireSidebarToggle('func');
+    wireDreCollapseToggle('func');
 
     async function init() {
       const { data } = await sb.auth.getSession();

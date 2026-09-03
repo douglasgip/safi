@@ -320,7 +320,7 @@
     let valoresAtuais = {}; // subcampoId -> valor (para a empresa/mes/ano selecionados)
     let confirmAction = null;
 
-    function esc(str) { return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    // esc/showToast e a sidebar mobile/colapso do DRE vêm de user-menu.js.
     function redirect(path) { window.location.replace(path); }
     function fmtR(n) { return (n<0?'-':'') + 'R$ ' + Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
@@ -613,43 +613,9 @@
     document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
     document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 
-    // ── Toast ──
-    let _toastTimer;
-    function showToast(msg, color='green') {
-      const el = document.getElementById('toast');
-      document.getElementById('toast-dot').className = `toast-dot ${color}`;
-      document.getElementById('toast-msg').textContent = msg;
-      el.classList.add('visible');
-      clearTimeout(_toastTimer);
-      _toastTimer = setTimeout(() => el.classList.remove('visible'), 3500);
-    }
-
-    // ── Sidebar mobile ──
-    function lcSidebarOpen() { document.getElementById('lc-sidebar').classList.add('open'); document.getElementById('lc-sidebar-backdrop').classList.add('open'); document.body.style.overflow='hidden'; }
-    function lcSidebarClose() { document.getElementById('lc-sidebar').classList.remove('open'); document.getElementById('lc-sidebar-backdrop').classList.remove('open'); document.body.style.overflow=''; }
-    document.getElementById('lc-hamburger').addEventListener('click', lcSidebarOpen);
-    document.getElementById('lc-sidebar-backdrop').addEventListener('click', lcSidebarClose);
-
-    // Recolher/expandir o submenu de Lançamentos sob DRE — preferência lembrada entre telas.
-    (function() {
-      var KEY = 'sidebar-lancamentos-collapsed';
-      var btn = document.getElementById('lc-sidebar-dre-toggle');
-      var sub = document.getElementById('lc-sidebar-dre-submenu');
-      if (!btn || !sub) return;
-      var collapsed = localStorage.getItem(KEY) === '1';
-      function apply() {
-        sub.classList.toggle('collapsed', collapsed);
-        btn.classList.toggle('collapsed', collapsed);
-        btn.setAttribute('aria-expanded', String(!collapsed));
-      }
-      apply();
-      btn.addEventListener('click', function(e) {
-        e.preventDefault();
-        collapsed = !collapsed;
-        localStorage.setItem(KEY, collapsed ? '1' : '0');
-        apply();
-      });
-    })();
+    // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
+    wireSidebarToggle('lc');
+    wireDreCollapseToggle('lc');
 
     async function loadTaxonomy() {
       const [c1,c2,c3] = await Promise.all([

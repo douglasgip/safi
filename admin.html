@@ -835,9 +835,7 @@ async function loadUsers() {
   });
 }
 
-function esc(str) {
-  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// esc/showToast vêm de user-menu.js.
 
 // ── Toggles ──────────────────────────────────────────
 function setToggle(key, val) {
@@ -1038,19 +1036,6 @@ function confirmDelete(id, email) {
 function closeConfirm() {
   document.getElementById('confirm-modal').classList.remove('open');
   deleteTarget = null;
-}
-
-// ── Toast ─────────────────────────────────────────────
-let _toastTimer;
-function showToast(msg, color = 'green') {
-  const el  = document.getElementById('toast');
-  const dot = document.getElementById('toast-dot');
-  const txt = document.getElementById('toast-msg');
-  dot.className = `toast-dot ${color}`;
-  txt.textContent = msg;
-  el.classList.add('visible');
-  clearTimeout(_toastTimer);
-  _toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
 }
 
 // ── Toggle senha ──────────────────────────────────────
