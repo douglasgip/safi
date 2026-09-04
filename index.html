@@ -257,6 +257,18 @@
     .card-mini-arrow { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #c4b5fd; transition: gap 0.2s; }
     .card-mini:hover .card-mini-arrow { gap: 8px; }
 
+    /* Cada card secundário usa a cor tema da sua própria tela (mesma paleta de lá) — os
+       que não têm classe extra ficam no roxo padrão acima. */
+    .card-mini.theme-pedidos:hover { border-color: rgba(245,158,11,0.35); box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,158,11,0.15), 0 0 32px rgba(245,158,11,0.08); }
+    .card-mini.theme-pedidos .card-mini-icon { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fcd34d; }
+    .card-mini.theme-pedidos .card-mini-arrow { color: #fcd34d; }
+    .card-mini.theme-pedidos .card-mapasoc-badge { color: #fcd34d; background: rgba(245,158,11,0.1); }
+
+    .card-mini.theme-conciliacao:hover { border-color: rgba(34,211,238,0.35); box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(34,211,238,0.15), 0 0 32px rgba(34,211,238,0.08); }
+    .card-mini.theme-conciliacao .card-mini-icon { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #67e8f9; }
+    .card-mini.theme-conciliacao .card-mini-arrow { color: #67e8f9; }
+    .card-mini.theme-conciliacao .card-mapasoc-badge { color: #67e8f9; background: rgba(34,211,238,0.1); }
+
     .footer {
       position: relative; z-index: 10;
       text-align: center; padding: 20px;
@@ -479,7 +491,7 @@
         </div>
       </a>
 
-      <a href="/pedidos" id="card-pedidos" class="card-mini" style="display:none">
+      <a href="/pedidos" id="card-pedidos" class="card-mini theme-pedidos" style="display:none">
         <div class="card-mini-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         </div>
@@ -494,7 +506,7 @@
         </div>
       </a>
 
-      <a href="/conciliacao" id="card-conciliacao" class="card-mini" style="display:none">
+      <a href="/conciliacao" id="card-conciliacao" class="card-mini theme-conciliacao" style="display:none">
         <div class="card-mini-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         </div>
