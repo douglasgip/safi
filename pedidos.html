@@ -73,8 +73,19 @@
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
 
+    /* ── Dashboard ── */
+    .summary-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+    .summary-card { flex: 1; min-width: 150px; background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(16px); }
+    .summary-label { font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .summary-value { font-size: 19px; font-weight: 800; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+    .summary-value.warn { color: #fbbf24; }
+    .summary-value.ok { color: #34d399; }
+
     /* ── Filtros ── */
     .filters-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+    .periodo-label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; font-weight: 600; }
+    .periodo-label input[type="date"] { padding: 9px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 12.5px; color-scheme: dark; }
+    .periodo-label input[type="date"]:focus { outline: none; border-color: rgba(245,158,11,0.4); }
     .filter-search { position: relative; flex: 1; min-width: 220px; max-width: 360px; }
     .filter-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #475569; pointer-events: none; }
     .filter-search input { width: 100%; padding: 10px 12px 10px 36px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; }
@@ -310,6 +321,29 @@
       Você tem acesso à tela de Pedidos, mas nenhuma empresa foi liberada para você em Gestão de Acessos. Peça para o admin liberar pelo menos uma empresa.
     </div>
 
+    <div class="summary-row" id="summary-row">
+      <div class="summary-card">
+        <div class="summary-label">Pedidos no filtro</div>
+        <div class="summary-value" id="sum-count">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Valor total previsto</div>
+        <div class="summary-value" id="sum-valor">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Aguardando chegada</div>
+        <div class="summary-value" id="sum-aguardando-chegada">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Aguardando pagamento</div>
+        <div class="summary-value warn" id="sum-aguardando-pagamento">—</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Pago</div>
+        <div class="summary-value ok" id="sum-pago">—</div>
+      </div>
+    </div>
+
     <div class="filters-bar">
       <div class="filter-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -324,6 +358,8 @@
         <option value="aguardando_pagamento">Aguardando pagamento</option>
         <option value="pago">Pago</option>
       </select>
+      <label class="periodo-label">De <input type="date" class="filter-select" id="f-periodo-de"></label>
+      <label class="periodo-label">Até <input type="date" class="filter-select" id="f-periodo-ate"></label>
       <div class="filters-spacer"></div>
       <button class="btn-new" id="btn-new-ped" onclick="openCreateModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -339,17 +375,19 @@
               <th>Empresa</th>
               <th>Fornecedor</th>
               <th>Descrição</th>
+              <th>Pedido ERP</th>
               <th>Valor Previsto</th>
               <th>Parcelas</th>
               <th>Data do Pedido</th>
-              <th>Nº Prod. NF</th>
+              <th>Produtos (prev./real)</th>
+              <th>Nº NF</th>
               <th>Status</th>
               <th>Chegou</th>
               <th style="width:130px">Ações</th>
             </tr>
           </thead>
           <tbody id="ped-tbody">
-            <tr class="loading-row"><td colspan="10">Carregando pedidos...</td></tr>
+            <tr class="loading-row"><td colspan="12">Carregando pedidos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -378,13 +416,24 @@
         </div>
 
         <div class="field">
+          <label>Nº Pedido ERP</label>
+          <input type="text" id="f-form-pedido-erp" placeholder="Nº do pedido no IdWorks/Olist">
+        </div>
+
+        <div class="field">
           <label>Descrição</label>
           <textarea id="f-form-descricao" placeholder="O que está sendo pedido"></textarea>
         </div>
 
-        <div class="field">
-          <label>Data do Pedido</label>
-          <input type="date" id="f-form-data-pedido" required>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Data do Pedido</label>
+            <input type="date" id="f-form-data-pedido" required>
+          </div>
+          <div class="field">
+            <label>Qtd. de Produtos (previsto)</label>
+            <input type="number" min="0" step="1" id="f-form-qtd-previsto" placeholder="Quantidade prevista">
+          </div>
         </div>
 
         <div class="parcelas-box">
@@ -463,9 +512,15 @@
       <div class="modal-error" id="conf-modal-error"></div>
 
       <form id="conf-form">
-        <div class="field">
-          <label>Nº de Produtos (NF)</label>
-          <input type="number" min="0" step="1" id="conf-num-produtos" placeholder="Quantidade de itens na nota fiscal">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Nº da NF</label>
+            <input type="text" id="conf-numero-nf" placeholder="Número da nota fiscal">
+          </div>
+          <div class="field">
+            <label>Qtd. de Produtos (real)</label>
+            <input type="number" min="0" step="1" id="conf-num-produtos" placeholder="Quantidade real na NF">
+          </div>
         </div>
 
         <div class="parcelas-box">
@@ -571,10 +626,14 @@
       const search = document.getElementById('f-search').value.trim().toLowerCase();
       const empresa = document.getElementById('f-empresa').value;
       const status = document.getElementById('f-status').value;
+      const periodoDe = document.getElementById('f-periodo-de').value;
+      const periodoAte = document.getElementById('f-periodo-ate').value;
       if (empresa && row.empresa !== empresa) return false;
       if (status && pedidoStatus(row) !== status) return false;
+      if (periodoDe && row.data_pedido < periodoDe) return false;
+      if (periodoAte && row.data_pedido > periodoAte) return false;
       if (search) {
-        const haystack = [row.fornecedor, row.descricao, row.empresa].filter(Boolean).join(' ').toLowerCase();
+        const haystack = [row.fornecedor, row.descricao, row.empresa, row.pedido_erp, row.numero_nf].filter(Boolean).join(' ').toLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
@@ -592,27 +651,41 @@
         .in('empresa', allowedCompanies)
         .order('data_pedido', { ascending: false });
       if (error) {
-        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="10">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="12">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       allRows = (data || []).map(r => ({ ...r, _parcelas: (r.pedidos_parcelas || []).slice().sort((a,b) => a.numero - b.numero) }));
       renderTable();
     }
 
-    ['f-search','f-empresa','f-status'].forEach(id => {
+    ['f-search','f-empresa','f-status','f-periodo-de','f-periodo-ate'].forEach(id => {
       document.getElementById(id).addEventListener('input', renderTable);
       document.getElementById(id).addEventListener('change', renderTable);
     });
+
+    function updateSummary(rows) {
+      const count = rows.length;
+      const valorTotal = rows.reduce((s, r) => s + (Number(r.valor_total) || 0), 0);
+      const porStatus = { aguardando_chegada: 0, aguardando_pagamento: 0, pago: 0 };
+      rows.forEach(r => { porStatus[pedidoStatus(r)]++; });
+      document.getElementById('sum-count').textContent = count;
+      document.getElementById('sum-valor').textContent = fmtBRL(valorTotal);
+      document.getElementById('sum-aguardando-chegada').textContent = porStatus.aguardando_chegada;
+      document.getElementById('sum-aguardando-pagamento').textContent = porStatus.aguardando_pagamento;
+      document.getElementById('sum-pago').textContent = porStatus.pago;
+    }
 
     function renderTable() {
       const tbody = document.getElementById('ped-tbody');
       const rows = allRows.filter(passesFilters);
       if (!allowedCompanies.length) {
         tbody.innerHTML = '';
+        updateSummary([]);
         return;
       }
+      updateSummary(rows);
       if (!rows.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Nenhum pedido encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="12">Nenhum pedido encontrado.</td></tr>`;
         return;
       }
       const dash = '<span class="td-muted">—</span>';
@@ -628,14 +701,18 @@
         }
         const chegouDisabled = !podeConferir ? 'disabled title="Você não tem permissão para conferir pedidos."' : '';
         const confPendente = r.chegou && parcelas.some(pc => pc.valor_real == null);
+        const qtdPrevisto = r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto : dash;
+        const qtdReal = r.num_produtos_nf != null ? r.num_produtos_nf : dash;
         return `<tr>
           <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
           <td class="td-fornecedor">${esc(r.fornecedor)}</td>
           <td class="td-desc" title="${esc(r.descricao || '')}">${r.descricao ? esc(r.descricao) : dash}</td>
+          <td class="td-muted">${r.pedido_erp ? esc(r.pedido_erp) : dash}</td>
           <td class="td-valor">${fmtBRL(r.valor_total)}</td>
           <td class="td-parcelas">${parcelasTxt}</td>
           <td>${fmtDate(r.data_pedido)}</td>
-          <td>${r.num_produtos_nf != null ? r.num_produtos_nf : dash}</td>
+          <td>${r.qtd_produtos_previsto == null && r.num_produtos_nf == null ? dash : `${qtdPrevisto} / ${qtdReal}`}</td>
+          <td class="td-muted">${r.numero_nf ? esc(r.numero_nf) : dash}</td>
           <td><span class="status-badge status-${status}"><span class="dot"></span>${STATUS_LABEL[status]}</span></td>
           <td>
             <label class="chegou-toggle">
@@ -724,6 +801,7 @@
       confPedido = row;
       confChk = chkEl;
       document.getElementById('conf-fornecedor-label').textContent = row.fornecedor;
+      document.getElementById('conf-numero-nf').value = row.numero_nf || '';
       document.getElementById('conf-num-produtos').value = row.num_produtos_nf != null ? row.num_produtos_nf : '';
       const parcelas = (row._parcelas || []).slice().sort((a, b) => a.numero - b.numero);
       document.getElementById('conf-parcelas-list').innerHTML = parcelas.map(pc => `
@@ -752,6 +830,7 @@
       const btn = document.getElementById('conf-btn-submit');
       document.getElementById('conf-modal-error').className = 'modal-error';
 
+      const numeroNfRaw = document.getElementById('conf-numero-nf').value.trim();
       const numProdutosRaw = document.getElementById('conf-num-produtos').value;
       const parcelaRows = Array.from(document.querySelectorAll('#conf-parcelas-list .conf-parcela-row'));
       // Não exige mais preencher todas de uma vez — quem confere pode salvar só as
@@ -772,6 +851,7 @@
       const pedidoPayload = {
         chegou: true,
         data_chegada: jaTinhaChegado ? confPedido.data_chegada : todayLocal(),
+        numero_nf: numeroNfRaw || null,
         num_produtos_nf: numProdutosRaw === '' ? null : +numProdutosRaw,
         conferido_por: userId,
         conferido_em: new Date().toISOString(),
@@ -956,8 +1036,10 @@
       document.getElementById('edit-id').value = r.id;
       document.getElementById('f-form-empresa').value = r.empresa;
       document.getElementById('f-form-fornecedor').value = r.fornecedor || '';
+      document.getElementById('f-form-pedido-erp').value = r.pedido_erp || '';
       document.getElementById('f-form-descricao').value = r.descricao || '';
       document.getElementById('f-form-data-pedido').value = r.data_pedido || '';
+      document.getElementById('f-form-qtd-previsto').value = r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto : '';
       clearParcelas();
       const parcelas = (r._parcelas || []).slice().sort((a,b) => a.numero - b.numero);
       const freqDetectada = parcelas.length ? detectAutoFrequency(parcelas) : null;
@@ -1013,12 +1095,15 @@
       const valorTotal = parcelas.reduce((s, p) => s + p.valor, 0);
       if (valorTotal <= 0) { showModalError('Informe o valor de ao menos uma parcela.'); return; }
 
+      const qtdPrevistoRaw = document.getElementById('f-form-qtd-previsto').value;
       const payload = {
         empresa: document.getElementById('f-form-empresa').value,
         fornecedor,
+        pedido_erp: document.getElementById('f-form-pedido-erp').value.trim() || null,
         descricao: document.getElementById('f-form-descricao').value.trim() || null,
         data_pedido: dataPedido,
         valor_total: valorTotal,
+        qtd_produtos_previsto: qtdPrevistoRaw === '' ? null : +qtdPrevistoRaw,
       };
 
       btn.disabled = true;

@@ -251,16 +251,18 @@
             <tr>
               <th>Empresa</th>
               <th>Fornecedor</th>
+              <th>Pedido ERP</th>
               <th>Parcela</th>
               <th>Valor Previsto</th>
               <th>Valor Real</th>
               <th>Diferença</th>
-              <th>Nº Prod. NF</th>
+              <th>Produtos (prev./real)</th>
+              <th>Nº NF</th>
               <th>Conferido em</th>
             </tr>
           </thead>
           <tbody id="con-tbody">
-            <tr class="empty-row"><td colspan="8">Carregando...</td></tr>
+            <tr class="empty-row"><td colspan="10">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -301,22 +303,25 @@
       }
       const { data, error } = await sb
         .from('pedidos')
-        .select('empresa, fornecedor, conferido_em, num_produtos_nf, pedidos_parcelas(id, numero, valor, valor_real)')
+        .select('empresa, fornecedor, conferido_em, pedido_erp, numero_nf, qtd_produtos_previsto, num_produtos_nf, pedidos_parcelas(id, numero, valor, valor_real)')
         .in('empresa', allowedCompanies)
         .eq('chegou', true);
       if (error) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       // Uma linha por parcela já conferida (valor_real preenchido) — é isso que dá pra comparar.
       allLinhas = [];
       (data || []).forEach(p => {
+        const qtdDivergente = p.qtd_produtos_previsto != null && p.num_produtos_nf != null && p.qtd_produtos_previsto !== p.num_produtos_nf;
         (p.pedidos_parcelas || []).filter(pc => pc.valor_real != null).forEach(pc => {
           const previsto = +pc.valor || 0;
           const real = +pc.valor_real || 0;
           const diff = real - previsto;
           allLinhas.push({
-            empresa: p.empresa, fornecedor: p.fornecedor, conferido_em: p.conferido_em, num_produtos_nf: p.num_produtos_nf,
+            empresa: p.empresa, fornecedor: p.fornecedor, conferido_em: p.conferido_em,
+            pedido_erp: p.pedido_erp, numero_nf: p.numero_nf,
+            qtd_previsto: p.qtd_produtos_previsto, qtd_real: p.num_produtos_nf, qtd_divergente: qtdDivergente,
             numero: pc.numero, previsto, real, diff, divergente: Math.abs(diff) > 0.01,
           });
         });
@@ -352,21 +357,25 @@
 
       if (!allowedCompanies.length) { return; }
       if (!linhas.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="8">Nenhuma parcela conferida ainda${document.getElementById('f-so-divergencias').checked ? ' com divergência' : ''}.</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Nenhuma parcela conferida ainda${document.getElementById('f-so-divergencias').checked ? ' com divergência' : ''}.</td></tr>`;
         return;
       }
 
+      const dash = '<span class="td-muted">—</span>';
       tbody.innerHTML = linhas.map(l => {
         const diffTxt = (l.diff >= 0 ? '+' : '−') + fmtBRL(Math.abs(l.diff));
+        const qtdTxt = l.qtd_previsto == null && l.qtd_real == null ? dash : `${l.qtd_previsto != null ? l.qtd_previsto : dash} / ${l.qtd_real != null ? l.qtd_real : dash}`;
         return `<tr class="${l.divergente ? 'divergente' : ''}">
           <td><img class="con-empresa-logo" src="${MARCA_LOGOS[l.empresa] || ''}" alt="${esc(l.empresa)}" title="${esc(l.empresa)}"></td>
           <td class="con-fornecedor">${esc(l.fornecedor)}</td>
+          <td>${l.pedido_erp ? esc(l.pedido_erp) : dash}</td>
           <td>${l.numero}ª</td>
           <td class="con-valor">${fmtBRL(l.previsto)}</td>
           <td class="con-valor">${fmtBRL(l.real)}</td>
           <td class="con-diff ${l.divergente ? 'divergente' : 'ok'}">${diffTxt}${l.divergente ? ' <span class="diverg-badge">divergente</span>' : ''}</td>
-          <td>${l.num_produtos_nf != null ? l.num_produtos_nf : '<span class="td-muted">—</span>'}</td>
-          <td>${l.conferido_em ? new Date(l.conferido_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '<span class="td-muted">—</span>'}</td>
+          <td>${qtdTxt}${l.qtd_divergente ? ' <span class="diverg-badge">divergente</span>' : ''}</td>
+          <td>${l.numero_nf ? esc(l.numero_nf) : dash}</td>
+          <td>${l.conferido_em ? new Date(l.conferido_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : dash}</td>
         </tr>`;
       }).join('');
     }
