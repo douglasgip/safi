@@ -394,11 +394,21 @@
               <label>Nº de Parcelas</label>
               <input type="number" min="1" step="1" id="auto-num-parcelas" value="1">
             </div>
-            <div class="field" style="grid-column:1/-1;margin-bottom:2px">
+            <div class="field" style="margin-bottom:0">
+              <label>Frequência</label>
+              <select id="auto-frequencia">
+                <option value="diaria">Diária</option>
+                <option value="semanal">Semanal</option>
+                <option value="quinzenal">Quinzenal</option>
+                <option value="mensal" selected>Mensal</option>
+                <option value="d45">A cada 45 dias</option>
+              </select>
+            </div>
+            <div class="field" style="margin-bottom:2px">
               <label>Data do 1º Vencimento</label>
               <input type="date" id="auto-primeiro-vencimento">
             </div>
-            <div class="auto-fields-hint" style="grid-column:1/-1">As parcelas seguintes vencem no mesmo dia, um mês depois cada uma. Pra vencimentos ou valores diferentes entre parcelas, use "Personalizado".</div>
+            <div class="auto-fields-hint" style="grid-column:1/-1" id="auto-fields-hint">As parcelas seguintes vencem no intervalo escolhido, a partir da primeira. Pra vencimentos ou valores diferentes entre parcelas, use "Personalizado".</div>
           </div>
 
           <div id="custom-fields" style="display:none">
@@ -469,6 +479,28 @@
       const date = new Date(Date.UTC(y, m - 1 + months, d));
       if (date.getUTCDate() !== d) date.setUTCDate(0);
       return date.toISOString().slice(0, 10);
+    }
+
+    // Soma N dias corridos a uma data (YYYY-MM-DD).
+    function addDays(dateStr, days) {
+      if (!dateStr) return '';
+      const [y, m, d] = dateStr.split('-').map(Number);
+      return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+    }
+
+    // Frequências disponíveis no modo Automático — "mensal" usa addMonths (mantém o
+    // dia do mês, com ajuste em meses mais curtos); as demais somam dias corridos.
+    const FREQUENCIAS = {
+      diaria: { label: 'Diária', dias: 1 },
+      semanal: { label: 'Semanal', dias: 7 },
+      quinzenal: { label: 'Quinzenal', dias: 15 },
+      mensal: { label: 'Mensal', dias: null },
+      d45: { label: 'a cada 45 dias', dias: 45 },
+    };
+    function vencimentoDaParcela(primeiraData, freq, indice) {
+      if (!primeiraData || indice === 0) return primeiraData;
+      const f = FREQUENCIAS[freq] || FREQUENCIAS.mensal;
+      return f.dias == null ? addMonths(primeiraData, indice) : addDays(primeiraData, f.dias * indice);
     }
 
     function pedidoStatus(p) {
@@ -688,13 +720,18 @@
     function setParcelaMode(mode) {
       if (mode === parcelaMode) return;
       if (mode === 'auto') {
-        // Traz o que já estava em Personalizado como ponto de partida do Automático.
+        // Traz o que já estava em Personalizado como ponto de partida do Automático —
+        // tenta detectar a frequência batendo com os vencimentos já digitados; se não
+        // bater com nenhuma, mantém a frequência que já estava selecionada.
         const rows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
-        const total = rows.reduce((s, r) => s + (+r.querySelector('.parcela-valor').value || 0), 0);
-        const firstVenc = rows.map(r => r.querySelector('.parcela-vencimento').value).filter(Boolean).sort()[0] || '';
+        const parcelasAtuais = rows.map((r, i) => ({ numero: i + 1, valor: +r.querySelector('.parcela-valor').value || 0, vencimento: r.querySelector('.parcela-vencimento').value }));
+        const total = parcelasAtuais.reduce((s, p) => s + p.valor, 0);
+        const firstVenc = parcelasAtuais.map(p => p.vencimento).filter(Boolean).sort()[0] || '';
+        const freqDetectada = detectAutoFrequency(parcelasAtuais);
         document.getElementById('auto-valor-total').value = total || '';
         document.getElementById('auto-num-parcelas').value = rows.length || 1;
         document.getElementById('auto-primeiro-vencimento').value = firstVenc;
+        if (freqDetectada) document.getElementById('auto-frequencia').value = freqDetectada;
         applyParcelaModeUI('auto');
         regenerateAutoParcelas();
       } else {
@@ -706,32 +743,40 @@
       const total = +document.getElementById('auto-valor-total').value || 0;
       const n = Math.max(1, parseInt(document.getElementById('auto-num-parcelas').value, 10) || 1);
       const firstDate = document.getElementById('auto-primeiro-vencimento').value;
+      const freq = document.getElementById('auto-frequencia').value;
       clearParcelas();
       const base = Math.floor((total / n) * 100) / 100;
       for (let i = 0; i < n; i++) {
         const isLast = i === n - 1;
         const valor = total ? +(isLast ? total - base * (n - 1) : base).toFixed(2) : '';
-        const venc = firstDate ? addMonths(firstDate, i) : '';
+        const venc = firstDate ? vencimentoDaParcela(firstDate, freq, i) : '';
         addParcelaRow(valor, venc);
       }
     }
 
-    ['auto-valor-total', 'auto-num-parcelas', 'auto-primeiro-vencimento'].forEach(id => {
-      document.getElementById(id).addEventListener('input', () => { if (parcelaMode === 'auto') regenerateAutoParcelas(); });
+    ['auto-valor-total', 'auto-num-parcelas', 'auto-primeiro-vencimento', 'auto-frequencia'].forEach(id => {
+      const el = document.getElementById(id);
+      el.addEventListener('input', () => { if (parcelaMode === 'auto') regenerateAutoParcelas(); });
+      el.addEventListener('change', () => { if (parcelaMode === 'auto') regenerateAutoParcelas(); });
     });
 
     // Detecta se uma lista de parcelas já salva "cabe" no modo Automático (todas iguais,
-    // exceto a última por causa de arredondamento, vencendo mês a mês) — usado ao editar
-    // um pedido existente, pra abrir no modo certo em vez de sempre cair em Personalizado.
-    function isUniformParcelas(parcelas) {
-      if (!parcelas.length) return false;
+    // exceto a última por causa de arredondamento, vencendo num intervalo regular a
+    // partir da primeira) e, se sim, com qual frequência — usado ao editar um pedido
+    // existente, pra abrir no modo certo em vez de sempre cair em Personalizado.
+    function detectAutoFrequency(parcelas) {
+      if (!parcelas.length || !parcelas[0].vencimento) return null;
       const first = +parcelas[0].valor;
       for (let i = 0; i < parcelas.length; i++) {
         const isLast = i === parcelas.length - 1;
-        if (!isLast && Math.abs(+parcelas[i].valor - first) > 0.01) return false;
-        if (i > 0 && parcelas[i].vencimento !== addMonths(parcelas[0].vencimento, i)) return false;
+        if (!isLast && Math.abs(+parcelas[i].valor - first) > 0.01) return null;
       }
-      return true;
+      if (parcelas.length === 1) return 'mensal';
+      for (const freq of Object.keys(FREQUENCIAS)) {
+        const bate = parcelas.every((p, i) => i === 0 || p.vencimento === vencimentoDaParcela(parcelas[0].vencimento, freq, i));
+        if (bate) return freq;
+      }
+      return null;
     }
 
     // ── Modal Criar/Editar ──
@@ -746,6 +791,7 @@
       document.getElementById('auto-valor-total').value = '';
       document.getElementById('auto-num-parcelas').value = 1;
       document.getElementById('auto-primeiro-vencimento').value = '';
+      document.getElementById('auto-frequencia').value = 'mensal';
       applyParcelaModeUI('auto');
       regenerateAutoParcelas();
       document.getElementById('modal-error').className = 'modal-error';
@@ -763,10 +809,12 @@
       document.getElementById('f-form-data-pedido').value = r.data_pedido || '';
       clearParcelas();
       const parcelas = (r._parcelas || []).slice().sort((a,b) => a.numero - b.numero);
-      if (parcelas.length && isUniformParcelas(parcelas)) {
+      const freqDetectada = parcelas.length ? detectAutoFrequency(parcelas) : null;
+      if (parcelas.length && freqDetectada) {
         document.getElementById('auto-valor-total').value = r.valor_total;
         document.getElementById('auto-num-parcelas').value = parcelas.length;
         document.getElementById('auto-primeiro-vencimento').value = parcelas[0].vencimento;
+        document.getElementById('auto-frequencia').value = freqDetectada;
         applyParcelaModeUI('auto');
         regenerateAutoParcelas();
       } else if (parcelas.length) {
@@ -776,6 +824,7 @@
         document.getElementById('auto-valor-total').value = '';
         document.getElementById('auto-num-parcelas').value = 1;
         document.getElementById('auto-primeiro-vencimento').value = '';
+        document.getElementById('auto-frequencia').value = 'mensal';
         applyParcelaModeUI('auto');
         regenerateAutoParcelas();
       }

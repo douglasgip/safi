@@ -41,7 +41,7 @@ Use formatação leve (negrito em números-chave, listas curtas). Não escreva t
 Nunca invente números. Se puder estimar, deixe explícito que é uma estimativa e mostre a base estatística. Sempre alerte o usuário quando a resposta tiver baixa precisão.
 
 ## PRECISÃO EM LISTAS E RESUMOS COMPLETOS (siga à risca)
-Quando pedirem para agrupar, contar ou listar TODOS os itens de um conjunto (ex: todos os colaboradores, todos os lançamentos de um mês), percorra os dados um item por vez, na ordem em que aparecem, sem pular nem duplicar nenhum. Antes de finalizar a resposta, confira se a quantidade total que você listou bate com a quantidade de itens realmente presente nos dados — se não bater, refaça a contagem com calma antes de responder.
+Quando pedirem para agrupar, contar ou listar TODOS os itens de um conjunto (ex: todos os colaboradores, todos os lançamentos de um mês, todos os pedidos), percorra os dados um item por vez, na ordem em que aparecem, sem pular nem duplicar nenhum. Antes de finalizar a resposta, confira se a quantidade total que você listou bate com a quantidade de itens realmente presente nos dados — se não bater, refaça a contagem com calma antes de responder.
 
 Nunca deixe uma anotação de erro visível no meio da resposta (ex: "(erro: data X)"). Se perceber que classificou algo errado enquanto escrevia, corrija silenciosamente e não publique o rascunho errado.
 
@@ -58,9 +58,11 @@ Exemplo do que NÃO fazer: se o usuário perguntou sobre o crescimento do GIP e 
 Só relembre algo já dito se o usuário pedir explicitamente (ex: "repete", "resume o que você disse", "e sobre aquilo que falamos antes?").
 
 ## REGRA CRÍTICA DE CONFIDENCIALIDADE (nunca viole)
-O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO". Você só pode falar sobre as operações e os tipos de dado (financeiro, funcionários) que ele tem permissão de ver. Se a pergunta ATUAL pedir dados fora do acesso dele, recuse educadamente essa pergunta específica e ofereça ajuda apenas sobre o que ele tem acesso. Nunca revele, compare ou deixe vazar números ou informações fora do acesso do usuário — nem de forma indireta.
+O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO". Você só pode falar sobre as operações e os tipos de dado (financeiro, funcionários, pedidos) que ele tem permissão de ver. Se a pergunta ATUAL pedir dados fora do acesso dele, recuse educadamente essa pergunta específica e ofereça ajuda apenas sobre o que ele tem acesso. Nunca revele, compare ou deixe vazar números ou informações fora do acesso do usuário — nem de forma indireta.
 
 Sobre funcionários especificamente: mesmo quando você tiver acesso ao quadro de colaboradores, você só recebe nome, empresa, data de admissão e data de nascimento — nunca CPF, telefone, endereço ou e-mail. Nunca afirme ter esses dados nem os invente, mesmo se perguntarem diretamente.
+
+Sobre Pedidos especificamente: você recebe fornecedor, descrição, valor total, data do pedido, se já chegou (e quando), e o detalhamento de cada parcela (valor, vencimento, se já foi paga e quando). Use as datas de vencimento e o status de pagamento para responder sobre contas a pagar, parcelas atrasadas (vencimento antes de hoje e ainda não paga) ou o fluxo de pagamento dos pedidos.
 
 Sobre o detalhamento de Lançamentos especificamente: o detalhamento linha a linha (classe/campo/subcampo que compõe cada número do DRE) só é liberado para quem tem acesso completo às 3 operações. Se o usuário não tiver esse acesso completo, mesmo que ele veja o DRE agregado normalmente, não detalhe nem invente a composição de nenhuma linha — informe educadamente que esse nível de detalhe não está liberado para ele.
 
@@ -188,6 +190,44 @@ function funcSummaryText(labels: string[], rows: any[]) {
   return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; TOTAL: ${total} colaborador(es) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por mês/data/período/empresa, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar ninguém — ao terminar, some quantos você listou e confira se bate com ${total}; se não bater, refaça antes de responder. Use as datas de admissão para calcular tempo de casa e as datas de nascimento para calcular idade quando perguntarem):\n\n${blocks.join('\n\n')}`
 }
 
+// Um pedido por linha (mesmo motivo do funcSummaryText: um blob de texto só faz o
+// modelo pular itens ao filtrar/contar). Cada linha já traz o status calculado
+// (aguardando chegada / aguardando pagamento / pago) e o detalhamento de parcelas,
+// pra não precisar o modelo tentar deduzir isso sozinho e errar.
+function pedidosSummaryText(labels: string[], rows: any[]) {
+  const todayISO = new Date().toISOString().slice(0, 10)
+  const todayBR = fmtDateBR(todayISO)
+  const byEmpresa: Record<string, any[]> = {}
+  for (const label of labels) byEmpresa[label] = []
+  for (const r of rows) if (byEmpresa[r.empresa]) byEmpresa[r.empresa].push(r)
+
+  const blocks = labels.map(label => {
+    const list = byEmpresa[label]
+    if (!list.length) return `${label} — 0 pedidos cadastrados.`
+    const linhas = list.map(r => {
+      const parcelas = (r.pedidos_parcelas || []).slice().sort((a: any, b: any) => (a.numero ?? 0) - (b.numero ?? 0))
+      const status = !r.chegou
+        ? 'aguardando chegada'
+        : (parcelas.length && parcelas.every((p: any) => p.pago) ? 'pago' : 'aguardando pagamento')
+      const chegadaTxt = r.chegou ? `, chegou em ${r.data_chegada ? fmtDateBR(r.data_chegada) : 'data não registrada'}` : ''
+      const descTxt = r.descricao ? `, descrição: ${r.descricao}` : ''
+      const parcelasTxt = parcelas.length
+        ? parcelas.map((p: any) => {
+            const venc = p.vencimento ? fmtDateBR(p.vencimento) : 'sem data'
+            const atrasada = !p.pago && p.vencimento && p.vencimento < todayISO ? ' — ATRASADA' : ''
+            const pagoTxt = p.pago ? ` (paga${p.pago_em ? ` em ${fmtDateBR(p.pago_em)}` : ''})` : ` (pendente${atrasada})`
+            return `${p.numero}ª ${fmtR(Number(p.valor) || 0)} venc. ${venc}${pagoTxt}`
+          }).join('; ')
+        : 'sem parcelas cadastradas'
+      return `  - ${r.fornecedor} (pedido em ${fmtDateBR(r.data_pedido)}${chegadaTxt}): valor total ${fmtR(Number(r.valor_total) || 0)}, status ${status}${descTxt}. Parcelas: ${parcelasTxt}.`
+    })
+    return `${label} — ${list.length} pedido(s):\n${linhas.join('\n')}`
+  })
+
+  const total = rows.length
+  return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. Uma parcela é "atrasada" quando o vencimento é antes de hoje e ela ainda não foi paga):\n\n${blocks.join('\n\n')}`
+}
+
 function lancamentosDetailText(rows: any[]) {
   const byOp: Record<OpKey, any[]> = { EPGIP: [], Exposicao: [], ViaCloset: [] }
   for (const r of rows) {
@@ -231,12 +271,12 @@ function lancamentosDetailText(rows: any[]) {
 }
 
 // ============ Resolução de permissões por operação ============
-// Mesmo formato de permissão é usado hoje por DRE e Funcionários (e deve ser reaproveitado
-// por futuras telas como Fluxo de Caixa): uma chave geral liga/desliga o domínio inteiro
-// (ex: can_dre) e três sub-flags escolhem quais operações ficam visíveis dentro dele.
-// DRE é opt-out (visível por padrão, exceto se explicitamente false) e Funcionários é
-// opt-in (oculto por padrão, exceto se explicitamente true) — mesmo comportamento já usado
-// no admin.html e nas telas do painel, replicado aqui em código.
+// Mesmo formato de permissão é usado hoje por DRE, Funcionários e Pedidos: uma chave
+// geral liga/desliga o domínio inteiro (ex: can_pedidos) e três sub-flags escolhem
+// quais operações ficam visíveis dentro dele. DRE é opt-out (visível por padrão,
+// exceto se explicitamente false); Funcionários e Pedidos são opt-in (ocultos por
+// padrão, exceto se explicitamente true) — mesmo comportamento já usado no
+// admin.html e nas telas do painel, replicado aqui em código.
 interface PermissionDomain {
   domainFlag: boolean | null | undefined
   domainDefaultAllowed: boolean
@@ -398,11 +438,38 @@ Deno.serve(async (req: Request) => {
       funcDataText = funcSummaryText(labels, funcRows || [])
     }
 
+    // ---- Permissões: Pedidos (o que está sendo pedido para as lojas + parcelas) ----
+    const pedidosOps = resolveAllowedOps(prof.is_admin, {
+      domainFlag: prof.can_pedidos,
+      domainDefaultAllowed: false,
+      opFlags: { EPGIP: prof.pedidos_epgip, Exposicao: prof.pedidos_exposicao, ViaCloset: prof.pedidos_viacloset },
+      opRequiresExplicitTrue: true,
+    })
+
+    let pedidosAccessText: string
+    if (!pedidosOps.length) {
+      pedidosAccessText = `Acesso a dados de PEDIDOS: NENHUM. Não comente sobre pedidos feitos às lojas, fornecedores, condições de pagamento, parcelas ou contas a pagar — informe educadamente que essa permissão não está liberada se perguntarem.`
+    } else {
+      const labels = pedidosOps.map(op => OP_LABEL[op]).join(', ')
+      const scope = pedidosOps.length === ALL_OPS.length ? 'TOTAL — todas as operações' : `RESTRITO a "${labels}"`
+      pedidosAccessText = `Acesso a dados de PEDIDOS: ${scope}.`
+    }
+
+    let pedidosDataText = ''
+    if (pedidosOps.length) {
+      const labels = pedidosOps.map(op => OP_LABEL[op])
+      const { data: pedidosRows } = await sb
+        .from('pedidos')
+        .select('empresa, fornecedor, descricao, valor_total, data_pedido, chegou, data_chegada, pedidos_parcelas(numero, valor, vencimento, pago, pago_em)')
+        .in('empresa', labels)
+      pedidosDataText = pedidosSummaryText(labels, pedidosRows || [])
+    }
+
     // ---- Permissões: Lançamentos (detalhamento linha a linha do DRE) ----
-    // Diferente de DRE/Funcionários (liberados operação por operação), o detalhamento de
-    // Lançamentos é tudo-ou-nada: só é liberado para quem tem acesso completo às 3
-    // operações (as 4 empresas de lancamentos_valores), por ser um nível de detalhe mais
-    // sensível que os totais já cobertos pelo bloco de DRE.
+    // Diferente de DRE/Funcionários/Pedidos (liberados operação por operação), o
+    // detalhamento de Lançamentos é tudo-ou-nada: só é liberado para quem tem acesso
+    // completo às 3 operações (as 4 empresas de lancamentos_valores), por ser um nível
+    // de detalhe mais sensível que os totais já cobertos pelo bloco de DRE.
     const lancamentosFullAccess = !!prof.is_admin || (
       prof.can_lancamentos === true &&
       prof.lancamentos_ep === true &&
@@ -452,9 +519,11 @@ Deno.serve(async (req: Request) => {
       `ACESSO DO USUÁRIO\nO usuário logado é ${userLabel}.`,
       dreAccessText,
       funcAccessText,
+      pedidosAccessText,
       lancamentosAccessText,
       dreDataText,
       funcDataText,
+      pedidosDataText,
       lancamentosDataText,
     ].filter(Boolean).join('\n\n')
 
@@ -472,7 +541,7 @@ Deno.serve(async (req: Request) => {
     // tentamos DESLIGAR isso (thinking: disabled) pra garantir que o max_tokens não fosse
     // todo consumido em pensamento invisível — mas sem esse rascunho invisível, o modelo
     // passou a "pensar em voz alta" DENTRO da resposta visível (rascunhos, autocorreções
-    // tipo "Março — correção, 3 aniversariantes" aparecendo no meio do texto pro usuário).
+    // tipo "Março — correção, 3 aniversáriantes" aparecendo no meio do texto pro usuário).
     // A solução certa é manter o pensamento LIGADO (ele já é bom nisso) e só dar orçamento
     // de sobra suficiente pra ele pensar E ainda escrever a resposta final limpa — daí o
     // max_tokens bem mais alto pro Sênior. Streaming evita timeout de requisição não
