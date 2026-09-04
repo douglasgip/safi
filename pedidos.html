@@ -52,8 +52,7 @@
     .header-logo-full { height: 30px; width: auto; object-fit: contain; }
     #ped-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
     #ped-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
-    .header-title-block { display: flex; align-items: center; gap: 9px; }
-    .header-title { font-size: 14px; font-weight: 800; color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
 
     .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
     .dc-sidebar-backdrop.open { display: block; }
@@ -216,7 +215,6 @@
     @media (max-width: 768px) {
       .header { padding: 0 14px; }
       .header-logo-full { height: 24px; }
-      .header-title { font-size: 12.5px; }
       .main { padding: 14px; }
       .filters-bar { flex-direction: column; align-items: stretch; }
       .filter-search { max-width: none; }
@@ -302,9 +300,7 @@
       <a href="/" style="display:flex;align-items:center;text-decoration:none">
         <img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full">
       </a>
-      <div class="header-title-block">
-        <span class="header-title">Pedidos</span>
-      </div>
+      <div class="header-sub">Pedidos</div>
     </div>
     <div id="ped-nav-user-info" style="display:none"></div>
   </header>
