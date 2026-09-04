@@ -210,6 +210,7 @@ function pedidosSummaryText(labels: string[], rows: any[]) {
         ? 'aguardando chegada'
         : (parcelas.length && parcelas.every((p: any) => p.pago) ? 'pago' : 'aguardando pagamento')
       const chegadaTxt = r.chegou ? `, chegou/conferido em ${r.data_chegada ? fmtDateBR(r.data_chegada) : 'data não registrada'}` : ''
+      const cnpjTxt = r.cnpj ? `, CNPJ ${r.cnpj}` : ''
       const erpTxt = r.pedido_erp ? `, pedido ERP nº ${r.pedido_erp}` : ''
       const nfNumTxt = r.numero_nf ? `, NF nº ${r.numero_nf}` : ''
       let qtdTxt = ''
@@ -242,13 +243,13 @@ function pedidosSummaryText(labels: string[], rows: any[]) {
             return `${p.numero}ª previsto ${fmtR(previsto)} venc. ${venc}${pagoTxt}${realTxt}`
           }).join('; ')
         : 'sem parcelas cadastradas'
-      return `  - ${r.fornecedor} (pedido em ${fmtDateBR(r.data_pedido)}${chegadaTxt}${erpTxt}${nfNumTxt}): valor total previsto ${fmtR(Number(r.valor_total) || 0)}, status ${status}${qtdTxt}${descTxt}. Parcelas: ${parcelasTxt}.`
+      return `  - ${r.fornecedor} (pedido em ${fmtDateBR(r.data_pedido)}${chegadaTxt}${cnpjTxt}${erpTxt}${nfNumTxt}): valor total previsto ${fmtR(Number(r.valor_total) || 0)}, status ${status}${qtdTxt}${descTxt}. Parcelas: ${parcelasTxt}.`
     })
     return `${label} — ${list.length} pedido(s):\n${linhas.join('\n')}`
   })
 
   const total = rows.length
-  return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. Uma parcela é "atrasada" quando o vencimento é antes de hoje e ela ainda não foi paga. O fluxo de conciliação do grupo é: quem lança o pedido registra o valor PREVISTO e a quantidade PREVISTA de produtos; depois, quando o pedido chega, outra pessoa confere e lança o valor REAL por parcela (sem ver o previsto), a quantidade REAL de produtos e o nº da nota fiscal; uma parcela é "divergente" quando o valor real conferido não bate com o previsto, e a quantidade de produtos é "divergente" quando a real não bate com a prevista — isso é o que a tela de Conciliação do painel identifica. "Pedido ERP" é o número desse pedido no sistema de gestão (IdWorks/Olist), separado do número da nota fiscal):\n\n${blocks.join('\n\n')}`
+  return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. Uma parcela é "atrasada" quando o vencimento é antes de hoje e ela ainda não foi paga. O fluxo de conciliação do grupo é: quem lança o pedido registra o valor PREVISTO e a quantidade PREVISTA de produtos; depois, quando o pedido chega, outra pessoa confere e lança o valor REAL por parcela (sem ver o previsto), a quantidade REAL de produtos e o nº da nota fiscal; uma parcela é "divergente" quando o valor real conferido não bate com o previsto, e a quantidade de produtos é "divergente" quando a real não bate com a prevista — isso é o que a tela de Conciliação do painel identifica. "Pedido ERP" é o número desse pedido no sistema de gestão (IdWorks/Olist), separado do número da nota fiscal. "CNPJ" é a razão social/CNPJ usado para registrar a compra (Guilherme, Juliane, Isa ou EP), independente de qual das 3 operações o pedido é):\n\n${blocks.join('\n\n')}`
 }
 
 function lancamentosDetailText(rows: any[]) {
@@ -483,7 +484,7 @@ Deno.serve(async (req: Request) => {
       const labels = pedidosOps.map(op => OP_LABEL[op])
       const { data: pedidosRows } = await sb
         .from('pedidos')
-        .select('empresa, fornecedor, descricao, valor_total, data_pedido, chegou, data_chegada, pedido_erp, numero_nf, qtd_produtos_previsto, num_produtos_nf, pedidos_parcelas(numero, valor, vencimento, pago, pago_em, valor_real)')
+        .select('empresa, cnpj, fornecedor, descricao, valor_total, data_pedido, chegou, data_chegada, pedido_erp, numero_nf, qtd_produtos_previsto, num_produtos_nf, pedidos_parcelas(numero, valor, vencimento, pago, pago_em, valor_real)')
         .in('empresa', labels)
       pedidosDataText = pedidosSummaryText(labels, pedidosRows || [])
     }

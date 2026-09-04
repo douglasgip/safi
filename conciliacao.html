@@ -250,6 +250,7 @@
           <thead>
             <tr>
               <th>Empresa</th>
+              <th>CNPJ</th>
               <th>Fornecedor</th>
               <th>Pedido ERP</th>
               <th>Parcela</th>
@@ -262,7 +263,7 @@
             </tr>
           </thead>
           <tbody id="con-tbody">
-            <tr class="empty-row"><td colspan="10">Carregando...</td></tr>
+            <tr class="empty-row"><td colspan="11">Carregando...</td></tr>
           </tbody>
         </table>
       </div>
@@ -303,11 +304,11 @@
       }
       const { data, error } = await sb
         .from('pedidos')
-        .select('empresa, fornecedor, conferido_em, pedido_erp, numero_nf, qtd_produtos_previsto, num_produtos_nf, pedidos_parcelas(id, numero, valor, valor_real)')
+        .select('empresa, cnpj, fornecedor, conferido_em, pedido_erp, numero_nf, qtd_produtos_previsto, num_produtos_nf, pedidos_parcelas(id, numero, valor, valor_real)')
         .in('empresa', allowedCompanies)
         .eq('chegou', true);
       if (error) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       // Uma linha por parcela já conferida (valor_real preenchido) — é isso que dá pra comparar.
@@ -319,7 +320,7 @@
           const real = +pc.valor_real || 0;
           const diff = real - previsto;
           allLinhas.push({
-            empresa: p.empresa, fornecedor: p.fornecedor, conferido_em: p.conferido_em,
+            empresa: p.empresa, cnpj: p.cnpj, fornecedor: p.fornecedor, conferido_em: p.conferido_em,
             pedido_erp: p.pedido_erp, numero_nf: p.numero_nf,
             qtd_previsto: p.qtd_produtos_previsto, qtd_real: p.num_produtos_nf, qtd_divergente: qtdDivergente,
             numero: pc.numero, previsto, real, diff, divergente: Math.abs(diff) > 0.01,
@@ -357,7 +358,7 @@
 
       if (!allowedCompanies.length) { return; }
       if (!linhas.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Nenhuma parcela conferida ainda${document.getElementById('f-so-divergencias').checked ? ' com divergência' : ''}.</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="11">Nenhuma parcela conferida ainda${document.getElementById('f-so-divergencias').checked ? ' com divergência' : ''}.</td></tr>`;
         return;
       }
 
@@ -367,6 +368,7 @@
         const qtdTxt = l.qtd_previsto == null && l.qtd_real == null ? dash : `${l.qtd_previsto != null ? l.qtd_previsto : dash} / ${l.qtd_real != null ? l.qtd_real : dash}`;
         return `<tr class="${l.divergente ? 'divergente' : ''}">
           <td><img class="con-empresa-logo" src="${MARCA_LOGOS[l.empresa] || ''}" alt="${esc(l.empresa)}" title="${esc(l.empresa)}"></td>
+          <td class="td-muted">${l.cnpj ? esc(l.cnpj) : dash}</td>
           <td class="con-fornecedor">${esc(l.fornecedor)}</td>
           <td>${l.pedido_erp ? esc(l.pedido_erp) : dash}</td>
           <td>${l.numero}ª</td>

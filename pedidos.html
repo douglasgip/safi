@@ -373,6 +373,7 @@
           <thead>
             <tr>
               <th>Empresa</th>
+              <th>CNPJ</th>
               <th>Fornecedor</th>
               <th>Descrição</th>
               <th>Pedido ERP</th>
@@ -387,7 +388,7 @@
             </tr>
           </thead>
           <tbody id="ped-tbody">
-            <tr class="loading-row"><td colspan="12">Carregando pedidos...</td></tr>
+            <tr class="loading-row"><td colspan="13">Carregando pedidos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -405,9 +406,21 @@
       <form id="ped-form" autocomplete="off">
         <input type="hidden" id="edit-id">
 
-        <div class="field">
-          <label>Empresa</label>
-          <select id="f-form-empresa" required></select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Empresa (Operação)</label>
+            <select id="f-form-empresa" required></select>
+          </div>
+          <div class="field">
+            <label>CNPJ</label>
+            <select id="f-form-cnpj" required>
+              <option value="">Selecione</option>
+              <option value="Guilherme">Guilherme</option>
+              <option value="Juliane">Juliane</option>
+              <option value="Isa">Isa</option>
+              <option value="EP">EP</option>
+            </select>
+          </div>
         </div>
 
         <div class="field">
@@ -633,7 +646,7 @@
       if (periodoDe && row.data_pedido < periodoDe) return false;
       if (periodoAte && row.data_pedido > periodoAte) return false;
       if (search) {
-        const haystack = [row.fornecedor, row.descricao, row.empresa, row.pedido_erp, row.numero_nf].filter(Boolean).join(' ').toLowerCase();
+        const haystack = [row.fornecedor, row.descricao, row.empresa, row.pedido_erp, row.numero_nf, row.cnpj].filter(Boolean).join(' ').toLowerCase();
         if (!haystack.includes(search)) return false;
       }
       return true;
@@ -651,7 +664,7 @@
         .in('empresa', allowedCompanies)
         .order('data_pedido', { ascending: false });
       if (error) {
-        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="12">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="13">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       allRows = (data || []).map(r => ({ ...r, _parcelas: (r.pedidos_parcelas || []).slice().sort((a,b) => a.numero - b.numero) }));
@@ -685,7 +698,7 @@
       }
       updateSummary(rows);
       if (!rows.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="12">Nenhum pedido encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Nenhum pedido encontrado.</td></tr>`;
         return;
       }
       const dash = '<span class="td-muted">—</span>';
@@ -705,6 +718,7 @@
         const qtdReal = r.num_produtos_nf != null ? r.num_produtos_nf : dash;
         return `<tr>
           <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
+          <td class="td-muted">${r.cnpj ? esc(r.cnpj) : dash}</td>
           <td class="td-fornecedor">${esc(r.fornecedor)}</td>
           <td class="td-desc" title="${esc(r.descricao || '')}">${r.descricao ? esc(r.descricao) : dash}</td>
           <td class="td-muted">${r.pedido_erp ? esc(r.pedido_erp) : dash}</td>
@@ -1035,6 +1049,7 @@
       document.getElementById('modal-sub').textContent = r.fornecedor;
       document.getElementById('edit-id').value = r.id;
       document.getElementById('f-form-empresa').value = r.empresa;
+      document.getElementById('f-form-cnpj').value = r.cnpj || '';
       document.getElementById('f-form-fornecedor').value = r.fornecedor || '';
       document.getElementById('f-form-pedido-erp').value = r.pedido_erp || '';
       document.getElementById('f-form-descricao').value = r.descricao || '';
@@ -1081,8 +1096,10 @@
       const editId = document.getElementById('edit-id').value;
       const fornecedor = document.getElementById('f-form-fornecedor').value.trim();
       const dataPedido = document.getElementById('f-form-data-pedido').value;
+      const cnpj = document.getElementById('f-form-cnpj').value;
       if (!fornecedor) { showModalError('Informe o fornecedor/loja.'); return; }
       if (!dataPedido) { showModalError('Informe a data do pedido.'); return; }
+      if (!cnpj) { showModalError('Selecione o CNPJ.'); return; }
 
       const parcelaRows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
       const parcelas = parcelaRows.map((row, i) => ({
@@ -1098,6 +1115,7 @@
       const qtdPrevistoRaw = document.getElementById('f-form-qtd-previsto').value;
       const payload = {
         empresa: document.getElementById('f-form-empresa').value,
+        cnpj,
         fornecedor,
         pedido_erp: document.getElementById('f-form-pedido-erp').value.trim() || null,
         descricao: document.getElementById('f-form-descricao').value.trim() || null,
