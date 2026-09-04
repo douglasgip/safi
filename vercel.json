@@ -11,7 +11,8 @@
     { "source": "/funcionarios", "destination": "/funcionarios.html" },
     { "source": "/fluxo-caixa", "destination": "/fluxo-caixa.html" },
     { "source": "/lancamentos", "destination": "/lancamentos.html" },
-    { "source": "/pedidos", "destination": "/pedidos.html" }
+    { "source": "/pedidos", "destination": "/pedidos.html" },
+    { "source": "/conciliacao", "destination": "/conciliacao.html" }
   ],
   "headers": [
     {

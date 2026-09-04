@@ -345,6 +345,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Pedidos
       </a>
+      <a href="/conciliacao" id="home-sidebar-conciliacao" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Conciliação
+      </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
       <a href="/admin" id="home-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
@@ -490,6 +494,21 @@
         </div>
       </a>
 
+      <a href="/conciliacao" id="card-conciliacao" class="card-mini" style="display:none">
+        <div class="card-mini-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <div class="card-mini-title-row">
+          <div class="card-mini-title">Conciliação</div>
+          <div class="card-mapasoc-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Restrito</div>
+        </div>
+        <div class="card-mini-desc">Compara o valor previsto dos pedidos com o valor real conferido — identifica divergências.</div>
+        <div class="card-mini-arrow">
+          Acessar
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </div>
+      </a>
+
       <a href="/lancamentos" id="card-lancamentos" class="card-mini" style="display:none">
         <div class="card-mini-icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
@@ -559,6 +578,11 @@
       if (showPedidos) {
         const c=document.getElementById('card-pedidos'); if(c) c.style.display='';
         const s=document.getElementById('home-sidebar-pedidos'); if(s) s.style.display='flex';
+      }
+      const showConciliacao = !!prof && (prof.is_admin || prof.pedidos_pode_conciliar === true);
+      if (showConciliacao) {
+        const c=document.getElementById('card-conciliacao'); if(c) c.style.display='';
+        const s=document.getElementById('home-sidebar-conciliacao'); if(s) s.style.display='flex';
       }
       const showFluxoCaixa = !!prof && (prof.is_admin || prof.can_fluxo_caixa === true);
       if (showFluxoCaixa) {

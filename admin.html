@@ -643,6 +643,41 @@
                 <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-viacloset', false)">Não</button>
               </div>
             </div>
+
+            <div class="dre-ops-label" style="margin-top:4px">Papel na conciliação de Pedidos</div>
+
+            <div class="perm-row">
+              <div>
+                <div class="perm-name">Pode lançar pedidos</div>
+                <div style="font-size:10.5px;color:#64748b;margin-top:2px">Cadastra o pedido com o valor previsto — visível por padrão pra quem tem acesso a Pedidos</div>
+              </div>
+              <div class="toggle-wrap" id="toggle-ped-lancar">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-lancar', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-lancar', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div>
+                <div class="perm-name">Pode conferir (marcar chegada)</div>
+                <div style="font-size:10.5px;color:#64748b;margin-top:2px">Lança o valor real e o nº de produtos da NF sem ver o valor previsto — visível por padrão pra quem tem acesso a Pedidos</div>
+              </div>
+              <div class="toggle-wrap" id="toggle-ped-conferir">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-conferir', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-conferir', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div>
+                <div class="perm-name">Pode ver Conciliação (divergências)</div>
+                <div style="font-size:10.5px;color:#64748b;margin-top:2px">Tela só de visualização, compara previsto x real — visível por padrão só pra ninguém</div>
+              </div>
+              <div class="toggle-wrap" id="toggle-ped-conciliar">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-conciliar', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-conciliar', false)">Não</button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -745,7 +780,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 let currentSession = null;
 let deleteTarget   = null;
-const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, pedidos: false, 'ped-epgip': false, 'ped-exposicao': false, 'ped-viacloset': false, fluxocaixa: false, lancamentos: false, 'lanc-ep': false, 'lanc-gip': false, 'lanc-exposicao': false, 'lanc-viacloset': false };
+const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, pedidos: false, 'ped-epgip': false, 'ped-exposicao': false, 'ped-viacloset': false, 'ped-lancar': true, 'ped-conferir': true, 'ped-conciliar': false, fluxocaixa: false, lancamentos: false, 'lanc-ep': false, 'lanc-gip': false, 'lanc-exposicao': false, 'lanc-viacloset': false };
 
 // ── Auth ──────────────────────────────────────────────
 async function init() {
@@ -872,7 +907,9 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-conciliar','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset'].forEach(k => setToggle(k, false));
+  setToggle('ped-lancar', true);
+  setToggle('ped-conferir', true);
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-email').focus();
@@ -908,6 +945,10 @@ function openEditModal(u) {
   setToggle('ped-epgip',       !!u.pedidos_epgip);
   setToggle('ped-exposicao',   !!u.pedidos_exposicao);
   setToggle('ped-viacloset',   !!u.pedidos_viacloset);
+  // Lançar/Conferir são opt-out (null = liberado) — !== false preserva esse default.
+  setToggle('ped-lancar',      u.pedidos_pode_lancar   !== false);
+  setToggle('ped-conferir',    u.pedidos_pode_conferir !== false);
+  setToggle('ped-conciliar',   !!u.pedidos_pode_conciliar);
   setToggle('fluxocaixa',      !!u.can_fluxo_caixa);
   setToggle('lancamentos',       !!u.can_lancamentos);
   setToggle('lanc-ep',           !!u.lancamentos_ep);
@@ -958,6 +999,9 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     pedidos_epgip:     toggleState['ped-epgip'],
     pedidos_exposicao: toggleState['ped-exposicao'],
     pedidos_viacloset: toggleState['ped-viacloset'],
+    pedidos_pode_lancar:    toggleState['ped-lancar'],
+    pedidos_pode_conferir:  toggleState['ped-conferir'],
+    pedidos_pode_conciliar: toggleState['ped-conciliar'],
     can_fluxo_caixa: toggleState.fluxocaixa,
     can_lancamentos:       toggleState.lancamentos,
     lancamentos_ep:        toggleState['lanc-ep'],

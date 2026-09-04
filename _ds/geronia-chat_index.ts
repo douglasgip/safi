@@ -209,23 +209,33 @@ function pedidosSummaryText(labels: string[], rows: any[]) {
       const status = !r.chegou
         ? 'aguardando chegada'
         : (parcelas.length && parcelas.every((p: any) => p.pago) ? 'pago' : 'aguardando pagamento')
-      const chegadaTxt = r.chegou ? `, chegou em ${r.data_chegada ? fmtDateBR(r.data_chegada) : 'data não registrada'}` : ''
+      const chegadaTxt = r.chegou ? `, chegou/conferido em ${r.data_chegada ? fmtDateBR(r.data_chegada) : 'data não registrada'}` : ''
+      const nfTxt = r.num_produtos_nf != null ? `, ${r.num_produtos_nf} produto(s) na NF` : ''
       const descTxt = r.descricao ? `, descrição: ${r.descricao}` : ''
       const parcelasTxt = parcelas.length
         ? parcelas.map((p: any) => {
             const venc = p.vencimento ? fmtDateBR(p.vencimento) : 'sem data'
             const atrasada = !p.pago && p.vencimento && p.vencimento < todayISO ? ' — ATRASADA' : ''
             const pagoTxt = p.pago ? ` (paga${p.pago_em ? ` em ${fmtDateBR(p.pago_em)}` : ''})` : ` (pendente${atrasada})`
-            return `${p.numero}ª ${fmtR(Number(p.valor) || 0)} venc. ${venc}${pagoTxt}`
+            const previsto = Number(p.valor) || 0
+            let realTxt = ''
+            if (p.valor_real != null) {
+              const real = Number(p.valor_real) || 0
+              const divergente = Math.abs(real - previsto) > 0.01
+              realTxt = divergente
+                ? `, valor real ${fmtR(real)} — DIVERGENTE do previsto (diferença ${fmtR(real - previsto)})`
+                : `, valor real ${fmtR(real)} (bate com o previsto)`
+            }
+            return `${p.numero}ª previsto ${fmtR(previsto)} venc. ${venc}${pagoTxt}${realTxt}`
           }).join('; ')
         : 'sem parcelas cadastradas'
-      return `  - ${r.fornecedor} (pedido em ${fmtDateBR(r.data_pedido)}${chegadaTxt}): valor total ${fmtR(Number(r.valor_total) || 0)}, status ${status}${descTxt}. Parcelas: ${parcelasTxt}.`
+      return `  - ${r.fornecedor} (pedido em ${fmtDateBR(r.data_pedido)}${chegadaTxt}${nfTxt}): valor total previsto ${fmtR(Number(r.valor_total) || 0)}, status ${status}${descTxt}. Parcelas: ${parcelasTxt}.`
     })
     return `${label} — ${list.length} pedido(s):\n${linhas.join('\n')}`
   })
 
   const total = rows.length
-  return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. Uma parcela é "atrasada" quando o vencimento é antes de hoje e ela ainda não foi paga):\n\n${blocks.join('\n\n')}`
+  return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. Uma parcela é "atrasada" quando o vencimento é antes de hoje e ela ainda não foi paga. O fluxo de conciliação do grupo é: quem lança o pedido registra o valor PREVISTO; depois, quando o pedido chega, outra pessoa confere e lança o valor REAL (sem ver o previsto) junto com o nº de produtos da nota fiscal; uma parcela é "divergente" quando o valor real conferido não bate com o previsto — isso é o que a tela de Conciliação do painel identifica):\n\n${blocks.join('\n\n')}`
 }
 
 function lancamentosDetailText(rows: any[]) {
@@ -460,7 +470,7 @@ Deno.serve(async (req: Request) => {
       const labels = pedidosOps.map(op => OP_LABEL[op])
       const { data: pedidosRows } = await sb
         .from('pedidos')
-        .select('empresa, fornecedor, descricao, valor_total, data_pedido, chegou, data_chegada, pedidos_parcelas(numero, valor, vencimento, pago, pago_em)')
+        .select('empresa, fornecedor, descricao, valor_total, data_pedido, chegou, data_chegada, num_produtos_nf, pedidos_parcelas(numero, valor, vencimento, pago, pago_em, valor_real)')
         .in('empresa', labels)
       pedidosDataText = pedidosSummaryText(labels, pedidosRows || [])
     }

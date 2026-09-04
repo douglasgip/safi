@@ -156,6 +156,11 @@
 
     /* ── Parcelas (dentro do modal) ── */
     .parcelas-box { border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
+    .conf-parcela-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .conf-parcela-row:last-child { border-bottom: none; }
+    .conf-parcela-label { font-size: 12.5px; color: #cbd5e1; }
+    .conf-valor-real { width: 130px; flex-shrink: 0; padding: 8px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 12.5px; color-scheme: dark; }
+    .conf-valor-real:focus { outline: none; border-color: #f59e0b; background: rgba(245,158,11,0.05); }
     .parcelas-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .parcelas-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .3px; }
     .parcelas-total { font-size: 13px; font-weight: 800; color: #fcd34d; font-variant-numeric: tabular-nums; }
@@ -263,6 +268,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Pedidos
       </a>
+      <a href="/conciliacao" id="ped-sidebar-conciliacao" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Conciliação
+      </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
       <a href="/admin" id="ped-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
@@ -327,16 +336,17 @@
               <th>Empresa</th>
               <th>Fornecedor</th>
               <th>Descrição</th>
-              <th>Valor Total</th>
+              <th>Valor Previsto</th>
               <th>Parcelas</th>
               <th>Data do Pedido</th>
+              <th>Nº Prod. NF</th>
               <th>Status</th>
               <th>Chegou</th>
               <th style="width:130px">Ações</th>
             </tr>
           </thead>
           <tbody id="ped-tbody">
-            <tr class="loading-row"><td colspan="9">Carregando pedidos...</td></tr>
+            <tr class="loading-row"><td colspan="10">Carregando pedidos...</td></tr>
           </tbody>
         </table>
       </div>
@@ -387,7 +397,7 @@
 
           <div id="auto-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div class="field" style="margin-bottom:0">
-              <label>Valor Total</label>
+              <label>Valor Previsto</label>
               <input type="number" step="0.01" min="0" id="auto-valor-total" placeholder="0,00">
             </div>
             <div class="field" style="margin-bottom:0">
@@ -441,6 +451,33 @@
     </div>
   </div>
 
+  <!-- Modal Conferência (Luciana lança o valor real, sem ver o previsto) -->
+  <div class="modal-overlay" id="conferencia-modal">
+    <div class="modal-card">
+      <div class="modal-title">Conferência do pedido</div>
+      <div class="modal-sub" id="conf-fornecedor-label">Fornecedor</div>
+
+      <div class="modal-error" id="conf-modal-error"></div>
+
+      <form id="conf-form">
+        <div class="field">
+          <label>Nº de Produtos (NF)</label>
+          <input type="number" min="0" step="1" id="conf-num-produtos" placeholder="Quantidade de itens na nota fiscal">
+        </div>
+
+        <div class="parcelas-box">
+          <div class="parcelas-title" style="margin-bottom:10px">VALOR REAL POR PARCELA</div>
+          <div id="conf-parcelas-list"></div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="conf-btn-submit">Confirmar conferência</button>
+          <button type="button" class="btn-cancel" onclick="closeConferencia()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- Toast -->
   <div class="toast" id="toast">
     <span class="toast-dot" id="toast-dot"></span>
@@ -459,6 +496,11 @@
 
     let currentProfile = null;
     let allowedCompanies = [];
+    // Papéis da conciliação: lançar/conferir são opt-out (quem já usa Pedidos sem esses
+    // campos definidos continua com acesso total, como antes). Conciliar é opt-in (tela nova).
+    let podeLancar = true;
+    let podeConferir = true;
+    let podeConciliar = false;
     let allRows = [];
     let deleteTarget = null;
     // Ação a rodar se o modal de confirmação for fechado sem confirmar (Cancelar OU
@@ -542,11 +584,11 @@
       }
       const { data, error } = await sb
         .from('pedidos')
-        .select('*, pedidos_parcelas(id, numero, valor, vencimento, pago, pago_em)')
+        .select('*, pedidos_parcelas(id, numero, valor, vencimento, pago, pago_em, valor_real)')
         .in('empresa', allowedCompanies)
         .order('data_pedido', { ascending: false });
       if (error) {
-        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="9">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="10">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       allRows = (data || []).map(r => ({ ...r, _parcelas: (r.pedidos_parcelas || []).slice().sort((a,b) => a.numero - b.numero) }));
@@ -566,7 +608,7 @@
         return;
       }
       if (!rows.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Nenhum pedido encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="10">Nenhum pedido encontrado.</td></tr>`;
         return;
       }
       const dash = '<span class="td-muted">—</span>';
@@ -580,6 +622,7 @@
           const pagas = parcelas.length - pendentes.length;
           parcelasTxt = `${parcelas.length}x` + (r.chegou ? ` — ${pagas}/${parcelas.length} pagas` : '') + (proxima ? `<br>próx. venc. ${fmtDate(proxima.vencimento)}` : '');
         }
+        const chegouDisabled = !podeConferir ? 'disabled title="Você não tem permissão para conferir pedidos."' : '';
         return `<tr>
           <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
           <td class="td-fornecedor">${esc(r.fornecedor)}</td>
@@ -587,21 +630,23 @@
           <td class="td-valor">${fmtBRL(r.valor_total)}</td>
           <td class="td-parcelas">${parcelasTxt}</td>
           <td>${fmtDate(r.data_pedido)}</td>
+          <td>${r.num_produtos_nf != null ? r.num_produtos_nf : dash}</td>
           <td><span class="status-badge status-${status}"><span class="dot"></span>${STATUS_LABEL[status]}</span></td>
           <td>
             <label class="chegou-toggle">
-              <input type="checkbox" data-id="${esc(r.id)}" class="chk-chegou" ${r.chegou ? 'checked' : ''}>
+              <input type="checkbox" data-id="${esc(r.id)}" class="chk-chegou" ${r.chegou ? 'checked' : ''} ${chegouDisabled}>
               ${r.chegou ? 'Sim' : 'Não'}
             </label>
           </td>
           <td>
             <div class="td-actions">
-              <button class="btn-action btn-edit" data-id="${esc(r.id)}" title="Editar" aria-label="Editar">
+              <button class="btn-action btn-edit" data-id="${esc(r.id)}" title="Editar" aria-label="Editar" style="${podeLancar ? '' : 'display:none'}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
-              <button class="btn-action btn-delete" data-id="${esc(r.id)}" title="Remover" aria-label="Remover">
+              <button class="btn-action btn-delete" data-id="${esc(r.id)}" title="Remover" aria-label="Remover" style="${podeLancar ? '' : 'display:none'}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
               </button>
+              ${podeLancar ? '' : dash}
             </div>
           </td>
         </tr>`;
@@ -619,19 +664,20 @@
       tbody.querySelectorAll('.chk-chegou').forEach(chk => {
         chk.addEventListener('change', () => {
           const row = allRows.find(r => r.id === chk.dataset.id);
-          confirmChegada(row, chk);
+          if (!row.chegou) {
+            openConferenciaModal(row, chk);
+          } else {
+            confirmChegada(row, chk);
+          }
         });
       });
     }
 
-    // ── Confirmar chegada ──
+    // ── Desmarcar chegada (marcar chegada agora passa pela Conferência) ──
     function confirmChegada(row, chkEl) {
-      const marcar = !row.chegou;
-      document.getElementById('confirm-icon').textContent = marcar ? '📦' : '↩️';
-      document.getElementById('confirm-title').textContent = marcar ? 'Pedido chegou?' : 'Desmarcar chegada?';
-      document.getElementById('confirm-text').textContent = marcar
-        ? `Confirma que o pedido de "${row.fornecedor}" chegou? As parcelas passam a aparecer no Fluxo de Caixa como contas a pagar.`
-        : `O pedido de "${row.fornecedor}" volta a ficar como aguardando chegada.`;
+      document.getElementById('confirm-icon').textContent = '↩️';
+      document.getElementById('confirm-title').textContent = 'Desmarcar chegada?';
+      document.getElementById('confirm-text').textContent = `O pedido de "${row.fornecedor}" volta a ficar como aguardando chegada. O valor real e o nº de produtos já conferidos continuam salvos.`;
       document.getElementById('confirm-actions').innerHTML = `
         <button class="btn-confirm-ok" id="btn-confirm-ok">Confirmar</button>
         <button class="btn-confirm-cancel" id="btn-confirm-cancel-chegada">Cancelar</button>
@@ -644,12 +690,10 @@
       document.getElementById('btn-confirm-ok').onclick = async () => {
         confirmDismissAction = null;
         closeConfirm();
-        const payload = marcar
-          ? { chegou: true, data_chegada: todayLocal() }
-          : { chegou: false, data_chegada: null };
+        const payload = { chegou: false, data_chegada: null };
         const { error } = await sb.from('pedidos').update(payload).eq('id', row.id);
         if (error) { showToast(error.message, 'red'); chkEl.checked = row.chegou; return; }
-        showToast(marcar ? 'Pedido marcado como chegou' : 'Chegada desmarcada', 'green');
+        showToast('Chegada desmarcada', 'green');
         // Atualiza só essa linha localmente em vez de recarregar tudo de novo.
         Object.assign(row, payload);
         renderTable();
@@ -657,6 +701,98 @@
     }
     document.getElementById('confirm-modal').addEventListener('click', e => {
       if (e.target === e.currentTarget) closeConfirm();
+    });
+
+    // ── Conferência (Luciana): marca chegada + valor real por parcela + nº de
+    // produtos da NF, tudo numa ação só, sem ela ver o valor previsto de cada parcela. ──
+    let confPedido = null;
+    let confChk = null;
+
+    function openConferenciaModal(row, chkEl) {
+      confPedido = row;
+      confChk = chkEl;
+      document.getElementById('conf-fornecedor-label').textContent = row.fornecedor;
+      document.getElementById('conf-num-produtos').value = row.num_produtos_nf != null ? row.num_produtos_nf : '';
+      const parcelas = (row._parcelas || []).slice().sort((a, b) => a.numero - b.numero);
+      document.getElementById('conf-parcelas-list').innerHTML = parcelas.map(pc => `
+        <div class="conf-parcela-row" data-parcela-id="${esc(pc.id)}">
+          <div class="conf-parcela-label">${pc.numero}ª parcela — vence ${fmtDate(pc.vencimento)}</div>
+          <input type="number" step="0.01" min="0" class="conf-valor-real" placeholder="Valor real" value="${pc.valor_real != null ? pc.valor_real : ''}">
+        </div>
+      `).join('');
+      document.getElementById('conf-modal-error').className = 'modal-error';
+      document.getElementById('conferencia-modal').classList.add('open');
+    }
+
+    function closeConferencia() {
+      document.getElementById('conferencia-modal').classList.remove('open');
+      if (confChk) confChk.checked = false;
+      confChk = null;
+      confPedido = null;
+    }
+    document.getElementById('conferencia-modal').addEventListener('click', e => {
+      if (e.target === e.currentTarget) closeConferencia();
+    });
+
+    document.getElementById('conf-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!confPedido) return;
+      const btn = document.getElementById('conf-btn-submit');
+      document.getElementById('conf-modal-error').className = 'modal-error';
+
+      const numProdutosRaw = document.getElementById('conf-num-produtos').value;
+      const parcelaRows = Array.from(document.querySelectorAll('#conf-parcelas-list .conf-parcela-row'));
+      const entries = parcelaRows.map(row => ({ id: row.dataset.parcelaId, valor_real: row.querySelector('.conf-valor-real').value }));
+      if (entries.some(en => en.valor_real === '')) {
+        document.getElementById('conf-modal-error').textContent = 'Informe o valor real de todas as parcelas.';
+        document.getElementById('conf-modal-error').className = 'modal-error visible';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+      const { data: sessData } = await sb.auth.getSession();
+      const userId = sessData?.session?.user?.id || null;
+      const pedidoId = confPedido.id;
+
+      const pedidoPayload = {
+        chegou: true,
+        data_chegada: todayLocal(),
+        num_produtos_nf: numProdutosRaw === '' ? null : +numProdutosRaw,
+        conferido_por: userId,
+        conferido_em: new Date().toISOString(),
+      };
+      const { error: pedErr } = await sb.from('pedidos').update(pedidoPayload).eq('id', pedidoId);
+
+      let error = pedErr;
+      if (!error) {
+        // Cada parcela é uma linha diferente — atualiza todas em paralelo em vez de uma a uma.
+        const results = await Promise.all(entries.map(en => sb.from('pedidos_parcelas').update({ valor_real: +en.valor_real }).eq('id', en.id)));
+        const failed = results.find(r => r.error);
+        if (failed) error = failed.error;
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = 'Confirmar conferência';
+
+      if (error) {
+        document.getElementById('conf-modal-error').textContent = error.message;
+        document.getElementById('conf-modal-error').className = 'modal-error visible';
+        return;
+      }
+
+      // Atualiza local pra refletir na hora, sem precisar recarregar tudo do banco.
+      Object.assign(confPedido, pedidoPayload);
+      entries.forEach(en => {
+        const pc = (confPedido._parcelas || []).find(p => p.id === en.id);
+        if (pc) pc.valor_real = +en.valor_real;
+      });
+
+      confChk = null; // já ficou marcado certinho, não precisa reverter
+      closeConferencia();
+      showToast('Pedido conferido', 'green');
+      renderTable();
     });
 
     // ── Parcelas (form) ──
@@ -953,9 +1089,12 @@
       currentProfile = prof;
 
       allowedCompanies = prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[COMPANY_FLAG[c]] === true);
+      podeLancar = prof.is_admin || prof.pedidos_pode_lancar !== false;
+      podeConferir = prof.is_admin || prof.pedidos_pode_conferir !== false;
+      podeConciliar = prof.is_admin || prof.pedidos_pode_conciliar === true;
       populateEmpresaFilters();
       document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
-      document.getElementById('btn-new-ped').style.display = allowedCompanies.length ? 'inline-flex' : 'none';
+      document.getElementById('btn-new-ped').style.display = (allowedCompanies.length && podeLancar) ? 'inline-flex' : 'none';
 
       if (prof.is_admin) {
         const a = document.getElementById('ped-sidebar-admin'); if (a) a.style.display = 'flex';
@@ -978,6 +1117,9 @@
       if (prof.is_admin || prof.can_lancamentos === true) {
         const s = document.getElementById('ped-sidebar-lancamentos'); if (s) s.style.display = 'flex';
         const t = document.getElementById('ped-sidebar-dre-toggle'); if (t) t.style.display = 'flex';
+      }
+      if (podeConciliar) {
+        const s = document.getElementById('ped-sidebar-conciliacao'); if (s) s.style.display = 'flex';
       }
 
       const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();

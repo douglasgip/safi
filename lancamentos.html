@@ -205,6 +205,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Pedidos
       </a>
+      <a href="/conciliacao" id="lc-sidebar-conciliacao" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Conciliação
+      </a>
     </div>
     <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
       <a href="/admin" id="lc-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
@@ -645,6 +649,7 @@
       if (prof.is_admin || prof.can_mapa_societario === true) { const s=document.getElementById('lc-sidebar-mapasoc'); if(s) s.style.display='flex'; }
       if (prof.is_admin || prof.can_funcionarios === true) { const s=document.getElementById('lc-sidebar-funcionarios'); if(s) s.style.display='flex'; }
       if (prof.is_admin || prof.can_pedidos === true) { const s=document.getElementById('lc-sidebar-pedidos'); if(s) s.style.display='flex'; }
+      if (prof.is_admin || prof.pedidos_pode_conciliar === true) { const s=document.getElementById('lc-sidebar-conciliacao'); if(s) s.style.display='flex'; }
       if (prof.is_admin || prof.can_fluxo_caixa === true) { const s=document.getElementById('lc-sidebar-fluxocaixa'); if(s) s.style.display='flex'; }
 
       const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
