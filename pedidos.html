@@ -122,11 +122,14 @@
 
     .chegou-toggle { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; font-size: 12px; color: #94a3b8; }
     .chegou-toggle input { width: 16px; height: 16px; accent-color: #f59e0b; cursor: pointer; }
+    .conf-pendente-tag { margin-top: 4px; font-size: 10px; font-weight: 700; color: #fb923c; white-space: nowrap; }
 
     .td-actions { display: flex; gap: 6px; }
     .btn-action { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
     .btn-edit { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fcd34d; }
     .btn-edit:hover { background: rgba(245,158,11,0.18); }
+    .btn-conf { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.25); color: #7dd3fc; }
+    .btn-conf:hover { background: rgba(56,189,248,0.18); }
     .btn-delete { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
     .btn-delete:hover { background: rgba(239,68,68,0.18); }
     .loading-row td, .empty-row td { padding: 50px 20px; text-align: center; color: #334155; font-size: 13px; }
@@ -466,7 +469,8 @@
         </div>
 
         <div class="parcelas-box">
-          <div class="parcelas-title" style="margin-bottom:10px">VALOR REAL POR PARCELA</div>
+          <div class="parcelas-title" style="margin-bottom:2px">VALOR REAL POR PARCELA</div>
+          <div class="auto-fields-hint">Pode deixar em branco a parcela que ainda não souber — dá pra voltar aqui depois e completar.</div>
           <div id="conf-parcelas-list"></div>
         </div>
 
@@ -623,6 +627,7 @@
           parcelasTxt = `${parcelas.length}x` + (r.chegou ? ` — ${pagas}/${parcelas.length} pagas` : '') + (proxima ? `<br>próx. venc. ${fmtDate(proxima.vencimento)}` : '');
         }
         const chegouDisabled = !podeConferir ? 'disabled title="Você não tem permissão para conferir pedidos."' : '';
+        const confPendente = r.chegou && parcelas.some(pc => pc.valor_real == null);
         return `<tr>
           <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
           <td class="td-fornecedor">${esc(r.fornecedor)}</td>
@@ -637,16 +642,20 @@
               <input type="checkbox" data-id="${esc(r.id)}" class="chk-chegou" ${r.chegou ? 'checked' : ''} ${chegouDisabled}>
               ${r.chegou ? 'Sim' : 'Não'}
             </label>
+            ${confPendente ? '<div class="conf-pendente-tag">conferência incompleta</div>' : ''}
           </td>
           <td>
             <div class="td-actions">
+              ${r.chegou ? `<button class="btn-action btn-conf" data-id="${esc(r.id)}" title="Completar/editar conferência" aria-label="Completar/editar conferência" style="${podeConferir ? '' : 'display:none'}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </button>` : ''}
               <button class="btn-action btn-edit" data-id="${esc(r.id)}" title="Editar" aria-label="Editar" style="${podeLancar ? '' : 'display:none'}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
               <button class="btn-action btn-delete" data-id="${esc(r.id)}" title="Remover" aria-label="Remover" style="${podeLancar ? '' : 'display:none'}">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
               </button>
-              ${podeLancar ? '' : dash}
+              ${podeLancar || (r.chegou && podeConferir) ? '' : dash}
             </div>
           </td>
         </tr>`;
@@ -660,6 +669,9 @@
           const row = allRows.find(r => r.id === btn.dataset.id);
           confirmDelete(row);
         });
+      });
+      tbody.querySelectorAll('.btn-conf').forEach(btn => {
+        btn.addEventListener('click', () => openConferenciaModal(allRows.find(r => r.id === btn.dataset.id), null));
       });
       tbody.querySelectorAll('.chk-chegou').forEach(chk => {
         chk.addEventListener('change', () => {
@@ -742,12 +754,12 @@
 
       const numProdutosRaw = document.getElementById('conf-num-produtos').value;
       const parcelaRows = Array.from(document.querySelectorAll('#conf-parcelas-list .conf-parcela-row'));
-      const entries = parcelaRows.map(row => ({ id: row.dataset.parcelaId, valor_real: row.querySelector('.conf-valor-real').value }));
-      if (entries.some(en => en.valor_real === '')) {
-        document.getElementById('conf-modal-error').textContent = 'Informe o valor real de todas as parcelas.';
-        document.getElementById('conf-modal-error').className = 'modal-error visible';
-        return;
-      }
+      // Não exige mais preencher todas de uma vez — quem confere pode salvar só as
+      // parcelas que já sabe e voltar depois (pelo ícone de conferência) pra completar.
+      const entries = parcelaRows.map(row => {
+        const raw = row.querySelector('.conf-valor-real').value;
+        return { id: row.dataset.parcelaId, valor_real: raw === '' ? null : +raw };
+      });
 
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>Salvando...';
@@ -755,10 +767,11 @@
       const { data: sessData } = await sb.auth.getSession();
       const userId = sessData?.session?.user?.id || null;
       const pedidoId = confPedido.id;
+      const jaTinhaChegado = confPedido.chegou;
 
       const pedidoPayload = {
         chegou: true,
-        data_chegada: todayLocal(),
+        data_chegada: jaTinhaChegado ? confPedido.data_chegada : todayLocal(),
         num_produtos_nf: numProdutosRaw === '' ? null : +numProdutosRaw,
         conferido_por: userId,
         conferido_em: new Date().toISOString(),
@@ -768,7 +781,7 @@
       let error = pedErr;
       if (!error) {
         // Cada parcela é uma linha diferente — atualiza todas em paralelo em vez de uma a uma.
-        const results = await Promise.all(entries.map(en => sb.from('pedidos_parcelas').update({ valor_real: +en.valor_real }).eq('id', en.id)));
+        const results = await Promise.all(entries.map(en => sb.from('pedidos_parcelas').update({ valor_real: en.valor_real }).eq('id', en.id)));
         const failed = results.find(r => r.error);
         if (failed) error = failed.error;
       }
@@ -786,12 +799,14 @@
       Object.assign(confPedido, pedidoPayload);
       entries.forEach(en => {
         const pc = (confPedido._parcelas || []).find(p => p.id === en.id);
-        if (pc) pc.valor_real = +en.valor_real;
+        if (pc) pc.valor_real = en.valor_real;
       });
+
+      const faltam = entries.filter(en => en.valor_real == null).length;
 
       confChk = null; // já ficou marcado certinho, não precisa reverter
       closeConferencia();
-      showToast('Pedido conferido', 'green');
+      showToast(faltam ? `Conferência salva — falta o valor real de ${faltam} parcela(s)` : 'Pedido conferido', faltam ? 'red' : 'green');
       renderTable();
     });
 
