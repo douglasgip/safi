@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="/user-menu.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -76,6 +77,8 @@
     .btn-save { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 60%, #7c3aed 100%); border: none; border-radius: 10px; color: #1a0a3d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #5b21b6; transition: transform 0.1s; }
     .btn-save:hover { transform: translateY(-1px); }
     .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline { display: inline-flex; align-items: center; gap: 7px; padding: 10px 16px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #cbd5e1; font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; border-color: rgba(255,255,255,0.2); }
 
     .classe-card { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; margin-bottom: 16px; overflow: hidden; }
     .classe-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid rgba(255,255,255,0.06); }
@@ -252,6 +255,15 @@
         </select>
         <input type="number" id="f-ano" value="2026" style="width:90px">
         <div style="flex:1"></div>
+        <button class="btn-outline" type="button" title="Baixa uma planilha com a estrutura atual e os valores já lançados no ano selecionado" onclick="downloadTemplate()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Baixar modelo
+        </button>
+        <button class="btn-outline" type="button" title="Sobe uma planilha preenchida e lança os valores de uma vez" onclick="document.getElementById('import-file-input').click()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importar planilha
+        </button>
+        <input type="file" id="import-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleImportFile(event)">
         <button class="btn-save" id="btn-save-valores" onclick="saveValores()">Salvar Lançamentos</button>
       </div>
       <div id="entry-tree"></div>
@@ -278,6 +290,20 @@
           <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal Prévia de Importação -->
+  <div class="modal-overlay" id="import-modal">
+    <div class="modal-card" style="max-width:540px">
+      <div class="modal-title">Importar planilha</div>
+      <div class="modal-error" id="import-modal-error"></div>
+      <div id="import-summary" style="font-size:13px;color:#cbd5e1;margin-bottom:14px;line-height:1.6"></div>
+      <div id="import-warnings" style="font-size:11.5px;color:#fbbf24;margin-bottom:6px;max-height:180px;overflow-y:auto"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-submit" id="btn-import-confirm" onclick="confirmImport()">Confirmar importação</button>
+        <button type="button" class="btn-cancel" onclick="closeImportModal()">Cancelar</button>
+      </div>
     </div>
   </div>
 
@@ -322,6 +348,23 @@
 
     function camposDaClasse(classeId) { return campos.filter(c => c.classe_id === classeId).sort((a,b)=>a.ordem-b.ordem); }
     function subcamposDoCampo(campoId) { return subcampos.filter(s => s.campo_id === campoId).sort((a,b)=>a.ordem-b.ordem); }
+
+    // Mesma lista de linhas usada tanto pra gerar o modelo quanto pra casar as linhas na
+    // importação — sempre a partir da estrutura ATIVA atual, então qualquer alteração feita
+    // em "Gerenciar Estrutura" (campo/subcampo novo, renomeado ou removido) já reflete no
+    // próximo modelo baixado, sem precisar manter um arquivo estático em lugar nenhum.
+    const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    function linhasParaPlanilha() {
+      const linhas = [];
+      classes.filter(c => c.tipo === 'entrada').forEach(classe => {
+        camposDaClasse(classe.id).filter(c => c.ativo).forEach(campo => {
+          subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
+            linhas.push({ classe, campo, subcampo: s });
+          });
+        });
+      });
+      return linhas;
+    }
 
     // ── Modo ──
     function setMode(mode) {
@@ -443,6 +486,157 @@
         el.textContent = fmtR(v);
         el.style.color = v >= 0 ? '#4ade80' : '#f87171';
       });
+    }
+
+    // ── Baixar modelo (.xlsx) ──
+    // Cobre o ano inteiro da empresa selecionada (não só o mês em tela) — já vem preenchido
+    // com o que já foi lançado, pra editar em cima em vez de começar do zero.
+    async function downloadTemplate() {
+      const empresaId = document.getElementById('f-empresa').value;
+      const ano = parseInt(document.getElementById('f-ano').value);
+      if (!empresaId) return;
+      if (typeof XLSX === 'undefined') { showToast('Não foi possível carregar o gerador de planilha. Recarregue a página.', 'red'); return; }
+
+      const { data, error } = await sb.from('lancamentos_valores').select('subcampo_id,mes,valor').eq('empresa_id', empresaId).eq('ano', ano);
+      if (error) { showToast(error.message, 'red'); return; }
+      const valorPorChave = {};
+      (data || []).forEach(v => { valorPorChave[v.subcampo_id + '_' + v.mes] = +v.valor || 0; });
+
+      const linhas = linhasParaPlanilha();
+      const aoa = [['ID', 'Classe', 'Campo', 'Subcampo', ...MESES_ABREV]];
+      linhas.forEach(l => {
+        const row = [l.subcampo.id, l.classe.nome, l.campo.nome, l.subcampo.nome];
+        for (let m = 1; m <= 12; m++) {
+          const v = valorPorChave[l.subcampo.id + '_' + m];
+          row.push(v != null ? v : '');
+        }
+        aoa.push(row);
+      });
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      // Coluna ID fica oculta — é só pra casar a linha de volta com o subcampo certo na
+      // hora de importar, mesmo que o nome tenha mudado nesse meio tempo.
+      ws['!cols'] = [{ hidden: true, wch: 4 }, { wch: 22 }, { wch: 26 }, { wch: 28 }, ...MESES_ABREV.map(() => ({ wch: 11 }))];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Lançamentos');
+      const empresaObj = EMPRESAS.find(e => e.id === empresaId);
+      XLSX.writeFile(wb, `Lancamentos_${empresaObj ? empresaObj.id : empresaId}_${ano}.xlsx`);
+    }
+
+    // ── Importar planilha preenchida ──
+    let pendingImportRows = [];
+    let pendingImportWarnings = [];
+
+    async function handleImportFile(event) {
+      const file = event.target.files[0];
+      event.target.value = ''; // permite escolher o mesmo arquivo de novo depois
+      if (!file) return;
+      const empresaId = document.getElementById('f-empresa').value;
+      const ano = parseInt(document.getElementById('f-ano').value);
+      if (!empresaId) { showToast('Selecione uma empresa antes de importar.', 'red'); return; }
+      if (typeof XLSX === 'undefined') { showToast('Não foi possível carregar o leitor de planilha. Recarregue a página.', 'red'); return; }
+
+      let aoa;
+      try {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      } catch (e) {
+        showToast('Não foi possível ler o arquivo — confira se é um .xlsx válido.', 'red');
+        return;
+      }
+      if (!aoa.length) { showToast('Planilha vazia.', 'red'); return; }
+
+      const header = aoa[0].map(h => String(h == null ? '' : h).trim());
+      const idIdx = header.indexOf('ID');
+      const classeIdx = header.indexOf('Classe');
+      const campoIdx = header.indexOf('Campo');
+      const subcampoIdx = header.indexOf('Subcampo');
+      const mesIdxs = MESES_ABREV.map(m => header.indexOf(m));
+      if (subcampoIdx === -1 || mesIdxs.some(i => i === -1)) {
+        showToast('Formato da planilha não reconhecido — baixe o modelo atual e preencha nele.', 'red');
+        return;
+      }
+
+      const bySubcampoId = {};
+      subcampos.forEach(s => { bySubcampoId[s.id] = s; });
+      const byNomeTriplo = {};
+      linhasParaPlanilha().forEach(l => { byNomeTriplo[l.classe.nome + '|' + l.campo.nome + '|' + l.subcampo.nome] = l.subcampo; });
+
+      const rows = [];
+      const warnings = [];
+      for (let r = 1; r < aoa.length; r++) {
+        const linha = aoa[r];
+        if (!linha || linha.every(c => c === '' || c == null)) continue;
+
+        let subcampo = idIdx !== -1 ? bySubcampoId[linha[idIdx]] : null;
+        if (!subcampo) {
+          const chave = `${linha[classeIdx]}|${linha[campoIdx]}|${linha[subcampoIdx]}`;
+          subcampo = byNomeTriplo[chave];
+        }
+        if (!subcampo || !subcampo.ativo) {
+          warnings.push(`Linha ${r + 1}: "${linha[subcampoIdx] || '(sem nome)'}" não encontrado na estrutura atual — ignorada.`);
+          continue;
+        }
+
+        for (let m = 0; m < 12; m++) {
+          const raw = linha[mesIdxs[m]];
+          if (raw === '' || raw == null) continue; // célula em branco não mexe no que já existe
+          const valor = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(',', '.'));
+          if (isNaN(valor)) { warnings.push(`Linha ${r + 1}, ${MESES_ABREV[m]}: valor "${raw}" inválido — ignorado.`); continue; }
+          rows.push({ subcampo_id: subcampo.id, empresa_id: empresaId, ano, mes: m + 1, valor, updated_at: new Date().toISOString() });
+        }
+      }
+
+      if (!rows.length) {
+        showToast(warnings.length ? 'Nenhum valor válido — ' + warnings[0] : 'Nenhum valor preenchido na planilha.', 'red');
+        return;
+      }
+      pendingImportRows = rows;
+      pendingImportWarnings = warnings;
+      openImportPreview();
+    }
+
+    function openImportPreview() {
+      const subcamposAfetados = new Set(pendingImportRows.map(r => r.subcampo_id)).size;
+      const mesesAfetados = new Set(pendingImportRows.map(r => r.mes)).size;
+      document.getElementById('import-summary').innerHTML =
+        `<strong>${pendingImportRows.length}</strong> valor(es) em <strong>${subcamposAfetados}</strong> subcampo(s), cobrindo <strong>${mesesAfetados}</strong> mês(es), serão salvos — isso substitui qualquer valor já lançado nesses mesmos subcampo e mês.`;
+      const warnEl = document.getElementById('import-warnings');
+      warnEl.innerHTML = pendingImportWarnings.length
+        ? '<div style="font-weight:700;margin-bottom:6px">Avisos (' + pendingImportWarnings.length + '):</div>' + pendingImportWarnings.slice(0, 30).map(w => `<div>• ${esc(w)}</div>`).join('')
+        : '';
+      document.getElementById('import-modal-error').className = 'modal-error';
+      document.getElementById('import-modal').classList.add('open');
+    }
+    function closeImportModal() {
+      document.getElementById('import-modal').classList.remove('open');
+      pendingImportRows = [];
+      pendingImportWarnings = [];
+    }
+    document.getElementById('import-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeImportModal(); });
+
+    async function confirmImport() {
+      const btn = document.getElementById('btn-import-confirm');
+      btn.disabled = true; btn.textContent = 'Importando...';
+
+      // Em lotes de 500 pra não estourar o tamanho do payload numa planilha grande.
+      let error = null;
+      for (let i = 0; i < pendingImportRows.length && !error; i += 500) {
+        const batch = pendingImportRows.slice(i, i + 500);
+        ({ error } = await sb.from('lancamentos_valores').upsert(batch, { onConflict: 'subcampo_id,empresa_id,ano,mes' }));
+      }
+
+      btn.disabled = false; btn.textContent = 'Confirmar importação';
+      if (error) {
+        const el = document.getElementById('import-modal-error');
+        el.textContent = error.message; el.className = 'modal-error visible';
+        return;
+      }
+      closeImportModal();
+      showToast('Planilha importada — o DRE já foi atualizado', 'green');
+      await loadEntryValues();
     }
 
     async function saveValores() {
