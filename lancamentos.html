@@ -102,8 +102,10 @@
     .subcampo-input:focus { outline: none; border-color: #8b5cf6; background: rgba(139,92,246,0.05); }
 
     .manage-classe-title { display: flex; align-items: center; gap: 8px; }
-    .manage-campo-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-    .manage-subcampo-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 0 7px 18px; }
+    .manage-campo-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 10px; border-radius: 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .manage-campo-row:nth-child(even) { background: rgba(255,255,255,0.025); }
+    .manage-subcampo-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px 7px 18px; border-radius: 7px; }
+    .manage-subcampo-row:nth-child(even) { background: rgba(255,255,255,0.035); }
     .row-actions { display: flex; gap: 5px; flex-shrink: 0; }
     .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #64748b; cursor: pointer; transition: all .15s; }
     .icon-btn:hover { background: rgba(139,92,246,0.12); color: #c4b5fd; }
