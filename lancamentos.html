@@ -243,8 +243,9 @@
 
   <main class="main" id="lc-main" style="display:none">
     <div class="mode-tabs">
-      <button class="mode-tab active" id="tab-lancar" onclick="setMode('lancar')">Lançar Valores</button>
+      <button class="mode-tab active" id="tab-lancar" onclick="setMode('lancar')">Lançar DRE</button>
       <button class="mode-tab" id="tab-gerenciar" onclick="setMode('gerenciar')">Gerenciar Estrutura</button>
+      <button class="mode-tab" id="tab-resumo" onclick="setMode('resumo')">Resumo Contábil</button>
     </div>
 
     <!-- ══ MODO: LANÇAR VALORES ══ -->
@@ -281,6 +282,48 @@
     <!-- ══ MODO: GERENCIAR ESTRUTURA ══ -->
     <div id="view-gerenciar" style="display:none">
       <div id="manage-tree"></div>
+    </div>
+
+    <!-- ══ MODO: RESUMO CONTÁBIL ══ -->
+    <div id="view-resumo" style="display:none">
+      <div class="entry-filters">
+        <select id="rs-empresa" onchange="loadResumoValues()"></select>
+        <select id="rs-mes" onchange="loadResumoValues()">
+          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
+          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
+          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+        <select id="rs-ano" onchange="loadResumoValues()">
+          <option value="2026">2026</option>
+        </select>
+        <div style="flex:1"></div>
+        <button class="btn-save" id="btn-save-resumo" onclick="saveResumo()">Salvar Resumo</button>
+      </div>
+      <div class="classe-card" style="padding:22px 22px 18px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="field">
+            <label>Entrada</label>
+            <input type="number" step="0.01" id="rs-entrada" placeholder="0,00">
+          </div>
+          <div class="field">
+            <label>Saída</label>
+            <input type="number" step="0.01" id="rs-saida" placeholder="0,00">
+          </div>
+          <div class="field">
+            <label>Despesa</label>
+            <input type="number" step="0.01" id="rs-despesa" placeholder="0,00">
+          </div>
+          <div class="field">
+            <label>Resultado</label>
+            <input type="number" step="0.01" id="rs-resultado" placeholder="0,00">
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <label>Estoque</label>
+            <input type="number" step="0.01" id="rs-estoque" placeholder="0,00">
+          </div>
+        </div>
+      </div>
     </div>
   </main>
 
@@ -387,9 +430,70 @@
     function setMode(mode) {
       document.getElementById('tab-lancar').classList.toggle('active', mode==='lancar');
       document.getElementById('tab-gerenciar').classList.toggle('active', mode==='gerenciar');
+      document.getElementById('tab-resumo').classList.toggle('active', mode==='resumo');
       document.getElementById('view-lancar').style.display = mode==='lancar' ? 'block' : 'none';
       document.getElementById('view-gerenciar').style.display = mode==='gerenciar' ? 'block' : 'none';
+      document.getElementById('view-resumo').style.display = mode==='resumo' ? 'block' : 'none';
       if (mode==='gerenciar') renderManageTree();
+      if (mode==='resumo') {
+        if (!document.getElementById('rs-empresa').children.length) populateResumoEmpresaSelect();
+        loadResumoValues();
+      }
+    }
+
+    // ── Modo Resumo Contábil ──
+    // Alimenta a tabela resumo_mensal, que é o que a tela de Resumo Contábil lê direto do
+    // banco — salvar aqui já reflete lá na próxima vez que a tela for aberta/atualizada.
+    const RESUMO_EMPRESAS = [
+      { id: 'EP', nome: 'EP' },
+      { id: 'GIP', nome: 'GIP (Guilherme)' },
+      { id: 'Exposicao', nome: 'Exposição (Isabela)' },
+      { id: 'ViaCloset', nome: 'Via Closet (Juliane)' },
+      { id: 'RP', nome: 'RP' },
+    ];
+
+    function populateResumoEmpresaSelect() {
+      document.getElementById('rs-empresa').innerHTML = RESUMO_EMPRESAS.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+    }
+
+    async function loadResumoValues() {
+      const empresa = document.getElementById('rs-empresa').value;
+      const mes = parseInt(document.getElementById('rs-mes').value);
+      const ano = parseInt(document.getElementById('rs-ano').value);
+      if (!empresa) return;
+      const { data, error } = await sb.from('resumo_mensal').select('*').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes).limit(1);
+      if (error) { showToast(error.message, 'red'); return; }
+      const row = (data && data[0]) || {};
+      document.getElementById('rs-entrada').value = row.entrada != null ? row.entrada : '';
+      document.getElementById('rs-saida').value = row.saida != null ? row.saida : '';
+      document.getElementById('rs-despesa').value = row.despesa != null ? row.despesa : '';
+      document.getElementById('rs-resultado').value = row.resultado != null ? row.resultado : '';
+      document.getElementById('rs-estoque').value = row.estoque != null ? row.estoque : '';
+    }
+
+    async function saveResumo() {
+      const empresa = document.getElementById('rs-empresa').value;
+      const mes = parseInt(document.getElementById('rs-mes').value);
+      const ano = parseInt(document.getElementById('rs-ano').value);
+      if (!empresa) return;
+      const btn = document.getElementById('btn-save-resumo');
+      btn.disabled = true; btn.textContent = 'Salvando...';
+
+      const val = id => { const v = document.getElementById(id).value; return v === '' ? null : parseFloat(v); };
+      const payload = {
+        empresa_id: empresa, ano, mes,
+        // entrada/saída/resultado são obrigatórios na tabela — em branco vira 0.
+        entrada: val('rs-entrada') || 0,
+        saida: val('rs-saida') || 0,
+        resultado: val('rs-resultado') || 0,
+        // despesa/estoque são opcionais — em branco fica sem valor (null), não zero.
+        despesa: val('rs-despesa'),
+        estoque: val('rs-estoque'),
+      };
+      const { error } = await sb.from('resumo_mensal').upsert(payload, { onConflict: 'empresa_id,ano,mes' });
+      btn.disabled = false; btn.textContent = 'Salvar Resumo';
+      if (error) showToast(error.message, 'red');
+      else showToast('Resumo salvo — a tela de Resumo Contábil já foi atualizada', 'green');
     }
 
     // ── Modo Lançar Valores ──
