@@ -16,6 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
   <script src="/user-menu.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -106,6 +107,10 @@
     .manage-campo-row:nth-child(even) { background: rgba(255,255,255,0.025); }
     .manage-subcampo-row { display: flex; align-items: center; justify-content: space-between; padding: 7px 10px 7px 18px; border-radius: 7px; }
     .manage-subcampo-row:nth-child(even) { background: rgba(255,255,255,0.035); }
+    .drag-handle { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; color: #475569; cursor: grab; flex-shrink: 0; touch-action: none; }
+    .drag-handle:hover { color: #94a3b8; }
+    .sortable-ghost { opacity: 0.35; }
+    .manage-campo-row.sortable-chosen, .manage-subcampo-row.sortable-chosen { background: rgba(139,92,246,0.1) !important; }
     .row-actions { display: flex; gap: 5px; flex-shrink: 0; }
     .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); color: #64748b; cursor: pointer; transition: all .15s; }
     .icon-btn:hover { background: rgba(139,92,246,0.12); color: #c4b5fd; }
@@ -691,8 +696,11 @@
         const camposHtml = camposDaClasse(classe.id).filter(c => c.ativo).map(campo => {
           const subsHtml = subcamposDoCampo(campo.id).filter(s => s.ativo).map(s => {
             const locked = !!s.chave;
-            return `<div class="manage-subcampo-row">
-              <span class="subcampo-nome">${esc(s.nome)}</span>
+            return `<div class="manage-subcampo-row" data-id="${s.id}">
+              <div style="display:flex;align-items:center;gap:7px;min-width:0">
+                <span class="drag-handle" title="Arrastar para reordenar">${DRAG_ICON}</span>
+                <span class="subcampo-nome">${esc(s.nome)}</span>
+              </div>
               <div class="row-actions">
                 <button class="icon-btn" title="Renomear" onclick="openEditModal('subcampo','${s.id}','${esc(s.nome)}')">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
@@ -704,9 +712,12 @@
               </div>
             </div>`;
           }).join('');
-          return `<div class="manage-campo-row" style="flex-direction:column;align-items:stretch">
+          return `<div class="manage-campo-row" data-id="${campo.id}" style="flex-direction:column;align-items:stretch">
             <div style="display:flex;align-items:center;justify-content:space-between">
-              <span class="campo-nome">${esc(campo.nome)}</span>
+              <div style="display:flex;align-items:center;gap:7px;min-width:0">
+                <span class="drag-handle" title="Arrastar para reordenar">${DRAG_ICON}</span>
+                <span class="campo-nome">${esc(campo.nome)}</span>
+              </div>
               <div class="row-actions">
                 <button class="icon-btn" title="Renomear" onclick="openEditModal('campo','${campo.id}','${esc(campo.nome)}')">
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
@@ -714,18 +725,64 @@
                 <button class="icon-btn danger" title="Excluir" onclick="confirmToggleAtivo('campo','${campo.id}','${esc(campo.nome)}',false)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
               </div>
             </div>
-            ${campo.folha ? '' : subsHtml}
+            ${campo.folha ? '' : `<div class="subs-list" data-campo-id="${campo.id}">${subsHtml}</div>`}
             <button class="btn-add-inline" onclick="openCreateModal('subcampo','${campo.id}')">${campo.folha ? '+ Detalhar em subcampos' : '+ Adicionar Subcampo'}</button>
           </div>`;
         }).join('');
         return `<div class="classe-card">
           <div class="classe-head"><span class="classe-nome ${classe.sinal}">${esc(classe.nome)}</span></div>
           <div class="classe-body">
-            ${camposHtml}
+            <div class="campos-list" data-classe-id="${classe.id}">${camposHtml}</div>
             <button class="btn-add-inline" onclick="openCreateModal('campo','${classe.id}')">+ Adicionar Campo</button>
           </div>
         </div>`;
       }).join('');
+      initSortables();
+    }
+
+    // ── Arrastar e soltar pra reordenar campos/subcampos ──
+    // A ordem persiste em "ordem" no banco, e "Baixar modelo" já lê os campos/subcampos
+    // sempre ordenados por esse mesmo campo — então a planilha reflete a nova ordem
+    // automaticamente, sem precisar de nada extra.
+    const DRAG_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>';
+
+    function initSortables() {
+      if (typeof Sortable === 'undefined') return;
+      document.querySelectorAll('.campos-list').forEach(el => {
+        new Sortable(el, {
+          handle: '.drag-handle',
+          animation: 150,
+          onEnd: () => persistOrder('campo', el),
+        });
+      });
+      document.querySelectorAll('.subs-list').forEach(el => {
+        new Sortable(el, {
+          handle: '.drag-handle',
+          animation: 150,
+          onEnd: () => persistOrder('subcampo', el),
+        });
+      });
+    }
+
+    async function persistOrder(tipo, containerEl) {
+      const table = tipo === 'campo' ? 'lancamentos_campos' : 'lancamentos_subcampos';
+      const list = tipo === 'campo' ? campos : subcampos;
+      const newIds = Array.from(containerEl.children).map(el => el.dataset.id);
+
+      // Atualiza a ordem local na hora — a planilha e os totais já usam a ordem nova
+      // mesmo antes da resposta do servidor terminar.
+      newIds.forEach((id, i) => {
+        const item = list.find(x => x.id === id);
+        if (item) item.ordem = i + 1;
+      });
+
+      const results = await Promise.all(newIds.map((id, i) => sb.from(table).update({ ordem: i + 1 }).eq('id', id)));
+      const failed = results.find(r => r.error);
+      if (failed) {
+        showToast(failed.error.message, 'red');
+        await loadTaxonomy();
+        renderManageTree();
+      }
     }
 
     // ── Modal Novo/Editar ──
