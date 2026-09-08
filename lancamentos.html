@@ -273,6 +273,10 @@
 
     <!-- ══ MODO: GERENCIAR ESTRUTURA ══ -->
     <div id="view-gerenciar" style="display:none">
+      <label style="display:inline-flex;align-items:center;gap:8px;margin-bottom:16px;font-size:12.5px;color:#94a3b8;cursor:pointer">
+        <input type="checkbox" id="chk-show-inactive" onchange="toggleShowInactive()">
+        Mostrar campos e subcampos removidos
+      </label>
       <div id="manage-tree"></div>
     </div>
   </main>
@@ -343,6 +347,7 @@
     let classes = [], campos = [], subcampos = [];
     let valoresAtuais = {}; // subcampoId -> valor (para a empresa/mes/ano selecionados)
     let confirmAction = null;
+    let showInactive = false; // "Gerenciar Estrutura" oculta itens removidos por padrão
 
     // esc/showToast e a sidebar mobile/colapso do DRE vêm de user-menu.js.
     function redirect(path) { window.location.replace(path); }
@@ -662,6 +667,14 @@
     }
 
     // ── Modo Gerenciar Estrutura ──
+    // Por padrão só mostra o que está ativo — item excluído sai da lista (igual já
+    // acontece em "Lançar Valores"), em vez de ficar riscado ali pra sempre. O checkbox
+    // "Mostrar removidos" traz eles de volta pra quem precisar reativar algum.
+    function toggleShowInactive() {
+      showInactive = document.getElementById('chk-show-inactive').checked;
+      renderManageTree();
+    }
+
     function renderManageTree() {
       const el = document.getElementById('manage-tree');
       el.innerHTML = classes.map(classe => {
@@ -673,8 +686,8 @@
             </div>
           </div>`;
         }
-        const camposHtml = camposDaClasse(classe.id).map(campo => {
-          const subsHtml = subcamposDoCampo(campo.id).map(s => {
+        const camposHtml = camposDaClasse(classe.id).filter(c => showInactive || c.ativo).map(campo => {
+          const subsHtml = subcamposDoCampo(campo.id).filter(s => showInactive || s.ativo).map(s => {
             const locked = !!s.chave;
             return `<div class="manage-subcampo-row ${s.ativo?'':'inativo'}">
               <span class="subcampo-nome">${esc(s.nome)}</span>
