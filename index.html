@@ -266,6 +266,10 @@
     .card-mini.theme-conciliacao .card-mini-icon { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #67e8f9; }
     .card-mini.theme-conciliacao .card-mini-arrow { color: #67e8f9; }
 
+    .kpi-nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer; transition: all .15s; flex-shrink: 0; }
+    .kpi-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+    .kpi-nav-btn:disabled { opacity: .3; cursor: not-allowed; }
+
     .footer {
       position: relative; z-index: 10;
       text-align: center; padding: 20px;
@@ -388,6 +392,14 @@
         <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px">
           <div style="width:2px;height:12px;background:#f59e0b;border-radius:2px"></div>
           <span id="kpi-title">Resumo</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button type="button" class="kpi-nav-btn" id="kpi-prev" onclick="changeKpiMonth(-1)" aria-label="Mês anterior">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button type="button" class="kpi-nav-btn" id="kpi-next" onclick="changeKpiMonth(1)" aria-label="Próximo mês">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
         </div>
       </div>
       <!-- metric labels row -->
@@ -548,10 +560,7 @@
     sb.auth.getSession().then(async ({ data }) => {
       if (!data.session) { window.location.replace('/login'); return; }
       const hdr = { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer '+data.session.access_token };
-      const [profRows, latest] = await Promise.all([
-        fetch(SUPABASE_URL+'/rest/v1/user_profiles?select=*&id=eq.'+data.session.user.id, {headers:hdr}).then(r=>r.json()).catch(()=>[]),
-        sb.from('dre_consolidado').select('mes,ano').in('empresa_id',['EP','GIP','Exposicao','ViaCloset']).order('ano',{ascending:false}).order('mes',{ascending:false}).limit(1).single()
-      ]);
+      const profRows = await fetch(SUPABASE_URL+'/rest/v1/user_profiles?select=*&id=eq.'+data.session.user.id, {headers:hdr}).then(r=>r.json()).catch(()=>[]);
       const prof = profRows[0] || null;
       window._homeProfile = prof;
       if (prof?.is_admin) {
@@ -604,7 +613,7 @@
       if (showResumo || showDre) {
         document.getElementById('kpi-bar').style.display = 'block';
         showSkeleton(3);
-        loadKPIs(latest.data);
+        loadKPIs();
       }
 
       const name = (prof?.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
@@ -640,26 +649,46 @@
     const LABEL_MAP = { 'Exposicao': 'Exposição' };
     // esc vem de user-menu.js.
 
-    async function loadKPIs(latest) {
+    // Mês/ano do card de resumo — por padrão sempre o mês anterior ao atual (não o mais
+    // recente com dado no banco), navegável pelas setinhas. Guarda o mês/ano "real" de
+    // hoje pra não deixar navegar pro futuro.
+    const REAL_HOJE = new Date();
+    const REAL_MES = REAL_HOJE.getMonth() + 1;
+    const REAL_ANO = REAL_HOJE.getFullYear();
+    let kpiMes = REAL_MES === 1 ? 12 : REAL_MES - 1;
+    let kpiAno = REAL_MES === 1 ? REAL_ANO - 1 : REAL_ANO;
+
+    function changeKpiMonth(delta) {
+      let mes = kpiMes + delta, ano = kpiAno;
+      if (mes < 1) { mes = 12; ano--; }
+      if (mes > 12) { mes = 1; ano++; }
+      if (ano > REAL_ANO || (ano === REAL_ANO && mes > REAL_MES)) return; // não deixa navegar pro futuro
+      kpiMes = mes; kpiAno = ano;
+      showSkeleton(3);
+      loadKPIs();
+    }
+
+    async function loadKPIs() {
       const kpiBarEl = document.getElementById('kpi-bar');
       try {
         const allIds = ['EP','GIP','Exposicao','ViaCloset'];
-        if (!latest) { kpiBarEl.style.display = 'none'; return; }
+
+        const prevBtn = document.getElementById('kpi-prev');
+        const nextBtn = document.getElementById('kpi-next');
+        if (nextBtn) nextBtn.disabled = kpiAno === REAL_ANO && kpiMes === REAL_MES;
 
         const { data: rows } = await sb
           .from('dre_consolidado')
           .select('empresa_id, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido')
-          .eq('mes', latest.mes)
-          .eq('ano', latest.ano)
+          .eq('mes', kpiMes)
+          .eq('ano', kpiAno)
           .in('empresa_id', allIds);
 
-        if (!rows || rows.length === 0) { kpiBarEl.style.display = 'none'; return; }
-
         const byId = {};
-        rows.forEach(r => { byId[r.empresa_id] = r; });
+        (rows || []).forEach(r => { byId[r.empresa_id] = r; });
 
         const tituloEl = document.getElementById('kpi-title');
-        if (tituloEl) tituloEl.textContent = 'Resumo de ' + MESES_FULL[latest.mes - 1];
+        if (tituloEl) tituloEl.textContent = 'Resumo de ' + MESES_FULL[kpiMes - 1];
 
         const prof = window._homeProfile;
         // Sem perfil, nunca mostra nada (mesmo default fail-closed do resto da tela) —
@@ -689,7 +718,7 @@
           const mcPct = fb > 0 ? mc / fb * 100 : 0;
           const resColor = res >= 0 ? '#4ade80' : '#f87171';
           const displayLabel = LABEL_MAP[co.label] || co.label;
-          const periodo = MESES_FULL[latest.mes - 1] + '/' + latest.ano;
+          const periodo = MESES_FULL[kpiMes - 1] + '/' + kpiAno;
           const fatAsk = `Pode me explicar o Faturamento de ${fmtBRL(fb)} da ${displayLabel} em ${periodo}?`;
           const mcAsk = `Pode me explicar a Margem de ${fmtPct(mcPct)} da ${displayLabel} em ${periodo}? Está dentro da meta?`;
           const resAsk = `Pode me explicar o Resultado de ${fmtBRL(res)} da ${displayLabel} em ${periodo}? O que está impactando esse resultado?`;
@@ -718,7 +747,7 @@
         if (!visibleCos.length) { kpiBarEl.style.display = 'none'; return; }
         grid.innerHTML = cardsHtml.length
           ? cardsHtml.join('')
-          : `<div style="grid-column:1/-1;padding:22px 4px;text-align:center;color:#475569;font-size:12.5px">Sem dados consolidados para ${MESES_FULL[latest.mes - 1]} ainda.</div>`;
+          : `<div style="grid-column:1/-1;padding:22px 4px;text-align:center;color:#475569;font-size:12.5px">Sem dados consolidados para ${MESES_FULL[kpiMes - 1]} ainda.</div>`;
         if (window.AskGeron) window.AskGeron.attachDelegation(grid);
         kpiBarEl.style.animation = 'fadeUp 0.5s cubic-bezier(.16,1,.3,1) both';
       } catch(e) {
