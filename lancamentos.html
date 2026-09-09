@@ -457,7 +457,13 @@
     ];
 
     function populateResumoEmpresaSelect() {
-      document.getElementById('rs-empresa').innerHTML = RESUMO_EMPRESAS.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+      // Mesma regra de permissão da escrita no banco (private.lancamentos_empresa_allowed):
+      // só mostra empresas que o usuário realmente tem lancamentos_xx liberado — 'RP' não
+      // tem flag própria (é a holding/consolidado) e fica liberado pra quem tem can_lancamentos,
+      // que é o mínimo já exigido pra entrar nesta tela inteira.
+      const allowedIds = new Set(allowedEmpresas.map(e => e.id));
+      const opcoes = RESUMO_EMPRESAS.filter(e => e.id === 'RP' || allowedIds.has(e.id));
+      document.getElementById('rs-empresa').innerHTML = opcoes.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
     }
 
     async function loadResumoValues() {
