@@ -1257,10 +1257,13 @@
 
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: 6, monthEnd: 6, selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1' };
+  // Mês padrão = mês anterior ao atual (não mais fixo em Julho) — mesmo critério já usado
+  // no card de resumo da Home. Índice dentro de _months (0=Jan/2026); em Janeiro cai pro
+  // próprio Jan/2026 já que não existe entrada de Dez/2025 nesse array.
+  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1' };
   _c = {};
 
-  _months = ['Jan/2026','Fev/2026','Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026'];
+  _months = ['Jan/2026','Fev/2026','Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026','Ago/2026','Set/2026','Out/2026','Nov/2026','Dez/2026'];
   // Rótulos/cores por empresa "crua" (usados no Resumo Contábil e como fallback) — nomes dos responsáveis
   _coLabels = {'EP':'EP','GIP':'Guilherme','Exposicao':'Isabela','ViaCloset':'Juliane','Consolidado':'Consolidado','RP':'RP'};
   _coColors = {'EP':'#ffffff','GIP':'#ffffff','Exposicao':'#fff115','ViaCloset':'#d4526e','Consolidado':'#1E293B','RP':'#6B7280'};
