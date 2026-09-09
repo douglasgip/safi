@@ -114,84 +114,83 @@
     .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
     .dc-sidebar-submenu.collapsed { display: none; }
 
-    /* Main content */
+    /* Main content — layout de dashboard (alinhado à esquerda, começa do topo),
+       não mais uma página de "boas-vindas" centralizada — era isso que dava a
+       cara de landing page solta em vez de painel de trabalho. */
     .main {
       position: relative; z-index: 10;
-      flex: 1; display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      padding: 60px 24px;
+      flex: 1;
+      padding: 40px 32px 56px;
       animation: fadeUp 0.6s cubic-bezier(.16,1,.3,1) both;
     }
+    .main-inner { max-width: 1120px; margin: 0 auto; width: 100%; }
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(24px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .welcome-title {
-      font-size: 32px; font-weight: 800; color: #f1f5f9;
-      letter-spacing: -0.8px; text-align: center;
-      margin-bottom: 8px;
+    .page-head { margin-bottom: 28px; }
+    .page-title {
+      font-size: 24px; font-weight: 800; color: #f1f5f9;
+      letter-spacing: -0.5px; margin-bottom: 4px;
     }
-    .welcome-desc {
-      font-size: 14px; color: #64748b; text-align: center;
-      margin-bottom: 52px;
-    }
+    .page-sub { font-size: 13px; color: #64748b; }
 
-    /* Cards */
-    .cards { display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; }
+    /* Seções — cada uma com um rótulo pequeno, igual ao padrão já usado no
+       resumo do DRE (barra colorida + texto em caixa alta), pra deixar claro
+       o que está agrupado com o quê. */
+    .dash-section { margin-bottom: 30px; }
+    .dash-section:last-child { margin-bottom: 0; }
+    .section-label { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #64748b; margin-bottom: 14px; }
+    .section-label-bar { width: 2px; height: 12px; background: #475569; border-radius: 2px; flex-shrink: 0; }
 
-    .card {
-      width: 300px;
+    /* Cards — um único estilo de card pro painel inteiro (o que antes tinha dois
+       tamanhos/estilos diferentes sem motivo claro era boa parte do "amadorzão"),
+       organizados num grid que se ajusta sozinho à quantidade de itens liberados. */
+    .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+    .dash-card {
+      display: flex; flex-direction: column;
       background: rgba(15,23,42,0.65);
       backdrop-filter: blur(20px) saturate(1.4);
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px;
-      padding: 36px 32px;
+      border-radius: 16px;
+      padding: 22px 22px 20px;
       cursor: pointer;
       text-decoration: none; color: inherit;
-      position: relative; overflow: hidden;
       transition: transform 0.2s cubic-bezier(.16,1,.3,1), box-shadow 0.2s, border-color 0.2s;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.25);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.28);
     }
-    .card::before {
-      content: '';
-      position: absolute; inset: 0; border-radius: 20px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 60%);
-      pointer-events: none;
-    }
-    .card:hover {
-      transform: translateY(-6px) scale(1.01);
-      box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.3);
-    }
-    .card-resumo:hover      { border-color: rgba(245,158,11,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.15), 0 0 40px rgba(245,158,11,0.08); }
-    .card-dre:hover         { border-color: rgba(99,102,241,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15), 0 0 40px rgba(99,102,241,0.08); }
-    .card-lancamentos:hover { border-color: rgba(139,92,246,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.15), 0 0 40px rgba(139,92,246,0.08); }
+    .dash-card:hover { transform: translateY(-4px); box-shadow: 0 20px 44px rgba(0,0,0,0.4); }
+    .dash-card-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; flex-shrink: 0; }
+    .dash-card-title { font-size: 15px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+    .dash-card-desc { font-size: 12px; color: #64748b; line-height: 1.5; margin-bottom: 16px; flex: 1; }
+    .dash-card-arrow { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; transition: gap 0.2s; }
+    .dash-card:hover .dash-card-arrow { gap: 9px; }
 
-    .card-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 20px;
-    }
-    .card-icon-resumo      { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.1)); border: 1px solid rgba(245,158,11,0.25); }
-    .card-icon-dre         { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(79,70,229,0.1));  border: 1px solid rgba(99,102,241,0.25); }
-    .card-icon-lancamentos { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(109,40,217,0.1)); border: 1px solid rgba(139,92,246,0.25); }
+    /* Cada card usa a cor tema da própria tela que ele abre. */
+    .dash-card.theme-amber:hover  { border-color: rgba(245,158,11,0.35); box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,158,11,0.15); }
+    .dash-card.theme-amber .dash-card-icon  { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+    .dash-card.theme-amber .dash-card-arrow { color: #fcd34d; }
 
-    .card-title { font-size: 18px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
-    .card-desc  { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 24px; }
+    .dash-card.theme-indigo:hover  { border-color: rgba(99,102,241,0.35); box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.15); }
+    .dash-card.theme-indigo .dash-card-icon  { background: rgba(99,102,241,0.12); border: 1px solid rgba(99,102,241,0.3); color: #a5b4fc; }
+    .dash-card.theme-indigo .dash-card-arrow { color: #a5b4fc; }
 
-    .card-arrow {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 12px; font-weight: 600;
-      transition: gap 0.2s;
-    }
-    .card-resumo      .card-arrow { color: #f59e0b; }
-    .card-dre         .card-arrow { color: #818cf8; }
-    .card-lancamentos .card-arrow { color: #c4b5fd; }
-    .card:hover .card-arrow { gap: 10px; }
+    .dash-card.theme-purple:hover  { border-color: rgba(139,92,246,0.35); box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 0 1px rgba(139,92,246,0.15); }
+    .dash-card.theme-purple .dash-card-icon  { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; }
+    .dash-card.theme-purple .dash-card-arrow { color: #c4b5fd; }
 
-    /* Card Gerôn — banner horizontal abaixo dos cards principais */
-    .card-geronia-wrap { width: 100%; max-width: 624px; margin-top: 18px; }
+    .dash-card.theme-cyan:hover  { border-color: rgba(34,211,238,0.35); box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 0 1px rgba(34,211,238,0.15); }
+    .dash-card.theme-cyan .dash-card-icon  { background: rgba(34,211,238,0.12); border: 1px solid rgba(34,211,238,0.3); color: #67e8f9; }
+    .dash-card.theme-cyan .dash-card-arrow { color: #67e8f9; }
+
+    .dash-card.theme-green:hover  { border-color: rgba(52,211,153,0.35); box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 0 1px rgba(52,211,153,0.15); }
+    .dash-card.theme-green .dash-card-icon  { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; }
+    .dash-card.theme-green .dash-card-arrow { color: #6ee7b7; }
+
+    /* Card Gerôn — banner horizontal de destaque, entre a saudação e as seções */
+    .card-geronia-wrap { width: 100%; margin-bottom: 28px; }
     .card-geronia {
       display: flex; align-items: center; gap: 18px;
       width: 100%;
@@ -199,76 +198,31 @@
       backdrop-filter: blur(20px) saturate(1.4);
       -webkit-backdrop-filter: blur(20px) saturate(1.4);
       border: 1px solid rgba(99,102,241,0.22);
-      border-radius: 18px;
-      padding: 20px 24px;
+      border-radius: 16px;
+      padding: 18px 22px;
       cursor: pointer;
       text-decoration: none; color: inherit;
       position: relative; overflow: hidden;
       transition: transform 0.2s cubic-bezier(.16,1,.3,1), box-shadow 0.2s, border-color 0.2s;
-      box-shadow: 0 12px 36px rgba(0,0,0,0.35);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.28);
     }
     .card-geronia:hover {
-      transform: translateY(-4px) scale(1.005);
+      transform: translateY(-3px);
       border-color: rgba(99,102,241,0.45);
-      box-shadow: 0 20px 48px rgba(0,0,0,0.45), 0 0 0 1px rgba(99,102,241,0.2), 0 0 40px rgba(99,102,241,0.1);
+      box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 0 1px rgba(99,102,241,0.2);
     }
     .card-geronia-avatar {
-      width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+      width: 46px; height: 46px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
       box-shadow: 0 0 0 3px rgba(99,102,241,0.2), 0 6px 18px rgba(99,102,241,0.3);
     }
     .card-geronia-body { flex: 1; min-width: 0; }
     .card-geronia-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-    .card-geronia-title { font-size: 16px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.2px; }
+    .card-geronia-title { font-size: 15px; font-weight: 800; color: #f1f5f9; letter-spacing: -0.2px; }
     .card-geronia-badge { display: flex; align-items: center; gap: 5px; font-size: 9.5px; color: #4ade80; font-weight: 700; letter-spacing: 0.3px; }
     .card-geronia-dot { width: 5px; height: 5px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.8); animation: pulse 1.8s ease infinite; }
-    .card-geronia-desc { font-size: 12.5px; color: #64748b; line-height: 1.5; }
+    .card-geronia-desc { font-size: 12px; color: #64748b; line-height: 1.5; }
     .card-geronia-arrow { color: #818cf8; flex-shrink: 0; transition: transform 0.2s; }
     .card-geronia:hover .card-geronia-arrow { transform: translateX(4px); }
-
-    /* Grid secundário — Mapa Societário / Funcionários / Pedidos / Lançamentos.
-       Flexbox com wrap + centralização em vez de grid: se ajusta sozinho a qualquer
-       quantidade de cards liberados (1, 2, 3, 4...) sem precisar de uma regra CSS nova
-       cada vez que uma área nova é adicionada — cada linha se centraliza por conta própria,
-       então mesmo um card "sobrando" sozinho na última linha fica centralizado, não solto. */
-    .cards-secondary { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; width: 100%; max-width: 948px; margin: 16px auto 0; }
-    .card-mini {
-      display: flex; flex-direction: column;
-      flex: 1 1 280px; max-width: 300px;
-      background: rgba(15,23,42,0.65);
-      backdrop-filter: blur(20px) saturate(1.4);
-      -webkit-backdrop-filter: blur(20px) saturate(1.4);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      padding: 20px 20px 18px;
-      cursor: pointer;
-      text-decoration: none; color: inherit;
-      transition: transform 0.2s cubic-bezier(.16,1,.3,1), box-shadow 0.2s, border-color 0.2s;
-    }
-    .card-mini:hover {
-      transform: translateY(-4px);
-      border-color: rgba(139,92,246,0.35);
-      box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(139,92,246,0.15), 0 0 32px rgba(139,92,246,0.08);
-    }
-    .card-mini-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; flex-shrink: 0; }
-    .card-mini-title-row { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; flex-wrap: wrap; }
-    .card-mini-title { font-size: 14.5px; font-weight: 700; color: #f1f5f9; }
-    .card-mini-desc { font-size: 11.5px; color: #64748b; line-height: 1.5; margin-bottom: 14px; flex: 1; }
-    .card-mini-arrow { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #c4b5fd; transition: gap 0.2s; }
-    .card-mini:hover .card-mini-arrow { gap: 8px; }
-
-    /* Cada card secundário usa a cor tema da sua própria tela (mesma paleta de lá) — os
-       que não têm classe extra ficam no roxo padrão acima. */
-    .card-mini.theme-pedidos:hover { border-color: rgba(245,158,11,0.35); box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(245,158,11,0.15), 0 0 32px rgba(245,158,11,0.08); }
-    .card-mini.theme-pedidos .card-mini-icon { background: rgba(245,158,11,0.12); border-color: rgba(245,158,11,0.3); color: #fcd34d; }
-    .card-mini.theme-pedidos .card-mini-arrow { color: #fcd34d; }
-
-    .card-mini.theme-conciliacao:hover { border-color: rgba(34,211,238,0.35); box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(34,211,238,0.15), 0 0 32px rgba(34,211,238,0.08); }
-    .card-mini.theme-conciliacao .card-mini-icon { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #67e8f9; }
-    .card-mini.theme-conciliacao .card-mini-arrow { color: #67e8f9; }
-
-    .card-mini.theme-fluxocaixa:hover { border-color: rgba(52,211,153,0.35); box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(52,211,153,0.15), 0 0 32px rgba(52,211,153,0.08); }
-    .card-mini.theme-fluxocaixa .card-mini-icon { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.3); color: #6ee7b7; }
-    .card-mini.theme-fluxocaixa .card-mini-arrow { color: #6ee7b7; }
 
     .kpi-nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer; transition: all .15s; flex-shrink: 0; }
     .kpi-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.09); color: #f1f5f9; }
@@ -284,23 +238,15 @@
       .header { padding: 0 16px; height: 56px; }
       .header-logo-full { height: 26px; }
       .btn-logout span { display: none; }
-      .main { padding: 28px 16px 40px; }
-      .welcome-title { font-size: 22px; margin-bottom: 6px; }
-      .welcome-desc { font-size: 13px; margin-bottom: 32px; }
-      #kpi-bar { padding: 16px 16px 14px; margin-bottom: 24px; border-radius: 14px; }
+      .main { padding: 24px 16px 36px; }
+      .page-title { font-size: 20px; }
+      .page-sub { font-size: 12.5px; }
+      #kpi-bar { padding: 16px 16px 14px; border-radius: 14px; }
       #kpi-grid { grid-template-columns: 1fr !important; max-width: 400px !important; margin: 0 auto !important; }
-      .cards { flex-direction: column; gap: 14px; width: 100%; }
-      .card { width: 100%; padding: 24px 20px; border-radius: 16px; }
-      .card-icon { width: 44px; height: 44px; border-radius: 12px; margin-bottom: 14px; }
-      .card-title { font-size: 16px; }
-      .card-desc { font-size: 12px; margin-bottom: 18px; }
-      .card-geronia-wrap { max-width: 100%; margin-top: 14px; }
-      .card-geronia { padding: 16px 18px; gap: 14px; border-radius: 16px; }
-      .card-geronia-avatar { width: 44px; height: 44px; }
-      .card-geronia-title { font-size: 14.5px; }
-      .card-geronia-desc { font-size: 12px; }
-      .cards-secondary { gap: 12px; margin-top: 14px; }
-      .card-mini { flex-basis: 100%; max-width: none; padding: 18px 18px 16px; border-radius: 14px; }
+      .dash-grid { grid-template-columns: 1fr; }
+      .card-geronia { padding: 15px 16px; gap: 14px; border-radius: 14px; }
+      .card-geronia-avatar { width: 42px; height: 42px; }
+      .card-geronia-title { font-size: 14px; }
     }
   </style>
 </head>
@@ -387,161 +333,163 @@
   </header>
 
   <main class="main">
-    <div class="welcome-title">O que você deseja acessar?</div>
-    <div class="welcome-desc">Selecione uma das áreas abaixo para continuar</div>
+    <div class="main-inner">
 
-    <!-- Snapshot Gerencial DRE -->
-    <div id="kpi-bar" style="display:none;background:rgba(15,23,42,0.72);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px 26px 18px;margin-bottom:36px;backdrop-filter:blur(20px);width:100%;max-width:860px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-        <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px">
-          <div style="width:2px;height:12px;background:#f59e0b;border-radius:2px"></div>
-          <span id="kpi-title">Resumo</span>
+      <div class="page-head">
+        <div class="page-title" id="page-title">Painel</div>
+        <div class="page-sub">Selecione uma área abaixo para continuar</div>
+      </div>
+
+      <!-- Snapshot Gerencial DRE -->
+      <div id="kpi-bar" style="display:none;background:rgba(15,23,42,0.72);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:20px 26px 18px;margin-bottom:28px;backdrop-filter:blur(20px);width:100%">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2.5px;text-transform:uppercase;display:flex;align-items:center;gap:8px">
+            <div style="width:2px;height:12px;background:#f59e0b;border-radius:2px"></div>
+            <span id="kpi-title">Resumo</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button type="button" class="kpi-nav-btn" id="kpi-prev" onclick="changeKpiMonth(-1)" aria-label="Mês anterior">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            </button>
+            <button type="button" class="kpi-nav-btn" id="kpi-next" onclick="changeKpiMonth(1)" aria-label="Próximo mês">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+            </button>
+          </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <button type="button" class="kpi-nav-btn" id="kpi-prev" onclick="changeKpiMonth(-1)" aria-label="Mês anterior">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button type="button" class="kpi-nav-btn" id="kpi-next" onclick="changeKpiMonth(1)" aria-label="Próximo mês">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
+        <!-- metric labels row -->
+        <div id="kpi-grid" style="display:grid;gap:1px;background:rgba(255,255,255,0.05);border-radius:10px;overflow:hidden"></div>
+      </div>
+
+      <div class="card-geronia-wrap">
+        <a href="/geronia" class="card-geronia">
+          <img class="card-geronia-avatar" src="/public/GerônIA.png" alt="GerônIA">
+          <div class="card-geronia-body">
+            <div class="card-geronia-title-row">
+              <div class="card-geronia-title">GerônIA</div>
+              <div class="card-geronia-badge"><span class="card-geronia-dot"></span>Online</div>
+            </div>
+            <div class="card-geronia-desc">Converse com o conselheiro de inteligência do Grupo Sacoman e tire dúvidas sobre os números do painel.</div>
+          </div>
+          <svg class="card-geronia-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+      </div>
+
+      <div class="dash-section" id="section-contabil" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Contábil</div>
+        <div class="dash-grid">
+
+          <a href="/resumocontabil" id="card-resumo" class="dash-card theme-amber" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            </div>
+            <div class="dash-card-title">Resumo Contábil</div>
+            <div class="dash-card-desc">Visão geral das entradas, saídas e resultado por empresa e competência.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+          <a href="/dre" id="card-dre" class="dash-card theme-indigo" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div class="dash-card-title">DRE</div>
+            <div class="dash-card-desc">Demonstração do Resultado do Exercício com margem, custos e lucro líquido.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+          <a href="/lancamentos" id="card-lancamentos" class="dash-card theme-purple" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+            </div>
+            <div class="dash-card-title">Lançamentos</div>
+            <div class="dash-card-desc">Lance e organize os dados do DRE por Classe, Campo e Subcampo.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
         </div>
       </div>
-      <!-- metric labels row -->
-      <div id="kpi-grid" style="display:grid;gap:1px;background:rgba(255,255,255,0.05);border-radius:10px;overflow:hidden"></div>
-    </div>
 
-    <div class="cards">
+      <div class="dash-section" id="section-operacoes" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Operações</div>
+        <div class="dash-grid">
 
-      <a href="/resumocontabil" id="card-resumo" class="card card-resumo" style="display:none">
-        <div class="card-icon card-icon-resumo">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="18" height="18" rx="2"/>
-            <path d="M3 9h18M9 21V9"/>
-          </svg>
-        </div>
-        <div class="card-title">Resumo Contábil</div>
-        <div class="card-desc">Visão geral das entradas, saídas e resultado por empresa e competência.</div>
-        <div class="card-arrow">
-          Acessar
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
+          <a href="/pedidos" id="card-pedidos" class="dash-card theme-amber" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <div class="dash-card-title">Pedidos</div>
+            <div class="dash-card-desc">Pedidos feitos às lojas, condições de pagamento e chegada de mercadoria.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
 
-      <a href="/dre" id="card-dre" class="card card-dre" style="display:none">
-        <div class="card-icon card-icon-dre">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
-        </div>
-        <div class="card-title">DRE</div>
-        <div class="card-desc">Demonstração do Resultado do Exercício com margem, custos e lucro líquido.</div>
-        <div class="card-arrow">
-          Acessar
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
+          <a href="/conciliacao" id="card-conciliacao" class="dash-card theme-cyan" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="dash-card-title">Conciliação</div>
+            <div class="dash-card-desc">Compara o valor previsto dos pedidos com o valor real conferido — identifica divergências.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
 
-      <a href="/lancamentos" id="card-lancamentos" class="card card-lancamentos" style="display:none">
-        <div class="card-icon card-icon-lancamentos">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
-          </svg>
-        </div>
-        <div class="card-title">Lançamentos</div>
-        <div class="card-desc">Lance e organize os dados do DRE por Classe, Campo e Subcampo.</div>
-        <div class="card-arrow">
-          Acessar
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
+          <a href="/fluxo-caixa" id="card-fluxocaixa" class="dash-card theme-green" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+            </div>
+            <div class="dash-card-title">Fluxo de Caixa</div>
+            <div class="dash-card-desc">Movimentação de caixa, ativos e passivos do grupo.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
 
-    </div>
+        </div>
+      </div>
 
-    <div class="card-geronia-wrap">
-      <a href="/geronia" class="card-geronia">
-        <img class="card-geronia-avatar" src="/public/GerônIA.png" alt="GerônIA">
-        <div class="card-geronia-body">
-          <div class="card-geronia-title-row">
-            <div class="card-geronia-title">GerônIA</div>
-            <div class="card-geronia-badge"><span class="card-geronia-dot"></span>Online</div>
-          </div>
-          <div class="card-geronia-desc">Converse com o conselheiro de inteligência do Grupo Sacoman e tire dúvidas sobre os números do painel.</div>
-        </div>
-        <svg class="card-geronia-arrow" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </a>
-    </div>
+      <div class="dash-section" id="section-gestao" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Gestão</div>
+        <div class="dash-grid">
 
-    <div class="cards-secondary">
+          <a href="/mapa-societario" id="card-mapasoc" class="dash-card theme-purple" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
+            </div>
+            <div class="dash-card-title">Mapa Societário</div>
+            <div class="dash-card-desc">Estrutura societária das empresas do grupo — CNPJs, sócios e participação.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
 
-      <a href="/mapa-societario" id="card-mapasoc" class="card-mini" style="display:none">
-        <div class="card-mini-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
-        </div>
-        <div class="card-mini-title-row">
-          <div class="card-mini-title">Mapa Societário</div>
-        </div>
-        <div class="card-mini-desc">Estrutura societária das empresas do grupo — CNPJs, sócios e participação.</div>
-        <div class="card-mini-arrow">
-          Acessar
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
+          <a href="/funcionarios" id="card-funcionarios" class="dash-card theme-purple" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="dash-card-title">Funcionários</div>
+            <div class="dash-card-desc">Cadastro de colaboradores do grupo — dados pessoais e tempo de casa por empresa.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
 
-      <a href="/funcionarios" id="card-funcionarios" class="card-mini" style="display:none">
-        <div class="card-mini-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         </div>
-        <div class="card-mini-title-row">
-          <div class="card-mini-title">Funcionários</div>
-        </div>
-        <div class="card-mini-desc">Cadastro de colaboradores do grupo — dados pessoais e tempo de casa por empresa.</div>
-        <div class="card-mini-arrow">
-          Acessar
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
-
-      <a href="/pedidos" id="card-pedidos" class="card-mini theme-pedidos" style="display:none">
-        <div class="card-mini-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-        </div>
-        <div class="card-mini-title-row">
-          <div class="card-mini-title">Pedidos</div>
-        </div>
-        <div class="card-mini-desc">Pedidos feitos às lojas, condições de pagamento e chegada de mercadoria.</div>
-        <div class="card-mini-arrow">
-          Acessar
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
-
-      <a href="/conciliacao" id="card-conciliacao" class="card-mini theme-conciliacao" style="display:none">
-        <div class="card-mini-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        </div>
-        <div class="card-mini-title-row">
-          <div class="card-mini-title">Conciliação</div>
-        </div>
-        <div class="card-mini-desc">Compara o valor previsto dos pedidos com o valor real conferido — identifica divergências.</div>
-        <div class="card-mini-arrow">
-          Acessar
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
-
-      <a href="/fluxo-caixa" id="card-fluxocaixa" class="card-mini theme-fluxocaixa" style="display:none">
-        <div class="card-mini-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
-        </div>
-        <div class="card-mini-title-row">
-          <div class="card-mini-title">Fluxo de Caixa</div>
-        </div>
-        <div class="card-mini-desc">Movimentação de caixa, ativos e passivos do grupo.</div>
-        <div class="card-mini-arrow">
-          Acessar
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </div>
-      </a>
+      </div>
 
     </div>
   </main>
@@ -566,6 +514,11 @@
       const profRows = await fetch(SUPABASE_URL+'/rest/v1/user_profiles?select=*&id=eq.'+data.session.user.id, {headers:hdr}).then(r=>r.json()).catch(()=>[]);
       const prof = profRows[0] || null;
       window._homeProfile = prof;
+      const greetName = (prof?.full_name || data.session.user.email.split('@')[0] || '').trim().split(/\s+/)[0];
+      const hour = new Date().getHours();
+      const saudacao = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+      const pageTitleEl = document.getElementById('page-title');
+      if (pageTitleEl) pageTitleEl.textContent = greetName ? `${saudacao}, ${greetName}` : saudacao;
       if (prof?.is_admin) {
         const sab=document.getElementById('home-sidebar-admin'); if(sab) sab.style.display='flex';
       }
@@ -618,6 +571,18 @@
         showSkeleton(3);
         loadKPIs();
       }
+
+      // Cada seção só aparece se tiver pelo menos um card liberado dentro dela — evita
+      // um rótulo de seção "Contábil"/"Operações"/"Gestão" flutuando sem nada embaixo.
+      [
+        ['section-contabil', ['card-resumo','card-dre','card-lancamentos']],
+        ['section-operacoes', ['card-pedidos','card-conciliacao','card-fluxocaixa']],
+        ['section-gestao', ['card-mapasoc','card-funcionarios']],
+      ].forEach(([sectionId, cardIds]) => {
+        const anyVisible = cardIds.some(id => { const el = document.getElementById(id); return el && el.style.display !== 'none'; });
+        const sec = document.getElementById(sectionId);
+        if (sec) sec.style.display = anyVisible ? 'block' : 'none';
+      });
 
       const name = (prof?.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
       const parts = name.split(/\s+/);
