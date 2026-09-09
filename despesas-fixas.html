@@ -418,7 +418,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field">
             <label>Valor Previsto (deste mês)</label>
-            <input type="number" step="0.01" min="0" id="conf-valor-previsto" required>
+            <input type="text" inputmode="decimal" id="conf-valor-previsto" required>
           </div>
           <div class="field">
             <label>Dia Vencimento (deste mês)</label>
@@ -430,7 +430,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="field">
             <label>Valor Pago</label>
-            <input type="number" step="0.01" min="0" id="conf-valor-pago" placeholder="Deixe em branco se ainda não pagou">
+            <input type="text" inputmode="decimal" id="conf-valor-pago" placeholder="Deixe em branco se ainda não pagou">
           </div>
           <div class="field">
             <label>Data do Pagamento</label>
@@ -486,7 +486,7 @@
           </div>
           <div class="field">
             <label>Valor Previsto Padrão</label>
-            <input type="number" step="0.01" min="0" id="f-form-valor-padrao" placeholder="0,00" required>
+            <input type="text" inputmode="decimal" id="f-form-valor-padrao" placeholder="0,00" required>
           </div>
         </div>
         <div class="field-hint">Todo mês essa despesa entra sozinha em "Conferir Mês" com esses valores — dá pra ajustar mês a mês sem afetar o padrão.</div>
@@ -550,6 +550,7 @@
     // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
     wireSidebarToggle('df');
     wireDreCollapseToggle('df');
+    ['conf-valor-previsto', 'conf-valor-pago', 'f-form-valor-padrao'].forEach(id => attachMoneyMask(document.getElementById(id)));
 
     // ── Mês/ano padrão do "Conferir Mês": sempre o mês anterior ao atual, não o mais
     // recente com dado no banco — mesma regra usada na Home/Resumo Contábil. ──
@@ -714,9 +715,9 @@
       document.getElementById('conf-modal-title').textContent = 'Conferir pagamento';
       document.getElementById('conf-modal-sub').textContent = `${l.despesas_fixas.nome} — ${MESES[confMes-1]}/${confAno}`;
       document.getElementById('conf-edit-id').value = l.id;
-      document.getElementById('conf-valor-previsto').value = l.valor_previsto != null ? l.valor_previsto : '';
+      document.getElementById('conf-valor-previsto').value = l.valor_previsto != null ? numberToMoneyMasked(l.valor_previsto) : '';
       document.getElementById('conf-dia-previsto').value = l.dia_vencimento_previsto != null ? l.dia_vencimento_previsto : '';
-      document.getElementById('conf-valor-pago').value = l.valor_pago != null ? l.valor_pago : '';
+      document.getElementById('conf-valor-pago').value = l.valor_pago != null ? numberToMoneyMasked(l.valor_pago) : '';
       document.getElementById('conf-data-pagamento').value = l.data_pagamento || '';
       document.getElementById('conf-modal-error').className = 'modal-error';
       document.getElementById('conf-modal').classList.add('open');
@@ -750,9 +751,9 @@
       const jaConferido = valorPagoRaw !== '';
 
       const payload = {
-        valor_previsto: valorPrevistoRaw === '' ? 0 : +valorPrevistoRaw,
+        valor_previsto: valorPrevistoRaw === '' ? 0 : (moneyToNumber(valorPrevistoRaw) || 0),
         dia_vencimento_previsto: diaPrevistoRaw === '' ? null : +diaPrevistoRaw,
-        valor_pago: valorPagoRaw === '' ? null : +valorPagoRaw,
+        valor_pago: valorPagoRaw === '' ? null : moneyToNumber(valorPagoRaw),
         data_pagamento: valorPagoRaw === '' ? null : (dataPagamento || null),
         updated_at: new Date().toISOString(),
       };
@@ -864,7 +865,7 @@
       document.getElementById('f-form-empresa').value = t.empresa;
       document.getElementById('f-form-cnpj').value = t.cnpj || '';
       document.getElementById('f-form-dia-vencimento').value = t.dia_vencimento;
-      document.getElementById('f-form-valor-padrao').value = t.valor_previsto_padrao;
+      document.getElementById('f-form-valor-padrao').value = numberToMoneyMasked(t.valor_previsto_padrao);
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
     }
@@ -887,7 +888,7 @@
       const nome = document.getElementById('f-form-nome').value.trim();
       const cnpj = document.getElementById('f-form-cnpj').value;
       const diaVencimento = +document.getElementById('f-form-dia-vencimento').value;
-      const valorPadrao = +document.getElementById('f-form-valor-padrao').value;
+      const valorPadrao = moneyToNumber(document.getElementById('f-form-valor-padrao').value);
 
       if (!nome) { showModalError('Informe o nome da despesa.'); return; }
       if (!cnpj) { showModalError('Selecione o CNPJ.'); return; }

@@ -20,6 +20,69 @@ function todayLocal() {
   return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 }
 
+// ── Máscara de valor monetário ("tipo calculadora") ─────────────────────────
+// Conforme os dígitos são digitados, pontos de milhar aparecem sozinhos na parte
+// inteira; a vírgula decimal é digitada pelo próprio usuário (nunca inserida
+// automaticamente) e o que vier depois dela fica intocado. Pra usar num campo:
+// troque o input de type="number" para type="text" (inputmode="decimal" pra
+// teclado numérico no celular) e chame attachMoneyMask(el) uma vez. Depois, leia
+// o valor com moneyToNumber(el.value) em vez de +el.value/parseFloat — e pra
+// pré-preencher um valor existente no campo, use numberToMoneyMasked(numero).
+function formatMoneyMasked(raw) {
+  raw = String(raw == null ? '' : raw);
+  var commaIdx = raw.indexOf(',');
+  var intPart = (commaIdx === -1 ? raw : raw.slice(0, commaIdx)).replace(/\D/g, '');
+  var decPart = commaIdx === -1 ? '' : ',' + raw.slice(commaIdx + 1).replace(/\D/g, '');
+  intPart = intPart.replace(/^0+(?=\d)/, '');
+  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return intPart + decPart;
+}
+
+// Texto mascarado ("1.234,5") -> number (1234.5). Retorna null pro texto vazio
+// e NaN nunca escapa (vira null também) — sempre trate o retorno com `|| 0` se
+// o campo for obrigatório, ou deixe null passar quando for opcional no banco.
+function moneyToNumber(str) {
+  if (str == null || str === '') return null;
+  var cleaned = String(str).replace(/\./g, '').replace(',', '.');
+  var n = parseFloat(cleaned);
+  return isNaN(n) ? null : n;
+}
+
+// number -> texto já mascarado (sempre com 2 casas decimais), pra pré-preencher
+// um campo mascarado ao abrir um modal de edição.
+function numberToMoneyMasked(n) {
+  if (n == null || n === '' || isNaN(n)) return '';
+  var fixed = (+n).toFixed(2);
+  var neg = fixed.charAt(0) === '-';
+  if (neg) fixed = fixed.slice(1);
+  var parts = fixed.split('.');
+  var intPart = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (neg ? '-' : '') + intPart + ',' + parts[1];
+}
+
+// Liga a máscara num input (idempotente — pode chamar de novo sem duplicar o listener).
+function attachMoneyMask(el) {
+  if (!el || el.dataset.moneyMaskBound) return;
+  el.dataset.moneyMaskBound = '1';
+  el.setAttribute('inputmode', 'decimal');
+  el.addEventListener('input', function() {
+    var before = el.value;
+    var caret = el.selectionStart == null ? before.length : el.selectionStart;
+    // Conta quantos dígitos/vírgula existem antes do caret pra reposicionar ele
+    // certinho depois da remascarada (senão o cursor pula pro fim a cada tecla).
+    var prefix = before.slice(0, caret);
+    var sigCountBefore = (prefix.match(/[\d,]/g) || []).length;
+    var masked = formatMoneyMasked(before);
+    el.value = masked;
+    var count = 0, pos = masked.length;
+    for (var i = 0; i < masked.length; i++) {
+      if (/[\d,]/.test(masked[i])) count++;
+      if (count === sigCountBefore) { pos = i + 1; break; }
+    }
+    el.setSelectionRange(pos, pos);
+  });
+}
+
 var _sharedToastTimer;
 function showToast(msg, color) {
   var el = document.getElementById('toast');

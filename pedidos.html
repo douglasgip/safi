@@ -458,7 +458,7 @@
           <div id="auto-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <div class="field" style="margin-bottom:0">
               <label>Valor Previsto</label>
-              <input type="number" step="0.01" min="0" id="auto-valor-total" placeholder="0,00">
+              <input type="text" inputmode="decimal" id="auto-valor-total" placeholder="0,00">
             </div>
             <div class="field" style="margin-bottom:0">
               <label>Nº de Parcelas</label>
@@ -622,6 +622,7 @@
     // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
     wireSidebarToggle('ped');
     wireDreCollapseToggle('ped');
+    attachMoneyMask(document.getElementById('auto-valor-total'));
 
     function populateEmpresaFilters() {
       const filterSel = document.getElementById('f-empresa');
@@ -816,9 +817,10 @@
       document.getElementById('conf-parcelas-list').innerHTML = parcelas.map(pc => `
         <div class="conf-parcela-row" data-parcela-id="${esc(pc.id)}">
           <div class="conf-parcela-label">${pc.numero}ª parcela — vence ${fmtDate(pc.vencimento)}</div>
-          <input type="number" step="0.01" min="0" class="conf-valor-real" placeholder="Valor real" value="${pc.valor_real != null ? pc.valor_real : ''}">
+          <input type="text" inputmode="decimal" class="conf-valor-real" placeholder="Valor real" value="${pc.valor_real != null ? numberToMoneyMasked(pc.valor_real) : ''}">
         </div>
       `).join('');
+      document.querySelectorAll('#conf-parcelas-list .conf-valor-real').forEach(attachMoneyMask);
       document.getElementById('conf-modal-error').className = 'modal-error';
       document.getElementById('conferencia-modal').classList.add('open');
     }
@@ -846,7 +848,7 @@
       // parcelas que já sabe e voltar depois (pelo ícone de conferência) pra completar.
       const entries = parcelaRows.map(row => {
         const raw = row.querySelector('.conf-valor-real').value;
-        return { id: row.dataset.parcelaId, valor_real: raw === '' ? null : +raw };
+        return { id: row.dataset.parcelaId, valor_real: raw === '' ? null : moneyToNumber(raw) };
       });
 
       btn.disabled = true;
@@ -902,7 +904,7 @@
     // ── Parcelas (form) ──
     function updateParcelasTotal() {
       let total = 0;
-      document.querySelectorAll('.parcela-valor').forEach(inp => { total += (+inp.value || 0); });
+      document.querySelectorAll('.parcela-valor').forEach(inp => { total += (moneyToNumber(inp.value) || 0); });
       document.getElementById('parcelas-total').textContent = fmtBRL(total);
     }
 
@@ -916,13 +918,14 @@
       const num = list.children.length + 1;
       div.innerHTML = `
         <div class="parcela-num">${num}ª</div>
-        <input type="number" step="0.01" min="0" class="parcela-valor" placeholder="Valor" value="${valor != null ? valor : ''}">
+        <input type="text" inputmode="decimal" class="parcela-valor" placeholder="Valor" value="${valor != null ? numberToMoneyMasked(valor) : ''}">
         <input type="date" class="parcela-vencimento" value="${vencimento || ''}">
         <button type="button" class="btn-rm-parcela" title="Remover parcela" aria-label="Remover parcela">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       `;
       list.appendChild(div);
+      attachMoneyMask(div.querySelector('.parcela-valor'));
       div.querySelector('.parcela-valor').addEventListener('input', updateParcelasTotal);
       div.querySelector('.btn-rm-parcela').addEventListener('click', () => {
         div.remove();
@@ -964,11 +967,11 @@
         // tenta detectar a frequência batendo com os vencimentos já digitados; se não
         // bater com nenhuma, mantém a frequência que já estava selecionada.
         const rows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
-        const parcelasAtuais = rows.map((r, i) => ({ numero: i + 1, valor: +r.querySelector('.parcela-valor').value || 0, vencimento: r.querySelector('.parcela-vencimento').value }));
+        const parcelasAtuais = rows.map((r, i) => ({ numero: i + 1, valor: moneyToNumber(r.querySelector('.parcela-valor').value) || 0, vencimento: r.querySelector('.parcela-vencimento').value }));
         const total = parcelasAtuais.reduce((s, p) => s + p.valor, 0);
         const firstVenc = parcelasAtuais.map(p => p.vencimento).filter(Boolean).sort()[0] || '';
         const freqDetectada = detectAutoFrequency(parcelasAtuais);
-        document.getElementById('auto-valor-total').value = total || '';
+        document.getElementById('auto-valor-total').value = total ? numberToMoneyMasked(total) : '';
         document.getElementById('auto-num-parcelas').value = rows.length || 1;
         document.getElementById('auto-primeiro-vencimento').value = firstVenc;
         if (freqDetectada) document.getElementById('auto-frequencia').value = freqDetectada;
@@ -980,7 +983,7 @@
     }
 
     function regenerateAutoParcelas() {
-      const total = +document.getElementById('auto-valor-total').value || 0;
+      const total = moneyToNumber(document.getElementById('auto-valor-total').value) || 0;
       const n = Math.max(1, parseInt(document.getElementById('auto-num-parcelas').value, 10) || 1);
       const firstDate = document.getElementById('auto-primeiro-vencimento').value;
       const freq = document.getElementById('auto-frequencia').value;
@@ -1054,7 +1057,7 @@
       const parcelas = (r._parcelas || []).slice().sort((a,b) => a.numero - b.numero);
       const freqDetectada = parcelas.length ? detectAutoFrequency(parcelas) : null;
       if (parcelas.length && freqDetectada) {
-        document.getElementById('auto-valor-total').value = r.valor_total;
+        document.getElementById('auto-valor-total').value = numberToMoneyMasked(r.valor_total);
         document.getElementById('auto-num-parcelas').value = parcelas.length;
         document.getElementById('auto-primeiro-vencimento').value = parcelas[0].vencimento;
         document.getElementById('auto-frequencia').value = freqDetectada;
@@ -1099,7 +1102,7 @@
       const parcelaRows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
       const parcelas = parcelaRows.map((row, i) => ({
         numero: i + 1,
-        valor: +row.querySelector('.parcela-valor').value || 0,
+        valor: moneyToNumber(row.querySelector('.parcela-valor').value) || 0,
         vencimento: row.querySelector('.parcela-vencimento').value || null,
       }));
       if (!parcelas.length) { showModalError('Adicione ao menos uma parcela.'); return; }

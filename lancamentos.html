@@ -126,6 +126,9 @@
     .field label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; }
     .field input { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; }
     .field input:focus { outline: none; border-color: #8b5cf6; }
+    .field input[readonly] { color: #94a3b8; background: rgba(255,255,255,0.02); cursor: not-allowed; }
+    .field input[readonly]:focus { border-color: rgba(255,255,255,0.1); }
+    .field-hint { font-size: 10.5px; color: #64748b; margin-top: 5px; }
     .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; }
     .modal-error.visible { display: block; }
     .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
@@ -308,23 +311,29 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="field">
             <label>Entrada</label>
-            <input type="number" step="0.01" id="rs-entrada" placeholder="0,00">
+            <input type="text" inputmode="decimal" id="rs-entrada" placeholder="0,00">
           </div>
           <div class="field">
             <label>Saída</label>
-            <input type="number" step="0.01" id="rs-saida" placeholder="0,00">
+            <input type="text" inputmode="decimal" id="rs-saida" placeholder="0,00">
           </div>
           <div class="field">
             <label>Despesa</label>
-            <input type="number" step="0.01" id="rs-despesa" placeholder="0,00">
+            <input type="text" inputmode="decimal" id="rs-despesa" placeholder="0,00">
           </div>
           <div class="field">
             <label>Resultado</label>
-            <input type="number" step="0.01" id="rs-resultado" placeholder="0,00">
+            <input type="text" id="rs-resultado" placeholder="0,00" readonly tabindex="-1">
+            <div class="field-hint">Calculado automaticamente: Saída − (Despesa + Entrada).</div>
           </div>
-          <div class="field" style="grid-column:1/-1">
+          <div class="field">
             <label>Estoque</label>
-            <input type="number" step="0.01" id="rs-estoque" placeholder="0,00">
+            <input type="text" inputmode="decimal" id="rs-estoque" placeholder="0,00">
+          </div>
+          <div class="field">
+            <label>Alíquota</label>
+            <input type="text" id="rs-aliquota" placeholder="Ex: 8,0%">
+            <div class="field-hint">Da empresa (não muda por mês) — usada no card de Resumo Contábil.</div>
           </div>
         </div>
       </div>
@@ -466,19 +475,36 @@
       document.getElementById('rs-empresa').innerHTML = opcoes.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
     }
 
+    // Resultado nunca é digitado — é sempre recalculado a partir de Entrada/Saída/
+    // Despesa (Saída − (Despesa + Entrada)), tanto ao carregar quanto a cada edição.
+    function recomputeResumoResultado() {
+      const entrada = moneyToNumber(document.getElementById('rs-entrada').value) || 0;
+      const saida = moneyToNumber(document.getElementById('rs-saida').value) || 0;
+      const despesa = moneyToNumber(document.getElementById('rs-despesa').value) || 0;
+      const resultado = saida - (despesa + entrada);
+      document.getElementById('rs-resultado').value = numberToMoneyMasked(resultado);
+    }
+
     async function loadResumoValues() {
       const empresa = document.getElementById('rs-empresa').value;
       const mes = parseInt(document.getElementById('rs-mes').value);
       const ano = parseInt(document.getElementById('rs-ano').value);
       if (!empresa) return;
-      const { data, error } = await sb.from('resumo_mensal').select('*').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes).limit(1);
-      if (error) { showToast(error.message, 'red'); return; }
-      const row = (data && data[0]) || {};
-      document.getElementById('rs-entrada').value = row.entrada != null ? row.entrada : '';
-      document.getElementById('rs-saida').value = row.saida != null ? row.saida : '';
-      document.getElementById('rs-despesa').value = row.despesa != null ? row.despesa : '';
-      document.getElementById('rs-resultado').value = row.resultado != null ? row.resultado : '';
-      document.getElementById('rs-estoque').value = row.estoque != null ? row.estoque : '';
+      // resumo_mensal guarda os valores do mês; a alíquota é da empresa (não muda por
+      // mês/ano) e vem de uma tabela separada — busca as duas em paralelo.
+      const [resumoRes, empresaRes] = await Promise.all([
+        sb.from('resumo_mensal').select('*').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes).limit(1),
+        sb.from('empresas').select('aliquota').eq('id', empresa).limit(1),
+      ]);
+      if (resumoRes.error) { showToast(resumoRes.error.message, 'red'); return; }
+      const row = (resumoRes.data && resumoRes.data[0]) || {};
+      document.getElementById('rs-entrada').value = row.entrada != null ? numberToMoneyMasked(row.entrada) : '';
+      document.getElementById('rs-saida').value = row.saida != null ? numberToMoneyMasked(row.saida) : '';
+      document.getElementById('rs-despesa').value = row.despesa != null ? numberToMoneyMasked(row.despesa) : '';
+      document.getElementById('rs-estoque').value = row.estoque != null ? numberToMoneyMasked(row.estoque) : '';
+      const empresaRow = (empresaRes.data && empresaRes.data[0]) || {};
+      document.getElementById('rs-aliquota').value = empresaRow.aliquota || '';
+      recomputeResumoResultado();
     }
 
     async function saveResumo() {
@@ -489,19 +515,28 @@
       const btn = document.getElementById('btn-save-resumo');
       btn.disabled = true; btn.textContent = 'Salvando...';
 
-      const val = id => { const v = document.getElementById(id).value; return v === '' ? null : parseFloat(v); };
+      const val = id => { const v = document.getElementById(id).value; return v === '' ? null : moneyToNumber(v); };
+      const entrada = val('rs-entrada') || 0;
+      const saida = val('rs-saida') || 0;
+      const despesaVal = val('rs-despesa');
       const payload = {
         empresa_id: empresa, ano, mes,
         // entrada/saída/resultado são obrigatórios na tabela — em branco vira 0.
-        entrada: val('rs-entrada') || 0,
-        saida: val('rs-saida') || 0,
-        resultado: val('rs-resultado') || 0,
+        // resultado nunca vem do campo (é readonly) — é sempre recalculado aqui.
+        entrada, saida,
+        resultado: saida - ((despesaVal || 0) + entrada),
         // despesa/estoque são opcionais — em branco fica sem valor (null), não zero.
-        despesa: val('rs-despesa'),
+        despesa: despesaVal,
         estoque: val('rs-estoque'),
       };
-      const { error } = await sb.from('resumo_mensal').upsert(payload, { onConflict: 'empresa_id,ano,mes' });
+      // Alíquota é da empresa, não do mês — grava à parte, na tabela empresas.
+      const aliquota = document.getElementById('rs-aliquota').value.trim();
+      const [resumoRes, empresaRes] = await Promise.all([
+        sb.from('resumo_mensal').upsert(payload, { onConflict: 'empresa_id,ano,mes' }),
+        sb.from('empresas').update({ aliquota: aliquota || null }).eq('id', empresa),
+      ]);
       btn.disabled = false; btn.textContent = 'Salvar Resumo';
+      const error = resumoRes.error || empresaRes.error;
       if (error) showToast(error.message, 'red');
       else showToast('Resumo salvo — a tela de Resumo Contábil já foi atualizada', 'green');
     }
@@ -546,13 +581,13 @@
             return `<div class="campo-row folha">
               <div class="campo-head">
                 <span class="campo-nome">${esc(campo.nome)}</span>
-                <input type="number" step="0.01" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] || ''}" oninput="recomputeTotals()">
+                <input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()">
               </div>
             </div>`;
           }
           const subsHtml = subs.map(s => `<div class="subcampo-row">
               <span class="subcampo-nome">${esc(s.nome)}</span>
-              <input type="number" step="0.01" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] || ''}" oninput="recomputeTotals()">
+              <input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()">
             </div>`).join('');
           return `<div class="campo-row">
             <div class="campo-head">
@@ -570,6 +605,7 @@
           <div class="classe-body">${camposHtml || '<div style="font-size:12px;color:#475569;padding:10px 0">Nenhum campo nesta classe.</div>'}</div>
         </div>`;
       }).join('');
+      document.querySelectorAll('.subcampo-input').forEach(attachMoneyMask);
       recomputeTotals();
     }
 
@@ -578,7 +614,7 @@
       camposDaClasse(classe.id).filter(c => c.ativo).forEach(campo => {
         subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
           const inp = document.getElementById('in-'+s.id);
-          if (inp) total += parseFloat(inp.value)||0;
+          if (inp) total += moneyToNumber(inp.value)||0;
         });
       });
       return total;
@@ -591,7 +627,7 @@
         let total = 0;
         subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
           const inp = document.getElementById('in-'+s.id);
-          if (inp) total += parseFloat(inp.value)||0;
+          if (inp) total += moneyToNumber(inp.value)||0;
         });
         el.textContent = fmtR(total);
       });
@@ -782,7 +818,7 @@
       subcampos.filter(s => s.ativo).forEach(s => {
         const inp = document.getElementById('in-'+s.id);
         if (!inp) return;
-        rows.push({ subcampo_id: s.id, empresa_id: empresa, ano, mes, valor: parseFloat(inp.value)||0, updated_at: new Date().toISOString() });
+        rows.push({ subcampo_id: s.id, empresa_id: empresa, ano, mes, valor: moneyToNumber(inp.value)||0, updated_at: new Date().toISOString() });
       });
       const { error } = await sb.from('lancamentos_valores').upsert(rows, { onConflict: 'subcampo_id,empresa_id,ano,mes' });
       btn.disabled = false; btn.textContent = 'Salvar Lançamentos';
@@ -1005,6 +1041,8 @@
     // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
     wireSidebarToggle('lc');
     wireDreCollapseToggle('lc');
+    ['rs-entrada', 'rs-saida', 'rs-despesa', 'rs-estoque'].forEach(id => attachMoneyMask(document.getElementById(id)));
+    ['rs-entrada', 'rs-saida', 'rs-despesa'].forEach(id => document.getElementById(id).addEventListener('input', recomputeResumoResultado));
 
     async function loadTaxonomy() {
       const [c1,c2,c3] = await Promise.all([
