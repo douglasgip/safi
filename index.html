@@ -189,6 +189,10 @@
     .dash-card.theme-green .dash-card-icon  { background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3); color: #6ee7b7; }
     .dash-card.theme-green .dash-card-arrow { color: #6ee7b7; }
 
+    .dash-card.theme-rose:hover  { border-color: rgba(244,63,94,0.35); box-shadow: 0 20px 44px rgba(0,0,0,0.4), 0 0 0 1px rgba(244,63,94,0.15); }
+    .dash-card.theme-rose .dash-card-icon  { background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.3); color: #fda4af; }
+    .dash-card.theme-rose .dash-card-arrow { color: #fda4af; }
+
     /* Card Gerôn — banner horizontal de destaque, entre a saudação e as seções */
     .card-geronia-wrap { width: 100%; margin-bottom: 28px; }
     .card-geronia {
@@ -307,6 +311,10 @@
       <a href="/pedidos" id="home-sidebar-pedidos" class="dc-sidebar-nav-btn" style="display:none">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Pedidos
+      </a>
+      <a href="/despesas-fixas" id="home-sidebar-despfixas" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+        Despesas Fixas
       </a>
       <a href="/conciliacao" id="home-sidebar-conciliacao" class="dc-sidebar-nav-btn" style="display:none">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -433,6 +441,18 @@
             </div>
           </a>
 
+          <a href="/despesas-fixas" id="card-despfixas" class="dash-card theme-rose" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+            </div>
+            <div class="dash-card-title">Despesas Fixas</div>
+            <div class="dash-card-desc">Contas recorrentes previstas por mês — honorários, assinaturas e sistemas — com conferência do que foi pago.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
           <a href="/conciliacao" id="card-conciliacao" class="dash-card theme-cyan" style="display:none">
             <div class="dash-card-icon">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -548,7 +568,12 @@
         const c=document.getElementById('card-pedidos'); if(c) c.style.display='';
         const s=document.getElementById('home-sidebar-pedidos'); if(s) s.style.display='flex';
       }
-      const showConciliacao = !!prof && (prof.is_admin || prof.pedidos_pode_conciliar === true);
+      const showDespFixas = !!prof && (prof.is_admin || prof.can_despesas_fixas === true);
+      if (showDespFixas) {
+        const c=document.getElementById('card-despfixas'); if(c) c.style.display='';
+        const s=document.getElementById('home-sidebar-despfixas'); if(s) s.style.display='flex';
+      }
+      const showConciliacao = !!prof && (prof.is_admin || prof.pedidos_pode_conciliar === true || prof.can_despesas_fixas === true);
       if (showConciliacao) {
         const c=document.getElementById('card-conciliacao'); if(c) c.style.display='';
         const s=document.getElementById('home-sidebar-conciliacao'); if(s) s.style.display='flex';
@@ -576,7 +601,7 @@
       // um rótulo de seção "Contábil"/"Operações"/"Gestão" flutuando sem nada embaixo.
       [
         ['section-contabil', ['card-resumo','card-dre','card-lancamentos']],
-        ['section-operacoes', ['card-pedidos','card-conciliacao','card-fluxocaixa']],
+        ['section-operacoes', ['card-pedidos','card-despfixas','card-conciliacao','card-fluxocaixa']],
         ['section-gestao', ['card-mapasoc','card-funcionarios']],
       ].forEach(([sectionId, cardIds]) => {
         const anyVisible = cardIds.some(id => { const el = document.getElementById(id); return el && el.style.display !== 'none'; });

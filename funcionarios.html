@@ -272,6 +272,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Pedidos
       </a>
+      <a href="/despesas-fixas" id="func-sidebar-despfixas" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+        Despesas Fixas
+      </a>
       <a href="/conciliacao" id="func-sidebar-conciliacao" class="dc-sidebar-nav-btn" style="display:none">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Conciliação
@@ -844,7 +848,10 @@
       if (prof.is_admin || prof.can_pedidos === true) {
         const s = document.getElementById('func-sidebar-pedidos'); if (s) s.style.display = 'flex';
       }
-      if (prof.is_admin || prof.pedidos_pode_conciliar === true) {
+      if (prof.is_admin || prof.can_despesas_fixas === true) {
+        const s = document.getElementById('func-sidebar-despfixas'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.pedidos_pode_conciliar === true || prof.can_despesas_fixas === true) {
         const s = document.getElementById('func-sidebar-conciliacao'); if (s) s.style.display = 'flex';
       }
 

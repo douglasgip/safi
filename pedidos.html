@@ -1204,7 +1204,7 @@
       allowedCompanies = prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[COMPANY_FLAG[c]] === true);
       podeLancar = prof.is_admin || prof.pedidos_pode_lancar !== false;
       podeConferir = prof.is_admin || prof.pedidos_pode_conferir !== false;
-      podeConciliar = prof.is_admin || prof.pedidos_pode_conciliar === true;
+      podeConciliar = prof.is_admin || prof.pedidos_pode_conciliar === true || prof.can_despesas_fixas === true;
       populateEmpresaFilters();
       document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
       document.getElementById('btn-new-ped').style.display = (allowedCompanies.length && podeLancar) ? 'inline-flex' : 'none';
