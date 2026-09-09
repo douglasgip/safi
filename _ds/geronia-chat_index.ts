@@ -58,11 +58,13 @@ Exemplo do que NÃO fazer: se o usuário perguntou sobre o crescimento do GIP e 
 Só relembre algo já dito se o usuário pedir explicitamente (ex: "repete", "resume o que você disse", "e sobre aquilo que falamos antes?").
 
 ## REGRA CRÍTICA DE CONFIDENCIALIDADE (nunca viole)
-O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO". Você só pode falar sobre as operações e os tipos de dado (financeiro, funcionários, pedidos) que ele tem permissão de ver. Se a pergunta ATUAL pedir dados fora do acesso dele, recuse educadamente essa pergunta específica e ofereça ajuda apenas sobre o que ele tem acesso. Nunca revele, compare ou deixe vazar números ou informações fora do acesso do usuário — nem de forma indireta.
+O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO". Você só pode falar sobre as operações e os tipos de dado (financeiro, funcionários, pedidos, despesas fixas) que ele tem permissão de ver. Se a pergunta ATUAL pedir dados fora do acesso dele, recuse educadamente essa pergunta específica e ofereça ajuda apenas sobre o que ele tem acesso. Nunca revele, compare ou deixe vazar números ou informações fora do acesso do usuário — nem de forma indireta.
 
 Sobre funcionários especificamente: mesmo quando você tiver acesso ao quadro de colaboradores, você só recebe nome, empresa, data de admissão e data de nascimento — nunca CPF, telefone, endereço ou e-mail. Nunca afirme ter esses dados nem os invente, mesmo se perguntarem diretamente.
 
 Sobre Pedidos especificamente: você recebe fornecedor, descrição, valor total, data do pedido, se já chegou (e quando), e o detalhamento de cada parcela (valor, vencimento, se já foi paga e quando). Use as datas de vencimento e o status de pagamento para responder sobre contas a pagar, parcelas atrasadas (vencimento antes de hoje e ainda não paga) ou o fluxo de pagamento dos pedidos.
+
+Sobre Despesas Fixas especificamente: são contas recorrentes cadastradas uma vez (ex: honorários de contabilidade, assinaturas, sistemas) com um valor previsto padrão por mês. Você recebe, por mês, o valor previsto, o dia de vencimento, e — se já conferido — o valor efetivamente pago e a data. Quando o valor pago diverge do previsto, a linha é "DIVERGENTE" e ainda depende do crivo de alguém (Douglas ou Aldemar) pra confirmar se foi só reajuste de valor ou algo errado — não conclua sozinho qual é o caso, apenas aponte a divergência.
 
 Sobre o detalhamento de Lançamentos especificamente: o detalhamento linha a linha (classe/campo/subcampo que compõe cada número do DRE) só é liberado para quem tem acesso completo às 3 operações. Se o usuário não tiver esse acesso completo, mesmo que ele veja o DRE agregado normalmente, não detalhe nem invente a composição de nenhuma linha — informe educadamente que esse nível de detalhe não está liberado para ele.
 
@@ -250,6 +252,49 @@ function pedidosSummaryText(labels: string[], rows: any[]) {
 
   const total = rows.length
   return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. Uma parcela é "atrasada" quando o vencimento é antes de hoje e ela ainda não foi paga. O fluxo de conciliação do grupo é: quem lança o pedido registra o valor PREVISTO e a quantidade PREVISTA de produtos; depois, quando o pedido chega, outra pessoa confere e lança o valor REAL por parcela (sem ver o previsto), a quantidade REAL de produtos e o nº da nota fiscal; uma parcela é "divergente" quando o valor real conferido não bate com o previsto, e a quantidade de produtos é "divergente" quando a real não bate com a prevista — isso é o que a tela de Conciliação do painel identifica. "Pedido ERP" é o número desse pedido no sistema de gestão (IdWorks/Olist), separado do número da nota fiscal. "CNPJ" é a razão social/CNPJ usado para registrar a compra (Guilherme, Juliane, Isa ou EP), independente de qual das 3 operações o pedido é):\n\n${blocks.join('\n\n')}`
+}
+
+// Uma despesa fixa por mês/linha (mesmo motivo das outras summary texts: um blob só
+// faz o modelo pular itens ao filtrar/contar). `rows` já vem com a despesa_fixas
+// embutida (select `despesas_fixas(*)`), pois cada linha é um lançamento mensal.
+function despesasFixasSummaryText(labels: string[], rows: any[]) {
+  const todayBR = fmtDateBR(new Date().toISOString().slice(0, 10))
+  const byEmpresa: Record<string, any[]> = {}
+  for (const label of labels) byEmpresa[label] = []
+  for (const r of rows) {
+    const empresa = r.despesas_fixas?.empresa
+    if (empresa && byEmpresa[empresa]) byEmpresa[empresa].push(r)
+  }
+
+  const blocks = labels.map(label => {
+    const list = byEmpresa[label]
+    if (!list.length) return `${label} — nenhum lançamento de despesa fixa neste ano.`
+    const linhas = list
+      .slice()
+      .sort((a, b) => (a.ano - b.ano) || (a.mes - b.mes) || (a.despesas_fixas?.nome || '').localeCompare(b.despesas_fixas?.nome || ''))
+      .map(r => {
+        const d = r.despesas_fixas || {}
+        const previsto = Number(r.valor_previsto) || 0
+        const cnpjTxt = d.cnpj ? `, CNPJ ${d.cnpj}` : ''
+        const vencTxt = r.dia_vencimento_previsto != null ? `, vencimento dia ${r.dia_vencimento_previsto}` : ''
+        let statusTxt: string
+        if (r.valor_pago == null) {
+          statusTxt = 'ainda não conferida/paga'
+        } else {
+          const pago = Number(r.valor_pago) || 0
+          const divergente = Math.abs(pago - previsto) > 0.01
+          const dataPagTxt = r.data_pagamento ? ` em ${fmtDateBR(r.data_pagamento)}` : ''
+          statusTxt = divergente
+            ? `paga${dataPagTxt} com valor real ${fmtR(pago)} — DIVERGENTE do previsto (diferença ${fmtR(pago - previsto)}), precisa de crivo humano pra confirmar se foi só reajuste de valor ou algo errado`
+            : `paga${dataPagTxt} com valor real ${fmtR(pago)} (bate com o previsto)`
+        }
+        return `  - ${MES_NOME[r.mes]}/${r.ano} — ${d.nome || 'despesa sem nome'}${cnpjTxt}${vencTxt}: previsto ${fmtR(previsto)}, ${statusTxt}.`
+      })
+    return `${label} — ${list.length} lançamento(s) de despesa fixa no ano:\n${linhas.join('\n')}`
+  })
+
+  const total = rows.length
+  return `DADOS DE DESPESAS FIXAS (hoje: ${todayBR}; TOTAL: ${total} lançamento(s) mensais nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por despesa/mês/empresa, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhuma — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. Despesas fixas são contas recorrentes cadastradas uma vez (ex: honorários de contabilidade, assinaturas, sistemas) com um valor previsto padrão e um dia de vencimento; todo mês o sistema gera automaticamente um lançamento pra esse mês com esse previsto (que pode ser ajustado individualmente). Ao final do mês, alguém confere lançando o valor realmente pago e a data — quando o valor pago não bate com o previsto, a linha fica "DIVERGENTE" e precisa do crivo de alguém (Douglas ou Aldemar) pra identificar se foi só reajuste de valor ou se há algo errado; isso é diferente da conciliação de Pedidos, que usa conferência às cegas — aqui a mesma pessoa costuma cadastrar e conferir):\n\n${blocks.join('\n\n')}`
 }
 
 function lancamentosDetailText(rows: any[]) {
@@ -489,6 +534,35 @@ Deno.serve(async (req: Request) => {
       pedidosDataText = pedidosSummaryText(labels, pedidosRows || [])
     }
 
+    // ---- Permissões: Despesas Fixas (contas recorrentes previstas x pagas) ----
+    const despFixasOps = resolveAllowedOps(prof.is_admin, {
+      domainFlag: prof.can_despesas_fixas,
+      domainDefaultAllowed: false,
+      opFlags: { EPGIP: prof.despesas_fixas_epgip, Exposicao: prof.despesas_fixas_exposicao, ViaCloset: prof.despesas_fixas_viacloset },
+      opRequiresExplicitTrue: true,
+    })
+
+    let despFixasAccessText: string
+    if (!despFixasOps.length) {
+      despFixasAccessText = `Acesso a dados de DESPESAS FIXAS: NENHUM. Não comente sobre despesas fixas, contas recorrentes, honorários, assinaturas ou sistemas cadastrados como despesa fixa — informe educadamente que essa permissão não está liberada se perguntarem.`
+    } else {
+      const labels = despFixasOps.map(op => OP_LABEL[op]).join(', ')
+      const scope = despFixasOps.length === ALL_OPS.length ? 'TOTAL — todas as operações' : `RESTRITO a "${labels}"`
+      despFixasAccessText = `Acesso a dados de DESPESAS FIXAS: ${scope}.`
+    }
+
+    let despFixasDataText = ''
+    if (despFixasOps.length) {
+      const labels = despFixasOps.map(op => OP_LABEL[op])
+      const anoAtual = new Date().getFullYear()
+      const { data: despFixasRows } = await sb
+        .from('despesas_fixas_lancamentos')
+        .select('ano, mes, valor_previsto, dia_vencimento_previsto, valor_pago, data_pagamento, despesas_fixas(nome, empresa, cnpj)')
+        .eq('ano', anoAtual)
+      const filtered = (despFixasRows || []).filter((r: any) => r.despesas_fixas && labels.includes(r.despesas_fixas.empresa))
+      despFixasDataText = despesasFixasSummaryText(labels, filtered)
+    }
+
     // ---- Permissões: Lançamentos (detalhamento linha a linha do DRE) ----
     // Diferente de DRE/Funcionários/Pedidos (liberados operação por operação), o
     // detalhamento de Lançamentos é tudo-ou-nada: só é liberado para quem tem acesso
@@ -544,10 +618,12 @@ Deno.serve(async (req: Request) => {
       dreAccessText,
       funcAccessText,
       pedidosAccessText,
+      despFixasAccessText,
       lancamentosAccessText,
       dreDataText,
       funcDataText,
       pedidosDataText,
+      despFixasDataText,
       lancamentosDataText,
     ].filter(Boolean).join('\n\n')
 
