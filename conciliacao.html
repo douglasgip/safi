@@ -71,6 +71,12 @@
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
 
+    /* ── Seções (Pedidos / Despesas Fixas) ── */
+    .section-block { margin-bottom: 34px; }
+    .section-block:last-child { margin-bottom: 0; }
+    .section-title { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 800; color: #f1f5f9; margin: 0 0 14px; }
+    .section-title svg { color: #67e8f9; flex-shrink: 0; }
+
     /* ── Filtros ── */
     .filters-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
     .filter-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 13px; cursor: pointer; color-scheme: dark; }
@@ -176,6 +182,10 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         Pedidos
       </a>
+      <a href="/despesas-fixas" id="con-sidebar-despfixas" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+        Despesas Fixas
+      </a>
       <a href="/conciliacao" class="dc-sidebar-nav-btn active">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         Conciliação
@@ -209,56 +219,123 @@
       Você tem acesso à Conciliação, mas nenhuma empresa foi liberada para você em Pedidos — peça pro admin liberar em Gestão de Acessos.
     </div>
 
-    <div class="summary-row">
-      <div class="summary-card">
-        <div class="summary-label">Parcelas conferidas</div>
-        <div class="summary-value" id="sum-total">—</div>
+    <section class="section-block" id="section-pedidos" style="display:none">
+      <div class="section-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Pedidos
       </div>
-      <div class="summary-card">
-        <div class="summary-label">Com divergência</div>
-        <div class="summary-value warn" id="sum-divergentes">—</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Diferença total</div>
-        <div class="summary-value" id="sum-diferenca">—</div>
-      </div>
-    </div>
 
-    <div class="filters-bar">
-      <select class="filter-select" id="f-empresa">
-        <option value="">Todas as empresas</option>
-      </select>
-      <label class="filter-check">
-        <input type="checkbox" id="f-so-divergencias">
-        Só divergências
-      </label>
-      <div class="filters-spacer"></div>
-    </div>
-
-    <div class="panel">
-      <div class="table-scroll">
-        <table class="con-table">
-          <thead>
-            <tr>
-              <th>Empresa</th>
-              <th>CNPJ</th>
-              <th>Fornecedor</th>
-              <th>Pedido ERP</th>
-              <th>Parcela</th>
-              <th>Valor Previsto</th>
-              <th>Valor Real</th>
-              <th>Diferença</th>
-              <th>Produtos (prev./real)</th>
-              <th>Nº NF</th>
-              <th>Conferido em</th>
-            </tr>
-          </thead>
-          <tbody id="con-tbody">
-            <tr class="empty-row"><td colspan="11">Carregando...</td></tr>
-          </tbody>
-        </table>
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="summary-label">Parcelas conferidas</div>
+          <div class="summary-value" id="sum-total">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Com divergência</div>
+          <div class="summary-value warn" id="sum-divergentes">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Diferença total</div>
+          <div class="summary-value" id="sum-diferenca">—</div>
+        </div>
       </div>
-    </div>
+
+      <div class="filters-bar">
+        <select class="filter-select" id="f-empresa">
+          <option value="">Todas as empresas</option>
+        </select>
+        <label class="filter-check">
+          <input type="checkbox" id="f-so-divergencias">
+          Só divergências
+        </label>
+        <div class="filters-spacer"></div>
+      </div>
+
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="con-table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Fornecedor</th>
+                <th>Pedido ERP</th>
+                <th>Parcela</th>
+                <th>Valor Previsto</th>
+                <th>Valor Real</th>
+                <th>Diferença</th>
+                <th>Produtos (prev./real)</th>
+                <th>Nº NF</th>
+                <th>Conferido em</th>
+              </tr>
+            </thead>
+            <tbody id="con-tbody">
+              <tr class="empty-row"><td colspan="11">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block" id="section-despesas" style="display:none">
+      <div class="section-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+        Despesas Fixas
+      </div>
+
+      <div class="no-company-notice" id="desp-no-company-notice" style="display:none">
+        Você tem acesso à Conciliação de Despesas Fixas, mas nenhuma empresa foi liberada para você em Gestão de Acessos.
+      </div>
+
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="summary-label">Conferidas no mês</div>
+          <div class="summary-value" id="desp-sum-total">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Com divergência</div>
+          <div class="summary-value warn" id="desp-sum-divergentes">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Diferença total</div>
+          <div class="summary-value" id="desp-sum-diferenca">—</div>
+        </div>
+      </div>
+
+      <div class="filters-bar">
+        <select class="filter-select" id="desp-f-empresa">
+          <option value="">Todas as empresas</option>
+        </select>
+        <select class="filter-select" id="desp-f-mes"></select>
+        <select class="filter-select" id="desp-f-ano"></select>
+        <label class="filter-check">
+          <input type="checkbox" id="desp-f-so-divergencias">
+          Só divergências
+        </label>
+        <div class="filters-spacer"></div>
+      </div>
+
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="con-table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Despesa</th>
+                <th>Valor Previsto</th>
+                <th>Valor Pago</th>
+                <th>Diferença</th>
+                <th>Data Pagamento</th>
+              </tr>
+            </thead>
+            <tbody id="desp-tbody">
+              <tr class="empty-row"><td colspan="7">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
   </main>
 
   <script>
@@ -272,10 +349,22 @@
 
     const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
     const COMPANY_FLAG = { 'GIP Ecommerce': 'pedidos_epgip', 'Exposição Paulista': 'pedidos_exposicao', 'Via Closet': 'pedidos_viacloset' };
+    const COMPANY_FLAG_DESP = { 'GIP Ecommerce': 'despesas_fixas_epgip', 'Exposição Paulista': 'despesas_fixas_exposicao', 'Via Closet': 'despesas_fixas_viacloset' };
     const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
     let allowedCompanies = [];
     let allLinhas = [];
+    let allowedCompaniesDesp = [];
+    let allLinhasDesp = [];
+
+    // Mês/ano padrão da Conciliação de Despesas Fixas: mês anterior ao atual, mesma
+    // regra usada na Home/Resumo Contábil e em despesas-fixas.html.
+    const REAL_HOJE = new Date();
+    const REAL_MES = REAL_HOJE.getMonth() + 1;
+    const REAL_ANO = REAL_HOJE.getFullYear();
+    let despMes = REAL_MES === 1 ? 12 : REAL_MES - 1;
+    let despAno = REAL_MES === 1 ? REAL_ANO - 1 : REAL_ANO;
 
     // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
     wireSidebarToggle('con');
@@ -283,6 +372,94 @@
 
     function populateEmpresaFilters() {
       document.getElementById('f-empresa').innerHTML = '<option value="">Todas as empresas</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    }
+
+    function populateDespesaFiltros() {
+      document.getElementById('desp-f-empresa').innerHTML = '<option value="">Todas as empresas</option>' + allowedCompaniesDesp.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      const selMes = document.getElementById('desp-f-mes');
+      selMes.innerHTML = MESES.map((m, i) => `<option value="${i+1}">${m}</option>`).join('');
+      selMes.value = despMes;
+      const selAno = document.getElementById('desp-f-ano');
+      const anos = [];
+      for (let a = REAL_ANO; a >= REAL_ANO - 4; a--) anos.push(a);
+      if (!anos.includes(despAno)) anos.push(despAno);
+      anos.sort((a,b) => b - a);
+      selAno.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join('');
+      selAno.value = despAno;
+    }
+
+    async function loadDespesasConciliacao() {
+      const tbody = document.getElementById('desp-tbody');
+      if (!allowedCompaniesDesp.length) {
+        tbody.innerHTML = '';
+        allLinhasDesp = [];
+        renderDespTable();
+        return;
+      }
+      despAno = +document.getElementById('desp-f-ano').value;
+      despMes = +document.getElementById('desp-f-mes').value;
+      tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Carregando...</td></tr>';
+      const { data, error } = await sb
+        .from('despesas_fixas_lancamentos')
+        .select('*, despesas_fixas(*)')
+        .eq('ano', despAno).eq('mes', despMes)
+        .not('valor_pago', 'is', null);
+      if (error) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        return;
+      }
+      allLinhasDesp = (data || [])
+        .filter(l => l.despesas_fixas && allowedCompaniesDesp.includes(l.despesas_fixas.empresa))
+        .map(l => {
+          const previsto = +l.valor_previsto || 0;
+          const pago = +l.valor_pago || 0;
+          const diff = pago - previsto;
+          return { ...l, previsto, pago, diff, divergente: Math.abs(diff) > 0.01 };
+        });
+      renderDespTable();
+    }
+
+    function passesDespFilters(l) {
+      const empresa = document.getElementById('desp-f-empresa').value;
+      const soDivergencias = document.getElementById('desp-f-so-divergencias').checked;
+      if (empresa && l.despesas_fixas.empresa !== empresa) return false;
+      if (soDivergencias && !l.divergente) return false;
+      return true;
+    }
+
+    function renderDespTable() {
+      const tbody = document.getElementById('desp-tbody');
+      const linhas = allLinhasDesp.filter(passesDespFilters);
+
+      const totalConferidas = allLinhasDesp.length;
+      const totalDivergentes = allLinhasDesp.filter(l => l.divergente).length;
+      const diferencaTotal = allLinhasDesp.reduce((s, l) => s + l.diff, 0);
+      document.getElementById('desp-sum-total').textContent = totalConferidas;
+      document.getElementById('desp-sum-divergentes').textContent = totalDivergentes;
+      const diffEl = document.getElementById('desp-sum-diferenca');
+      diffEl.textContent = (diferencaTotal >= 0 ? '+' : '−') + fmtBRL(Math.abs(diferencaTotal));
+      diffEl.className = 'summary-value ' + (Math.abs(diferencaTotal) > 0.01 ? 'warn' : 'ok');
+
+      if (!allowedCompaniesDesp.length) { return; }
+      if (!linhas.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="7">Nenhuma despesa fixa conferida ainda neste período${document.getElementById('desp-f-so-divergencias').checked ? ' com divergência' : ''}.</td></tr>`;
+        return;
+      }
+
+      const dash = '<span class="td-muted">—</span>';
+      tbody.innerHTML = linhas.map(l => {
+        const d = l.despesas_fixas;
+        const diffTxt = (l.diff >= 0 ? '+' : '−') + fmtBRL(Math.abs(l.diff));
+        return `<tr class="${l.divergente ? 'divergente' : ''}">
+          <td><img class="con-empresa-logo" src="${MARCA_LOGOS[d.empresa] || ''}" alt="${esc(d.empresa)}" title="${esc(d.empresa)}"></td>
+          <td class="td-muted">${d.cnpj ? esc(d.cnpj) : dash}</td>
+          <td class="con-fornecedor">${esc(d.nome)}</td>
+          <td class="con-valor">${fmtBRL(l.previsto)}</td>
+          <td class="con-valor">${fmtBRL(l.pago)}</td>
+          <td class="con-diff ${l.divergente ? 'divergente' : 'ok'}">${diffTxt}${l.divergente ? ' <span class="diverg-badge">divergente</span>' : ''}</td>
+          <td>${l.data_pagamento ? fmtDate(l.data_pagamento) : dash}</td>
+        </tr>`;
+      }).join('');
     }
 
     async function loadConciliacao() {
@@ -324,6 +501,14 @@
     ['f-empresa','f-so-divergencias'].forEach(id => {
       document.getElementById(id).addEventListener('input', renderTable);
       document.getElementById(id).addEventListener('change', renderTable);
+    });
+
+    ['desp-f-empresa','desp-f-so-divergencias'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderDespTable);
+      document.getElementById(id).addEventListener('change', renderDespTable);
+    });
+    ['desp-f-mes','desp-f-ano'].forEach(id => {
+      document.getElementById(id).addEventListener('change', loadDespesasConciliacao);
     });
 
     function passesFilters(l) {
@@ -379,12 +564,19 @@
 
       const { data: profRows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
       const prof = (profRows && profRows[0]) || null;
-      const allowed = !!prof && (prof.is_admin || prof.pedidos_pode_conciliar === true);
-      if (!allowed) return redirect('/');
+      const podeConciliarPedidos = !!prof && (prof.is_admin || prof.pedidos_pode_conciliar === true);
+      const podeConciliarDespesas = !!prof && (prof.is_admin || prof.can_despesas_fixas === true);
+      if (!podeConciliarPedidos && !podeConciliarDespesas) return redirect('/');
 
-      allowedCompanies = prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[COMPANY_FLAG[c]] === true);
+      document.getElementById('section-pedidos').style.display = podeConciliarPedidos ? 'block' : 'none';
+      document.getElementById('section-despesas').style.display = podeConciliarDespesas ? 'block' : 'none';
+
+      allowedCompanies = (podeConciliarPedidos && prof.is_admin) ? [...ALL_COMPANIES] : podeConciliarPedidos ? ALL_COMPANIES.filter(c => prof[COMPANY_FLAG[c]] === true) : [];
+      allowedCompaniesDesp = (podeConciliarDespesas && prof.is_admin) ? [...ALL_COMPANIES] : podeConciliarDespesas ? ALL_COMPANIES.filter(c => prof[COMPANY_FLAG_DESP[c]] === true) : [];
       populateEmpresaFilters();
-      document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
+      populateDespesaFiltros();
+      document.getElementById('no-company-notice').style.display = (podeConciliarPedidos && !allowedCompanies.length) ? 'block' : 'none';
+      document.getElementById('desp-no-company-notice').style.display = (podeConciliarDespesas && !allowedCompaniesDesp.length) ? 'block' : 'none';
 
       if (prof.is_admin) {
         const a = document.getElementById('con-sidebar-admin'); if (a) a.style.display = 'flex';
@@ -403,6 +595,9 @@
       }
       if (prof.is_admin || prof.can_pedidos === true) {
         const s = document.getElementById('con-sidebar-pedidos'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_despesas_fixas === true) {
+        const s = document.getElementById('con-sidebar-despfixas'); if (s) s.style.display = 'flex';
       }
       if (prof.is_admin || prof.can_fluxo_caixa === true) {
         const s = document.getElementById('con-sidebar-fluxocaixa'); if (s) s.style.display = 'flex';
@@ -428,7 +623,8 @@
       document.getElementById('con-loading').style.display = 'none';
       document.getElementById('con-main').style.display = 'block';
 
-      loadConciliacao();
+      if (podeConciliarPedidos) loadConciliacao();
+      if (podeConciliarDespesas) loadDespesasConciliacao();
     }
 
     init();
