@@ -872,8 +872,14 @@ async function loadUsers() {
   data.forEach(u => { window._usersMap[u.id] = u; });
 
   tbody.innerHTML = data.map(u => {
-    const dreOps = u.can_dre
-      ? [u.dre_epgip ? '<span class="badge badge-yes">GIP</span>' : '', u.dre_exposicao ? '<span class="badge badge-yes">Exposição</span>' : '', u.dre_viacloset ? '<span class="badge badge-yes">Via Closet</span>' : ''].filter(Boolean).join(' ') || '<span class="badge badge-no">Nenhuma</span>'
+    // Resumo/DRE e as 3 empresas do DRE são opt-out (null = liberado, só bloqueia com
+    // false explícito) — mesma regra usada em setToggle() no modal de edição logo
+    // abaixo. Comparar com truthy aqui mostraria "Não"/vazio pra quem nunca teve esses
+    // campos tocados, mesmo tendo acesso de verdade.
+    const canResumo = u.is_admin || u.can_resumo !== false;
+    const canDre = u.is_admin || u.can_dre !== false;
+    const dreOps = canDre
+      ? [(u.is_admin || u.dre_epgip !== false) ? '<span class="badge badge-yes">GIP</span>' : '', (u.is_admin || u.dre_exposicao !== false) ? '<span class="badge badge-yes">Exposição</span>' : '', (u.is_admin || u.dre_viacloset !== false) ? '<span class="badge badge-yes">Via Closet</span>' : ''].filter(Boolean).join(' ') || '<span class="badge badge-no">Nenhuma</span>'
       : '<span style="color:#334155;font-size:12px">—</span>';
 
     const isAdmin = u.is_admin;
@@ -893,8 +899,8 @@ async function loadUsers() {
         <div style="font-size:11px;color:#64748b;margin-top:1px">${esc(u.email)}</div>
       </td>
       <td class="td-role">${esc(u.role || '—')}</td>
-      <td>${u.can_resumo ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
-      <td>${u.can_dre ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
+      <td>${canResumo ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
+      <td>${canDre ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
       <td>${dreOps}</td>
       <td>${actions}</td>
     </tr>`;
