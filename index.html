@@ -164,18 +164,18 @@
       transform: translateY(-6px) scale(1.01);
       box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 8px 24px rgba(0,0,0,0.3);
     }
-    .card-resumo:hover     { border-color: rgba(245,158,11,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.15), 0 0 40px rgba(245,158,11,0.08); }
-    .card-dre:hover        { border-color: rgba(99,102,241,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15), 0 0 40px rgba(99,102,241,0.08); }
-    .card-fluxocaixa:hover { border-color: rgba(52,211,153,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(52,211,153,0.15), 0 0 40px rgba(52,211,153,0.08); }
+    .card-resumo:hover      { border-color: rgba(245,158,11,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,158,11,0.15), 0 0 40px rgba(245,158,11,0.08); }
+    .card-dre:hover         { border-color: rgba(99,102,241,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(99,102,241,0.15), 0 0 40px rgba(99,102,241,0.08); }
+    .card-lancamentos:hover { border-color: rgba(139,92,246,0.35); box-shadow: 0 28px 64px rgba(0,0,0,0.5), 0 0 0 1px rgba(139,92,246,0.15), 0 0 40px rgba(139,92,246,0.08); }
 
     .card-icon {
       width: 52px; height: 52px; border-radius: 14px;
       display: flex; align-items: center; justify-content: center;
       margin-bottom: 20px;
     }
-    .card-icon-resumo     { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.1)); border: 1px solid rgba(245,158,11,0.25); }
-    .card-icon-dre        { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(79,70,229,0.1));  border: 1px solid rgba(99,102,241,0.25); }
-    .card-icon-fluxocaixa { background: linear-gradient(135deg, rgba(52,211,153,0.2), rgba(16,185,129,0.1)); border: 1px solid rgba(52,211,153,0.25); }
+    .card-icon-resumo      { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(217,119,6,0.1)); border: 1px solid rgba(245,158,11,0.25); }
+    .card-icon-dre         { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(79,70,229,0.1));  border: 1px solid rgba(99,102,241,0.25); }
+    .card-icon-lancamentos { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(109,40,217,0.1)); border: 1px solid rgba(139,92,246,0.25); }
 
     .card-title { font-size: 18px; font-weight: 700; color: #f1f5f9; margin-bottom: 8px; }
     .card-desc  { font-size: 13px; color: #64748b; line-height: 1.5; margin-bottom: 24px; }
@@ -185,9 +185,9 @@
       font-size: 12px; font-weight: 600;
       transition: gap 0.2s;
     }
-    .card-resumo     .card-arrow { color: #f59e0b; }
-    .card-dre        .card-arrow { color: #818cf8; }
-    .card-fluxocaixa .card-arrow { color: #34d399; }
+    .card-resumo      .card-arrow { color: #f59e0b; }
+    .card-dre         .card-arrow { color: #818cf8; }
+    .card-lancamentos .card-arrow { color: #c4b5fd; }
     .card:hover .card-arrow { gap: 10px; }
 
     /* Card Gerôn — banner horizontal abaixo dos cards principais */
@@ -265,6 +265,10 @@
     .card-mini.theme-conciliacao:hover { border-color: rgba(34,211,238,0.35); box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(34,211,238,0.15), 0 0 32px rgba(34,211,238,0.08); }
     .card-mini.theme-conciliacao .card-mini-icon { background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.3); color: #67e8f9; }
     .card-mini.theme-conciliacao .card-mini-arrow { color: #67e8f9; }
+
+    .card-mini.theme-fluxocaixa:hover { border-color: rgba(52,211,153,0.35); box-shadow: 0 20px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(52,211,153,0.15), 0 0 32px rgba(52,211,153,0.08); }
+    .card-mini.theme-fluxocaixa .card-mini-icon { background: rgba(52,211,153,0.12); border-color: rgba(52,211,153,0.3); color: #6ee7b7; }
+    .card-mini.theme-fluxocaixa .card-mini-arrow { color: #6ee7b7; }
 
     .kpi-nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 7px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; cursor: pointer; transition: all .15s; flex-shrink: 0; }
     .kpi-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.09); color: #f1f5f9; }
@@ -437,15 +441,14 @@
         </div>
       </a>
 
-      <a href="/fluxo-caixa" id="card-fluxocaixa" class="card card-fluxocaixa" style="display:none">
-        <div class="card-icon card-icon-fluxocaixa">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/>
+      <a href="/lancamentos" id="card-lancamentos" class="card card-lancamentos" style="display:none">
+        <div class="card-icon card-icon-lancamentos">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#c4b5fd" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/>
           </svg>
         </div>
-        <div class="card-title">Fluxo de Caixa</div>
-        <div class="card-desc">Movimentação de caixa, ativos e passivos do grupo.</div>
+        <div class="card-title">Lançamentos</div>
+        <div class="card-desc">Lance e organize os dados do DRE por Classe, Campo e Subcampo.</div>
         <div class="card-arrow">
           Acessar
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -526,14 +529,14 @@
         </div>
       </a>
 
-      <a href="/lancamentos" id="card-lancamentos" class="card-mini" style="display:none">
+      <a href="/fluxo-caixa" id="card-fluxocaixa" class="card-mini theme-fluxocaixa" style="display:none">
         <div class="card-mini-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
         </div>
         <div class="card-mini-title-row">
-          <div class="card-mini-title">Lançamentos</div>
+          <div class="card-mini-title">Fluxo de Caixa</div>
         </div>
-        <div class="card-mini-desc">Lance e organize os dados do DRE por Classe, Campo e Subcampo.</div>
+        <div class="card-mini-desc">Movimentação de caixa, ativos e passivos do grupo.</div>
         <div class="card-mini-arrow">
           Acessar
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
