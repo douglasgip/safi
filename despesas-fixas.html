@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Despesas Fixas</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh; min-height: 100dvh;
+      display: flex; flex-direction: column;
+      background: #080b14; color: #f1f5f9;
+    }
+
+    .bg {
+      position: fixed; inset: 0; z-index: 0;
+      background:
+        radial-gradient(ellipse at 20% 50%, #4a2a05 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%);
+    }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #f43f5e; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header {
+      position: relative; z-index: 100; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 60px; padding: 0 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      background: rgba(8,11,20,0.85);
+      backdrop-filter: blur(20px);
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #df-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #df-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(244,63,94,0.12); color: #fda4af; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    /* ── Modo (abas) ── */
+    .mode-switch { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 420px; }
+    .mode-tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; }
+    .mode-tab.active { background: rgba(244,63,94,0.15); color: #fda4af; }
+
+    /* ── Dashboard ── */
+    .summary-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+    .summary-card { flex: 1; min-width: 150px; background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(16px); }
+    .summary-label { font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .summary-value { font-size: 19px; font-weight: 800; color: #f1f5f9; font-variant-numeric: tabular-nums; }
+    .summary-value.warn { color: #fbbf24; }
+    .summary-value.ok { color: #34d399; }
+    .summary-value.bad { color: #fb7185; }
+
+    /* ── Filtros ── */
+    .filters-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+    .filter-search { position: relative; flex: 1; min-width: 220px; max-width: 360px; }
+    .filter-search svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #475569; pointer-events: none; }
+    .filter-search input { width: 100%; padding: 10px 12px 10px 36px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; }
+    .filter-search input::placeholder { color: #475569; }
+    .filter-search input:focus { outline: none; border-color: rgba(244,63,94,0.4); }
+    .filter-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 13px; cursor: pointer; color-scheme: dark; }
+    .filter-select:focus { outline: none; border-color: rgba(244,63,94,0.4); }
+    select option { background: #0f172a; color: #f1f5f9; }
+    .filters-spacer { flex: 1; }
+    .btn-new { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; background: linear-gradient(135deg, #fda4af 0%, #fb7185 60%, #f43f5e 100%); border: none; border-radius: 10px; color: #4c0519; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #9f1239, 0 6px 14px rgba(244,63,94,0.2); transition: transform 0.1s, box-shadow 0.1s; white-space: nowrap; }
+    .btn-new:hover { transform: translateY(-1px); }
+    .btn-new:active { transform: translateY(2px); box-shadow: 0 2px 0 #9f1239; }
+
+    /* ── Tabela ── */
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: calc((100vh - 320px) * 1.25); }
+    .df-table { width: 100%; border-collapse: collapse; min-width: 960px; }
+    .df-table thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 14px 16px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+    .df-table thead th:last-child { z-index: 3; }
+    .df-table td { padding: 13px 16px; font-size: 13px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .df-table tbody tr:last-child td { border-bottom: none; }
+    .df-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .df-table th:last-child, .df-table td:last-child {
+      position: sticky; right: 0;
+      background: #101728;
+      box-shadow: -8px 0 12px -8px rgba(0,0,0,0.55);
+    }
+    .df-table tbody tr:hover td:last-child { background: #141d33; }
+    .td-empresa-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: block; }
+    .td-nome { font-weight: 700; color: #f1f5f9; }
+    .td-muted { color: #64748b; }
+    .td-valor { font-variant-numeric: tabular-nums; font-weight: 700; color: #fda4af; white-space: nowrap; }
+    .td-inativo { opacity: 0.5; }
+
+    .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+    .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .status-pendente { background: rgba(148,163,184,0.12); color: #cbd5e1; }
+    .status-pendente .dot { background: #94a3b8; }
+    .status-pago_ok { background: rgba(52,211,153,0.12); color: #6ee7b7; }
+    .status-pago_ok .dot { background: #34d399; }
+    .status-divergente { background: rgba(251,113,133,0.14); color: #fda4af; }
+    .status-divergente .dot { background: #fb7185; }
+
+    .td-actions { display: flex; gap: 6px; }
+    .btn-action { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+    .btn-edit { background: rgba(244,63,94,0.1); border-color: rgba(244,63,94,0.25); color: #fda4af; }
+    .btn-edit:hover { background: rgba(244,63,94,0.18); }
+    .btn-conf { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.25); color: #7dd3fc; }
+    .btn-conf:hover { background: rgba(56,189,248,0.18); }
+    .btn-delete { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
+    .btn-delete:hover { background: rgba(239,68,68,0.18); }
+    .btn-restore { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.25); color: #6ee7b7; }
+    .btn-restore:hover { background: rgba(52,211,153,0.18); }
+    .loading-row td, .empty-row td { padding: 50px 20px; text-align: center; color: #334155; font-size: 13px; }
+
+    /* ── Modal ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); animation: modalIn 0.2s cubic-bezier(.16,1,.3,1); }
+    @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .modal-title { font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 22px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; letter-spacing: .3px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; color-scheme: dark; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #fb7185; background: rgba(244,63,94,0.05); }
+    .field-hint { font-size: 10.5px; color: #64748b; margin: -8px 0 12px; line-height: 1.4; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; font-weight: 500; margin-bottom: 16px; line-height: 1.4; }
+    .modal-error.visible { display: block; animation: shake 0.35s ease; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
+    .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .btn-submit { flex: 1; padding: 13px; background: linear-gradient(135deg, #fda4af 0%, #fb7185 60%, #f43f5e 100%); border: none; border-radius: 12px; color: #4c0519; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #9f1239; }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-cancel:hover { background: rgba(255,255,255,0.08); color: #94a3b8; }
+    .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(0,0,0,0.25); border-top-color: #4c0519; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .confirm-overlay { display: none; position: fixed; inset: 0; z-index: 210; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .confirm-overlay.open { display: flex; }
+    .confirm-card { background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px 28px; max-width: 380px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.7); animation: modalIn 0.2s cubic-bezier(.16,1,.3,1); }
+    .confirm-icon { font-size: 32px; margin-bottom: 12px; }
+    .confirm-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }
+    .confirm-text { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
+    .confirm-actions { display: flex; gap: 10px; }
+    .btn-confirm-delete { flex: 1; padding: 12px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 11px; color: #f87171; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-confirm-delete:hover { background: rgba(239,68,68,0.25); }
+    .btn-confirm-cancel { flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 11px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-confirm-cancel:hover { background: rgba(255,255,255,0.08); }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; }
+    .toast-dot.red { background: #f87171; }
+    .undo-btn { padding: 5px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: 4px; }
+    .undo-btn:hover { background: rgba(255,255,255,0.18); }
+
+    #df-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
+
+    @media (max-width: 768px) {
+      .header { padding: 0 14px; }
+      .header-logo-full { height: 24px; }
+      .main { padding: 14px; }
+      .filters-bar { flex-direction: column; align-items: stretch; }
+      .filter-search { max-width: none; }
+      .modal-card { padding: 22px 18px; }
+      .mode-switch { max-width: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg"></div>
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="df-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="df-sidebar">
+    <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07)">
+      <div id="df-sidebar-user" style="display:flex;align-items:center;gap:12px;margin-bottom:4px"></div>
+      <div style="font-size:9px;font-weight:600;color:#334155;letter-spacing:2px;text-transform:uppercase;margin-top:12px">Navegação</div>
+    </div>
+    <div style="padding:12px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
+      <a href="/" class="dc-sidebar-nav-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        Home
+      </a>
+      <a href="/resumocontabil" id="df-sidebar-resumo" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        Resumo Contábil
+      </a>
+      <div id="df-sidebar-dre" class="dc-sidebar-group-row" style="display:none">
+        <a href="/dre" class="dc-sidebar-nav-btn" style="flex:1">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          DRE
+        </a>
+        <button type="button" id="df-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+      </div>
+      <div class="dc-sidebar-submenu" id="df-sidebar-dre-submenu">
+        <a href="/lancamentos" id="df-sidebar-lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+          Lançamentos
+        </a>
+      </div>
+      <a href="/fluxo-caixa" id="df-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+        Fluxo de Caixa
+      </a>
+      <a href="/geronia" class="dc-sidebar-nav-btn">
+        <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
+        GerônIA
+      </a>
+      <a href="/mapa-societario" id="df-sidebar-mapasoc" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
+        Mapa Societário
+      </a>
+      <a href="/funcionarios" id="df-sidebar-funcionarios" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Funcionários
+      </a>
+      <a href="/pedidos" id="df-sidebar-pedidos" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        Pedidos
+      </a>
+      <a href="/despesas-fixas" class="dc-sidebar-nav-btn active">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
+        Despesas Fixas
+      </a>
+      <a href="/conciliacao" id="df-sidebar-conciliacao" class="dc-sidebar-nav-btn" style="display:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Conciliação
+      </a>
+    </div>
+    <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
+      <a href="/admin" id="df-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(244,63,94,0.08);border:1px solid rgba(244,63,94,0.2);border-radius:10px;color:#fb7185;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+        Admin
+      </a>
+    </div>
+  </aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="df-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none">
+        <img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full">
+      </a>
+      <div class="header-sub">Despesas Fixas</div>
+    </div>
+    <div id="df-nav-user-info" style="display:none"></div>
+  </header>
+
+  <div id="df-loading">Carregando…</div>
+
+  <main class="main" id="df-main" style="display:none">
+    <div class="no-company-notice" id="no-company-notice" style="display:none">
+      Você tem acesso à tela de Despesas Fixas, mas nenhuma empresa foi liberada para você em Gestão de Acessos. Peça para o admin liberar pelo menos uma empresa.
+    </div>
+
+    <div class="mode-switch">
+      <button type="button" class="mode-tab active" data-mode="conferir" onclick="setMode('conferir')">Conferir Mês</button>
+      <button type="button" class="mode-tab" data-mode="gerenciar" onclick="setMode('gerenciar')">Gerenciar Despesas</button>
+    </div>
+
+    <!-- ── Modo: Conferir Mês ── -->
+    <div id="mode-conferir">
+      <div class="summary-row">
+        <div class="summary-card">
+          <div class="summary-label">Despesas no mês</div>
+          <div class="summary-value" id="sum-count">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total previsto</div>
+          <div class="summary-value" id="sum-previsto">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Total pago</div>
+          <div class="summary-value ok" id="sum-pago">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Pendentes</div>
+          <div class="summary-value warn" id="sum-pendentes">—</div>
+        </div>
+        <div class="summary-card">
+          <div class="summary-label">Divergentes</div>
+          <div class="summary-value bad" id="sum-divergentes">—</div>
+        </div>
+      </div>
+
+      <div class="filters-bar">
+        <div class="filter-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="f-search-conf" placeholder="Buscar por nome...">
+        </div>
+        <select class="filter-select" id="f-conf-empresa">
+          <option value="">Todas as empresas</option>
+        </select>
+        <select class="filter-select" id="f-conf-status">
+          <option value="">Status (todos)</option>
+          <option value="pendente">Pendente</option>
+          <option value="pago_ok">Pago conforme previsto</option>
+          <option value="divergente">Divergente</option>
+        </select>
+        <select class="filter-select" id="f-conf-mes"></select>
+        <select class="filter-select" id="f-conf-ano"></select>
+      </div>
+
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="df-table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Despesa</th>
+                <th>Dia Prev.</th>
+                <th>Valor Previsto</th>
+                <th>Valor Pago</th>
+                <th>Data Pagamento</th>
+                <th>Status</th>
+                <th style="width:90px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="conf-tbody">
+              <tr class="loading-row"><td colspan="9">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Modo: Gerenciar Despesas ── -->
+    <div id="mode-gerenciar" style="display:none">
+      <div class="filters-bar">
+        <div class="filter-search">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="f-search-manage" placeholder="Buscar por nome...">
+        </div>
+        <select class="filter-select" id="f-manage-empresa">
+          <option value="">Todas as empresas</option>
+        </select>
+        <div class="filters-spacer"></div>
+        <button class="btn-new" id="btn-new-despesa" onclick="openCreateModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Nova Despesa Fixa
+        </button>
+      </div>
+
+      <div class="panel">
+        <div class="table-scroll">
+          <table class="df-table">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>CNPJ</th>
+                <th>Nome</th>
+                <th>Dia Vencimento</th>
+                <th>Valor Previsto Padrão</th>
+                <th style="width:80px">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="manage-tbody">
+              <tr class="loading-row"><td colspan="6">Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Conferir pagamento (mês) -->
+  <div class="modal-overlay" id="conf-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="conf-modal-title">Conferir pagamento</div>
+      <div class="modal-sub" id="conf-modal-sub">Despesa</div>
+
+      <div class="modal-error" id="conf-modal-error"></div>
+
+      <form id="conf-form">
+        <input type="hidden" id="conf-edit-id">
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Valor Previsto (deste mês)</label>
+            <input type="number" step="0.01" min="0" id="conf-valor-previsto" required>
+          </div>
+          <div class="field">
+            <label>Dia Vencimento (deste mês)</label>
+            <input type="number" min="1" max="31" step="1" id="conf-dia-previsto">
+          </div>
+        </div>
+        <div class="field-hint">Ajustar aqui vale só para este mês — não muda o padrão da despesa.</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Valor Pago</label>
+            <input type="number" step="0.01" min="0" id="conf-valor-pago" placeholder="Deixe em branco se ainda não pagou">
+          </div>
+          <div class="field">
+            <label>Data do Pagamento</label>
+            <input type="date" id="conf-data-pagamento">
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="conf-btn-submit">Salvar</button>
+          <button type="button" class="btn-cancel" onclick="closeConfModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Criar/Editar despesa fixa (template) -->
+  <div class="modal-overlay" id="modal">
+    <div class="modal-card">
+      <div class="modal-title" id="modal-title">Nova Despesa Fixa</div>
+      <div class="modal-sub" id="modal-sub">Preencha os dados da despesa recorrente</div>
+
+      <div class="modal-error" id="modal-error"></div>
+
+      <form id="despesa-form" autocomplete="off">
+        <input type="hidden" id="edit-id">
+
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="f-form-nome" placeholder="Ex: Honorários de contabilidade" required>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Empresa (Operação)</label>
+            <select id="f-form-empresa" required></select>
+          </div>
+          <div class="field">
+            <label>CNPJ</label>
+            <select id="f-form-cnpj" required>
+              <option value="">Selecione</option>
+              <option value="Guilherme">Guilherme</option>
+              <option value="Juliane">Juliane</option>
+              <option value="Isa">Isa</option>
+              <option value="EP">EP</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Dia do Vencimento</label>
+            <input type="number" min="1" max="31" step="1" id="f-form-dia-vencimento" placeholder="Ex: 10" required>
+          </div>
+          <div class="field">
+            <label>Valor Previsto Padrão</label>
+            <input type="number" step="0.01" min="0" id="f-form-valor-padrao" placeholder="0,00" required>
+          </div>
+        </div>
+        <div class="field-hint">Todo mês essa despesa entra sozinha em "Conferir Mês" com esses valores — dá pra ajustar mês a mês sem afetar o padrão.</div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="btn-submit">Salvar</button>
+          <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Confirmar Exclusão -->
+  <div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-card">
+      <div class="confirm-icon">⚠️</div>
+      <div class="confirm-title">Remover despesa fixa?</div>
+      <div class="confirm-text" id="confirm-text">Esta despesa some da lista — o histórico já conferido continua salvo. Você tem alguns segundos pra desfazer.</div>
+      <div class="confirm-actions">
+        <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
+        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <span class="toast-dot" id="toast-dot"></span>
+    <span id="toast-msg"></span>
+  </div>
+
+  <!-- Toast de exclusão, com chance de desfazer por alguns segundos -->
+  <div class="toast" id="undo-toast">
+    <span class="toast-dot red"></span>
+    <span id="undo-toast-msg"></span>
+    <button type="button" class="undo-btn" id="undo-toast-btn">Desfazer</button>
+  </div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
+    const COMPANY_FLAG = { 'GIP Ecommerce': 'despesas_fixas_epgip', 'Exposição Paulista': 'despesas_fixas_exposicao', 'Via Closet': 'despesas_fixas_viacloset' };
+    const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const STATUS_LABEL = { pendente: 'Pendente', pago_ok: 'Pago', divergente: 'Divergente' };
+
+    let currentProfile = null;
+    let allowedCompanies = [];
+    let templates = [];      // despesas_fixas (ativas + inativas, carregadas por modo)
+    let lancamentos = [];    // despesas_fixas_lancamentos do período selecionado, com _despesa embutida
+    let deleteTarget = null;
+    let currentMode = 'conferir';
+
+    // esc/fmtDate/todayLocal/showToast e a sidebar mobile/colapso do DRE vêm de user-menu.js.
+    function redirect(path) { window.location.replace(path); }
+    function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
+    wireSidebarToggle('df');
+    wireDreCollapseToggle('df');
+
+    // ── Mês/ano padrão do "Conferir Mês": sempre o mês anterior ao atual, não o mais
+    // recente com dado no banco — mesma regra usada na Home/Resumo Contábil. ──
+    const REAL_HOJE = new Date();
+    const REAL_MES = REAL_HOJE.getMonth() + 1;
+    const REAL_ANO = REAL_HOJE.getFullYear();
+    let confMes = REAL_MES === 1 ? 12 : REAL_MES - 1;
+    let confAno = REAL_MES === 1 ? REAL_ANO - 1 : REAL_ANO;
+
+    function populateMesAnoSelects() {
+      const selMes = document.getElementById('f-conf-mes');
+      selMes.innerHTML = MESES.map((m, i) => `<option value="${i+1}">${m}</option>`).join('');
+      selMes.value = confMes;
+      const selAno = document.getElementById('f-conf-ano');
+      const anos = [];
+      for (let a = REAL_ANO; a >= REAL_ANO - 4; a--) anos.push(a);
+      if (!anos.includes(confAno)) anos.push(confAno);
+      anos.sort((a,b) => b - a);
+      selAno.innerHTML = anos.map(a => `<option value="${a}">${a}</option>`).join('');
+      selAno.value = confAno;
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      document.querySelectorAll('.mode-tab').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+      document.getElementById('mode-conferir').style.display = mode === 'conferir' ? 'block' : 'none';
+      document.getElementById('mode-gerenciar').style.display = mode === 'gerenciar' ? 'block' : 'none';
+      if (mode === 'gerenciar') loadTemplatesManage();
+    }
+
+    function populateEmpresaFilters() {
+      const opts = allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      document.getElementById('f-conf-empresa').innerHTML = '<option value="">Todas as empresas</option>' + opts;
+      document.getElementById('f-manage-empresa').innerHTML = '<option value="">Todas as empresas</option>' + opts;
+      document.getElementById('f-form-empresa').innerHTML = opts;
+    }
+
+    // ── Geração preguiçosa: garante que toda despesa fixa ativa das empresas
+    // liberadas tenha uma linha em despesas_fixas_lancamentos pro período selecionado,
+    // criando as que faltarem com os valores padrão do cadastro. ──
+    async function ensureLancamentosDoPeriodo(ano, mes) {
+      if (!allowedCompanies.length) return;
+      const { data: ativas } = await sb.from('despesas_fixas').select('id, valor_previsto_padrao, dia_vencimento').eq('ativo', true).in('empresa', allowedCompanies);
+      if (!ativas || !ativas.length) return;
+      const { data: existentes } = await sb.from('despesas_fixas_lancamentos').select('despesa_fixa_id').eq('ano', ano).eq('mes', mes).in('despesa_fixa_id', ativas.map(t => t.id));
+      const existingIds = new Set((existentes || []).map(e => e.despesa_fixa_id));
+      const faltantes = ativas.filter(t => !existingIds.has(t.id));
+      if (!faltantes.length) return;
+      await sb.from('despesas_fixas_lancamentos').insert(faltantes.map(t => ({
+        despesa_fixa_id: t.id, ano, mes,
+        valor_previsto: t.valor_previsto_padrao,
+        dia_vencimento_previsto: t.dia_vencimento,
+      })));
+    }
+
+    function lancamentoStatus(l) {
+      if (l.valor_pago == null) return 'pendente';
+      const previsto = +l.valor_previsto || 0;
+      const pago = +l.valor_pago || 0;
+      return Math.abs(pago - previsto) < 0.01 ? 'pago_ok' : 'divergente';
+    }
+
+    async function loadConferirMes() {
+      if (!allowedCompanies.length) {
+        lancamentos = [];
+        renderConferirTable();
+        return;
+      }
+      confAno = +document.getElementById('f-conf-ano').value;
+      confMes = +document.getElementById('f-conf-mes').value;
+      const tbody = document.getElementById('conf-tbody');
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="9">Carregando...</td></tr>';
+      await ensureLancamentosDoPeriodo(confAno, confMes);
+      const { data, error } = await sb
+        .from('despesas_fixas_lancamentos')
+        .select('*, despesas_fixas(*)')
+        .eq('ano', confAno).eq('mes', confMes);
+      if (error) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        return;
+      }
+      lancamentos = (data || []).filter(l => l.despesas_fixas && allowedCompanies.includes(l.despesas_fixas.empresa));
+      renderConferirTable();
+    }
+
+    function passesConferirFilters(l) {
+      const search = document.getElementById('f-search-conf').value.trim().toLowerCase();
+      const empresa = document.getElementById('f-conf-empresa').value;
+      const status = document.getElementById('f-conf-status').value;
+      const d = l.despesas_fixas;
+      if (empresa && d.empresa !== empresa) return false;
+      if (status && lancamentoStatus(l) !== status) return false;
+      if (search && !(d.nome || '').toLowerCase().includes(search)) return false;
+      return true;
+    }
+
+    function updateConferirSummary(rows) {
+      const count = rows.length;
+      const totalPrevisto = rows.reduce((s, l) => s + (+l.valor_previsto || 0), 0);
+      const totalPago = rows.reduce((s, l) => s + (l.valor_pago != null ? +l.valor_pago : 0), 0);
+      let pendentes = 0, divergentes = 0;
+      rows.forEach(l => { const st = lancamentoStatus(l); if (st === 'pendente') pendentes++; else if (st === 'divergente') divergentes++; });
+      document.getElementById('sum-count').textContent = count;
+      document.getElementById('sum-previsto').textContent = fmtBRL(totalPrevisto);
+      document.getElementById('sum-pago').textContent = fmtBRL(totalPago);
+      document.getElementById('sum-pendentes').textContent = pendentes;
+      document.getElementById('sum-divergentes').textContent = divergentes;
+    }
+
+    function renderConferirTable() {
+      const tbody = document.getElementById('conf-tbody');
+      if (!allowedCompanies.length) {
+        tbody.innerHTML = '';
+        updateConferirSummary([]);
+        return;
+      }
+      const rows = lancamentos.filter(passesConferirFilters).sort((a, b) => (a.despesas_fixas.nome || '').localeCompare(b.despesas_fixas.nome || ''));
+      updateConferirSummary(rows);
+      if (!rows.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Nenhuma despesa fixa encontrada para este período.</td></tr>`;
+        return;
+      }
+      const dash = '<span class="td-muted">—</span>';
+      tbody.innerHTML = rows.map(l => {
+        const d = l.despesas_fixas;
+        const status = lancamentoStatus(l);
+        return `<tr>
+          <td><img class="td-empresa-logo" src="${MARCA_LOGOS[d.empresa] || ''}" alt="${esc(d.empresa)}" title="${esc(d.empresa)}"></td>
+          <td class="td-muted">${d.cnpj ? esc(d.cnpj) : dash}</td>
+          <td class="td-nome">${esc(d.nome)}</td>
+          <td class="td-muted">${l.dia_vencimento_previsto != null ? l.dia_vencimento_previsto : dash}</td>
+          <td class="td-valor">${fmtBRL(l.valor_previsto)}</td>
+          <td class="td-valor">${l.valor_pago != null ? fmtBRL(l.valor_pago) : dash}</td>
+          <td>${l.data_pagamento ? fmtDate(l.data_pagamento) : dash}</td>
+          <td><span class="status-badge status-${status}"><span class="dot"></span>${STATUS_LABEL[status]}</span></td>
+          <td>
+            <div class="td-actions">
+              <button class="btn-action btn-conf" data-id="${esc(l.id)}" title="Conferir pagamento" aria-label="Conferir pagamento">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              </button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+
+      tbody.querySelectorAll('.btn-conf').forEach(btn => {
+        btn.addEventListener('click', () => openConfModal(lancamentos.find(l => l.id === btn.dataset.id)));
+      });
+    }
+
+    ['f-search-conf','f-conf-empresa','f-conf-status'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderConferirTable);
+      document.getElementById(id).addEventListener('change', renderConferirTable);
+    });
+    ['f-conf-mes','f-conf-ano'].forEach(id => {
+      document.getElementById(id).addEventListener('change', loadConferirMes);
+    });
+
+    // ── Modal Conferir pagamento ──
+    function openConfModal(l) {
+      if (!l) return;
+      document.getElementById('conf-modal-title').textContent = 'Conferir pagamento';
+      document.getElementById('conf-modal-sub').textContent = `${l.despesas_fixas.nome} — ${MESES[confMes-1]}/${confAno}`;
+      document.getElementById('conf-edit-id').value = l.id;
+      document.getElementById('conf-valor-previsto').value = l.valor_previsto != null ? l.valor_previsto : '';
+      document.getElementById('conf-dia-previsto').value = l.dia_vencimento_previsto != null ? l.dia_vencimento_previsto : '';
+      document.getElementById('conf-valor-pago').value = l.valor_pago != null ? l.valor_pago : '';
+      document.getElementById('conf-data-pagamento').value = l.data_pagamento || '';
+      document.getElementById('conf-modal-error').className = 'modal-error';
+      document.getElementById('conf-modal').classList.add('open');
+    }
+    function closeConfModal() { document.getElementById('conf-modal').classList.remove('open'); }
+    document.getElementById('conf-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfModal(); });
+
+    document.getElementById('conf-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('conf-edit-id').value;
+      if (!id) return;
+      const btn = document.getElementById('conf-btn-submit');
+      document.getElementById('conf-modal-error').className = 'modal-error';
+
+      const valorPrevistoRaw = document.getElementById('conf-valor-previsto').value;
+      const diaPrevistoRaw = document.getElementById('conf-dia-previsto').value;
+      const valorPagoRaw = document.getElementById('conf-valor-pago').value;
+      const dataPagamento = document.getElementById('conf-data-pagamento').value;
+
+      if (valorPagoRaw !== '' && !dataPagamento) {
+        const el = document.getElementById('conf-modal-error');
+        el.textContent = 'Informe a data do pagamento.'; el.className = 'modal-error visible';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+      const { data: sessData } = await sb.auth.getSession();
+      const userId = sessData?.session?.user?.id || null;
+      const jaConferido = valorPagoRaw !== '';
+
+      const payload = {
+        valor_previsto: valorPrevistoRaw === '' ? 0 : +valorPrevistoRaw,
+        dia_vencimento_previsto: diaPrevistoRaw === '' ? null : +diaPrevistoRaw,
+        valor_pago: valorPagoRaw === '' ? null : +valorPagoRaw,
+        data_pagamento: valorPagoRaw === '' ? null : (dataPagamento || null),
+        updated_at: new Date().toISOString(),
+      };
+      if (jaConferido) { payload.conferido_por = userId; payload.conferido_em = new Date().toISOString(); }
+
+      const { error } = await sb.from('despesas_fixas_lancamentos').update(payload).eq('id', id);
+
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar';
+
+      if (error) {
+        const el = document.getElementById('conf-modal-error');
+        el.textContent = error.message; el.className = 'modal-error visible';
+        return;
+      }
+
+      const l = lancamentos.find(x => x.id === id);
+      if (l) Object.assign(l, payload);
+      closeConfModal();
+      showToast('Conferência salva', 'green');
+      renderConferirTable();
+    });
+
+    // ══════════════════════════════════════════════════════════════
+    // ── Modo: Gerenciar Despesas (CRUD dos templates) ──
+    // ══════════════════════════════════════════════════════════════
+    async function loadTemplatesManage() {
+      if (!allowedCompanies.length) {
+        templates = [];
+        renderManageTable();
+        return;
+      }
+      const tbody = document.getElementById('manage-tbody');
+      tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Carregando...</td></tr>';
+      const { data, error } = await sb.from('despesas_fixas').select('*').eq('ativo', true).in('empresa', allowedCompanies).order('nome');
+      if (error) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        return;
+      }
+      templates = data || [];
+      renderManageTable();
+    }
+
+    function passesManageFilters(t) {
+      const search = document.getElementById('f-search-manage').value.trim().toLowerCase();
+      const empresa = document.getElementById('f-manage-empresa').value;
+      if (empresa && t.empresa !== empresa) return false;
+      if (search && !(t.nome || '').toLowerCase().includes(search)) return false;
+      return true;
+    }
+
+    function renderManageTable() {
+      const tbody = document.getElementById('manage-tbody');
+      if (!allowedCompanies.length) { tbody.innerHTML = ''; return; }
+      const rows = templates.filter(passesManageFilters);
+      if (!rows.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="6">Nenhuma despesa fixa cadastrada.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = rows.map(t => `<tr>
+        <td><img class="td-empresa-logo" src="${MARCA_LOGOS[t.empresa] || ''}" alt="${esc(t.empresa)}" title="${esc(t.empresa)}"></td>
+        <td class="td-muted">${esc(t.cnpj || '')}</td>
+        <td class="td-nome">${esc(t.nome)}</td>
+        <td>${t.dia_vencimento}</td>
+        <td class="td-valor">${fmtBRL(t.valor_previsto_padrao)}</td>
+        <td>
+          <div class="td-actions">
+            <button class="btn-action btn-edit" data-id="${esc(t.id)}" title="Editar" aria-label="Editar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+            </button>
+            <button class="btn-action btn-delete" data-id="${esc(t.id)}" title="Remover" aria-label="Remover">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>`).join('');
+
+      tbody.querySelectorAll('.btn-edit').forEach(btn => {
+        btn.addEventListener('click', () => openEditModal(templates.find(t => t.id === btn.dataset.id)));
+      });
+      tbody.querySelectorAll('.btn-delete').forEach(btn => {
+        btn.addEventListener('click', () => confirmDelete(templates.find(t => t.id === btn.dataset.id)));
+      });
+    }
+
+    ['f-search-manage','f-manage-empresa'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderManageTable);
+      document.getElementById(id).addEventListener('change', renderManageTable);
+    });
+
+    // ── Modal Criar/Editar despesa fixa ──
+    function openCreateModal() {
+      if (!allowedCompanies.length) return;
+      document.getElementById('modal-title').textContent = 'Nova Despesa Fixa';
+      document.getElementById('modal-sub').textContent = 'Preencha os dados da despesa recorrente';
+      document.getElementById('edit-id').value = '';
+      document.getElementById('despesa-form').reset();
+      document.getElementById('f-form-empresa').value = allowedCompanies[0];
+      document.getElementById('modal-error').className = 'modal-error';
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function openEditModal(t) {
+      if (!t) return;
+      document.getElementById('modal-title').textContent = 'Editar Despesa Fixa';
+      document.getElementById('modal-sub').textContent = t.nome;
+      document.getElementById('edit-id').value = t.id;
+      document.getElementById('f-form-nome').value = t.nome || '';
+      document.getElementById('f-form-empresa').value = t.empresa;
+      document.getElementById('f-form-cnpj').value = t.cnpj || '';
+      document.getElementById('f-form-dia-vencimento').value = t.dia_vencimento;
+      document.getElementById('f-form-valor-padrao').value = t.valor_previsto_padrao;
+      document.getElementById('modal-error').className = 'modal-error';
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() { document.getElementById('modal').classList.remove('open'); }
+    document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+    function showModalError(msg) {
+      const el = document.getElementById('modal-error');
+      el.textContent = msg;
+      el.className = 'modal-error visible';
+    }
+
+    document.getElementById('despesa-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = document.getElementById('btn-submit');
+      document.getElementById('modal-error').className = 'modal-error';
+
+      const editId = document.getElementById('edit-id').value;
+      const nome = document.getElementById('f-form-nome').value.trim();
+      const cnpj = document.getElementById('f-form-cnpj').value;
+      const diaVencimento = +document.getElementById('f-form-dia-vencimento').value;
+      const valorPadrao = +document.getElementById('f-form-valor-padrao').value;
+
+      if (!nome) { showModalError('Informe o nome da despesa.'); return; }
+      if (!cnpj) { showModalError('Selecione o CNPJ.'); return; }
+      if (!diaVencimento || diaVencimento < 1 || diaVencimento > 31) { showModalError('Informe um dia de vencimento válido (1 a 31).'); return; }
+
+      const payload = {
+        nome,
+        empresa: document.getElementById('f-form-empresa').value,
+        cnpj,
+        dia_vencimento: diaVencimento,
+        valor_previsto_padrao: valorPadrao || 0,
+      };
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+      let error;
+      if (editId) {
+        ({ error } = await sb.from('despesas_fixas').update(payload).eq('id', editId));
+      } else {
+        const { data: sessData } = await sb.auth.getSession();
+        payload.created_by = sessData?.session?.user?.id || null;
+        ({ error } = await sb.from('despesas_fixas').insert(payload));
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = 'Salvar';
+
+      if (error) { showModalError(error.message); return; }
+
+      closeModal();
+      showToast(editId ? 'Despesa fixa atualizada' : 'Despesa fixa cadastrada', 'green');
+      loadTemplatesManage();
+    });
+
+    // ── Exclusão (soft-delete com "Desfazer") ──
+    let undoHideTimer = null;
+
+    function confirmDelete(t) {
+      if (!t) return;
+      deleteTarget = t;
+      document.getElementById('confirm-text').textContent = `"${t.nome}" some da lista de despesas fixas — o histórico já conferido continua salvo. Logo depois de excluir você tem alguns segundos pra desfazer.`;
+      document.getElementById('confirm-modal').classList.add('open');
+      document.getElementById('btn-confirm-delete').onclick = async () => {
+        const target = deleteTarget;
+        closeConfirm();
+        if (!target) return;
+        const { error } = await sb.from('despesas_fixas').update({ ativo: false }).eq('id', target.id);
+        if (error) { showToast(error.message, 'red'); return; }
+        templates = templates.filter(x => x.id !== target.id);
+        renderManageTable();
+        showUndoToast(`"${target.nome}" removida`, async () => {
+          const { error: undoErr } = await sb.from('despesas_fixas').update({ ativo: true }).eq('id', target.id);
+          if (undoErr) { showToast(undoErr.message, 'red'); return; }
+          showToast('Restaurada', 'green');
+          loadTemplatesManage();
+        });
+      };
+    }
+    function closeConfirm() {
+      document.getElementById('confirm-modal').classList.remove('open');
+      deleteTarget = null;
+    }
+    document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    // ── Toast com "Desfazer" (mesmo padrão de lancamentos.html) ──
+    function showUndoToast(msg, onUndo) {
+      clearTimeout(undoHideTimer);
+      document.getElementById('undo-toast-msg').textContent = msg;
+      const el = document.getElementById('undo-toast');
+      el.classList.add('visible');
+      document.getElementById('undo-toast-btn').onclick = () => { el.classList.remove('visible'); onUndo(); };
+      undoHideTimer = setTimeout(() => el.classList.remove('visible'), 8000);
+    }
+
+    // showToast vem de user-menu.js.
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return redirect('/login');
+
+      const { data: profRows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (profRows && profRows[0]) || null;
+      const allowed = !!prof && (prof.is_admin || prof.can_despesas_fixas === true);
+      if (!allowed) return redirect('/');
+      currentProfile = prof;
+
+      allowedCompanies = prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[COMPANY_FLAG[c]] === true);
+      populateEmpresaFilters();
+      populateMesAnoSelects();
+      document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
+      document.getElementById('btn-new-despesa').style.display = allowedCompanies.length ? 'inline-flex' : 'none';
+
+      if (prof.is_admin) {
+        const a = document.getElementById('df-sidebar-admin'); if (a) a.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_resumo !== false) {
+        const s = document.getElementById('df-sidebar-resumo'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_dre !== false) {
+        const s = document.getElementById('df-sidebar-dre'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_mapa_societario === true) {
+        const s = document.getElementById('df-sidebar-mapasoc'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_funcionarios === true) {
+        const s = document.getElementById('df-sidebar-funcionarios'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_fluxo_caixa === true) {
+        const s = document.getElementById('df-sidebar-fluxocaixa'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_lancamentos === true) {
+        const s = document.getElementById('df-sidebar-lancamentos'); if (s) s.style.display = 'flex';
+        const t = document.getElementById('df-sidebar-dre-toggle'); if (t) t.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.can_pedidos === true) {
+        const s = document.getElementById('df-sidebar-pedidos'); if (s) s.style.display = 'flex';
+      }
+      if (prof.is_admin || prof.pedidos_pode_conciliar === true) {
+        const s = document.getElementById('df-sidebar-conciliacao'); if (s) s.style.display = 'flex';
+      }
+
+      const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
+      const parts = name.split(/\s+/);
+      const initials = parts.length >= 2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
+      const sidebarUserEl = document.getElementById('df-sidebar-user');
+      if (sidebarUserEl) {
+        sidebarUserEl.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#fb7185,#e11d48);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#4c0519;flex-shrink:0">'+initials+'</div>'
+          +'<div style="display:flex;flex-direction:column;gap:1px;min-width:0">'
+          +'<div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+esc(name)+'</div>'
+          +(prof.role ? '<div style="font-size:9px;font-weight:600;color:#64748b;white-space:nowrap">'+(prof.is_admin?'&#9670; ':'')+esc(prof.role)+'</div>' : '')
+          +'</div>';
+        if (window.UserMenu) window.UserMenu.attach(sidebarUserEl, sb);
+      }
+
+      document.getElementById('df-loading').style.display = 'none';
+      document.getElementById('df-main').style.display = 'block';
+
+      loadConferirMes();
+    }
+
+    init();
+  </script>
+</body>
+</html>
