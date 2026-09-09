@@ -1305,7 +1305,7 @@ class Component extends DCLogic {
   _getEData(mes) {
     return ['EP','GIP','Exposicao','ViaCloset','RP'].map(id => {
       const r=(this._resumoMap[id]||{})[mes]||{}, e=this._empMap[id]||{};
-      return {id,nome:e.nome||id,regimeShort:e.regime_short||'—',regimeBg:e.regime_bg||'#f9fafb',regimeColor:e.regime_color||'#374151',despesa:+r.despesa||0,entrada:+r.entrada||0,saida:+r.saida||0,resultado:+r.resultado||0,aliquota:e.aliquota||'—',estoque:+r.estoque||0};
+      return {id,nome:e.nome||id,regimeShort:e.regime_short||'—',regimeBg:e.regime_bg||'#f9fafb',regimeColor:e.regime_color||'#374151',despesa:+r.despesa||0,entrada:+r.entrada||0,saida:+r.saida||0,resultado:+r.resultado||0,aliquota:r.aliquota||'—',estoque:+r.estoque||0};
     });
   }
   _fmt(n) { return 'R$ ' + Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }

@@ -333,7 +333,7 @@
           <div class="field">
             <label>Alíquota</label>
             <input type="text" id="rs-aliquota" placeholder="Ex: 8,0%">
-            <div class="field-hint">Da empresa (não muda por mês) — usada no card de Resumo Contábil.</div>
+            <div class="field-hint">Referente a este mês (pode mudar mês a mês, ex: Simples Nacional pela receita acumulada) — usada no card de Resumo Contábil.</div>
           </div>
         </div>
       </div>
@@ -490,20 +490,14 @@
       const mes = parseInt(document.getElementById('rs-mes').value);
       const ano = parseInt(document.getElementById('rs-ano').value);
       if (!empresa) return;
-      // resumo_mensal guarda os valores do mês; a alíquota é da empresa (não muda por
-      // mês/ano) e vem de uma tabela separada — busca as duas em paralelo.
-      const [resumoRes, empresaRes] = await Promise.all([
-        sb.from('resumo_mensal').select('*').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes).limit(1),
-        sb.from('empresas').select('aliquota').eq('id', empresa).limit(1),
-      ]);
-      if (resumoRes.error) { showToast(resumoRes.error.message, 'red'); return; }
-      const row = (resumoRes.data && resumoRes.data[0]) || {};
+      const { data, error } = await sb.from('resumo_mensal').select('*').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes).limit(1);
+      if (error) { showToast(error.message, 'red'); return; }
+      const row = (data && data[0]) || {};
       document.getElementById('rs-entrada').value = row.entrada != null ? numberToMoneyMasked(row.entrada) : '';
       document.getElementById('rs-saida').value = row.saida != null ? numberToMoneyMasked(row.saida) : '';
       document.getElementById('rs-despesa').value = row.despesa != null ? numberToMoneyMasked(row.despesa) : '';
       document.getElementById('rs-estoque').value = row.estoque != null ? numberToMoneyMasked(row.estoque) : '';
-      const empresaRow = (empresaRes.data && empresaRes.data[0]) || {};
-      document.getElementById('rs-aliquota').value = empresaRow.aliquota || '';
+      document.getElementById('rs-aliquota').value = row.aliquota || '';
       recomputeResumoResultado();
     }
 
@@ -528,15 +522,12 @@
         // despesa/estoque são opcionais — em branco fica sem valor (null), não zero.
         despesa: despesaVal,
         estoque: val('rs-estoque'),
+        // Alíquota também é mensal (ex: Simples Nacional muda pela receita acumulada
+        // dos últimos 12 meses) — igual aos demais campos, não é fixa por empresa.
+        aliquota: document.getElementById('rs-aliquota').value.trim() || null,
       };
-      // Alíquota é da empresa, não do mês — grava à parte, na tabela empresas.
-      const aliquota = document.getElementById('rs-aliquota').value.trim();
-      const [resumoRes, empresaRes] = await Promise.all([
-        sb.from('resumo_mensal').upsert(payload, { onConflict: 'empresa_id,ano,mes' }),
-        sb.from('empresas').update({ aliquota: aliquota || null }).eq('id', empresa),
-      ]);
+      const { error } = await sb.from('resumo_mensal').upsert(payload, { onConflict: 'empresa_id,ano,mes' });
       btn.disabled = false; btn.textContent = 'Salvar Resumo';
-      const error = resumoRes.error || empresaRes.error;
       if (error) showToast(error.message, 'red');
       else showToast('Resumo salvo — a tela de Resumo Contábil já foi atualizada', 'green');
     }
