@@ -681,6 +681,47 @@
           </div>
         </div>
 
+        <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
+            <div>
+              <div class="perm-name">Despesas Fixas</div>
+              <div style="font-size:10.5px;color:#64748b;margin-top:2px">Honorários, assinaturas e sistemas recorrentes, com conciliação de valor previsto x pago — visível por padrão só pra ninguém</div>
+            </div>
+            <div class="toggle-wrap" id="toggle-despfixas">
+              <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('despfixas', true)">Sim</button>
+              <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('despfixas', false)">Não</button>
+            </div>
+          </div>
+
+          <div class="dre-ops" id="despfixas-ops" style="display:none">
+            <div class="dre-ops-label">Empresas visíveis em Despesas Fixas</div>
+
+            <div class="perm-row">
+              <div class="perm-name">GIP Ecommerce</div>
+              <div class="toggle-wrap" id="toggle-df-epgip">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('df-epgip', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('df-epgip', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Exposição Paulista</div>
+              <div class="toggle-wrap" id="toggle-df-exposicao">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('df-exposicao', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('df-exposicao', false)">Não</button>
+              </div>
+            </div>
+
+            <div class="perm-row">
+              <div class="perm-name">Via Closet</div>
+              <div class="toggle-wrap" id="toggle-df-viacloset">
+                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('df-viacloset', true)">Sim</button>
+                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('df-viacloset', false)">Não</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="perm-row">
           <div>
             <div class="perm-name">Fluxo de Caixa</div>
@@ -780,7 +821,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 let currentSession = null;
 let deleteTarget   = null;
-const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, pedidos: false, 'ped-epgip': false, 'ped-exposicao': false, 'ped-viacloset': false, 'ped-lancar': true, 'ped-conferir': true, 'ped-conciliar': false, fluxocaixa: false, lancamentos: false, 'lanc-ep': false, 'lanc-gip': false, 'lanc-exposicao': false, 'lanc-viacloset': false };
+const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, pedidos: false, 'ped-epgip': false, 'ped-exposicao': false, 'ped-viacloset': false, 'ped-lancar': true, 'ped-conferir': true, 'ped-conciliar': false, despfixas: false, 'df-epgip': false, 'df-exposicao': false, 'df-viacloset': false, fluxocaixa: false, lancamentos: false, 'lanc-ep': false, 'lanc-gip': false, 'lanc-exposicao': false, 'lanc-viacloset': false };
 
 // ── Auth ──────────────────────────────────────────────
 async function init() {
@@ -889,6 +930,9 @@ function setToggle(key, val) {
   if (key === 'pedidos') {
     document.getElementById('pedidos-ops').style.display = val ? 'block' : 'none';
   }
+  if (key === 'despfixas') {
+    document.getElementById('despfixas-ops').style.display = val ? 'block' : 'none';
+  }
   if (key === 'lancamentos') {
     document.getElementById('lancamentos-ops').style.display = val ? 'block' : 'none';
   }
@@ -907,7 +951,7 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-conciliar','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-conciliar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset'].forEach(k => setToggle(k, false));
   setToggle('ped-lancar', true);
   setToggle('ped-conferir', true);
   document.getElementById('modal-error').className   = 'modal-error';
@@ -949,6 +993,10 @@ function openEditModal(u) {
   setToggle('ped-lancar',      u.pedidos_pode_lancar   !== false);
   setToggle('ped-conferir',    u.pedidos_pode_conferir !== false);
   setToggle('ped-conciliar',   !!u.pedidos_pode_conciliar);
+  setToggle('despfixas',       !!u.can_despesas_fixas);
+  setToggle('df-epgip',        !!u.despesas_fixas_epgip);
+  setToggle('df-exposicao',    !!u.despesas_fixas_exposicao);
+  setToggle('df-viacloset',    !!u.despesas_fixas_viacloset);
   setToggle('fluxocaixa',      !!u.can_fluxo_caixa);
   setToggle('lancamentos',       !!u.can_lancamentos);
   setToggle('lanc-ep',           !!u.lancamentos_ep);
@@ -1002,6 +1050,10 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     pedidos_pode_lancar:    toggleState['ped-lancar'],
     pedidos_pode_conferir:  toggleState['ped-conferir'],
     pedidos_pode_conciliar: toggleState['ped-conciliar'],
+    can_despesas_fixas: toggleState.despfixas,
+    despesas_fixas_epgip: toggleState['df-epgip'],
+    despesas_fixas_exposicao: toggleState['df-exposicao'],
+    despesas_fixas_viacloset: toggleState['df-viacloset'],
     can_fluxo_caixa: toggleState.fluxocaixa,
     can_lancamentos:       toggleState.lancamentos,
     lancamentos_ep:        toggleState['lanc-ep'],
