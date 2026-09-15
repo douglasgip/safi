@@ -1026,14 +1026,16 @@
             <div id="kpi-fat" data-ask="{{ dreKPI.fatAsk }}" style="font-size:22px;font-weight:800;color:#f8fafc;letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.fatFmt }}</div>
           </div>
           <div style="padding:0 22px;border-right:1px solid rgba(255,255,255,0.07)">
-            <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Margem</div>
+            <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Margem de Contribuição</div>
             <div id="kpi-mc-pct" data-ask="{{ dreKPI.mcAsk }}" style="font-size:22px;font-weight:800;color:#38bdf8;letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.mcPct }}</div>
             <div id="kpi-mc-fmt" data-ask="{{ dreKPI.mcAsk }}" style="font-size:9px;color:#94a3b8;margin-top:3px;cursor:pointer">{{ dreKPI.mcFmt }}</div>
           </div>
           <div style="padding-left:22px">
-            <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Resultado</div>
-            <div id="kpi-res" data-ask="{{ dreKPI.resAsk }}" style="font-size:24px;font-weight:800;color:{{ dreKPI.resColor }};letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.resFmt }}</div>
-            <div id="kpi-res-pct" data-ask="{{ dreKPI.resAsk }}" style="font-size:9px;color:#94a3b8;margin-top:3px;cursor:pointer">{{ dreKPI.resPct }} da receita</div>
+            <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Resultado Líquido</div>
+            <div style="display:flex;align-items:baseline;gap:8px">
+              <div id="kpi-res" data-ask="{{ dreKPI.resAsk }}" style="font-size:24px;font-weight:800;color:{{ dreKPI.resColor }};letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.resFmt }}</div>
+              <div id="kpi-res-pct" data-ask="{{ dreKPI.resAsk }}" style="font-size:14px;font-weight:700;color:{{ dreKPI.resColor }};font-variant-numeric:tabular-nums;cursor:pointer">{{ dreKPI.resPct }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1142,35 +1144,6 @@
           </sc-for>
         </div>
         <div style="height:170px"><canvas id="chart-line"></canvas></div>
-      </div>
-
-      <!-- ══ INDICADORES CALCULADOS ══ -->
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
-        <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
-        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Indicadores Calculados</span>
-      </div>
-      <div id="dre-ind-3col" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
-          <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Ponto de Equilíbrio</div>
-          <div id="ind-pe" data-ask="{{ indicadores.peAsk }}" style="font-size:22px;font-weight:800;color:#f8fafc;letter-spacing:-0.5px;margin-bottom:5px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ indicadores.peOpFmt }}</div>
-          <div style="font-size:10px;color:#94a3b8">Receita mínima para cobrir os gastos fixos</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
-          <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Carga Tributária</div>
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
-            <div id="ind-trib" data-ask="{{ indicadores.tribAsk }}" style="font-size:20px;font-weight:800;color:#f8fafc;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ indicadores.tribFmt }}</div>
-            <div style="font-size:12px;font-weight:700;color:#f87171">{{ indicadores.tribPct }}</div>
-          </div>
-          <div style="font-size:10px;color:#94a3b8">ICMS, Simples/DAS e demais impostos</div>
-        </div>
-        <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
-          <div style="font-size:8px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Custo da Mercadoria (CMV)</div>
-          <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px">
-            <div id="ind-cmv" data-ask="{{ indicadores.cmvAsk }}" style="font-size:20px;font-weight:800;color:#f8fafc;letter-spacing:-0.5px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ indicadores.cmvFmt }}</div>
-            <div style="font-size:12px;font-weight:700;color:#fb923c">{{ indicadores.cmvPct }}</div>
-          </div>
-          <div style="font-size:10px;color:#94a3b8">Peso do produto vendido sobre a receita</div>
-        </div>
       </div>
 
       <!-- ══ TABELA DRE ══ -->
@@ -1336,15 +1309,13 @@ class Component extends DCLogic {
     const ms=Math.min(monthStart,monthEnd),me=Math.max(monthStart,monthEnd);
     const calc=this._dreCalcRange(selectedCos,ms+1,me+1);
     const mcRatio=calc.rb>0?calc.mc/calc.rb:0;
-    const impostos=calc.icms+calc.das+calc.oi;
-    const peOp=mcRatio>0?Math.round(calc.gop/mcRatio):0;
     const D=480,g=id=>document.getElementById(id);
     // Hero KPIs
     this._animNum(g('kpi-fat'),calc.rb,D);
     this._animPct(g('kpi-mc-pct'),mcRatio*100,D);
     this._animNum(g('kpi-mc-fmt'),calc.mc,D);
     this._animNum(g('kpi-res'),calc.res,D);
-    this._animPct(g('kpi-res-pct'),calc.rb>0?calc.res/calc.rb*100:0,D,' da receita');
+    this._animPct(g('kpi-res-pct'),calc.rb>0?calc.res/calc.rb*100:0,D);
     // Mini-cards
     selectedCos.forEach((co,i)=>{
       const c=this._dreCalcRange([co],ms+1,me+1),mcR=c.rb>0?c.mc/c.rb:0;
@@ -1352,10 +1323,6 @@ class Component extends DCLogic {
       this._animNum(g('ck-res-'+i),c.res,D);
       this._animPct(g('ck-mc-'+i),mcR*100,D);
     });
-    // Indicadores
-    this._animNum(g('ind-pe'),peOp,D);
-    this._animNum(g('ind-trib'),impostos,D);
-    this._animNum(g('ind-cmv'),calc.cmv,D);
   }
 
   async componentDidMount() {
@@ -1947,17 +1914,8 @@ class Component extends DCLogic {
 
     const calc=this._dreCalcRange(selectedCos,ms+1,me+1);
     const mcRatio=calc.rb>0?calc.mc/calc.rb:0;
-    const peOp=mcRatio>0?Math.round(calc.gop/mcRatio):0;
     const impostos=calc.icms+calc.das+calc.oi;
     const pctOf=v=>(calc.rb>0?(v/calc.rb*100):0).toFixed(1).replace('.',',')+'%';
-    const indicadores={
-      peOpFmt:F(peOp),
-      tribFmt:F(impostos), tribPct:pctOf(impostos),
-      cmvFmt:F(calc.cmv), cmvPct:pctOf(calc.cmv),
-      peAsk:`Pode me explicar o Ponto de Equilíbrio de ${F(peOp)} no período ${periodLabel} ${selLabel}? Como chegamos a esse valor e o que significa na prática?`,
-      tribAsk:`Pode me explicar a Carga Tributária de ${F(impostos)} (${pctOf(impostos)} da receita) no período ${periodLabel} ${selLabel}? O que compõe esse valor?`,
-      cmvAsk:`Pode me explicar o CMV (Custo da Mercadoria) de ${F(calc.cmv)} (${pctOf(calc.cmv)} da receita) no período ${periodLabel} ${selLabel}? Está dentro do esperado?`
-    };
 
     // ══ KPI da DRE — reage aos filtros (operações selecionadas + período) ══
     const dreKPI={
@@ -2035,7 +1993,7 @@ class Component extends DCLogic {
       companyKPIsMaxH:selectedCos.length>=2?'600px':'0px',
       companyKPIsOpacity:selectedCos.length>=2?1:0,
       companyKPIsMB:selectedCos.length>=2?'14px':'0px',
-      months,empresas,totals,alertas,coButtons,selLabel,metricBtns,dreRows,indicadores,dreKPI,ahBaseLabel,companyKPIs,
+      months,empresas,totals,alertas,coButtons,selLabel,metricBtns,dreRows,dreKPI,ahBaseLabel,companyKPIs,
       barSeriesBtns,barCosBtns,dreChartLegend,drePieLegend:dreChartLegend,barLegend,modalIsCompanyChart,modalIsSeriesChart,
       modalOpen:!!this.state.expandedChart,
       modalTitle:{bar:'Entrada / Saída / Despesa por Empresa',line:'Evolução do Resultado — 2026','dre-evo':'Evolução Mensal — 2026','dre-pie':'Faturamento por Operação','dre-margem':'Margem por Operação'}[this.state.expandedChart]||'',
