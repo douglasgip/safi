@@ -1028,15 +1028,15 @@
           <div style="padding:0 22px;border-right:1px solid rgba(255,255,255,0.07)">
             <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Margem de Contribuição</div>
             <div style="display:flex;align-items:baseline;gap:8px">
-              <div id="kpi-mc-fmt" data-ask="{{ dreKPI.mcAsk }}" style="font-size:24px;font-weight:800;color:{{ dreKPI.mcColor }};letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.mcFmt }}</div>
-              <div id="kpi-mc-pct" data-ask="{{ dreKPI.mcAsk }}" style="font-size:14px;font-weight:700;color:{{ dreKPI.mcColor }};font-variant-numeric:tabular-nums;cursor:pointer">{{ dreKPI.mcPct }}</div>
+              <div id="kpi-mc-fmt" data-ask="{{ dreKPI.mcAsk }}" style="font-size:24px;font-weight:800;color:#38bdf8;letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.mcFmt }}</div>
+              <div data-ask="{{ dreKPI.mcAsk }}" style="display:flex;align-items:baseline;font-size:14px;font-weight:700;color:#38bdf8;font-variant-numeric:tabular-nums;cursor:pointer"><span>(</span><span id="kpi-mc-pct">{{ dreKPI.mcPct }}</span><span>)</span></div>
             </div>
           </div>
           <div style="padding-left:22px">
             <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Resultado Líquido</div>
             <div style="display:flex;align-items:baseline;gap:8px">
               <div id="kpi-res" data-ask="{{ dreKPI.resAsk }}" style="font-size:24px;font-weight:800;color:{{ dreKPI.resColor }};letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.resFmt }}</div>
-              <div id="kpi-res-pct" data-ask="{{ dreKPI.resAsk }}" style="font-size:14px;font-weight:700;color:{{ dreKPI.resColor }};font-variant-numeric:tabular-nums;cursor:pointer">{{ dreKPI.resPct }}</div>
+              <div data-ask="{{ dreKPI.resAsk }}" style="display:flex;align-items:baseline;font-size:14px;font-weight:700;color:{{ dreKPI.resColor }};font-variant-numeric:tabular-nums;cursor:pointer"><span>(</span><span id="kpi-res-pct">{{ dreKPI.resPct }}</span><span>)</span></div>
             </div>
           </div>
         </div>
@@ -1056,17 +1056,17 @@
                 <div id="ck-fat-{{ ck.idx }}" data-ask="{{ ck.fatAsk }}" style="font-size:14px;font-weight:800;color:#f8fafc;letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.fatFmt }}</div>
               </div>
               <div>
-                <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Resultado</div>
+                <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Margem</div>
                 <div style="display:flex;align-items:baseline;gap:4px">
-                  <div id="ck-res-{{ ck.idx }}" data-ask="{{ ck.resAsk }}" style="font-size:13px;font-weight:800;color:{{ ck.resColor }};letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.resFmt }}</div>
-                  <div id="ck-res-pct-{{ ck.idx }}" data-ask="{{ ck.resAsk }}" style="font-size:9px;font-weight:700;color:{{ ck.resColor }};font-variant-numeric:tabular-nums;cursor:pointer">{{ ck.resPct }}</div>
+                  <div id="ck-mc-{{ ck.idx }}" data-ask="{{ ck.mcAsk }}" style="font-size:13px;font-weight:800;color:#38bdf8;letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.mcFmt }}</div>
+                  <div data-ask="{{ ck.mcAsk }}" style="display:flex;align-items:baseline;font-size:9px;font-weight:700;color:#38bdf8;cursor:pointer"><span>(</span><span id="ck-mc-pct-{{ ck.idx }}">{{ ck.mcPct }}</span><span>)</span></div>
                 </div>
               </div>
               <div>
-                <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Margem</div>
+                <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Resultado</div>
                 <div style="display:flex;align-items:baseline;gap:4px">
-                  <div id="ck-mc-{{ ck.idx }}" data-ask="{{ ck.mcAsk }}" style="font-size:13px;font-weight:800;color:{{ ck.mcColor }};letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.mcFmt }}</div>
-                  <div id="ck-mc-pct-{{ ck.idx }}" data-ask="{{ ck.mcAsk }}" style="font-size:9px;font-weight:700;color:{{ ck.mcColor }};cursor:pointer">{{ ck.mcPct }}</div>
+                  <div id="ck-res-{{ ck.idx }}" data-ask="{{ ck.resAsk }}" style="font-size:13px;font-weight:800;color:{{ ck.resColor }};letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.resFmt }}</div>
+                  <div data-ask="{{ ck.resAsk }}" style="display:flex;align-items:baseline;font-size:9px;font-weight:700;color:{{ ck.resColor }};font-variant-numeric:tabular-nums;cursor:pointer"><span>(</span><span id="ck-res-pct-{{ ck.idx }}">{{ ck.resPct }}</span><span>)</span></div>
                 </div>
               </div>
             </div>
@@ -1076,10 +1076,42 @@
 
       </div>
       <!-- ══ ANÁLISE GRÁFICA ══ -->
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
-        <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
-        <span style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase">Análise Gráfica</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
+          <span style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase">Análise Gráfica</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <button onClick="{{ toggleCompare }}" style="display:flex;align-items:center;gap:6px;padding:7px 13px;background:{{ compareBtnBg }};border:1px solid {{ compareBtnBorder }};color:{{ compareBtnColor }};font-family:Inter,sans-serif;font-size:11px;font-weight:700;border-radius:9px;cursor:pointer;letter-spacing:0.3px;transition:all 0.15s">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H9"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h12"/></svg>
+            {{ compareBtnLabel }}
+          </button>
+          <sc-if value="{{ compareEnabled }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.8);border:1px solid rgba(251,191,36,0.25);border-radius:9px;padding:6px 12px">
+              <span style="font-size:9px;color:#fbbf24;font-weight:700;letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Comparar com</span>
+              <div style="position:relative;display:inline-flex;align-items:center">
+                <select value="{{ compareMonthStart }}" onChange="{{ setCompareMonthStart }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#fbbf24;font-family:Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer;outline:none;padding-right:16px">
+                  <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7"><option value="{{ mo.idx }}">{{ mo.label }}</option></sc-for>
+                </select>
+                <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+              <span style="color:#57534e;font-size:11px">–</span>
+              <div style="position:relative;display:inline-flex;align-items:center">
+                <select value="{{ compareMonthEnd }}" onChange="{{ setCompareMonthEnd }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#fbbf24;font-family:Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer;outline:none;padding-right:16px">
+                  <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7"><option value="{{ mo.idx }}">{{ mo.label }}</option></sc-for>
+                </select>
+                <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#78716c" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+          </sc-if>
+        </div>
       </div>
+      <sc-if value="{{ compareEnabled }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;margin:-4px 0 12px;font-size:10px;color:#78716c">
+          <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:14px;height:2px;background:#94a3b8;display:inline-block"></span>{{ periodLabel }}</span>
+          <span style="display:inline-flex;align-items:center;gap:4px"><span style="width:14px;height:0;border-top:2px dashed #fbbf24;display:inline-block"></span>{{ comparePeriodLabel }}</span>
+        </div>
+      </sc-if>
 
       <!-- Evolução Mensal — full width -->
       <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:12px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
@@ -1247,7 +1279,12 @@ class Component extends DCLogic {
   // Mês padrão = mês anterior ao atual (não mais fixo em Julho) — mesmo critério já usado
   // no card de resumo da Home. Índice dentro de _months (0=Jan/2026); em Janeiro cai pro
   // próprio Jan/2026 já que não existe entrada de Dez/2025 nesse array.
-  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1' };
+  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1',
+    // Comparação de período nos gráficos da DRE — sólido (período atual) x tracejado
+    // (período de comparação). Por padrão desligada; ao ligar, o período de comparação
+    // começa como o intervalo anterior equivalente (mesmo tamanho, imediatamente antes),
+    // mas o usuário pode ajustar livremente pelos seletores DE/ATÉ que aparecem.
+    compareEnabled: false, compareMonthStart: null, compareMonthEnd: null };
   _c = {};
 
   _months = ['Jan/2026','Fev/2026','Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026','Ago/2026','Set/2026','Out/2026','Nov/2026','Dez/2026'];
@@ -1583,10 +1620,23 @@ class Component extends DCLogic {
 
   _initLine() {
     const el=document.getElementById('chart-line'); if(!el||!window.Chart)return;
-    const {selectedCos,monthStart,monthEnd}=this.state;
+    const {selectedCos,monthStart,monthEnd,compareEnabled,compareMonthStart,compareMonthEnd}=this.state;
     const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
     const lRes=this._lineResultados;
     const datasets=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(lRes[co]||[]).slice(ms,me+1),borderColor:s.b,backgroundColor:this._alpha(s.f,0.12),borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:4,fill:selectedCos.length===1,tension:0.4,_ol:s.shadow,_olc:s.sc};});
+    // A caixa de arraste (drag-compare) só olha pras séries do período atual — daí
+    // guardar quantas são antes de empilhar as de comparação (tracejadas) depois.
+    const mainCount=datasets.length;
+    if(compareEnabled && compareMonthStart!=null && compareMonthEnd!=null){
+      const cs=Math.min(compareMonthStart,compareMonthEnd), ce=Math.max(compareMonthStart,compareMonthEnd);
+      const Lm=me-ms+1;
+      selectedCos.forEach(co=>{
+        const s=this._cSt(co);
+        const raw=(lRes[co]||[]).slice(cs,ce+1);
+        const data=Array.from({length:Lm},(_,i)=>i<raw.length?raw[i]:null);
+        datasets.push({label:(this._dreLabels[co]||co)+' (comparação)',data,borderColor:s.b,backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:0,pointHoverRadius:4,tension:0.4});
+      });
+    }
     const ex=this._gc(el);
     if(ex){ex.data.labels=this._months.slice(ms,me+1);ex.data.datasets=datasets;ex.update();this._c.line=ex;this._bindLineAsk(el);return;}
     if(this._c.line)try{this._c.line.destroy();}catch(e){};
@@ -1600,20 +1650,42 @@ class Component extends DCLogic {
       if(!meta||!meta.data||!meta.data[i0]||!meta.data[i1])return;
       const x0=meta.data[i0].x, x1=meta.data[i1].x;
       const top=chart.chartArea.top, bottom=chart.chartArea.bottom;
-      const v0=data.datasets[0].data[i0], v1=data.datasets[0].data[i1], diff=v1-v0;
-      const col=diff>0?'rgba(34,197,94,0.15)':diff<0?'rgba(220,38,38,0.15)':'rgba(255,255,255,0.1)';
-      const tcol=diff>0?'#16a34a':diff<0?'#dc2626':'#94a3b8';
+      // Uma linha de diferença por empresa selecionada (não só a primeira), com
+      // R$ e % — a % é sobre o valor inicial do arraste.
+      const rows=[];
+      for(let d=0; d<mainCount; d++){
+        const ds=data.datasets[d];
+        const v0=ds.data[i0], v1=ds.data[i1];
+        if(v0==null||v1==null)continue;
+        const diff=v1-v0;
+        const pct=v0!==0?diff/Math.abs(v0)*100:null;
+        rows.push({label:ds.label,diff,pct});
+      }
+      if(!rows.length)return;
+      const overallDiff=rows.reduce((s,r)=>s+r.diff,0);
+      const col=overallDiff>0?'rgba(34,197,94,0.15)':overallDiff<0?'rgba(220,38,38,0.15)':'rgba(255,255,255,0.1)';
+      const tcol=overallDiff>0?'#16a34a':overallDiff<0?'#dc2626':'#94a3b8';
       ctx.save();
       ctx.fillStyle=col;
       ctx.fillRect(x0,top,x1-x0,bottom-top);
       ctx.strokeStyle=tcol; ctx.lineWidth=1; ctx.setLineDash([3,3]);
       ctx.strokeRect(x0,top,x1-x0,bottom-top);
       ctx.setLineDash([]);
-      const sign=diff>0?'+':''; const label=sign+'R$'+(diff/1000).toFixed(1)+'k';
-      const mx=(x0+x1)/2, my=(top+bottom)/2;
-      ctx.font='bold 13px Inter,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillStyle='rgba(255,255,255,0.92)'; ctx.fillRect(mx-46,my-14,92,28);
-      ctx.fillStyle=tcol; ctx.fillText(label,mx,my);
+      ctx.font='bold 10.5px Inter,sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      const lines=rows.map(r=>{
+        const sign=r.diff>0?'+':'';
+        const pctTxt=r.pct!=null?` (${sign}${r.pct.toFixed(1).replace('.',',')}%)`:'';
+        return {text:`${r.label}: ${sign}R$${(r.diff/1000).toFixed(1)}k${pctTxt}`,color:r.diff>0?'#4ade80':r.diff<0?'#f87171':'#cbd5e1'};
+      });
+      const boxW=Math.min(230,Math.max(...lines.map(l=>ctx.measureText(l.text).width))+20);
+      const lineH=15, boxH=lineH*lines.length+10;
+      const mx=(x0+x1)/2, my=Math.max(top+boxH/2+4,Math.min((top+bottom)/2,bottom-boxH/2-4));
+      ctx.fillStyle='rgba(15,23,42,0.95)'; ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=1;
+      ctx.fillRect(mx-boxW/2,my-boxH/2,boxW,boxH); ctx.strokeRect(mx-boxW/2,my-boxH/2,boxW,boxH);
+      lines.forEach((l,i)=>{
+        ctx.fillStyle=l.color;
+        ctx.fillText(l.text, mx-boxW/2+10, my-boxH/2+10+i*lineH+lineH/2-4);
+      });
       ctx.restore();
     }};
     const getIdx=(evt)=>{
@@ -1631,6 +1703,11 @@ class Component extends DCLogic {
     const endDrag=()=>{drag.active=false;};
     el.addEventListener('mouseup',endDrag);
     el.addEventListener('mouseleave',()=>{if(drag.active){endDrag();this._c.line&&this._c.line.draw();}});
+    // Suporte a toque (celular/tablet) — mesmo gesto de arrastar, sem deixar a
+    // página rolar enquanto o dedo desliza sobre o gráfico.
+    el.addEventListener('touchstart',e=>{drag.active=true;drag.startIdx=getIdx(e);drag.endIdx=drag.startIdx;this._c.line&&this._c.line.draw();},{passive:true});
+    el.addEventListener('touchmove',e=>{if(!drag.active)return;e.preventDefault();drag.endIdx=getIdx(e);this._c.line&&this._c.line.draw();},{passive:false});
+    el.addEventListener('touchend',endDrag);
     this._c.line=new window.Chart(el,{type:'line',data:{labels:this._months.slice(ms,me+1),datasets},options:{...this._bOpts(),scales:{x:this._sD(),y:this._sD(v=>'R$'+(v/1000).toFixed(0)+'k')}},plugins:[dragPlugin]});
     this._bindLineAsk(el);
     el.style.cursor='crosshair';
@@ -1696,17 +1773,42 @@ class Component extends DCLogic {
 
   _initDrePie() {
     const el=document.getElementById('chart-dre-pie'); if(!el||!window.Chart)return;
-    const {selectedCos,monthStart,monthEnd}=this.state;
+    const {selectedCos,monthStart,monthEnd,compareEnabled,compareMonthStart,compareMonthEnd}=this.state;
     const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
-    const data=selectedCos.map(co=>{let t=0;for(let m=ms+1;m<=me+1;m++){this._expand(co).forEach(mid=>{const d=this._dreDataMap[`${mid}-${m}`];if(d)t+=+d.receita_bruta||0;});}return t;});
+    const faturamento=(co,a,b)=>{let t=0;for(let m=a+1;m<=b+1;m++){this._expand(co).forEach(mid=>{const d=this._dreDataMap[`${mid}-${m}`];if(d)t+=+d.receita_bruta||0;});}return t;};
     const labels=selectedCos.map(co=>this._dreLabels[co]||co);
-    const colors=selectedCos.map(co=>this._alpha(this._dreColors[co]||'#6b7280',0.85));
-    const borders=selectedCos.map(co=>this._dreOutlineColors[co]||this._dreColors[co]||'#6b7280');
-    const ex=this._gc(el);
-    if(ex){ex.data.labels=labels;ex.data.datasets[0].data=data;ex.data.datasets[0].backgroundColor=colors;ex.data.datasets[0].borderColor=borders;ex.update();this._c.pie=ex;this._bindPieAsk(el);return;}
-    if(this._c.pie)try{this._c.pie.destroy();}catch(e){}
-    this._c.pie=new window.Chart(el,{type:'pie',data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2}]},options:{...this._bOpts()}});
-    this._bindPieAsk(el);
+    const hasCompare=compareEnabled && compareMonthStart!=null && compareMonthEnd!=null;
+    const desiredType=hasCompare?'bar':'pie';
+    const existing=this._gc(el);
+    if(existing && existing.config.type!==desiredType){ try{existing.destroy();}catch(e){} this._c.pie=null; }
+    if(!hasCompare){
+      // Composição do faturamento entre operações (sem comparação) — pizza, como sempre foi.
+      const data=selectedCos.map(co=>faturamento(co,ms,me));
+      const colors=selectedCos.map(co=>this._alpha(this._dreColors[co]||'#6b7280',0.85));
+      const borders=selectedCos.map(co=>this._dreOutlineColors[co]||this._dreColors[co]||'#6b7280');
+      const ex=this._gc(el);
+      if(ex && ex.config.type==='pie'){ex.data.labels=labels;ex.data.datasets[0].data=data;ex.data.datasets[0].backgroundColor=colors;ex.data.datasets[0].borderColor=borders;ex.update();this._c.pie=ex;this._bindPieAsk(el);return;}
+      if(this._c.pie)try{this._c.pie.destroy();}catch(e){}
+      this._c.pie=new window.Chart(el,{type:'pie',data:{labels,datasets:[{data,backgroundColor:colors,borderColor:borders,borderWidth:2}]},options:{...this._bOpts()}});
+      this._bindPieAsk(el);
+    } else {
+      // Com comparação: pizza não dá pra comparar direito, então vira barras
+      // agrupadas — atual (sólido) x período de comparação (contorno tracejado,
+      // mais claro) — lado a lado por operação.
+      const cs=Math.min(compareMonthStart,compareMonthEnd), ce=Math.max(compareMonthStart,compareMonthEnd);
+      const curData=selectedCos.map(co=>faturamento(co,ms,me));
+      const cmpData=selectedCos.map(co=>faturamento(co,cs,ce));
+      const colors=selectedCos.map(co=>this._dreColors[co]||'#6b7280');
+      const ex=this._gc(el);
+      const datasets=[
+        {label:'Atual',data:curData,backgroundColor:colors.map(c=>this._alpha(c,0.85)),borderColor:colors,borderWidth:1,borderRadius:3},
+        {label:'Comparação',data:cmpData,backgroundColor:colors.map(c=>this._alpha(c,0.2)),borderColor:colors,borderWidth:1,borderDash:[3,2],borderRadius:3},
+      ];
+      if(ex && ex.config.type==='bar'){ex.data.labels=labels;ex.data.datasets=datasets;ex.update();this._c.pie=ex;this._bindPieAsk(el);return;}
+      if(this._c.pie)try{this._c.pie.destroy();}catch(e){}
+      this._c.pie=new window.Chart(el,{type:'bar',data:{labels,datasets},options:{...this._bOpts(),scales:{x:this._sOpts(),y:this._sOpts(v=>'R$'+(v/1000).toFixed(0)+'k')}}});
+      this._bindPieAsk(el);
+    }
   }
   _bindPieAsk(el){
     this._bindChartAsk(el, ()=>this._c.pie, (chart,p)=>{
@@ -1721,11 +1823,24 @@ class Component extends DCLogic {
 
   _initDreMargem() {
     const el=document.getElementById('chart-dre-margem'); if(!el||!window.Chart)return;
-    const {selectedCos,monthStart,monthEnd}=this.state;
+    const {selectedCos,monthStart,monthEnd,compareEnabled,compareMonthStart,compareMonthEnd}=this.state;
     const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
     const mgs=this._margens;
     const sliceLabels=this._months.slice(ms,me+1);
     const datasets=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(mgs[co]||[]).slice(ms,me+1),borderColor:s.b,backgroundColor:this._alpha(s.f,0.08),borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:4,tension:0.4,_ol:s.shadow,_olc:s.sc};});
+    // Comparação de período: sobrepõe, tracejado, o mesmo período de comparação —
+    // alinhado por posição (1º mês do período atual x 1º mês do período de
+    // comparação), não pela data do calendário, pra dar pra ler lado a lado.
+    if(compareEnabled && compareMonthStart!=null && compareMonthEnd!=null){
+      const cs=Math.min(compareMonthStart,compareMonthEnd), ce=Math.max(compareMonthStart,compareMonthEnd);
+      const Lm=me-ms+1;
+      selectedCos.forEach(co=>{
+        const s=this._cSt(co);
+        const raw=(mgs[co]||[]).slice(cs,ce+1);
+        const data=Array.from({length:Lm},(_,i)=>i<raw.length?raw[i]:null);
+        datasets.push({label:(this._dreLabels[co]||co)+' (comparação)',data,borderColor:s.b,backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:0,pointHoverRadius:4,tension:0.4});
+      });
+    }
     const allVals=datasets.flatMap(ds=>ds.data.filter(v=>v!=null));
     const yMin=allVals.length?Math.floor(Math.min(...allVals)-2):0;
     const yMax=allVals.length?Math.ceil(Math.max(...allVals)+2):100;
@@ -1797,7 +1912,7 @@ class Component extends DCLogic {
   componentDidUpdate() {
     const s=this.state;
     const ps=this._prevSnap||{};
-    this._prevSnap={tab:s.tab,barCos:s.barCos,barSeries:s.barSeries,selectedCos:s.selectedCos,chartMetric:s.chartMetric,monthStart:s.monthStart,monthEnd:s.monthEnd,expandedChart:s.expandedChart,resumoSel:s.resumoSel};
+    this._prevSnap={tab:s.tab,barCos:s.barCos,barSeries:s.barSeries,selectedCos:s.selectedCos,chartMetric:s.chartMetric,monthStart:s.monthStart,monthEnd:s.monthEnd,expandedChart:s.expandedChart,resumoSel:s.resumoSel,compareEnabled:s.compareEnabled,compareMonthStart:s.compareMonthStart,compareMonthEnd:s.compareMonthEnd};
     const {tab,barCos,barSeries,selectedCos,chartMetric,expandedChart,resumoSel}=s;
     const tabChg=ps.tab!==tab;
     const resumoSelChg=JSON.stringify(ps.resumoSel)!==JSON.stringify(resumoSel);
@@ -1806,14 +1921,18 @@ class Component extends DCLogic {
     const metChg=ps.chartMetric!==chartMetric;
     const monChg=ps.monthStart!==s.monthStart||ps.monthEnd!==s.monthEnd;
     const expChg=ps.expandedChart!==expandedChart;
+    // Comparação de período (sólido x tracejado) nos gráficos de Margem, Faturamento
+    // por Operação e Evolução do Resultado — qualquer mudança no toggle ou no
+    // intervalo de comparação precisa re-desenhar esses 3 gráficos.
+    const cmpChg=ps.compareEnabled!==s.compareEnabled||ps.compareMonthStart!==s.compareMonthStart||ps.compareMonthEnd!==s.compareMonthEnd;
     if(expChg&&expandedChart){setTimeout(()=>this._initModal(),150);}
     else if(expChg&&!expandedChart){if(this._c.modal){this._c.modal.destroy();this._c.modal=null;}}
     if(!expChg&&expandedChart&&(cosChg||metChg||monChg||barChg)){setTimeout(()=>this._initModal(),100);}
     if(tabChg){setTimeout(()=>{ if(tab===0){this._initBar();}else{this._initDreEvo();this._initDrePie();this._initDreMargem();this._initLine();setTimeout(()=>this._animKPIs(),80);} },150);}
     else if(tab===0){if(barChg||monChg)setTimeout(()=>this._initBar(),100);}
-    else if(tab===1&&(cosChg||metChg||monChg)){
+    else if(tab===1&&(cosChg||metChg||monChg||cmpChg)){
       if(cosChg||monChg)setTimeout(()=>this._animKPIs(),30);
-      setTimeout(()=>{ this._initDreEvo(); if(cosChg||monChg){this._initDrePie();this._initDreMargem();this._initLine();} },100);
+      setTimeout(()=>{ this._initDreEvo(); if(cosChg||monChg||cmpChg){this._initDrePie();this._initDreMargem();this._initLine();} },100);
     }
   }
 
@@ -1931,7 +2050,7 @@ class Component extends DCLogic {
     const dreKPI={
       fatFmt:this._fmtShort(calc.rb),
       rlFmt:this._fmtShort(calc.rl),
-      mcFmt:this._fmtShort(calc.mc), mcPct:(mcRatio*100).toFixed(1).replace('.',',')+'%', mcColor:calc.mc>=0?'#4ade80':'#f87171',
+      mcFmt:this._fmtShort(calc.mc), mcPct:(mcRatio*100).toFixed(1).replace('.',',')+'%',
       resFmt:this._fmtShort(calc.res), resColor:calc.res>=0?'#4ade80':'#f87171',
       resPct:(calc.rb>0?(calc.res/calc.rb*100):0).toFixed(1).replace('.',',')+'%',
       gopFmt:this._fmtShort(calc.gop),
@@ -1944,7 +2063,7 @@ class Component extends DCLogic {
       const c=this._dreCalcRange([co],ms+1,me+1);
       const mcR=c.rb>0?c.mc/c.rb:0;
       const coLabel=this._dreLabels[co]||co;
-      return {idx:i,logo:this._dreLogos[co]||'',label:coLabel,color:this._dreColors[co]||'#6b7280',fatFmt:this._fmtShort(c.rb),rlFmt:this._fmtShort(c.rl),resFmt:this._fmtShort(c.res),resColor:c.res>=0?'#4ade80':'#f87171',resPct:c.rb>0?(c.res/c.rb*100).toFixed(1).replace('.',',')+'%':'—',mcFmt:this._fmtShort(c.mc),mcColor:c.mc>=0?'#4ade80':'#f87171',mcPct:c.rb>0?(mcR*100).toFixed(1).replace('.',',')+'%':'—',
+      return {idx:i,logo:this._dreLogos[co]||'',label:coLabel,color:this._dreColors[co]||'#6b7280',fatFmt:this._fmtShort(c.rb),rlFmt:this._fmtShort(c.rl),resFmt:this._fmtShort(c.res),resColor:c.res>=0?'#4ade80':'#f87171',resPct:c.rb>0?(c.res/c.rb*100).toFixed(1).replace('.',',')+'%':'—',mcFmt:this._fmtShort(c.mc),mcPct:c.rb>0?(mcR*100).toFixed(1).replace('.',',')+'%':'—',
         fatAsk:`Pode me explicar o Faturamento de ${this._fmtShort(c.rb)} da ${coLabel} no período ${periodLabel}?`,
         resAsk:`Pode me explicar o Resultado de ${this._fmtShort(c.res)} da ${coLabel} no período ${periodLabel}? O que está impactando esse resultado?`,
         mcAsk:`Pode me explicar a Margem de ${c.rb>0?(mcR*100).toFixed(1).replace('.',','):'0'}% da ${coLabel} no período ${periodLabel}? Está dentro da meta?`};
@@ -1984,6 +2103,14 @@ class Component extends DCLogic {
     const modalIsCompanyChart=this.state.expandedChart!=='bar';
     const modalIsSeriesChart=this.state.expandedChart==='bar';
 
+    // ══ Comparação de período nos gráficos (Margem, Faturamento por Operação,
+    // Evolução do Resultado) — botão liga/desliga + seletor DE/ATÉ do período
+    // de comparação, desenhado em tracejado sobre o período atual (sólido). ══
+    const {compareEnabled, compareMonthStart, compareMonthEnd}=this.state;
+    const comparePeriodLabel=(compareMonthStart!=null && compareMonthEnd!=null)
+      ? (compareMonthStart===compareMonthEnd ? this._months[compareMonthStart] : `${this._months[Math.min(compareMonthStart,compareMonthEnd)]} – ${this._months[Math.max(compareMonthStart,compareMonthEnd)]}`)
+      : '';
+
     return {
       tab0Active:tab===0,tab1Active:tab===1,
       sidebarTab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'flex':'none';})(),
@@ -2017,7 +2144,28 @@ class Component extends DCLogic {
       setMonthComp:e=>{const v=parseInt(e.target.value);this.setState({monthStart:v,monthEnd:v});},
       setMonthStart:e=>{const v=parseInt(e.target.value);this.setState({monthStart:v,monthEnd:Math.max(v,this.state.monthEnd)});},
       setMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({monthEnd:v,monthStart:Math.min(v,this.state.monthStart)});},
-      setYTD:()=>{this.setState({monthStart:0,monthEnd:this._months.length-1});}
+      setYTD:()=>{this.setState({monthStart:0,monthEnd:this._months.length-1});},
+      // Comparação de período
+      compareEnabled, compareMonthStart, compareMonthEnd, comparePeriodLabel,
+      compareBtnLabel:compareEnabled?'Comparando período':'Comparar período',
+      compareBtnBg:compareEnabled?'rgba(251,191,36,0.12)':'rgba(255,255,255,0.04)',
+      compareBtnBorder:compareEnabled?'rgba(251,191,36,0.35)':'rgba(255,255,255,0.1)',
+      compareBtnColor:compareEnabled?'#fbbf24':'#94a3b8',
+      toggleCompare:()=>{
+        if(!compareEnabled && compareMonthStart==null){
+          // Default: período anterior equivalente (mesmo tamanho, imediatamente antes),
+          // igual ao critério já usado no AH% da tabela do DRE — mas o usuário pode
+          // ajustar livremente pelos seletores que aparecem assim que liga.
+          const Lp=me-ms+1;
+          const cs=ms-Lp>=0?ms-Lp:0;
+          const ce=ms-Lp>=0?ms-1:Math.max(0,ms-1);
+          this.setState({compareEnabled:true,compareMonthStart:cs,compareMonthEnd:ce});
+        } else {
+          this.setState({compareEnabled:!compareEnabled});
+        }
+      },
+      setCompareMonthStart:e=>{const v=parseInt(e.target.value);this.setState({compareMonthStart:v,compareMonthEnd:Math.max(v,this.state.compareMonthEnd??v)});},
+      setCompareMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({compareMonthEnd:v,compareMonthStart:Math.min(v,this.state.compareMonthStart??v)});}
     };
   }
 }
