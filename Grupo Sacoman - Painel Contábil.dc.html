@@ -1180,17 +1180,19 @@
       </div>
       <div id="dre-table-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;margin-bottom:24px">
       <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;backdrop-filter:blur(12px);min-width:560px">
-        <div style="display:grid;grid-template-columns:1fr 180px 72px 80px;background:rgba(10,15,30,0.9);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 20px">
+        <div style="display:grid;grid-template-columns:1fr 180px 72px 92px 80px;background:rgba(10,15,30,0.9);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 20px">
           <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase">Conta</div>
           <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase;text-align:right">Valor · {{ periodLabel }}</div>
-          <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase;text-align:right" title="Análise Vertical">AV%</div>
+          <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase;text-align:right" title="Análise Vertical — % sobre a Receita Operacional Bruta">AV%</div>
+          <div style="font-size:9px;font-weight:700;color:#fbbf24;letter-spacing:1px;text-transform:uppercase;text-align:right" title="% sobre o subtotal do bloco anterior (ex: Margem de Contribuição = % que sobrou da Receita Líquida). Dentro de um mesmo bloco, essas % somam 100%.">% BLOCO ANT.</div>
           <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:1px;text-transform:uppercase;text-align:right" title="Análise Horizontal">AH% {{ ahBaseLabel }}</div>
         </div>
         <sc-for list="{{ dreRows }}" as="row" hint-placeholder-count="26">
-          <div style="display:grid;grid-template-columns:1fr 180px 72px 80px;padding:{{ row.rowPadding }};background:{{ row.rowBg }};border-bottom:{{ row.rowBorderBottom }}">
+          <div style="display:grid;grid-template-columns:1fr 180px 72px 92px 80px;padding:{{ row.rowPadding }};background:{{ row.rowBg }};border-bottom:{{ row.rowBorderBottom }}">
             <div style="padding-left:{{ row.paddingLeft }};font-size:{{ row.labelFontSize }};font-weight:{{ row.labelFontWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.labelLetterSpacing }};text-transform:{{ row.labelTransform }}">{{ row.label }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:11px;font-weight:{{ row.valueFontWeight }};color:{{ row.valueColor }};text-align:right;font-variant-numeric:tabular-nums;cursor:{{ row.askCursor }}" title="{{ row.askTitle }}">{{ row.valueFmt }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:10px;color:#64748b;text-align:right;cursor:{{ row.askCursor }}">{{ row.av }}</div>
+            <div data-ask="{{ row.ask }}" style="font-size:10px;font-weight:{{ row.blocoWeight }};color:{{ row.blocoColor }};text-align:right;cursor:{{ row.askCursor }}">{{ row.bloco }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:10px;color:{{ row.ahColor }};text-align:right;font-weight:600;cursor:{{ row.askCursor }}">{{ row.ah }}</div>
           </div>
         </sc-for>
@@ -1493,12 +1495,17 @@ class Component extends DCLogic {
     const av=v=>(rb>0?(v/rb*100).toFixed(1):'0.0').replace('.',',')+'%';
     const ahv=(c,p)=>{ if(dp==null||p==null||p===0) return '—'; const x=(c-p)/Math.abs(p)*100; return (x>=0?'+':'')+x.toFixed(1).replace('.',',')+'%'; };
     const ah=k=>ahv(d[k], dp?dp[k]:null);
+    // % sobre o subtotal do BLOCO anterior (não sobre a Receita Bruta) — ex: Margem de
+    // Contribuição / Receita Líquida. Dentro de um mesmo bloco essas % sempre somam 100%
+    // (ex: Custos Variáveis% + Margem% = 100% da Receita Líquida), diferente do AV% (que
+    // é sempre sobre a Receita Bruta e por isso não deve ser somado entre blocos).
+    const pctBloco=(v,base)=>(base>0?(Math.abs(v)/base*100).toFixed(1):'0.0').replace('.',',')+'%';
     const rows=[];
 
     const classes = this._lancClasses||[];
     const camposPorClasse = this._lancCamposPorClasse||{};
     const findClasse = nome => classes.find(c => c.nome === nome);
-    const campoRows = (classeNome, sinalMult) => {
+    const campoRows = (classeNome, sinalMult, blocoBase) => {
       const classe = findClasse(classeNome);
       if (!classe) return [];
       return (camposPorClasse[classe.id]||[])
@@ -1506,26 +1513,26 @@ class Component extends DCLogic {
         .map(campo => {
           const v = camposTotais[campo.id]||0;
           const pv = dp ? (dp.camposTotais[campo.id]||0) : null;
-          return {t:'S', l:campo.nome, v:sinalMult*v, a:av(v), h:ahv(v,pv), i:1};
+          return {t:'S', l:campo.nome, v:sinalMult*v, a:av(v), h:ahv(v,pv), i:1, bp:blocoBase?pctBloco(v,blocoBase):'—'};
         });
     };
 
     rows.push({t:'H',l:'BLOCO 1 — RECEITA'});
-    rows.push({t:'I',l:'(+) Receita Operacional Bruta',v:rb,a:av(rb),h:ah('rb'),i:0,b:1});
-    if(ec>0) rows.push({t:'S',l:'GIP Ecommerce',v:ec,a:av(ec),h:ah('ec'),i:1});
-    if(vc>0) rows.push({t:'S',l:'Via Closet',v:vc,a:av(vc),h:ah('vc'),i:1});
-    if(exp>0) rows.push({t:'S',l:'Exposição Paulista',v:exp,a:av(exp),h:ah('exp'),i:1});
-    rows.push({t:'I',l:'(−) Deduções da Receita',v:-ded,a:av(ded),h:ah('ded'),i:0});
+    rows.push({t:'I',l:'(+) Receita Operacional Bruta',v:rb,a:av(rb),h:ah('rb'),i:0,b:1,bp:'—'});
+    if(ec>0) rows.push({t:'S',l:'GIP Ecommerce',v:ec,a:av(ec),h:ah('ec'),i:1,bp:'—'});
+    if(vc>0) rows.push({t:'S',l:'Via Closet',v:vc,a:av(vc),h:ah('vc'),i:1,bp:'—'});
+    if(exp>0) rows.push({t:'S',l:'Exposição Paulista',v:exp,a:av(exp),h:ah('exp'),i:1,bp:'—'});
+    rows.push({t:'I',l:'(−) Deduções da Receita',v:-ded,a:av(ded),h:ah('ded'),i:0,bp:'—'});
     campoRows('Deduções da Receita', -1).forEach(r=>rows.push(r));
-    rows.push({t:'R',l:'(=) Receita Líquida',v:rl,a:av(rl),h:ah('rl'),i:0});
+    rows.push({t:'R',l:'(=) Receita Líquida',v:rl,a:av(rl),h:ah('rl'),i:0,bp:'—'});
     rows.push({t:'H',l:'BLOCO 2 — CUSTOS VARIÁVEIS'});
-    rows.push({t:'I',l:'(−) Custos Variáveis',v:-cvar,a:av(cvar),h:ah('cvar'),i:0,b:1});
-    campoRows('Custos Variáveis', -1).forEach(r=>rows.push(r));
-    rows.push({t:'R',l:'(=) Margem de Contribuição',v:mc,a:av(mc),h:ah('mc'),i:0});
+    rows.push({t:'I',l:'(−) Custos Variáveis',v:-cvar,a:av(cvar),h:ah('cvar'),i:0,b:1,bp:pctBloco(cvar,rl)});
+    campoRows('Custos Variáveis', -1, rl).forEach(r=>rows.push(r));
+    rows.push({t:'R',l:'(=) Margem de Contribuição',v:mc,a:av(mc),h:ah('mc'),i:0,bp:pctBloco(mc,rl)});
     rows.push({t:'H',l:'BLOCO 3 — OPERACIONAL'});
-    rows.push({t:'I',l:'(−) Gastos Operacionais',v:-gop,a:av(gop),h:ah('gop'),i:0,b:1});
-    campoRows('Gastos Operacionais', -1).forEach(r=>rows.push(r));
-    rows.push({t:'R',l:'(=) Resultado Líquido',v:res,a:av(res),h:ah('res'),i:0});
+    rows.push({t:'I',l:'(−) Gastos Operacionais',v:-gop,a:av(gop),h:ah('gop'),i:0,b:1,bp:pctBloco(gop,mc)});
+    campoRows('Gastos Operacionais', -1, mc).forEach(r=>rows.push(r));
+    rows.push({t:'R',l:'(=) Resultado Líquido',v:res,a:av(res),h:ah('res'),i:0,bp:pctBloco(res,mc)});
     return rows;
   }
 
@@ -1911,6 +1918,7 @@ class Component extends DCLogic {
     const dreRows=rawRows.map(r=>{
       const isH=r.t==='H',isR=r.t==='R',isS=r.t==='S';
       const ahColor=!r.h||r.h==='—'?'#475569':r.h.startsWith('+')?'#4ade80':'#f87171';
+      const blocoColor=(!r.bp||r.bp==='—')?'#475569':isR?'#fbbf24':'#94a3b8';
       const valFmt=r.v==null?'':(r.v<0?'('+F(r.v)+')':F(r.v));
       const ahTxt=(!isH && r.h && r.h!=='—')?` (variação de ${r.h} em relação ao ${ahBaseLabel.replace('vs ','')})`:'';
       return {
@@ -1920,6 +1928,7 @@ class Component extends DCLogic {
         askCursor:(isH||r.v==null)?'default':'pointer',
         askTitle:(isH||r.v==null)?'':'Clique duas vezes para perguntar ao Gerôn',
         av:isH?'':(r.a||'—'),ah:isH?'':(r.h||'—'),
+        bloco:isH?'':(r.bp||'—'),blocoColor,blocoWeight:isR?'700':'400',
         rowBg:isH?'rgba(15,23,42,0.6)':isR?'rgba(255,255,255,0.03)':'transparent',
         rowBorderTop:'none',
         rowBorderBottom:isH?'1px solid #1e3a5f':'1px solid rgba(255,255,255,0.05)',
