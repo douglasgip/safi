@@ -1027,8 +1027,10 @@
           </div>
           <div style="padding:0 22px;border-right:1px solid rgba(255,255,255,0.07)">
             <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Margem de Contribuição</div>
-            <div id="kpi-mc-pct" data-ask="{{ dreKPI.mcAsk }}" style="font-size:22px;font-weight:800;color:#38bdf8;letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.mcPct }}</div>
-            <div id="kpi-mc-fmt" data-ask="{{ dreKPI.mcAsk }}" style="font-size:9px;color:#94a3b8;margin-top:3px;cursor:pointer">{{ dreKPI.mcFmt }}</div>
+            <div style="display:flex;align-items:baseline;gap:8px">
+              <div id="kpi-mc-fmt" data-ask="{{ dreKPI.mcAsk }}" style="font-size:24px;font-weight:800;color:{{ dreKPI.mcColor }};letter-spacing:-1px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ dreKPI.mcFmt }}</div>
+              <div id="kpi-mc-pct" data-ask="{{ dreKPI.mcAsk }}" style="font-size:14px;font-weight:700;color:{{ dreKPI.mcColor }};font-variant-numeric:tabular-nums;cursor:pointer">{{ dreKPI.mcPct }}</div>
+            </div>
           </div>
           <div style="padding-left:22px">
             <div style="font-size:8px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px">Resultado Líquido</div>
@@ -1055,11 +1057,17 @@
               </div>
               <div>
                 <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Resultado</div>
-                <div id="ck-res-{{ ck.idx }}" data-ask="{{ ck.resAsk }}" style="font-size:13px;font-weight:800;color:{{ ck.resColor }};letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.resFmt }}</div>
+                <div style="display:flex;align-items:baseline;gap:4px">
+                  <div id="ck-res-{{ ck.idx }}" data-ask="{{ ck.resAsk }}" style="font-size:13px;font-weight:800;color:{{ ck.resColor }};letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.resFmt }}</div>
+                  <div id="ck-res-pct-{{ ck.idx }}" data-ask="{{ ck.resAsk }}" style="font-size:9px;font-weight:700;color:{{ ck.resColor }};font-variant-numeric:tabular-nums;cursor:pointer">{{ ck.resPct }}</div>
+                </div>
               </div>
               <div>
                 <div style="font-size:7px;font-weight:700;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:3px">Margem</div>
-                <div id="ck-mc-{{ ck.idx }}" data-ask="{{ ck.mcAsk }}" style="font-size:13px;font-weight:800;color:#38bdf8;letter-spacing:-0.3px;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.mcPct }}</div>
+                <div style="display:flex;align-items:baseline;gap:4px">
+                  <div id="ck-mc-{{ ck.idx }}" data-ask="{{ ck.mcAsk }}" style="font-size:13px;font-weight:800;color:{{ ck.mcColor }};letter-spacing:-0.3px;font-variant-numeric:tabular-nums;cursor:pointer" title="Clique duas vezes para perguntar ao Gerôn">{{ ck.mcFmt }}</div>
+                  <div id="ck-mc-pct-{{ ck.idx }}" data-ask="{{ ck.mcAsk }}" style="font-size:9px;font-weight:700;color:{{ ck.mcColor }};cursor:pointer">{{ ck.mcPct }}</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1318,10 +1326,12 @@ class Component extends DCLogic {
     this._animPct(g('kpi-res-pct'),calc.rb>0?calc.res/calc.rb*100:0,D);
     // Mini-cards
     selectedCos.forEach((co,i)=>{
-      const c=this._dreCalcRange([co],ms+1,me+1),mcR=c.rb>0?c.mc/c.rb:0;
+      const c=this._dreCalcRange([co],ms+1,me+1),mcR=c.rb>0?c.mc/c.rb:0,resR=c.rb>0?c.res/c.rb:0;
       this._animNum(g('ck-fat-'+i),c.rb,D);
       this._animNum(g('ck-res-'+i),c.res,D);
-      this._animPct(g('ck-mc-'+i),mcR*100,D);
+      this._animPct(g('ck-res-pct-'+i),resR*100,D);
+      this._animNum(g('ck-mc-'+i),c.mc,D);
+      this._animPct(g('ck-mc-pct-'+i),mcR*100,D);
     });
   }
 
@@ -1921,7 +1931,7 @@ class Component extends DCLogic {
     const dreKPI={
       fatFmt:this._fmtShort(calc.rb),
       rlFmt:this._fmtShort(calc.rl),
-      mcFmt:this._fmtShort(calc.mc), mcPct:(mcRatio*100).toFixed(1).replace('.',',')+'%',
+      mcFmt:this._fmtShort(calc.mc), mcPct:(mcRatio*100).toFixed(1).replace('.',',')+'%', mcColor:calc.mc>=0?'#4ade80':'#f87171',
       resFmt:this._fmtShort(calc.res), resColor:calc.res>=0?'#4ade80':'#f87171',
       resPct:(calc.rb>0?(calc.res/calc.rb*100):0).toFixed(1).replace('.',',')+'%',
       gopFmt:this._fmtShort(calc.gop),
@@ -1934,7 +1944,7 @@ class Component extends DCLogic {
       const c=this._dreCalcRange([co],ms+1,me+1);
       const mcR=c.rb>0?c.mc/c.rb:0;
       const coLabel=this._dreLabels[co]||co;
-      return {idx:i,logo:this._dreLogos[co]||'',label:coLabel,color:this._dreColors[co]||'#6b7280',fatFmt:this._fmtShort(c.rb),rlFmt:this._fmtShort(c.rl),resFmt:this._fmtShort(c.res),resColor:c.res>=0?'#4ade80':'#f87171',mcPct:c.rb>0?(mcR*100).toFixed(1).replace('.',',')+'%':'—',
+      return {idx:i,logo:this._dreLogos[co]||'',label:coLabel,color:this._dreColors[co]||'#6b7280',fatFmt:this._fmtShort(c.rb),rlFmt:this._fmtShort(c.rl),resFmt:this._fmtShort(c.res),resColor:c.res>=0?'#4ade80':'#f87171',resPct:c.rb>0?(c.res/c.rb*100).toFixed(1).replace('.',',')+'%':'—',mcFmt:this._fmtShort(c.mc),mcColor:c.mc>=0?'#4ade80':'#f87171',mcPct:c.rb>0?(mcR*100).toFixed(1).replace('.',',')+'%':'—',
         fatAsk:`Pode me explicar o Faturamento de ${this._fmtShort(c.rb)} da ${coLabel} no período ${periodLabel}?`,
         resAsk:`Pode me explicar o Resultado de ${this._fmtShort(c.res)} da ${coLabel} no período ${periodLabel}? O que está impactando esse resultado?`,
         mcAsk:`Pode me explicar a Margem de ${c.rb>0?(mcR*100).toFixed(1).replace('.',','):'0'}% da ${coLabel} no período ${periodLabel}? Está dentro da meta?`};
