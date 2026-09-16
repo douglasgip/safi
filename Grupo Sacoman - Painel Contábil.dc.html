@@ -1286,19 +1286,17 @@
       </div>
       <div id="dre-table-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;margin-bottom:24px">
       <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;backdrop-filter:blur(12px);min-width:560px">
-        <div style="display:grid;grid-template-columns:1fr 180px 72px 92px 80px;background:rgba(10,15,30,0.9);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 20px">
+        <div style="display:grid;grid-template-columns:1fr 180px 72px 112px;background:rgba(10,15,30,0.9);border-bottom:1px solid rgba(255,255,255,0.08);padding:12px 20px">
           <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase">Conta</div>
           <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:2px;text-transform:uppercase;text-align:right">Valor · {{ periodLabel }}</div>
           <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:2px;text-transform:uppercase;text-align:right" title="Análise Vertical — % sobre a Receita Operacional Bruta">AV%</div>
-          <div style="font-size:9px;font-weight:700;color:#fbbf24;letter-spacing:1px;text-transform:uppercase;text-align:right" title="% sobre o subtotal do bloco anterior (ex: Margem de Contribuição = % que sobrou da Receita Líquida). Dentro de um mesmo bloco, essas % somam 100%.">% BLOCO ANT.</div>
-          <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:1px;text-transform:uppercase;text-align:right" title="Análise Horizontal">AH% {{ ahBaseLabel }}</div>
+          <div style="font-size:9px;font-weight:700;color:#e2e8f0;letter-spacing:0.6px;text-transform:uppercase;text-align:right;white-space:nowrap" title="Análise Horizontal">AH% {{ ahBaseLabel }}</div>
         </div>
         <sc-for list="{{ dreRows }}" as="row" hint-placeholder-count="26">
-          <div style="display:grid;grid-template-columns:1fr 180px 72px 92px 80px;padding:{{ row.rowPadding }};background:{{ row.rowBg }};border-bottom:{{ row.rowBorderBottom }}">
+          <div style="display:grid;grid-template-columns:1fr 180px 72px 112px;padding:{{ row.rowPadding }};background:{{ row.rowBg }};border-bottom:{{ row.rowBorderBottom }}">
             <div style="padding-left:{{ row.paddingLeft }};font-size:{{ row.labelFontSize }};font-weight:{{ row.labelFontWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.labelLetterSpacing }};text-transform:{{ row.labelTransform }}">{{ row.label }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:11px;font-weight:{{ row.valueFontWeight }};color:{{ row.valueColor }};text-align:right;font-variant-numeric:tabular-nums;cursor:{{ row.askCursor }}" title="{{ row.askTitle }}">{{ row.valueFmt }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:10px;color:#64748b;text-align:right;cursor:{{ row.askCursor }}">{{ row.av }}</div>
-            <div data-ask="{{ row.ask }}" style="font-size:10px;font-weight:{{ row.blocoWeight }};color:{{ row.blocoColor }};text-align:right;cursor:{{ row.askCursor }}">{{ row.bloco }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:10px;color:{{ row.ahColor }};text-align:right;font-weight:600;cursor:{{ row.askCursor }}">{{ row.ah }}</div>
           </div>
         </sc-for>
@@ -1438,18 +1436,18 @@
                 <div style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }}">
                   <div style="font-size:13px;font-weight:{{ cell.weight }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
                   <div style="font-size:9px;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap">
-                    <span style="color:#64748b">{{ cell.avFmt }}</span>
+                    <span style="color:#f1f5f9">{{ cell.avFmt }}</span>
                     <span style="color:{{ cell.ahColor }};margin-left:6px">{{ cell.ahFmt }}</span>
                   </div>
                 </div>
               </sc-for>
               <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }}">
                 <div style="font-size:13px;font-weight:{{ row.valueWeight }};color:{{ row.totalColor }};font-variant-numeric:tabular-nums">{{ row.totalFmt }}</div>
-                <div style="font-size:9px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.totalAvFmt }}</div>
+                <div style="font-size:9px;color:#f1f5f9;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.totalAvFmt }}</div>
               </div>
               <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-bottom:{{ row.border }};opacity:0.8">
                 <div style="font-size:13px;font-weight:{{ row.valueWeight }};color:{{ row.mediaColor }};font-variant-numeric:tabular-nums">{{ row.mediaFmt }}</div>
-                <div style="font-size:9px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.mediaAvFmt }}</div>
+                <div style="font-size:9px;color:#f1f5f9;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.mediaAvFmt }}</div>
               </div>
             </sc-for>
           </div>
