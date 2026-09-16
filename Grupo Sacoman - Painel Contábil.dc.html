@@ -1397,18 +1397,39 @@
           <div style="display:grid;grid-template-columns:{{ lancGridCols }}">
             <div style="position:sticky;top:0;left:0;z-index:5;background:#0a0f1e;padding:10px 18px;font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.1)">Conta</div>
             <sc-for list="{{ lancHeaderCols }}" as="hc" hint-placeholder-count="9">
-              <div style="position:sticky;top:0;z-index:3;padding:10px 8px;font-size:9.5px;font-weight:700;color:{{ hc.color }};text-align:right;text-transform:uppercase;letter-spacing:0.4px;background:{{ hc.bg }};border-bottom:1px solid rgba(255,255,255,0.1)">{{ hc.label }}</div>
+              <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;background:{{ hc.bg }};border-bottom:1px solid rgba(255,255,255,0.1)">
+                <div style="font-size:9.5px;font-weight:700;color:{{ hc.color }};text-transform:uppercase;letter-spacing:0.4px">{{ hc.label }}</div>
+                <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV · AH</div>
+              </div>
             </sc-for>
-            <div style="position:sticky;top:0;z-index:3;padding:10px 8px;font-size:9px;font-weight:700;color:#e2e8f0;text-align:right;text-transform:uppercase;letter-spacing:0.6px;border-left:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">Total</div>
-            <div style="position:sticky;top:0;z-index:3;padding:10px 8px;font-size:9px;font-weight:700;color:#64748b;text-align:right;text-transform:uppercase;letter-spacing:0.6px;border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">Média</div>
+            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-left:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">
+              <div style="font-size:9px;font-weight:700;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.6px">Total</div>
+              <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV%</div>
+            </div>
+            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">
+              <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px">Média</div>
+              <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV%</div>
+            </div>
 
             <sc-for list="{{ lancRows }}" as="row" hint-placeholder-count="40">
               <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }}">{{ row.label }}</div>
               <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
-                <div style="padding:{{ row.rowPad }};font-size:10.5px;color:{{ cell.color }};text-align:right;font-variant-numeric:tabular-nums;background:{{ cell.bg }};border-bottom:{{ cell.border }}">{{ cell.fmt }}</div>
+                <div style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }}">
+                  <div style="font-size:10.5px;color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
+                  <div style="font-size:7.5px;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap">
+                    <span style="color:#64748b">{{ cell.avFmt }}</span>
+                    <span style="color:{{ cell.ahColor }};margin-left:5px">{{ cell.ahFmt }}</span>
+                  </div>
+                </div>
               </sc-for>
-              <div style="padding:{{ row.rowPad }};font-size:10.5px;font-weight:700;color:{{ row.totalColor }};text-align:right;font-variant-numeric:tabular-nums;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }}">{{ row.totalFmt }}</div>
-              <div style="padding:{{ row.rowPad }};font-size:10.5px;color:{{ row.mediaColor }};text-align:right;font-variant-numeric:tabular-nums;opacity:0.75;background:{{ row.bg }};border-bottom:{{ row.border }}">{{ row.mediaFmt }}</div>
+              <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }}">
+                <div style="font-size:10.5px;font-weight:700;color:{{ row.totalColor }};font-variant-numeric:tabular-nums">{{ row.totalFmt }}</div>
+                <div style="font-size:7.5px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px">{{ row.totalAvFmt }}</div>
+              </div>
+              <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-bottom:{{ row.border }};opacity:0.8">
+                <div style="font-size:10.5px;color:{{ row.mediaColor }};font-variant-numeric:tabular-nums">{{ row.mediaFmt }}</div>
+                <div style="font-size:7.5px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px">{{ row.mediaAvFmt }}</div>
+              </div>
             </sc-for>
           </div>
         </div>
@@ -1719,8 +1740,14 @@ class Component extends DCLogic {
 
   _lancDetalheRows(cos, ms, me) {
     const members = [...new Set(cos.flatMap(co => this._expand(co)))];
-    const months = []; for (let m = ms; m <= me; m++) months.push(m);
-    const perMonth = months.map(m => this._dreCalcRange(cos, m, m));
+    // Busca um mês "sombra" antes do início do período só pra servir de base do AH%
+    // da primeira coluna exibida (mesmo critério do AH% da tabela principal do DRE:
+    // mês vs mês imediatamente anterior). Não vira coluna, só alimenta a variação.
+    const hasPrev = ms > 1;
+    const offset = hasPrev ? 1 : 0;
+    const mAll = []; for (let m = (hasPrev?ms-1:ms); m <= me; m++) mAll.push(m);
+    const months = mAll.slice(offset);
+    const perAll = mAll.map(m => this._dreCalcRange(cos, m, m));
     const sum = arr => arr.reduce((a,b) => a+b, 0);
     const hasMov = arr => arr.some(v => Math.abs(v) >= 0.005);
     const camposPorClasse = this._lancCamposPorClasse||{};
@@ -1730,46 +1757,68 @@ class Component extends DCLogic {
     // a tabela-resumo do DRE tenta casar (esse lookup lá está quebrado e sempre
     // retorna vazio; aqui usamos os nomes corretos pra realmente descer no detalhe).
     const findClasse = nome => (this._lancClasses||[]).find(c => c.nome === nome);
+
+    // AV% = |valor| sobre a Receita Bruta do MESMO mês (igual à tabela principal).
+    // AH% = variação vs o mês anterior, na própria linha (igual ao critério de AH%
+    // já usado no DRE — mês vs mês, não vs início do período selecionado).
+    const mkCells = monthlyAll => months.map((_,i) => {
+      const idx = i + offset;
+      const v = monthlyAll[idx];
+      const rbM = perAll[idx].rb;
+      const prev = idx > 0 ? monthlyAll[idx-1] : null;
+      const av = (v!=null && rbM > 0) ? (Math.abs(v)/rbM*100) : null;
+      const ah = (v!=null && prev!=null && Math.abs(prev) >= 0.005) ? ((v-prev)/Math.abs(prev)*100) : null;
+      return {v, av, ah};
+    });
+
     const rows = [];
-    const addRow = (label, monthly, kind) => rows.push({label, monthly, total: sum(monthly), kind});
+    const addRow = (label, monthlyAll, kind) => {
+      const cells = mkCells(monthlyAll);
+      rows.push({label, cells, total: sum(cells.map(c=>c.v||0)), kind});
+    };
     const addBlock = classeNome => {
       const classe = findClasse(classeNome);
       if (!classe) return;
       (camposPorClasse[classe.id]||[]).forEach(campo => {
         const subs = subPorCampo[campo.id]||[];
-        const perSub = subs.map(s => ({s, monthly: this._lancSubMonthly(s.id, members, months).map(v => -v)}));
-        const campoMonthly = months.map((_,mi) => sum(perSub.map(x => x.monthly[mi])));
-        if (!hasMov(campoMonthly)) return;
-        addRow(campo.nome, campoMonthly, subs.length > 1 ? 'campo' : 'leaf');
-        if (subs.length > 1) perSub.forEach(({s,monthly}) => { if (hasMov(monthly)) addRow(s.nome, monthly, 'sub'); });
+        const perSub = subs.map(s => ({s, monthlyAll: this._lancSubMonthly(s.id, members, mAll).map(v => -v)}));
+        const campoMonthlyAll = mAll.map((_,mi) => sum(perSub.map(x => x.monthlyAll[mi])));
+        if (!hasMov(campoMonthlyAll.slice(offset))) return;
+        addRow(campo.nome, campoMonthlyAll, subs.length > 1 ? 'campo' : 'leaf');
+        if (subs.length > 1) perSub.forEach(({s,monthlyAll}) => { if (hasMov(monthlyAll.slice(offset))) addRow(s.nome, monthlyAll, 'sub'); });
       });
     };
 
-    addRow('BLOCO 1 — RECEITA', months.map(()=>null), 'header');
-    addRow('(+) Receita Operacional Bruta', perMonth.map(p=>p.rb), 'total');
+    addRow('BLOCO 1 — RECEITA', mAll.map(()=>null), 'header');
+    addRow('(+) Receita Operacional Bruta', perAll.map(p=>p.rb), 'total');
     // Quebra por operação só faz sentido quando o total é composto por mais de uma
     // (senão é só repetir o mesmo valor da Receita Bruta acima com outro rótulo).
-    const ecM=perMonth.map(p=>p.ec), vcM=perMonth.map(p=>p.vc), expM=perMonth.map(p=>p.exp);
-    if ([ecM,vcM,expM].filter(hasMov).length > 1) {
-      if (hasMov(ecM)) addRow('GIP Ecommerce', ecM, 'campo-lite');
-      if (hasMov(vcM)) addRow('Via Closet', vcM, 'campo-lite');
-      if (hasMov(expM)) addRow('Exposição Paulista', expM, 'campo-lite');
+    const ecAll=perAll.map(p=>p.ec), vcAll=perAll.map(p=>p.vc), expAll=perAll.map(p=>p.exp);
+    if ([ecAll,vcAll,expAll].map(a=>a.slice(offset)).filter(hasMov).length > 1) {
+      if (hasMov(ecAll.slice(offset))) addRow('GIP Ecommerce', ecAll, 'campo-lite');
+      if (hasMov(vcAll.slice(offset))) addRow('Via Closet', vcAll, 'campo-lite');
+      if (hasMov(expAll.slice(offset))) addRow('Exposição Paulista', expAll, 'campo-lite');
     }
-    addRow('(−) Deduções da Receita', perMonth.map(p=>-p.ded), 'total-neg');
+    addRow('(−) Deduções da Receita', perAll.map(p=>-p.ded), 'total-neg');
     addBlock('(-) Deduções da Receita Bruta');
-    addRow('(=) Receita Líquida', perMonth.map(p=>p.rl), 'subtotal');
+    addRow('(=) Receita Líquida', perAll.map(p=>p.rl), 'subtotal');
 
-    addRow('BLOCO 2 — CUSTOS VARIÁVEIS', months.map(()=>null), 'header');
-    addRow('(−) Custos Variáveis', perMonth.map(p=>-p.cvar), 'total-neg');
+    addRow('BLOCO 2 — CUSTOS VARIÁVEIS', mAll.map(()=>null), 'header');
+    addRow('(−) Custos Variáveis', perAll.map(p=>-p.cvar), 'total-neg');
     addBlock('(-) Custos Variáveis');
-    addRow('(=) Margem de Contribuição', perMonth.map(p=>p.mc), 'subtotal');
+    addRow('(=) Margem de Contribuição', perAll.map(p=>p.mc), 'subtotal');
 
-    addRow('BLOCO 3 — OPERACIONAL', months.map(()=>null), 'header');
-    addRow('(−) Gastos Operacionais', perMonth.map(p=>-p.gop), 'total-neg');
+    addRow('BLOCO 3 — OPERACIONAL', mAll.map(()=>null), 'header');
+    addRow('(−) Gastos Operacionais', perAll.map(p=>-p.gop), 'total-neg');
     addBlock('(-) Gastos Operacionais');
-    addRow('(=) Resultado Líquido', perMonth.map(p=>p.res), 'subtotal');
+    addRow('(=) Resultado Líquido', perAll.map(p=>p.res), 'subtotal');
 
-    return {rows, months};
+    // Base pro AV% do Total/Média: a soma da Receita Bruta nos meses EXIBIDOS
+    // (não inclui o mês-sombra). AV% de Total e de Média dão o mesmo número —
+    // é a mesma razão, só que dividendo e divisor escalados igual.
+    const rbSomaExibida = sum(perAll.slice(offset).map(p=>p.rb));
+
+    return {rows, months, rbSomaExibida};
   }
 
   _dreRows(selectedCos) {
@@ -2557,49 +2606,72 @@ class Component extends DCLogic {
       lancMkPreset('Ano', 'Ano inteiro — Jan a Dez/2026', 0, this._months.length-1),
     ];
 
-    const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1):{rows:[],months:[]};
+    const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1):{rows:[],months:[],rbSomaExibida:0};
     const lancNMonths=lancDet.months.length;
     // Coluna da conta em largura FIXA (não fr) — uma faixa flexível como coluna
     // sticky, junto com scroll horizontal, é receita pra bug de posicionamento
     // (o valor "stuck" pode ficar preso a um recálculo de largura desatualizado).
-    const lancGridCols=`260px repeat(${lancNMonths},96px) 108px 108px`;
-    const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'rgba(251,191,36,0.08)':'transparent'};});
-    const lancFmtCell=(v,isHeader)=>{
-      if(isHeader) return {fmt:'',color:'transparent'};
-      if(Math.abs(v)<0.005) return {fmt:'—',color:'#334155'};
-      return {fmt:(v<0?'('+this._fmt(v)+')':this._fmt(v)), color:v>=0?'#94a3b8':'#f87171'};
+    // Colunas de mês mais largas que antes (112px) pra caber valor + AV%/AH% embaixo.
+    const lancGridCols=`260px repeat(${lancNMonths},112px) 118px 118px`;
+    const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'rgba(251,191,36,0.1)':'#0a0f1e'};});
+    // Formata uma célula {v,av,ah} → texto do valor + AV%/AH% igual a AV/AH da
+    // tabela principal do DRE: AV% = |valor| sobre a Receita Bruta do mês; AH% =
+    // variação vs o mês anterior. Valor positivo em verde, negativo em vermelho.
+    const lancFmtCell=(c,isHeader)=>{
+      if(isHeader) return {fmt:'',avFmt:'',ahFmt:'',color:'transparent',ahColor:'transparent'};
+      const v=c.v;
+      if(v==null||Math.abs(v)<0.005) return {fmt:'—',avFmt:'—',ahFmt:'—',color:'#334155',ahColor:'#475569'};
+      const fmt=v<0?'('+this._fmt(v)+')':this._fmt(v);
+      const color=v>0?'#4ade80':'#f87171';
+      const avFmt=c.av!=null?c.av.toFixed(1).replace('.',',')+'%':'—';
+      const ahFmt=c.ah!=null?(c.ah>=0?'+':'')+c.ah.toFixed(1).replace('.',',')+'%':'—';
+      const ahColor=c.ah==null?'#475569':(c.ah>=0?'#4ade80':'#f87171');
+      return {fmt,avFmt,ahFmt,color,ahColor};
+    };
+    const lancFmtAgg=(total,isHeader)=>{
+      if(isHeader) return {fmt:'',avFmt:'',color:'transparent'};
+      if(Math.abs(total)<0.005) return {fmt:'—',avFmt:'—',color:'#334155'};
+      const fmt=total<0?'('+this._fmt(total)+')':this._fmt(total);
+      const color=total>0?'#4ade80':'#f87171';
+      const avFmt=lancDet.rbSomaExibida>0?(Math.abs(total)/lancDet.rbSomaExibida*100).toFixed(1).replace('.',',')+'%':'—';
+      return {fmt,avFmt,color};
     };
     // Estilo por tipo de linha — mesma linguagem visual da tabela DRE principal
     // (âmbar pros subtotais "=", claro/negrito pros totais de bloco, indentação
     // crescente Campo→Subcampo), só que reaplicada em cada uma das N colunas de mês.
+    // Fundo sempre sólido (nunca transparent) — cabeçalho e linhas são sticky/rolam
+    // por cima uns dos outros, e fundo transparente deixa conteúdo vazando por trás.
     const lancKindStyle={
-      header:      {bg:'rgba(15,23,42,0.65)', labelColor:'#64748b', labelSize:'9px',   labelWeight:'700', ls:'2px', tt:'uppercase', pad:'0px',  rowPad:'10px 18px 7px', border:'1px solid #1e3a5f'},
-      total:       {bg:'rgba(255,255,255,0.025)', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
-      'total-neg': {bg:'rgba(255,255,255,0.025)', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
-      subtotal:    {bg:'rgba(251,191,36,0.055)',  labelColor:'#fbbf24', labelSize:'11.5px', labelWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(251,191,36,0.18)'},
-      campo:       {bg:'transparent', labelColor:'#e2e8f0', labelSize:'11px',   labelWeight:'600', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
-      leaf:        {bg:'transparent', labelColor:'#cbd5e1', labelSize:'11px',   labelWeight:'500', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
-      sub:         {bg:'transparent', labelColor:'#94a3b8', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
-      'campo-lite':{bg:'transparent', labelColor:'#7c8aa5', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+      header:      {bg:'#131c30', labelColor:'#64748b', labelSize:'9px',   labelWeight:'700', ls:'2px', tt:'uppercase', pad:'0px',  rowPad:'10px 18px 7px', border:'1px solid #1e3a5f'},
+      total:       {bg:'#161f33', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
+      'total-neg': {bg:'#161f33', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
+      subtotal:    {bg:'#2a2210',  labelColor:'#fbbf24', labelSize:'11.5px', labelWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(251,191,36,0.18)'},
+      campo:       {bg:'#0f1626', labelColor:'#e2e8f0', labelSize:'11px',   labelWeight:'600', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      leaf:        {bg:'#0f1626', labelColor:'#cbd5e1', labelSize:'11px',   labelWeight:'500', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      sub:         {bg:'#0f1626', labelColor:'#94a3b8', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+      'campo-lite':{bg:'#0f1626', labelColor:'#7c8aa5', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
     };
-    // Corpo (Campo/Subcampo) tem fundo transparente por padrão — é onde o destaque
-    // âmbar do mês atual aparece. Header/Total/Subtotal já têm fundo próprio (a faixa
-    // colorida do tipo de linha), então mantêm o mesmo fundo em toda a largura.
+    // Corpo (Campo/Subcampo) recebe o destaque âmbar do mês atual por cima do seu
+    // próprio fundo. Header/Total/Subtotal já têm fundo forte (a faixa colorida do
+    // tipo de linha), então mantêm o mesmo fundo em toda a largura sem tingir.
     const lancTintável=new Set(['campo','sub','leaf','campo-lite']);
     const lancRows=lancDet.rows.map(r=>{
       const st=lancKindStyle[r.kind]||lancKindStyle.leaf;
       const isHeader=r.kind==='header';
       const podeTintar=lancTintável.has(r.kind);
-      const cells=r.monthly.map((v,mi)=>{
-        const c=lancFmtCell(v,isHeader);
+      const cells=r.cells.map((c,mi)=>{
+        const f=lancFmtCell(c,isHeader);
         const cur=!!(lancHeaderCols[mi]&&lancHeaderCols[mi].color==='#f59e0b');
-        const bg=(cur&&podeTintar)?'rgba(251,191,36,0.05)':st.bg;
-        return {...c, bg, border:st.border};
+        const bg=(cur&&podeTintar)?'#2a2210':st.bg;
+        return {...f, bg, border:st.border};
       });
-      const totalC=isHeader?{fmt:'',color:'transparent'}:lancFmtCell(r.total,false);
-      const mediaC=isHeader?{fmt:'',color:'transparent'}:lancFmtCell(lancNMonths?r.total/lancNMonths:0,false);
+      const totalC=lancFmtAgg(r.total,isHeader);
+      const mediaC=lancFmtAgg(lancNMonths?r.total/lancNMonths:0,isHeader);
+      // AV% de Total e de Média são a mesma razão (numerador e denominador escalam
+      // juntos por N) — reaproveita o de Total pra Média não dividir por N duas vezes.
       return {label:r.label, kind:r.kind, cells,
-        totalFmt:totalC.fmt, totalColor:totalC.color, mediaFmt:mediaC.fmt, mediaColor:mediaC.color,
+        totalFmt:totalC.fmt, totalColor:totalC.color, totalAvFmt:totalC.avFmt,
+        mediaFmt:mediaC.fmt, mediaColor:mediaC.color, mediaAvFmt:totalC.avFmt,
         bg:st.bg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight,
         ls:st.ls, tt:st.tt, pad:st.pad, rowPad:st.rowPad, border:st.border};
     });
