@@ -48,6 +48,9 @@
     #lc-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
     #lc-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
     .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+    .header-shortcut { display: flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #94a3b8; font-family: 'Inter', sans-serif; font-size: 11.5px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+    .header-shortcut:hover { background: rgba(139,92,246,0.12); border-color: rgba(139,92,246,0.3); color: #c4b5fd; }
+    @media (max-width: 720px) { .header-shortcut { font-size: 0; gap: 0; padding: 7px 9px; } .header-shortcut svg { flex-shrink: 0; } }
 
     .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
     .dc-sidebar-backdrop.open { display: block; }
@@ -99,8 +102,15 @@
     .campo-total { font-size: 12.5px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; }
     .subcampo-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0 5px 16px; }
     .subcampo-nome { font-size: 12px; color: #64748b; }
-    .subcampo-input { width: 150px; padding: 7px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+    .subcampo-input { width: 172px; padding: 7px 10px 7px 32px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
     .subcampo-input:focus { outline: none; border-color: #8b5cf6; background: rgba(139,92,246,0.05); }
+    /* Prefixo "R$" fixo à esquerda dos campos monetários — puramente visual, o valor
+       mascarado (attachMoneyMask/moneyToNumber) continua sem o "R$" dentro do input. */
+    .money-wrap { position: relative; display: inline-block; }
+    .money-wrap::before { content: 'R$'; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 10.5px; font-weight: 700; color: #64748b; pointer-events: none; }
+    .money-wrap-block { position: relative; display: block; width: 100%; }
+    .money-wrap-block::before { content: 'R$'; position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: 700; color: #64748b; pointer-events: none; }
+    .money-wrap-block input { padding-left: 36px !important; text-align: left; }
 
     .manage-classe-title { display: flex; align-items: center; gap: 8px; }
     .manage-campo-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 10px; border-radius: 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
@@ -155,7 +165,7 @@
 
     @media (max-width: 768px) {
       .header { padding: 0 14px; } .main { padding: 14px; }
-      .subcampo-input { width: 110px; }
+      .subcampo-input { width: 132px; }
     }
   </style>
 </head>
@@ -243,7 +253,17 @@
       </a>
       <div class="header-sub">Lançamentos</div>
     </div>
-    <div id="lc-nav-user-info" style="display:none"></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <a href="/dre" class="header-shortcut" title="Abre o DRE">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        DRE
+      </a>
+      <a href="/dre#lancamentos-detalhados" class="header-shortcut" title="Abre o DRE já com os Lançamentos Detalhados">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        Lançamentos Detalhados
+      </a>
+      <div id="lc-nav-user-info" style="display:none"></div>
+    </div>
   </header>
 
   <div id="lc-loading">Carregando…</div>
@@ -311,24 +331,24 @@
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="field">
             <label>Entrada</label>
-            <input type="text" inputmode="decimal" id="rs-entrada" placeholder="0,00">
+            <div class="money-wrap-block"><input type="text" inputmode="decimal" id="rs-entrada" placeholder="0,00"></div>
           </div>
           <div class="field">
             <label>Saída</label>
-            <input type="text" inputmode="decimal" id="rs-saida" placeholder="0,00">
+            <div class="money-wrap-block"><input type="text" inputmode="decimal" id="rs-saida" placeholder="0,00"></div>
           </div>
           <div class="field">
             <label>Despesa</label>
-            <input type="text" inputmode="decimal" id="rs-despesa" placeholder="0,00">
+            <div class="money-wrap-block"><input type="text" inputmode="decimal" id="rs-despesa" placeholder="0,00"></div>
           </div>
           <div class="field">
             <label>Resultado</label>
-            <input type="text" id="rs-resultado" placeholder="0,00" readonly tabindex="-1">
+            <div class="money-wrap-block"><input type="text" id="rs-resultado" placeholder="0,00" readonly tabindex="-1"></div>
             <div class="field-hint">Calculado automaticamente: Saída − (Despesa + Entrada).</div>
           </div>
           <div class="field">
             <label>Estoque</label>
-            <input type="text" inputmode="decimal" id="rs-estoque" placeholder="0,00">
+            <div class="money-wrap-block"><input type="text" inputmode="decimal" id="rs-estoque" placeholder="0,00"></div>
           </div>
           <div class="field">
             <label>Alíquota</label>
@@ -572,13 +592,13 @@
             return `<div class="campo-row folha">
               <div class="campo-head">
                 <span class="campo-nome">${esc(campo.nome)}</span>
-                <input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()">
+                <span class="money-wrap"><input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()"></span>
               </div>
             </div>`;
           }
           const subsHtml = subs.map(s => `<div class="subcampo-row">
               <span class="subcampo-nome">${esc(s.nome)}</span>
-              <input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()">
+              <span class="money-wrap"><input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()"></span>
             </div>`).join('');
           return `<div class="campo-row">
             <div class="campo-head">

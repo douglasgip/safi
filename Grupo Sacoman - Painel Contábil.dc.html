@@ -1351,12 +1351,25 @@
             <div style="font-size:14px;font-weight:800;color:#f1f5f9;letter-spacing:-0.2px">Lançamentos Detalhados</div>
             <div style="font-size:10.5px;color:#64748b;margin-top:2px">{{ lancCosLabel }} · {{ lancPeriodLabel }}</div>
           </div>
-          <button onClick="{{ closeLancDetalhe }}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">✕</button>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+            <sc-if value="{{ lancPodeIrParaLancamentos }}" hint-placeholder-val="{{ true }}">
+              <a href="/lancamentos" style="display:flex;align-items:center;gap:6px;padding:8px 13px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;font-family:Inter,sans-serif;font-size:11px;font-weight:700;border-radius:8px;text-decoration:none;letter-spacing:0.2px">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Editar Lançamentos
+              </a>
+            </sc-if>
+            <button onClick="{{ closeLancDetalhe }}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">✕</button>
+          </div>
         </div>
 
         <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 22px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:3px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:3px" title="Operação agrupa EP+Guilherme; CNPJ mostra cada um separado">
+            <sc-for list="{{ lancModoBtns }}" as="mb" hint-placeholder-count="2">
+              <button onClick="{{ mb.setFn }}" title="{{ mb.title }}" style="padding:5px 11px;background:{{ mb.bg }};border:1px solid {{ mb.border }};color:{{ mb.color }};font-family:Inter,sans-serif;font-size:10.5px;font-weight:{{ mb.weight }};border-radius:6px;cursor:pointer;letter-spacing:0.3px">{{ mb.label }}</button>
+            </sc-for>
+          </div>
           <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-            <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:1.3px;text-transform:uppercase;margin-right:2px">Operações</span>
+            <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:1.3px;text-transform:uppercase;margin-right:2px">{{ lancEntLabel }}</span>
             <sc-for list="{{ lancCoButtons }}" as="lb" hint-placeholder-count="3">
               <button onClick="{{ lb.toggleFn }}" style="padding:5px 11px;background:{{ lb.bg }};border:1px solid {{ lb.border }};color:{{ lb.color }};font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:{{ lb.shadow }}">
                 <img src="{{ lb.logo }}" style="width:14px;height:14px;object-fit:contain;border-radius:2px;flex-shrink:0" /><span>{{ lb.label }}</span>
@@ -1469,7 +1482,7 @@ class Component extends DCLogic {
   // Mês padrão = mês anterior ao atual (não mais fixo em Julho) — mesmo critério já usado
   // no card de resumo da Home. Índice dentro de _months (0=Jan/2026); em Janeiro cai pro
   // próprio Jan/2026 já que não existe entrada de Dez/2025 nesse array.
-  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre')?1:0, monthStart: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1',
+  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?1:0, monthStart: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1',
     // Comparação de período nos gráficos da DRE — sólido (período atual) x tracejado
     // (período de comparação). Por padrão desligada; ao ligar, o período de comparação
     // começa como o intervalo anterior equivalente (mesmo tamanho, imediatamente antes),
@@ -1482,7 +1495,9 @@ class Component extends DCLogic {
     // parecida com a planilha do Excel, pra discussão do DRE em reunião de conselho.
     // lancCos/lancMs/lancMe começam nulos e herdam o filtro principal ao abrir; depois
     // disso o painel tem seu próprio período/operações, independente do filtro de cima.
-    lancOpen: false, lancCos: null, lancMs: null, lancMe: null };
+    // lancModo: 'operacao' (padrão) agrupa EP+Guilherme em "GIP Ecommerce"; 'cnpj' mostra
+    // cada CNPJ separado (EP/Guilherme/Isabela/Juliane) — só existe dentro desse painel.
+    lancOpen: false, lancCos: null, lancMs: null, lancMe: null, lancModo: 'operacao' };
 
   // Índice do mês atual dentro de _months (0=Jan). Usado no YTD e nos atalhos de
   // período — YTD é Jan até o mês corrente, nunca até Dezembro.
@@ -1501,6 +1516,14 @@ class Component extends DCLogic {
   _dreColors = {'EPGIP':'#ffffff','Exposicao':'#fff115','ViaCloset':'#d4526e','Consolidado':'#1E293B'};
   _dreOutlineColors = {};
   _dreLogos = {'EPGIP':'/public/gipecommerce_logo.png','Exposicao':'/public/exposicaopaulista_logo.png','ViaCloset':'/public/viacloset_logo.png','Consolidado':'/public/favicon.png'};
+  // Visão por CNPJ (só usada nos Lançamentos Detalhados) — em vez da operação "GIP
+  // Ecommerce" junta, mostra EP e Guilherme (GIP) separados; Exposição e Via Closet já
+  // são 1 CNPJ cada, então continuam iguais. _expand() já trata 'EP'/'GIP' como
+  // identidades próprias (cai no fallback [co] por não estarem em _members).
+  _cnpjList = ['EP','GIP','Exposicao','ViaCloset'];
+  _cnpjLabels = {'EP':'EP','GIP':'Guilherme','Exposicao':'Isabela','ViaCloset':'Juliane'};
+  _cnpjColors = {'EP':'#e2e8f0','GIP':'#38bdf8','Exposicao':'#fff115','ViaCloset':'#d4526e'};
+  _cnpjLogos = {'EP':'/public/gipecommerce_logo.png','GIP':'/public/gipecommerce_logo.png','Exposicao':'/public/exposicaopaulista_logo.png','ViaCloset':'/public/viacloset_logo.png'};
   _expand(co){ return this._members[co] || [co]; }
   // 'Consolidado' tem ajustes manuais próprios (não é soma das 4 empresas base — confirmado
   // com os dados reais) e por isso nunca entra no Lançamentos. Pra continuar mostrando as
@@ -1651,11 +1674,23 @@ class Component extends DCLogic {
       }
     } catch(e) { console.error('Supabase error:',e); }
     const ov=document.getElementById('perm-overlay'); if(ov) ov.style.display='none';
-    if(window.location.pathname==='/dre'||window.location.hash==='#dre'){document.title='SAFI | DRE';}
+    if(window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados'){document.title='SAFI | DRE';}
     else{document.title='SAFI | Resumo Contábil';}
     const initTab=this.state.tab;
     setTimeout(()=>{ if(initTab===1){this._initDreEvo();this._initDrePie();this._initDreMargem();this._initLine();setTimeout(()=>this._animKPIs(),80);}else{this._initBar();} }, 500);
     setTimeout(()=>{ if(window.AskGeron) window.AskGeron.attachDelegation(document.getElementById('dre-tab-outer')); }, 500);
+    // Atalho direto pros Lançamentos Detalhados (link vindo da tela de Lançamentos) —
+    // espera os dados/permissões assentarem antes de abrir, senão selectedCos ainda
+    // pode estar com o valor inicial não filtrado.
+    // Só força a aba do DRE se o usuário realmente tem acesso a ela — senão respeita
+    // a correção de permissão que já rodou acima (can_dre:false → aba 0).
+    const _up=this._userProfile;
+    if (window.location.hash === '#lancamentos-detalhados' && (!_up || _up.is_admin || _up.can_dre !== false)) {
+      setTimeout(()=>{
+        const s=this.state;
+        this.setState({tab:1, lancOpen:true, lancCos:[...s.selectedCos], lancMs:s.monthStart, lancMe:s.monthEnd, lancModo:'operacao'});
+      }, 550);
+    }
   }
 
   _dreCalcRange(selectedCos, mesStart, mesEnd) {
@@ -1738,7 +1773,7 @@ class Component extends DCLogic {
     return months.map(m => members.reduce((a,mid) => a + (this._lancValoresMap[`${subId}-${mid}-${m}`]||0), 0));
   }
 
-  _lancDetalheRows(cos, ms, me) {
+  _lancDetalheRows(cos, ms, me, porCnpj) {
     const members = [...new Set(cos.flatMap(co => this._expand(co)))];
     // Busca um mês "sombra" antes do início do período só pra servir de base do AH%
     // da primeira coluna exibida (mesmo critério do AH% da tabela principal do DRE:
@@ -1791,13 +1826,17 @@ class Component extends DCLogic {
 
     addRow('BLOCO 1 — RECEITA', mAll.map(()=>null), 'header');
     addRow('(+) Receita Operacional Bruta', perAll.map(p=>p.rb), 'total');
-    // Quebra por operação só faz sentido quando o total é composto por mais de uma
-    // (senão é só repetir o mesmo valor da Receita Bruta acima com outro rótulo).
-    const ecAll=perAll.map(p=>p.ec), vcAll=perAll.map(p=>p.vc), expAll=perAll.map(p=>p.exp);
-    if ([ecAll,vcAll,expAll].map(a=>a.slice(offset)).filter(hasMov).length > 1) {
-      if (hasMov(ecAll.slice(offset))) addRow('GIP Ecommerce', ecAll, 'campo-lite');
-      if (hasMov(vcAll.slice(offset))) addRow('Via Closet', vcAll, 'campo-lite');
-      if (hasMov(expAll.slice(offset))) addRow('Exposição Paulista', expAll, 'campo-lite');
+    // Quebra por entidade selecionada (operação OU CNPJ, dependendo do modo) — só faz
+    // sentido mostrar quando há mais de uma escolhida (senão é só repetir o valor da
+    // Receita Bruta acima com outro rótulo). Cada entidade calcula sua própria Receita
+    // Bruta isoladamente — funciona igual pros dois modos, já que _expand() resolve
+    // tanto 'EPGIP' (operação) quanto 'EP'/'GIP' (CNPJ) direto.
+    if (cos.length > 1) {
+      const labelMap = porCnpj ? this._cnpjLabels : this._dreLabels;
+      cos.forEach(id => {
+        const entAll = mAll.map(m => this._dreCalcRange([id], m, m).rb);
+        if (hasMov(entAll.slice(offset))) addRow(labelMap[id]||id, entAll, 'campo-lite');
+      });
     }
     addRow('(−) Deduções da Receita', perAll.map(p=>-p.ded), 'total-neg');
     addBlock('(-) Deduções da Receita Bruta');
@@ -2570,27 +2609,55 @@ class Component extends DCLogic {
     // Painel próprio, aberto via botão na tabela do DRE — herda operações/período
     // do filtro principal no instante em que abre, mas depois vive independente
     // deles (o board pode expandir pra ver mais meses sem mexer no filtro de cima).
-    const {lancOpen, lancCos: lancCosSt, lancMs: lancMsSt, lancMe: lancMeSt}=this.state;
+    const {lancOpen, lancCos: lancCosSt, lancMs: lancMsSt, lancMe: lancMeSt, lancModo}=this.state;
     const lancCos=(lancCosSt&&lancCosSt.length)?lancCosSt:selectedCos;
     const lancMs=lancMsSt!=null?lancMsSt:ms;
     const lancMe=lancMeSt!=null?lancMeSt:me;
-    const lancCoButtons=dreIndiv.map(c=>{
-      const on=lancCos.includes(c), col=this._dreColors[c]||'#6b7280';
+    const lancPorCnpj=lancModo==='cnpj';
+    // Universo de botões do modo atual — Operação (padrão) agrupa EP+Guilherme numa
+    // "GIP Ecommerce"; CNPJ mostra os 4 CNPJs separados (EP/Guilherme/Isabela/Juliane).
+    const lancEntList=lancPorCnpj?this._cnpjList:dreIndiv;
+    const lancEntLabels=lancPorCnpj?this._cnpjLabels:this._dreLabels;
+    const lancEntColors=lancPorCnpj?this._cnpjColors:this._dreColors;
+    const lancEntLogos=lancPorCnpj?this._cnpjLogos:this._dreLogos;
+    const lancCoButtons=lancEntList.map(c=>{
+      const on=lancCos.includes(c), col=lancEntColors[c]||'#6b7280';
       return {
-        label:this._dreLabels[c]||c, logo:this._dreLogos[c]||'',
+        label:lancEntLabels[c]||c, logo:lancEntLogos[c]||'',
         bg:on?'#18283e':'rgba(255,255,255,0.04)', border:on?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.09)',
         color:on?'#f1f5f9':'#64748b', shadow:on?'inset 3px 0 0 '+col:'none',
         toggleFn:()=>{
-          const base=(this.state.lancCos&&this.state.lancCos.length)?this.state.lancCos:selectedCos;
+          const base=(this.state.lancCos&&this.state.lancCos.length)?this.state.lancCos:lancCos;
           if(base.includes(c)){
             if(base.length===1)return;
             this.setState({lancCos:base.filter(x=>x!==c)});
           } else {
-            this.setState({lancCos:dreIndiv.filter(x=>base.includes(x)||x===c)});
+            this.setState({lancCos:lancEntList.filter(x=>base.includes(x)||x===c)});
           }
         }
       };
     });
+    // Trocar de modo converte a seleção pro outro nível — expande "GIP Ecommerce" em
+    // [EP,Guilherme] ao ir pra CNPJ, e junta EP/Guilherme de volta em "GIP Ecommerce"
+    // ao voltar pra Operação — sem perder o que já estava escolhido.
+    const lancModoBtn=(id,label,title)=>{
+      const on=(lancModo||'operacao')===id;
+      return {id,label,title,
+        bg:on?'#18283e':'transparent', border:on?'rgba(255,255,255,0.18)':'rgba(255,255,255,0.08)',
+        color:on?'#f1f5f9':'#64748b', weight:on?'700':'600',
+        setFn:()=>{
+          if(on)return;
+          const atual=(this.state.lancCos&&this.state.lancCos.length)?this.state.lancCos:lancCos;
+          const novo=id==='cnpj'
+            ? [...new Set(atual.flatMap(co=>this._expand(co)))]
+            : [...new Set(atual.map(x=>(x==='EP'||x==='GIP')?'EPGIP':x))];
+          this.setState({lancModo:id, lancCos:novo});
+        }};
+    };
+    const lancModoBtns=[
+      lancModoBtn('operacao','Operação','Agrupa EP + Guilherme numa única operação "GIP Ecommerce"'),
+      lancModoBtn('cnpj','CNPJ','Mostra cada CNPJ separado — EP, Guilherme, Isabela e Juliane'),
+    ];
     const lancMkPreset=(label,title,s,e)=>{
       const on=lancMs===s&&lancMe===e;
       return {label,title,
@@ -2606,7 +2673,7 @@ class Component extends DCLogic {
       lancMkPreset('Ano', 'Ano inteiro — Jan a Dez/2026', 0, this._months.length-1),
     ];
 
-    const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1):{rows:[],months:[],rbSomaExibida:0};
+    const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1,lancPorCnpj):{rows:[],months:[],rbSomaExibida:0};
     const lancNMonths=lancDet.months.length;
     // Coluna da conta em largura FIXA (não fr) — uma faixa flexível como coluna
     // sticky, junto com scroll horizontal, é receita pra bug de posicionamento
@@ -2655,14 +2722,20 @@ class Component extends DCLogic {
     // próprio fundo. Header/Total/Subtotal já têm fundo forte (a faixa colorida do
     // tipo de linha), então mantêm o mesmo fundo em toda a largura sem tingir.
     const lancTintável=new Set(['campo','sub','leaf','campo-lite']);
+    // Listrado (zebra): só nas linhas de detalhe (Campo/Subcampo/quebra por operação),
+    // que até aqui eram todas do mesmo tom e ficavam fáceis de confundir de linha ao
+    // rolar uma tabela com muita coisa. Header/Total/"=" já têm cor própria e não listram.
+    let lancBodyIdx=0;
+    const lancZebra=['#0f1626','#141d33'];
     const lancRows=lancDet.rows.map(r=>{
       const st=lancKindStyle[r.kind]||lancKindStyle.leaf;
       const isHeader=r.kind==='header';
       const podeTintar=lancTintável.has(r.kind);
+      const rowBg=podeTintar?lancZebra[lancBodyIdx++%2]:st.bg;
       const cells=r.cells.map((c,mi)=>{
         const f=lancFmtCell(c,isHeader);
         const cur=!!(lancHeaderCols[mi]&&lancHeaderCols[mi].color==='#f59e0b');
-        const bg=(cur&&podeTintar)?'#2a2210':st.bg;
+        const bg=(cur&&podeTintar)?'#2a2210':rowBg;
         return {...f, bg, border:st.border};
       });
       const totalC=lancFmtAgg(r.total,isHeader);
@@ -2672,11 +2745,11 @@ class Component extends DCLogic {
       return {label:r.label, kind:r.kind, cells,
         totalFmt:totalC.fmt, totalColor:totalC.color, totalAvFmt:totalC.avFmt,
         mediaFmt:mediaC.fmt, mediaColor:mediaC.color, mediaAvFmt:totalC.avFmt,
-        bg:st.bg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight,
+        bg:rowBg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight,
         ls:st.ls, tt:st.tt, pad:st.pad, rowPad:st.rowPad, border:st.border};
     });
     const lancPeriodLabel=lancNMonths?(lancMs===lancMe?this._months[lancMs]:`${this._months[lancMs]} – ${this._months[lancMe]}`):'';
-    const lancCosLabel=lancCos.length===dreIndiv.length?'Todas as operações':lancCos.map(c=>this._dreLabels[c]||c).join(' + ');
+    const lancCosLabel=lancCos.length===lancEntList.length?(lancPorCnpj?'Todos os CNPJs':'Todas as operações'):lancCos.map(c=>lancEntLabels[c]||c).join(' + ');
 
     return {
       tab0Active:tab===0,tab1Active:tab===1,
@@ -2750,9 +2823,12 @@ class Component extends DCLogic {
       setCompareMonthStart:e=>{const v=parseInt(e.target.value);this.setState({compareMonthStart:v,compareMonthEnd:Math.max(v,this.state.compareMonthEnd??v)});},
       setCompareMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({compareMonthEnd:v,compareMonthStart:Math.min(v,this.state.compareMonthStart??v)});},
       // Lançamentos Detalhados
-      lancOpen, lancCoButtons, lancPresets, lancHeaderCols, lancRows, lancGridCols, lancPeriodLabel, lancCosLabel,
+      lancOpen, lancCoButtons, lancModoBtns, lancPresets, lancHeaderCols, lancRows, lancGridCols, lancPeriodLabel, lancCosLabel,
+      lancEntLabel:lancPorCnpj?'CNPJs':'Operações',
       lancMsVal:lancMs, lancMeVal:lancMe,
-      openLancDetalhe:()=>this.setState({lancOpen:true, lancCos:[...selectedCos], lancMs:ms, lancMe:me}),
+      lancPodeIrParaLancamentos:(()=>{const p=this._userProfile;return !p||p.is_admin||p.can_lancamentos===true;})(),
+      // Sempre reabre em modo Operação — CNPJ é uma lente pontual, não o padrão.
+      openLancDetalhe:()=>this.setState({lancOpen:true, lancCos:[...selectedCos], lancMs:ms, lancMe:me, lancModo:'operacao'}),
       closeLancDetalhe:()=>this.setState({lancOpen:false}),
       closeLancIfBackdrop:e=>{if(e.target===e.currentTarget)this.setState({lancOpen:false});},
       setLancMs:e=>{const v=parseInt(e.target.value);this.setState({lancMs:v,lancMe:Math.max(v,this.state.lancMe??me)});},
