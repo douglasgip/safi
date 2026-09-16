@@ -1416,40 +1416,40 @@
              de scroll (cada linha vira seu próprio containing block) e o texto foge. -->
         <div style="flex:1;min-width:0;min-height:0;overflow:auto;position:relative">
           <div style="display:grid;grid-template-columns:{{ lancGridCols }}">
-            <div style="position:sticky;top:0;left:0;z-index:5;background:#0a0f1e;padding:10px 18px;font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.1);contain:paint;will-change:transform">Conta</div>
+            <div style="position:sticky;top:0;left:0;z-index:5;background:#0a0f1e;padding:12px 18px;font-size:10.5px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.1);contain:paint;will-change:transform">Conta</div>
             <sc-for list="{{ lancHeaderCols }}" as="hc" hint-placeholder-count="9">
-              <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;background:{{ hc.bg }};border-bottom:1px solid rgba(255,255,255,0.1);contain:paint;will-change:transform">
-                <div style="font-size:9.5px;font-weight:700;color:{{ hc.color }};text-transform:uppercase;letter-spacing:0.4px">{{ hc.label }}</div>
-                <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV · AH</div>
+              <div style="position:sticky;top:0;z-index:3;padding:10px 10px 8px;text-align:right;background:{{ hc.bg }};border-bottom:1px solid rgba(255,255,255,0.1);contain:paint;will-change:transform">
+                <div style="font-size:11.5px;font-weight:700;color:{{ hc.color }};text-transform:uppercase;letter-spacing:0.4px">{{ hc.label }}</div>
+                <div style="font-size:8.5px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:3px">AV · AH</div>
               </div>
             </sc-for>
-            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-left:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e;contain:paint;will-change:transform">
-              <div style="font-size:9px;font-weight:700;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.6px">Total</div>
-              <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV%</div>
+            <div style="position:sticky;top:0;z-index:3;padding:10px 10px 8px;text-align:right;border-left:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e;contain:paint;will-change:transform">
+              <div style="font-size:10.5px;font-weight:700;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.6px">Total</div>
+              <div style="font-size:8.5px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:3px">AV%</div>
             </div>
-            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e;contain:paint;will-change:transform">
-              <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px">Média</div>
-              <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV%</div>
+            <div style="position:sticky;top:0;z-index:3;padding:10px 10px 8px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e;contain:paint;will-change:transform">
+              <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px">Média</div>
+              <div style="font-size:8.5px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:3px">AV%</div>
             </div>
 
             <sc-for list="{{ lancRows }}" as="row" hint-placeholder-count="40">
               <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }};contain:paint">{{ row.label }}</div>
               <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
                 <div style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }}">
-                  <div style="font-size:10.5px;font-weight:{{ cell.weight }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
-                  <div style="font-size:7.5px;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap">
+                  <div style="font-size:13px;font-weight:{{ cell.weight }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
+                  <div style="font-size:9px;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap">
                     <span style="color:#64748b">{{ cell.avFmt }}</span>
-                    <span style="color:{{ cell.ahColor }};margin-left:5px">{{ cell.ahFmt }}</span>
+                    <span style="color:{{ cell.ahColor }};margin-left:6px">{{ cell.ahFmt }}</span>
                   </div>
                 </div>
               </sc-for>
               <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }}">
-                <div style="font-size:10.5px;font-weight:{{ row.valueWeight }};color:{{ row.totalColor }};font-variant-numeric:tabular-nums">{{ row.totalFmt }}</div>
-                <div style="font-size:7.5px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px">{{ row.totalAvFmt }}</div>
+                <div style="font-size:13px;font-weight:{{ row.valueWeight }};color:{{ row.totalColor }};font-variant-numeric:tabular-nums">{{ row.totalFmt }}</div>
+                <div style="font-size:9px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.totalAvFmt }}</div>
               </div>
               <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-bottom:{{ row.border }};opacity:0.8">
-                <div style="font-size:10.5px;font-weight:{{ row.valueWeight }};color:{{ row.mediaColor }};font-variant-numeric:tabular-nums">{{ row.mediaFmt }}</div>
-                <div style="font-size:7.5px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px">{{ row.mediaAvFmt }}</div>
+                <div style="font-size:13px;font-weight:{{ row.valueWeight }};color:{{ row.mediaColor }};font-variant-numeric:tabular-nums">{{ row.mediaFmt }}</div>
+                <div style="font-size:9px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.mediaAvFmt }}</div>
               </div>
             </sc-for>
           </div>
@@ -1490,7 +1490,11 @@ class Component extends DCLogic {
   // Mês padrão = mês anterior ao atual (não mais fixo em Julho) — mesmo critério já usado
   // no card de resumo da Home. Índice dentro de _months (0=Jan/2026); em Janeiro cai pro
   // próprio Jan/2026 já que não existe entrada de Dez/2025 nesse array.
-  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?1:0, monthStart: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1',
+  // DRE (aba 1) abre em YTD — Jan até o mês anterior ao atual — porque nunca existe
+  // DRE fechado do mês corrente. Resumo Contábil (aba 0) continua abrindo num único
+  // mês (Competência), esse sim o mês anterior. As duas abas dividem monthStart/
+  // monthEnd; por isso o cálculo do tab inicial é repetido aqui pra decidir o range.
+  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?1:0, monthStart: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?0:(function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'], sidebarLancamentosCollapsed: localStorage.getItem('sidebar-lancamentos-collapsed') === '1',
     // Comparação de período nos gráficos da DRE — sólido (período atual) x tracejado
     // (período de comparação). Por padrão desligada; ao ligar, o período de comparação
     // começa como o intervalo anterior equivalente (mesmo tamanho, imediatamente antes),
@@ -1507,9 +1511,15 @@ class Component extends DCLogic {
     // cada CNPJ separado (EP/Guilherme/Isabela/Juliane) — só existe dentro desse painel.
     lancOpen: false, lancCos: null, lancMs: null, lancMe: null, lancModo: 'operacao', lancFullscreen: false };
 
-  // Índice do mês atual dentro de _months (0=Jan). Usado no YTD e nos atalhos de
-  // período — YTD é Jan até o mês corrente, nunca até Dezembro.
-  get _mesAtualIdx(){ return Math.max(0, Math.min(new Date().getMonth(), this._months.length-1)); }
+  // Índice do "mês de referência" do DRE dentro de _months (0=Jan) — o mês ANTERIOR
+  // ao calendário, nunca o corrente: o DRE fecha com defasagem de um mês, então nunca
+  // existe (até hoje) um DRE do mês atual. Usado no atalho "Mês", no YTD (Jan até
+  // aqui, nunca até Dezembro), no "Trim." e no destaque de mês atual dos Lançamentos
+  // Detalhados — mudar aqui corrige todos eles de uma vez.
+  get _mesAtualIdx(){
+    const i = new Date().getMonth() - 1;
+    return Math.max(0, Math.min(i, this._months.length-1));
+  }
   _c = {};
 
   _months = ['Jan/2026','Fev/2026','Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026','Ago/2026','Set/2026','Out/2026','Nov/2026','Dez/2026'];
@@ -2704,7 +2714,7 @@ class Component extends DCLogic {
     // (o valor "stuck" pode ficar preso a um recálculo de largura desatualizado).
     // Colunas bem mais largas e fontes maiores (v. lancKindStyle) — o pedido foi
     // "menos coisa de uma vez, números maiores", mesmo que role mais pros lados/baixo.
-    const lancGridCols=`300px repeat(${lancNMonths},150px) 152px 152px`;
+    const lancGridCols=`340px repeat(${lancNMonths},178px) 180px 180px`;
     const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'rgba(251,191,36,0.1)':'#0a0f1e'};});
     // Formata uma célula {v,av,ah} → texto do valor + AV%/AH% igual a AV/AH da
     // tabela principal do DRE: AV% = |valor| sobre a Receita Bruta do mês; AH% =
@@ -2737,14 +2747,14 @@ class Component extends DCLogic {
     // do rótulo) — pra linha em destaque (Receita Bruta, Deduções, Custos Variáveis…)
     // ficar claramente mais forte que as linhas de Campo/Subcampo por baixo dela.
     const lancKindStyle={
-      header:      {bg:'#131c30', labelColor:'#64748b', labelSize:'9px',   labelWeight:'700', valueWeight:'400', ls:'2px', tt:'uppercase', pad:'0px',  rowPad:'10px 18px 7px', border:'1px solid #1e3a5f'},
-      total:       {bg:'#0a0f1e', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(255,255,255,0.08)'},
-      'total-neg': {bg:'#0a0f1e', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(255,255,255,0.08)'},
-      subtotal:    {bg:'#211a0c', labelColor:'#fbbf24', labelSize:'11.5px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(251,191,36,0.22)'},
-      campo:       {bg:'#0f1626', labelColor:'#e2e8f0', labelSize:'11px',   labelWeight:'600', valueWeight:'400', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
-      leaf:        {bg:'#0f1626', labelColor:'#cbd5e1', labelSize:'11px',   labelWeight:'500', valueWeight:'400', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
-      sub:         {bg:'#0f1626', labelColor:'#94a3b8', labelSize:'10.3px', labelWeight:'400', valueWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
-      'campo-lite':{bg:'#0f1626', labelColor:'#7c8aa5', labelSize:'10.3px', labelWeight:'400', valueWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+      header:      {bg:'#131c30', labelColor:'#64748b', labelSize:'10.5px', labelWeight:'700', valueWeight:'400', ls:'2px', tt:'uppercase', pad:'0px',  rowPad:'12px 18px 9px', border:'1px solid #1e3a5f'},
+      total:       {bg:'#0a0f1e', labelColor:'#f1f5f9', labelSize:'14px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'12px 18px', border:'1px solid rgba(255,255,255,0.08)'},
+      'total-neg': {bg:'#0a0f1e', labelColor:'#f1f5f9', labelSize:'14px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'12px 18px', border:'1px solid rgba(255,255,255,0.08)'},
+      subtotal:    {bg:'#211a0c', labelColor:'#fbbf24', labelSize:'14px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'13px 18px', border:'1px solid rgba(251,191,36,0.22)'},
+      campo:       {bg:'#0f1626', labelColor:'#e2e8f0', labelSize:'13px',   labelWeight:'600', valueWeight:'400', ls:'0', tt:'none', pad:'16px', rowPad:'9px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      leaf:        {bg:'#0f1626', labelColor:'#cbd5e1', labelSize:'13px',   labelWeight:'500', valueWeight:'400', ls:'0', tt:'none', pad:'16px', rowPad:'9px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      sub:         {bg:'#0f1626', labelColor:'#94a3b8', labelSize:'12px', labelWeight:'400', valueWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+      'campo-lite':{bg:'#0f1626', labelColor:'#7c8aa5', labelSize:'12px', labelWeight:'400', valueWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.03)'},
     };
     // Corpo (Campo/Subcampo) recebe o destaque âmbar do mês atual por cima do seu
     // próprio fundo. Header/Total/Subtotal já têm fundo forte (a faixa colorida do
