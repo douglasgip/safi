@@ -1428,7 +1428,7 @@
               <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }}">{{ row.label }}</div>
               <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
                 <div style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }}">
-                  <div style="font-size:10.5px;color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
+                  <div style="font-size:10.5px;font-weight:{{ cell.weight }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
                   <div style="font-size:7.5px;font-variant-numeric:tabular-nums;margin-top:2px;white-space:nowrap">
                     <span style="color:#64748b">{{ cell.avFmt }}</span>
                     <span style="color:{{ cell.ahColor }};margin-left:5px">{{ cell.ahFmt }}</span>
@@ -1436,11 +1436,11 @@
                 </div>
               </sc-for>
               <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }}">
-                <div style="font-size:10.5px;font-weight:700;color:{{ row.totalColor }};font-variant-numeric:tabular-nums">{{ row.totalFmt }}</div>
+                <div style="font-size:10.5px;font-weight:{{ row.valueWeight }};color:{{ row.totalColor }};font-variant-numeric:tabular-nums">{{ row.totalFmt }}</div>
                 <div style="font-size:7.5px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px">{{ row.totalAvFmt }}</div>
               </div>
               <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-bottom:{{ row.border }};opacity:0.8">
-                <div style="font-size:10.5px;color:{{ row.mediaColor }};font-variant-numeric:tabular-nums">{{ row.mediaFmt }}</div>
+                <div style="font-size:10.5px;font-weight:{{ row.valueWeight }};color:{{ row.mediaColor }};font-variant-numeric:tabular-nums">{{ row.mediaFmt }}</div>
                 <div style="font-size:7.5px;color:#64748b;font-variant-numeric:tabular-nums;margin-top:2px">{{ row.mediaAvFmt }}</div>
               </div>
             </sc-for>
@@ -1793,25 +1793,34 @@ class Component extends DCLogic {
     // retorna vazio; aqui usamos os nomes corretos pra realmente descer no detalhe).
     const findClasse = nome => (this._lancClasses||[]).find(c => c.nome === nome);
 
-    // AV% = |valor| sobre a Receita Bruta do MESMO mês (igual à tabela principal).
-    // AH% = variação vs o mês anterior, na própria linha (igual ao critério de AH%
-    // já usado no DRE — mês vs mês, não vs início do período selecionado).
-    const mkCells = monthlyAll => months.map((_,i) => {
+    // AV% = |valor| sobre o total do BLOCO em que a linha está (não sobre a Receita
+    // Bruta): uma linha dentro de Custos Variáveis mostra quanto pesa dentro de Custos
+    // Variáveis, não quanto pesa no faturamento do mês — fica mais fácil de ler o peso
+    // de cada linha dentro da própria categoria. As linhas em destaque (Receita Bruta,
+    // Deduções, Receita Líquida, Custos Variáveis…) continuam relativas à Receita Bruta,
+    // igual à AV% clássica da tabela principal do DRE. AH% = variação vs o mês anterior,
+    // na própria linha (mês vs mês, não vs início do período selecionado).
+    const rbAll = perAll.map(p => p.rb);
+    const mkCells = (monthlyAll, baseAll) => months.map((_,i) => {
       const idx = i + offset;
       const v = monthlyAll[idx];
-      const rbM = perAll[idx].rb;
+      const baseM = (baseAll || rbAll)[idx];
       const prev = idx > 0 ? monthlyAll[idx-1] : null;
-      const av = (v!=null && rbM > 0) ? (Math.abs(v)/rbM*100) : null;
+      const av = (v!=null && baseM > 0) ? (Math.abs(v)/baseM*100) : null;
       const ah = (v!=null && prev!=null && Math.abs(prev) >= 0.005) ? ((v-prev)/Math.abs(prev)*100) : null;
       return {v, av, ah};
     });
 
     const rows = [];
-    const addRow = (label, monthlyAll, kind) => {
-      const cells = mkCells(monthlyAll);
-      rows.push({label, cells, total: sum(cells.map(c=>c.v||0)), kind});
+    const addRow = (label, monthlyAll, kind, baseAll) => {
+      const cells = mkCells(monthlyAll, baseAll);
+      const baseTotal = sum((baseAll || rbAll).slice(offset));
+      rows.push({label, cells, total: sum(cells.map(c=>c.v||0)), baseTotal, kind});
     };
-    const addBlock = classeNome => {
+    // baseAll (opcional) = a linha em destaque que serve de 100% pras linhas de dentro
+    // do bloco (ex: Custos Variáveis pras suas próprias Campo/Subcampo). Sem baseAll,
+    // cai no padrão (Receita Bruta) — usado pelas próprias linhas em destaque.
+    const addBlock = (classeNome, baseAll) => {
       const classe = findClasse(classeNome);
       if (!classe) return;
       (camposPorClasse[classe.id]||[]).forEach(campo => {
@@ -1819,8 +1828,8 @@ class Component extends DCLogic {
         const perSub = subs.map(s => ({s, monthlyAll: this._lancSubMonthly(s.id, members, mAll).map(v => -v)}));
         const campoMonthlyAll = mAll.map((_,mi) => sum(perSub.map(x => x.monthlyAll[mi])));
         if (!hasMov(campoMonthlyAll.slice(offset))) return;
-        addRow(campo.nome, campoMonthlyAll, subs.length > 1 ? 'campo' : 'leaf');
-        if (subs.length > 1) perSub.forEach(({s,monthlyAll}) => { if (hasMov(monthlyAll.slice(offset))) addRow(s.nome, monthlyAll, 'sub'); });
+        addRow(campo.nome, campoMonthlyAll, subs.length > 1 ? 'campo' : 'leaf', baseAll);
+        if (subs.length > 1) perSub.forEach(({s,monthlyAll}) => { if (hasMov(monthlyAll.slice(offset))) addRow(s.nome, monthlyAll, 'sub', baseAll); });
       });
     };
 
@@ -1838,26 +1847,22 @@ class Component extends DCLogic {
         if (hasMov(entAll.slice(offset))) addRow(labelMap[id]||id, entAll, 'campo-lite');
       });
     }
+    const dedAll=perAll.map(p=>p.ded), cvarAll=perAll.map(p=>p.cvar), gopAll=perAll.map(p=>p.gop);
     addRow('(−) Deduções da Receita', perAll.map(p=>-p.ded), 'total-neg');
-    addBlock('(-) Deduções da Receita Bruta');
+    addBlock('(-) Deduções da Receita Bruta', dedAll);
     addRow('(=) Receita Líquida', perAll.map(p=>p.rl), 'subtotal');
 
     addRow('BLOCO 2 — CUSTOS VARIÁVEIS', mAll.map(()=>null), 'header');
     addRow('(−) Custos Variáveis', perAll.map(p=>-p.cvar), 'total-neg');
-    addBlock('(-) Custos Variáveis');
+    addBlock('(-) Custos Variáveis', cvarAll);
     addRow('(=) Margem de Contribuição', perAll.map(p=>p.mc), 'subtotal');
 
     addRow('BLOCO 3 — OPERACIONAL', mAll.map(()=>null), 'header');
     addRow('(−) Gastos Operacionais', perAll.map(p=>-p.gop), 'total-neg');
-    addBlock('(-) Gastos Operacionais');
+    addBlock('(-) Gastos Operacionais', gopAll);
     addRow('(=) Resultado Líquido', perAll.map(p=>p.res), 'subtotal');
 
-    // Base pro AV% do Total/Média: a soma da Receita Bruta nos meses EXIBIDOS
-    // (não inclui o mês-sombra). AV% de Total e de Média dão o mesmo número —
-    // é a mesma razão, só que dividendo e divisor escalados igual.
-    const rbSomaExibida = sum(perAll.slice(offset).map(p=>p.rb));
-
-    return {rows, months, rbSomaExibida};
+    return {rows, months};
   }
 
   _dreRows(selectedCos) {
@@ -2673,7 +2678,7 @@ class Component extends DCLogic {
       lancMkPreset('Ano', 'Ano inteiro — Jan a Dez/2026', 0, this._months.length-1),
     ];
 
-    const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1,lancPorCnpj):{rows:[],months:[],rbSomaExibida:0};
+    const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1,lancPorCnpj):{rows:[],months:[]};
     const lancNMonths=lancDet.months.length;
     // Coluna da conta em largura FIXA (não fr) — uma faixa flexível como coluna
     // sticky, junto com scroll horizontal, é receita pra bug de posicionamento
@@ -2695,12 +2700,12 @@ class Component extends DCLogic {
       const ahColor=c.ah==null?'#475569':(c.ah>=0?'#4ade80':'#f87171');
       return {fmt,avFmt,ahFmt,color,ahColor};
     };
-    const lancFmtAgg=(total,isHeader)=>{
+    const lancFmtAgg=(total,isHeader,baseTotal)=>{
       if(isHeader) return {fmt:'',avFmt:'',color:'transparent'};
       if(Math.abs(total)<0.005) return {fmt:'—',avFmt:'—',color:'#334155'};
       const fmt=total<0?'('+this._fmt(total)+')':this._fmt(total);
       const color=total>0?'#4ade80':'#f87171';
-      const avFmt=lancDet.rbSomaExibida>0?(Math.abs(total)/lancDet.rbSomaExibida*100).toFixed(1).replace('.',',')+'%':'—';
+      const avFmt=baseTotal>0?(Math.abs(total)/baseTotal*100).toFixed(1).replace('.',',')+'%':'—';
       return {fmt,avFmt,color};
     };
     // Estilo por tipo de linha — mesma linguagem visual da tabela DRE principal
@@ -2708,15 +2713,18 @@ class Component extends DCLogic {
     // crescente Campo→Subcampo), só que reaplicada em cada uma das N colunas de mês.
     // Fundo sempre sólido (nunca transparent) — cabeçalho e linhas são sticky/rolam
     // por cima uns dos outros, e fundo transparente deixa conteúdo vazando por trás.
+    // valueWeight = peso da fonte dos valores nas colunas de mês/Total/Média (não só
+    // do rótulo) — pra linha em destaque (Receita Bruta, Deduções, Custos Variáveis…)
+    // ficar claramente mais forte que as linhas de Campo/Subcampo por baixo dela.
     const lancKindStyle={
-      header:      {bg:'#131c30', labelColor:'#64748b', labelSize:'9px',   labelWeight:'700', ls:'2px', tt:'uppercase', pad:'0px',  rowPad:'10px 18px 7px', border:'1px solid #1e3a5f'},
-      total:       {bg:'#161f33', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
-      'total-neg': {bg:'#161f33', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
-      subtotal:    {bg:'#2a2210',  labelColor:'#fbbf24', labelSize:'11.5px', labelWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(251,191,36,0.18)'},
-      campo:       {bg:'#0f1626', labelColor:'#e2e8f0', labelSize:'11px',   labelWeight:'600', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
-      leaf:        {bg:'#0f1626', labelColor:'#cbd5e1', labelSize:'11px',   labelWeight:'500', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
-      sub:         {bg:'#0f1626', labelColor:'#94a3b8', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
-      'campo-lite':{bg:'#0f1626', labelColor:'#7c8aa5', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+      header:      {bg:'#131c30', labelColor:'#64748b', labelSize:'9px',   labelWeight:'700', valueWeight:'400', ls:'2px', tt:'uppercase', pad:'0px',  rowPad:'10px 18px 7px', border:'1px solid #1e3a5f'},
+      total:       {bg:'#0a0f1e', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(255,255,255,0.08)'},
+      'total-neg': {bg:'#0a0f1e', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(255,255,255,0.08)'},
+      subtotal:    {bg:'#211a0c', labelColor:'#fbbf24', labelSize:'11.5px', labelWeight:'800', valueWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(251,191,36,0.22)'},
+      campo:       {bg:'#0f1626', labelColor:'#e2e8f0', labelSize:'11px',   labelWeight:'600', valueWeight:'400', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      leaf:        {bg:'#0f1626', labelColor:'#cbd5e1', labelSize:'11px',   labelWeight:'500', valueWeight:'400', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      sub:         {bg:'#0f1626', labelColor:'#94a3b8', labelSize:'10.3px', labelWeight:'400', valueWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+      'campo-lite':{bg:'#0f1626', labelColor:'#7c8aa5', labelSize:'10.3px', labelWeight:'400', valueWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
     };
     // Corpo (Campo/Subcampo) recebe o destaque âmbar do mês atual por cima do seu
     // próprio fundo. Header/Total/Subtotal já têm fundo forte (a faixa colorida do
@@ -2736,16 +2744,16 @@ class Component extends DCLogic {
         const f=lancFmtCell(c,isHeader);
         const cur=!!(lancHeaderCols[mi]&&lancHeaderCols[mi].color==='#f59e0b');
         const bg=(cur&&podeTintar)?'#2a2210':rowBg;
-        return {...f, bg, border:st.border};
+        return {...f, bg, border:st.border, weight:st.valueWeight};
       });
-      const totalC=lancFmtAgg(r.total,isHeader);
-      const mediaC=lancFmtAgg(lancNMonths?r.total/lancNMonths:0,isHeader);
+      const totalC=lancFmtAgg(r.total,isHeader,r.baseTotal);
+      const mediaC=lancFmtAgg(lancNMonths?r.total/lancNMonths:0,isHeader,r.baseTotal);
       // AV% de Total e de Média são a mesma razão (numerador e denominador escalam
       // juntos por N) — reaproveita o de Total pra Média não dividir por N duas vezes.
       return {label:r.label, kind:r.kind, cells,
         totalFmt:totalC.fmt, totalColor:totalC.color, totalAvFmt:totalC.avFmt,
         mediaFmt:mediaC.fmt, mediaColor:mediaC.color, mediaAvFmt:totalC.avFmt,
-        bg:rowBg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight,
+        bg:rowBg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight, valueWeight:st.valueWeight,
         ls:st.ls, tt:st.tt, pad:st.pad, rowPad:st.rowPad, border:st.border};
     });
     const lancPeriodLabel=lancNMonths?(lancMs===lancMe?this._months[lancMs]:`${this._months[lancMs]} – ${this._months[lancMe]}`):'';
