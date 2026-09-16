@@ -1343,8 +1343,8 @@
 
   <!-- ══ LANÇAMENTOS DETALHADOS — linha a linha, mês a mês (estilo planilha) ══ -->
   <sc-if value="{{ lancOpen }}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{ closeLancIfBackdrop }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:600;display:flex;align-items:center;justify-content:center;padding:18px">
-      <div style="background:#0f1626;border:1px solid #1e293b;border-radius:14px;width:96vw;height:92vh;max-width:1440px;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 90px rgba(0,0,0,0.65);overflow:hidden">
+    <div onClick="{{ closeLancIfBackdrop }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:600;display:flex;align-items:center;justify-content:center;padding:{{ lancBackdropPad }}">
+      <div style="{{ lancModalStyle }}">
 
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0">
           <div>
@@ -1358,6 +1358,14 @@
                 Editar Lançamentos
               </a>
             </sc-if>
+            <button onClick="{{ toggleLancFullscreen }}" title="{{ lancFullscreenTitle }}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">
+              <sc-if value="{{ lancFullscreen }}" hint-placeholder-val="{{ false }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>
+              </sc-if>
+              <sc-if value="{{ !lancFullscreen }}" hint-placeholder-val="{{ true }}">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+              </sc-if>
+            </button>
             <button onClick="{{ closeLancDetalhe }}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">✕</button>
           </div>
         </div>
@@ -1408,24 +1416,24 @@
              de scroll (cada linha vira seu próprio containing block) e o texto foge. -->
         <div style="flex:1;min-width:0;min-height:0;overflow:auto;position:relative">
           <div style="display:grid;grid-template-columns:{{ lancGridCols }}">
-            <div style="position:sticky;top:0;left:0;z-index:5;background:#0a0f1e;padding:10px 18px;font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.1)">Conta</div>
+            <div style="position:sticky;top:0;left:0;z-index:5;background:#0a0f1e;padding:10px 18px;font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.1);contain:paint;will-change:transform">Conta</div>
             <sc-for list="{{ lancHeaderCols }}" as="hc" hint-placeholder-count="9">
-              <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;background:{{ hc.bg }};border-bottom:1px solid rgba(255,255,255,0.1)">
+              <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;background:{{ hc.bg }};border-bottom:1px solid rgba(255,255,255,0.1);contain:paint;will-change:transform">
                 <div style="font-size:9.5px;font-weight:700;color:{{ hc.color }};text-transform:uppercase;letter-spacing:0.4px">{{ hc.label }}</div>
                 <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV · AH</div>
               </div>
             </sc-for>
-            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-left:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">
+            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-left:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e;contain:paint;will-change:transform">
               <div style="font-size:9px;font-weight:700;color:#e2e8f0;text-transform:uppercase;letter-spacing:0.6px">Total</div>
               <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV%</div>
             </div>
-            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">
+            <div style="position:sticky;top:0;z-index:3;padding:8px 8px 6px;text-align:right;border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e;contain:paint;will-change:transform">
               <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px">Média</div>
               <div style="font-size:7px;font-weight:600;color:#475569;letter-spacing:0.3px;margin-top:2px">AV%</div>
             </div>
 
             <sc-for list="{{ lancRows }}" as="row" hint-placeholder-count="40">
-              <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }}">{{ row.label }}</div>
+              <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }};contain:paint">{{ row.label }}</div>
               <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
                 <div style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }}">
                   <div style="font-size:10.5px;font-weight:{{ cell.weight }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
@@ -1497,7 +1505,7 @@ class Component extends DCLogic {
     // disso o painel tem seu próprio período/operações, independente do filtro de cima.
     // lancModo: 'operacao' (padrão) agrupa EP+Guilherme em "GIP Ecommerce"; 'cnpj' mostra
     // cada CNPJ separado (EP/Guilherme/Isabela/Juliane) — só existe dentro desse painel.
-    lancOpen: false, lancCos: null, lancMs: null, lancMe: null, lancModo: 'operacao' };
+    lancOpen: false, lancCos: null, lancMs: null, lancMe: null, lancModo: 'operacao', lancFullscreen: false };
 
   // Índice do mês atual dentro de _months (0=Jan). Usado no YTD e nos atalhos de
   // período — YTD é Jan até o mês corrente, nunca até Dezembro.
@@ -1577,7 +1585,7 @@ class Component extends DCLogic {
   _animKPIs(){
     const {selectedCos,monthStart,monthEnd}=this.state;
     const ms=Math.min(monthStart,monthEnd),me=Math.max(monthStart,monthEnd);
-    const calc=this._dreCalcRange(selectedCos,ms+1,me+1);
+    const calc=this._dreCalcRange(selectedCos,ms+1,me+1,true);
     const mcRatio=calc.rb>0?calc.mc/calc.rb:0;
     const D=480,g=id=>document.getElementById(id);
     // Hero KPIs
@@ -1588,7 +1596,7 @@ class Component extends DCLogic {
     this._animPct(g('kpi-res-pct'),calc.rb>0?calc.res/calc.rb*100:0,D);
     // Mini-cards
     selectedCos.forEach((co,i)=>{
-      const c=this._dreCalcRange([co],ms+1,me+1),mcR=c.rb>0?c.mc/c.rb:0,resR=c.rb>0?c.res/c.rb:0;
+      const c=this._dreCalcRange([co],ms+1,me+1,true),mcR=c.rb>0?c.mc/c.rb:0,resR=c.rb>0?c.res/c.rb:0;
       this._animNum(g('ck-fat-'+i),c.rb,D);
       this._animNum(g('ck-res-'+i),c.res,D);
       this._animPct(g('ck-res-pct-'+i),resR*100,D);
@@ -1693,7 +1701,11 @@ class Component extends DCLogic {
     }
   }
 
-  _dreCalcRange(selectedCos, mesStart, mesEnd) {
+  // light=true pula o cálculo de camposTotais (que itera TODOS os subcampos por mês
+  // por empresa — o ponto mais caro da função) pra quem só precisa dos totais de topo
+  // (rb/rl/mc/res/ded/cvar/gop...), como os KPIs, mini-cards, comparação e Lançamentos
+  // Detalhados. Só _dreRows() (a tabela-resumo do DRE) realmente usa camposTotais hoje.
+  _dreCalcRange(selectedCos, mesStart, mesEnd, light) {
     let rb=0,ec=0,vc=0,exp=0,icms=0,das=0,oi=0,rl=0,cmv=0,mc=0,res=0;
     const camposTotais = {};
     for (let m = mesStart; m <= mesEnd; m++) {
@@ -1712,7 +1724,7 @@ class Component extends DCLogic {
             icms+=+d.icms_grpr||0; das+=+d.simples_das||0; oi+=+d.outros_impostos||0; cmv+=+d.cmv||0;
             // 'Consolidado' não existe no Lançamentos (ajustes manuais próprios) — usa as
             // colunas antigas direto, mapeadas pro mesmo Campo que os demais usariam.
-            if (mid === 'Consolidado') {
+            if (!light && mid === 'Consolidado') {
               Object.keys(this._LEGACY_COL_TO_CAMPO).forEach(col => {
                 const campoId = this._lancCampoIdByNome[this._LEGACY_COL_TO_CAMPO[col]];
                 const val = +d[col]||0;
@@ -1720,12 +1732,14 @@ class Component extends DCLogic {
               });
             }
           }
-          // Linhas detalhadas: somam os Subcampos de Lançamentos por Campo (dinâmico,
-          // reflete o que o Aldemar cadastrar/lançar, sem depender de nomes de coluna fixos).
-          (this._lancSubcampos||[]).forEach(s => {
-            const v = this._lancValoresMap[`${s.id}-${mid}-${m}`];
-            if (v) camposTotais[s.campo_id] = (camposTotais[s.campo_id]||0) + v;
-          });
+          if (!light) {
+            // Linhas detalhadas: somam os Subcampos de Lançamentos por Campo (dinâmico,
+            // reflete o que o Aldemar cadastrar/lançar, sem depender de nomes de coluna fixos).
+            (this._lancSubcampos||[]).forEach(s => {
+              const v = this._lancValoresMap[`${s.id}-${mid}-${m}`];
+              if (v) camposTotais[s.campo_id] = (camposTotais[s.campo_id]||0) + v;
+            });
+          }
         });
       });
     }
@@ -1760,8 +1774,8 @@ class Component extends DCLogic {
       on, ligado, identico, cosDiferentes:cosDif, aCos:selectedCos, bCos, aMs, aMe, bMs, bMe,
       aPeriodo:per(aMs,aMe), bPeriodo:per(bMs,bMe),
       aCosLabel:cosLabel(selectedCos), bCosLabel:cosLabel(bCos),
-      aCalc:this._dreCalcRange(selectedCos,aMs+1,aMe+1),
-      bCalc:this._dreCalcRange(bCos,bMs+1,bMe+1),
+      aCalc:this._dreCalcRange(selectedCos,aMs+1,aMe+1,true),
+      bCalc:this._dreCalcRange(bCos,bMs+1,bMe+1,true),
     };
   }
 
@@ -1782,7 +1796,7 @@ class Component extends DCLogic {
     const offset = hasPrev ? 1 : 0;
     const mAll = []; for (let m = (hasPrev?ms-1:ms); m <= me; m++) mAll.push(m);
     const months = mAll.slice(offset);
-    const perAll = mAll.map(m => this._dreCalcRange(cos, m, m));
+    const perAll = mAll.map(m => this._dreCalcRange(cos, m, m, true));
     const sum = arr => arr.reduce((a,b) => a+b, 0);
     const hasMov = arr => arr.some(v => Math.abs(v) >= 0.005);
     const camposPorClasse = this._lancCamposPorClasse||{};
@@ -1843,7 +1857,7 @@ class Component extends DCLogic {
     if (cos.length > 1) {
       const labelMap = porCnpj ? this._cnpjLabels : this._dreLabels;
       cos.forEach(id => {
-        const entAll = mAll.map(m => this._dreCalcRange([id], m, m).rb);
+        const entAll = mAll.map(m => this._dreCalcRange([id], m, m, true).rb);
         if (hasMov(entAll.slice(offset))) addRow(labelMap[id]||id, entAll, 'campo-lite');
       });
     }
@@ -2455,7 +2469,7 @@ class Component extends DCLogic {
       };
     });
 
-    const calc=this._dreCalcRange(selectedCos,ms+1,me+1);
+    const calc=this._dreCalcRange(selectedCos,ms+1,me+1,true);
     const mcRatio=calc.rb>0?calc.mc/calc.rb:0;
     const impostos=calc.icms+calc.das+calc.oi;
     const pctOf=v=>(calc.rb>0?(v/calc.rb*100):0).toFixed(1).replace('.',',')+'%';
@@ -2474,7 +2488,7 @@ class Component extends DCLogic {
       resAsk:`Pode me explicar o Resultado de ${this._fmtShort(calc.res)} no período ${periodLabel} ${selLabel}? O que está impactando esse resultado?`
     };
     const companyKPIs=selectedCos.map((co,i)=>{
-      const c=this._dreCalcRange([co],ms+1,me+1);
+      const c=this._dreCalcRange([co],ms+1,me+1,true);
       const mcR=c.rb>0?c.mc/c.rb:0;
       const coLabel=this._dreLabels[co]||co;
       return {idx:i,logo:this._dreLogos[co]||'',label:coLabel,color:this._dreColors[co]||'#6b7280',fatFmt:this._fmtShort(c.rb),rlFmt:this._fmtShort(c.rl),resFmt:this._fmtShort(c.res),resColor:c.res>=0?'#4ade80':'#f87171',resPct:c.rb>0?(c.res/c.rb*100).toFixed(1).replace('.',',')+'%':'—',mcFmt:this._fmtShort(c.mc),mcPct:c.rb>0?(mcR*100).toFixed(1).replace('.',',')+'%':'—',
@@ -2614,7 +2628,12 @@ class Component extends DCLogic {
     // Painel próprio, aberto via botão na tabela do DRE — herda operações/período
     // do filtro principal no instante em que abre, mas depois vive independente
     // deles (o board pode expandir pra ver mais meses sem mexer no filtro de cima).
-    const {lancOpen, lancCos: lancCosSt, lancMs: lancMsSt, lancMe: lancMeSt, lancModo}=this.state;
+    const {lancOpen, lancCos: lancCosSt, lancMs: lancMsSt, lancMe: lancMeSt, lancModo, lancFullscreen}=this.state;
+    const lancBackdropPad=lancFullscreen?'0px':'18px';
+    const lancModalStyle=lancFullscreen
+      ? 'background:#0f1626;border:none;border-radius:0;width:100vw;height:100vh;max-width:none;position:relative;display:flex;flex-direction:column;box-shadow:none;overflow:hidden'
+      : 'background:#0f1626;border:1px solid #1e293b;border-radius:14px;width:96vw;height:92vh;max-width:1440px;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 90px rgba(0,0,0,0.65);overflow:hidden';
+    const lancFullscreenTitle=lancFullscreen?'Sair da tela cheia':'Abrir em tela cheia';
     const lancCos=(lancCosSt&&lancCosSt.length)?lancCosSt:selectedCos;
     const lancMs=lancMsSt!=null?lancMsSt:ms;
     const lancMe=lancMeSt!=null?lancMeSt:me;
@@ -2683,8 +2702,9 @@ class Component extends DCLogic {
     // Coluna da conta em largura FIXA (não fr) — uma faixa flexível como coluna
     // sticky, junto com scroll horizontal, é receita pra bug de posicionamento
     // (o valor "stuck" pode ficar preso a um recálculo de largura desatualizado).
-    // Colunas de mês mais largas que antes (112px) pra caber valor + AV%/AH% embaixo.
-    const lancGridCols=`260px repeat(${lancNMonths},112px) 118px 118px`;
+    // Colunas bem mais largas e fontes maiores (v. lancKindStyle) — o pedido foi
+    // "menos coisa de uma vez, números maiores", mesmo que role mais pros lados/baixo.
+    const lancGridCols=`300px repeat(${lancNMonths},150px) 152px 152px`;
     const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'rgba(251,191,36,0.1)':'#0a0f1e'};});
     // Formata uma célula {v,av,ah} → texto do valor + AV%/AH% igual a AV/AH da
     // tabela principal do DRE: AV% = |valor| sobre a Receita Bruta do mês; AH% =
@@ -2832,11 +2852,13 @@ class Component extends DCLogic {
       setCompareMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({compareMonthEnd:v,compareMonthStart:Math.min(v,this.state.compareMonthStart??v)});},
       // Lançamentos Detalhados
       lancOpen, lancCoButtons, lancModoBtns, lancPresets, lancHeaderCols, lancRows, lancGridCols, lancPeriodLabel, lancCosLabel,
+      lancFullscreen:!!lancFullscreen, lancBackdropPad, lancModalStyle, lancFullscreenTitle,
+      toggleLancFullscreen:()=>this.setState({lancFullscreen:!this.state.lancFullscreen}),
       lancEntLabel:lancPorCnpj?'CNPJs':'Operações',
       lancMsVal:lancMs, lancMeVal:lancMe,
       lancPodeIrParaLancamentos:(()=>{const p=this._userProfile;return !p||p.is_admin||p.can_lancamentos===true;})(),
       // Sempre reabre em modo Operação — CNPJ é uma lente pontual, não o padrão.
-      openLancDetalhe:()=>this.setState({lancOpen:true, lancCos:[...selectedCos], lancMs:ms, lancMe:me, lancModo:'operacao'}),
+      openLancDetalhe:()=>this.setState({lancOpen:true, lancCos:[...selectedCos], lancMs:ms, lancMe:me, lancModo:'operacao', lancFullscreen:false}),
       closeLancDetalhe:()=>this.setState({lancOpen:false}),
       closeLancIfBackdrop:e=>{if(e.target===e.currentTarget)this.setState({lancOpen:false});},
       setLancMs:e=>{const v=parseInt(e.target.value);this.setState({lancMs:v,lancMe:Math.max(v,this.state.lancMe??me)});},
