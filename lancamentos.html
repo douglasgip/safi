@@ -102,6 +102,14 @@
     .campo-total { font-size: 12.5px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; }
     .subcampo-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0 5px 16px; }
     .subcampo-nome { font-size: 12px; color: #64748b; }
+    /* Listrado — alterna 2 tons entre as linhas com input (campo-folha e subcampo),
+       contínuo pela tela toda (ver zebraIdx em renderEntryTree), pra não confundir
+       uma linha com a de baixo numa lista comprida. Estende até a borda do cartão
+       com margem negativa; subcampo mantém o recuo visual de 16px por cima do "R$". */
+    .campo-row.zebra-a, .campo-row.zebra-b, .subcampo-row.zebra-a, .subcampo-row.zebra-b { margin: 0 -18px; padding-left: 18px; padding-right: 18px; border-radius: 8px; }
+    .campo-row.zebra-a, .subcampo-row.zebra-a { background: rgba(255,255,255,0.025); }
+    .campo-row.zebra-b, .subcampo-row.zebra-b { background: rgba(139,92,246,0.09); }
+    .subcampo-row.zebra-a, .subcampo-row.zebra-b { padding-left: 34px; }
     .subcampo-input { width: 172px; padding: 7px 10px 7px 32px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
     .subcampo-input:focus { outline: none; border-color: #8b5cf6; background: rgba(139,92,246,0.05); }
     /* Prefixo "R$" fixo à esquerda dos campos monetários — puramente visual, o valor
@@ -571,6 +579,11 @@
 
     function renderEntryTree() {
       const el = document.getElementById('entry-tree');
+      // Listrado (zebra): alterna 2 tons entre as linhas com input (campo-folha e
+      // subcampo), contínuo pela tela inteira — não reinicia a cada classe/campo —
+      // pra ficar mais fácil não perder a linha numa lista comprida.
+      let zebraIdx = 0;
+      const zebra = () => (zebraIdx++ % 2 === 0) ? 'zebra-a' : 'zebra-b';
       el.innerHTML = classes.map(classe => {
         // Classes de fórmula (Receita Líquida, Margem, Resultado) não recebem lançamento —
         // aparecem só como linha de resultado, calculada ao vivo.
@@ -589,14 +602,14 @@
           // onde Deduções e Custos Variáveis são itens diretos, sem sub-nível).
           if (campo.folha && subs.length === 1) {
             const s = subs[0];
-            return `<div class="campo-row folha">
+            return `<div class="campo-row folha ${zebra()}">
               <div class="campo-head">
                 <span class="campo-nome">${esc(campo.nome)}</span>
                 <span class="money-wrap"><input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()"></span>
               </div>
             </div>`;
           }
-          const subsHtml = subs.map(s => `<div class="subcampo-row">
+          const subsHtml = subs.map(s => `<div class="subcampo-row ${zebra()}">
               <span class="subcampo-nome">${esc(s.nome)}</span>
               <span class="money-wrap"><input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()"></span>
             </div>`).join('');
