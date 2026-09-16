@@ -1274,9 +1274,15 @@
       </div>
 
       <!-- ══ TABELA DRE ══ -->
-      <div style="display:flex;align-items:center;gap:7px;margin-bottom:12px">
-        <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
-        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Demonstrativo de Resultados — DRE</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:7px">
+          <div style="width:2px;height:13px;background:#f59e0b;border-radius:2px"></div>
+          <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Demonstrativo de Resultados — DRE</span>
+        </div>
+        <button onClick="{{ openLancDetalhe }}" style="display:flex;align-items:center;gap:6px;padding:7px 13px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#94a3b8;font-family:Inter,sans-serif;font-size:11px;font-weight:700;border-radius:9px;cursor:pointer;letter-spacing:0.3px;transition:all 0.15s">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Lançamentos Detalhados
+        </button>
       </div>
       <div id="dre-table-scroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;margin-bottom:24px">
       <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;overflow:hidden;backdrop-filter:blur(12px);min-width:560px">
@@ -1335,6 +1341,82 @@
     </div>
   </sc-if>
 
+  <!-- ══ LANÇAMENTOS DETALHADOS — linha a linha, mês a mês (estilo planilha) ══ -->
+  <sc-if value="{{ lancOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeLancIfBackdrop }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:600;display:flex;align-items:center;justify-content:center;padding:18px">
+      <div style="background:#0f1626;border:1px solid #1e293b;border-radius:14px;width:96vw;height:92vh;max-width:1440px;position:relative;display:flex;flex-direction:column;box-shadow:0 24px 90px rgba(0,0,0,0.65);overflow:hidden">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0">
+          <div>
+            <div style="font-size:14px;font-weight:800;color:#f1f5f9;letter-spacing:-0.2px">Lançamentos Detalhados</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">{{ lancCosLabel }} · {{ lancPeriodLabel }}</div>
+          </div>
+          <button onClick="{{ closeLancDetalhe }}" style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;font-size:16px;width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">✕</button>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:13px 22px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:1.3px;text-transform:uppercase;margin-right:2px">Operações</span>
+            <sc-for list="{{ lancCoButtons }}" as="lb" hint-placeholder-count="3">
+              <button onClick="{{ lb.toggleFn }}" style="padding:5px 11px;background:{{ lb.bg }};border:1px solid {{ lb.border }};color:{{ lb.color }};font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:5px;box-shadow:{{ lb.shadow }}">
+                <img src="{{ lb.logo }}" style="width:14px;height:14px;object-fit:contain;border-radius:2px;flex-shrink:0" /><span>{{ lb.label }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <div style="width:1px;height:20px;background:rgba(255,255,255,0.08)"></div>
+          <div style="display:flex;align-items:center;gap:6px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:6px 12px">
+            <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">De</span>
+            <div style="position:relative;display:inline-flex;align-items:center">
+              <select value="{{ lancMsVal }}" onChange="{{ setLancMs }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer;outline:none;padding-right:16px">
+                <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7"><option value="{{ mo.idx }}">{{ mo.label }}</option></sc-for>
+              </select>
+              <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.2px;text-transform:uppercase">Até</span>
+            <div style="position:relative;display:inline-flex;align-items:center">
+              <select value="{{ lancMeVal }}" onChange="{{ setLancMe }}" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:12px;font-weight:600;cursor:pointer;outline:none;padding-right:16px">
+                <sc-for list="{{ months }}" as="mo" hint-placeholder-count="7"><option value="{{ mo.idx }}">{{ mo.label }}</option></sc-for>
+              </select>
+              <svg style="position:absolute;right:0;top:50%;transform:translateY(-50%);pointer-events:none" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:3px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:4px">
+            <sc-for list="{{ lancPresets }}" as="lp" hint-placeholder-count="4">
+              <button onClick="{{ lp.setFn }}" title="{{ lp.title }}" style="padding:5px 10px;background:{{ lp.bg }};border:1px solid {{ lp.border }};color:{{ lp.color }};font-family:Inter,sans-serif;font-size:10.5px;font-weight:{{ lp.weight }};border-radius:6px;cursor:pointer;letter-spacing:0.4px">{{ lp.label }}</button>
+            </sc-for>
+          </div>
+          <span style="font-size:9.5px;color:#475569;margin-left:auto;white-space:nowrap">valores em R$ · coluna âmbar = mês atual</span>
+        </div>
+
+        <!-- Uma única CSS grid pra tabela inteira (cabeçalho + todas as linhas), não uma
+             grid por linha — é o que faz o "Conta" grudar tanto no topo quanto na esquerda
+             corretamente ao rolar: com uma grid por linha, sticky:left perde a referência
+             de scroll (cada linha vira seu próprio containing block) e o texto foge. -->
+        <div style="flex:1;min-width:0;min-height:0;overflow:auto;position:relative">
+          <div style="display:grid;grid-template-columns:{{ lancGridCols }}">
+            <div style="position:sticky;top:0;left:0;z-index:5;background:#0a0f1e;padding:10px 18px;font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.1)">Conta</div>
+            <sc-for list="{{ lancHeaderCols }}" as="hc" hint-placeholder-count="9">
+              <div style="position:sticky;top:0;z-index:3;padding:10px 8px;font-size:9.5px;font-weight:700;color:{{ hc.color }};text-align:right;text-transform:uppercase;letter-spacing:0.4px;background:{{ hc.bg }};border-bottom:1px solid rgba(255,255,255,0.1)">{{ hc.label }}</div>
+            </sc-for>
+            <div style="position:sticky;top:0;z-index:3;padding:10px 8px;font-size:9px;font-weight:700;color:#e2e8f0;text-align:right;text-transform:uppercase;letter-spacing:0.6px;border-left:1px solid rgba(255,255,255,0.08);border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">Total</div>
+            <div style="position:sticky;top:0;z-index:3;padding:10px 8px;font-size:9px;font-weight:700;color:#64748b;text-align:right;text-transform:uppercase;letter-spacing:0.6px;border-bottom:1px solid rgba(255,255,255,0.1);background:#0a0f1e">Média</div>
+
+            <sc-for list="{{ lancRows }}" as="row" hint-placeholder-count="40">
+              <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }}">{{ row.label }}</div>
+              <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
+                <div style="padding:{{ row.rowPad }};font-size:10.5px;color:{{ cell.color }};text-align:right;font-variant-numeric:tabular-nums;background:{{ cell.bg }};border-bottom:{{ cell.border }}">{{ cell.fmt }}</div>
+              </sc-for>
+              <div style="padding:{{ row.rowPad }};font-size:10.5px;font-weight:700;color:{{ row.totalColor }};text-align:right;font-variant-numeric:tabular-nums;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }}">{{ row.totalFmt }}</div>
+              <div style="padding:{{ row.rowPad }};font-size:10.5px;color:{{ row.mediaColor }};text-align:right;font-variant-numeric:tabular-nums;opacity:0.75;background:{{ row.bg }};border-bottom:{{ row.border }}">{{ row.mediaFmt }}</div>
+            </sc-for>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </sc-if>
+
 </div>
 </x-dc>
 
@@ -1374,7 +1456,12 @@ class Component extends DCLogic {
     // compareCos = operações do lado B. null = usa as mesmas do lado A (comparação
     // simples de período); array = comparação cruzada (ex: GIP em Mai–Ago x Via Closet
     // em Jan–Abr).
-    compareEnabled: false, compareMonthStart: null, compareMonthEnd: null, compareCos: null };
+    compareEnabled: false, compareMonthStart: null, compareMonthEnd: null, compareCos: null,
+    // Lançamentos Detalhados — visão linha-a-linha (Classe > Campo > Subcampo) mês a mês,
+    // parecida com a planilha do Excel, pra discussão do DRE em reunião de conselho.
+    // lancCos/lancMs/lancMe começam nulos e herdam o filtro principal ao abrir; depois
+    // disso o painel tem seu próprio período/operações, independente do filtro de cima.
+    lancOpen: false, lancCos: null, lancMs: null, lancMe: null };
 
   // Índice do mês atual dentro de _months (0=Jan). Usado no YTD e nos atalhos de
   // período — YTD é Jan até o mês corrente, nunca até Dezembro.
@@ -1620,6 +1707,69 @@ class Component extends DCLogic {
       aCalc:this._dreCalcRange(selectedCos,aMs+1,aMe+1),
       bCalc:this._dreCalcRange(bCos,bMs+1,bMe+1),
     };
+  }
+
+  // ══ Lançamentos Detalhados ═══════════════════════════════════════════════
+  // Mesma taxonomia Classe > Campo > Subcampo que alimenta o DRE, só que expandida
+  // mês a mês (em vez de um único período agregado) e descendo até o Subcampo —
+  // é a visão "linha por linha" pedida pro conselho, no espírito da planilha Excel.
+  _lancSubMonthly(subId, members, months) {
+    return months.map(m => members.reduce((a,mid) => a + (this._lancValoresMap[`${subId}-${mid}-${m}`]||0), 0));
+  }
+
+  _lancDetalheRows(cos, ms, me) {
+    const members = [...new Set(cos.flatMap(co => this._expand(co)))];
+    const months = []; for (let m = ms; m <= me; m++) months.push(m);
+    const perMonth = months.map(m => this._dreCalcRange(cos, m, m));
+    const sum = arr => arr.reduce((a,b) => a+b, 0);
+    const hasMov = arr => arr.some(v => Math.abs(v) >= 0.005);
+    const camposPorClasse = this._lancCamposPorClasse||{};
+    const subPorCampo = {};
+    (this._lancSubcampos||[]).forEach(s => (subPorCampo[s.campo_id] ||= []).push(s));
+    // Nomes reais das classes no banco (com prefixo "(+)/(-)/(=)") — diferente do que
+    // a tabela-resumo do DRE tenta casar (esse lookup lá está quebrado e sempre
+    // retorna vazio; aqui usamos os nomes corretos pra realmente descer no detalhe).
+    const findClasse = nome => (this._lancClasses||[]).find(c => c.nome === nome);
+    const rows = [];
+    const addRow = (label, monthly, kind) => rows.push({label, monthly, total: sum(monthly), kind});
+    const addBlock = classeNome => {
+      const classe = findClasse(classeNome);
+      if (!classe) return;
+      (camposPorClasse[classe.id]||[]).forEach(campo => {
+        const subs = subPorCampo[campo.id]||[];
+        const perSub = subs.map(s => ({s, monthly: this._lancSubMonthly(s.id, members, months).map(v => -v)}));
+        const campoMonthly = months.map((_,mi) => sum(perSub.map(x => x.monthly[mi])));
+        if (!hasMov(campoMonthly)) return;
+        addRow(campo.nome, campoMonthly, subs.length > 1 ? 'campo' : 'leaf');
+        if (subs.length > 1) perSub.forEach(({s,monthly}) => { if (hasMov(monthly)) addRow(s.nome, monthly, 'sub'); });
+      });
+    };
+
+    addRow('BLOCO 1 — RECEITA', months.map(()=>null), 'header');
+    addRow('(+) Receita Operacional Bruta', perMonth.map(p=>p.rb), 'total');
+    // Quebra por operação só faz sentido quando o total é composto por mais de uma
+    // (senão é só repetir o mesmo valor da Receita Bruta acima com outro rótulo).
+    const ecM=perMonth.map(p=>p.ec), vcM=perMonth.map(p=>p.vc), expM=perMonth.map(p=>p.exp);
+    if ([ecM,vcM,expM].filter(hasMov).length > 1) {
+      if (hasMov(ecM)) addRow('GIP Ecommerce', ecM, 'campo-lite');
+      if (hasMov(vcM)) addRow('Via Closet', vcM, 'campo-lite');
+      if (hasMov(expM)) addRow('Exposição Paulista', expM, 'campo-lite');
+    }
+    addRow('(−) Deduções da Receita', perMonth.map(p=>-p.ded), 'total-neg');
+    addBlock('(-) Deduções da Receita Bruta');
+    addRow('(=) Receita Líquida', perMonth.map(p=>p.rl), 'subtotal');
+
+    addRow('BLOCO 2 — CUSTOS VARIÁVEIS', months.map(()=>null), 'header');
+    addRow('(−) Custos Variáveis', perMonth.map(p=>-p.cvar), 'total-neg');
+    addBlock('(-) Custos Variáveis');
+    addRow('(=) Margem de Contribuição', perMonth.map(p=>p.mc), 'subtotal');
+
+    addRow('BLOCO 3 — OPERACIONAL', months.map(()=>null), 'header');
+    addRow('(−) Gastos Operacionais', perMonth.map(p=>-p.gop), 'total-neg');
+    addBlock('(-) Gastos Operacionais');
+    addRow('(=) Resultado Líquido', perMonth.map(p=>p.res), 'subtotal');
+
+    return {rows, months};
   }
 
   _dreRows(selectedCos) {
@@ -2367,6 +2517,95 @@ class Component extends DCLogic {
       mkDelta('Resultado Líquido','#e2e8f0',cmpS.aCalc.res,cmpS.bCalc.res),
     ]:[];
 
+    // ══ Lançamentos Detalhados ═══════════════════════════════════════════════
+    // Painel próprio, aberto via botão na tabela do DRE — herda operações/período
+    // do filtro principal no instante em que abre, mas depois vive independente
+    // deles (o board pode expandir pra ver mais meses sem mexer no filtro de cima).
+    const {lancOpen, lancCos: lancCosSt, lancMs: lancMsSt, lancMe: lancMeSt}=this.state;
+    const lancCos=(lancCosSt&&lancCosSt.length)?lancCosSt:selectedCos;
+    const lancMs=lancMsSt!=null?lancMsSt:ms;
+    const lancMe=lancMeSt!=null?lancMeSt:me;
+    const lancCoButtons=dreIndiv.map(c=>{
+      const on=lancCos.includes(c), col=this._dreColors[c]||'#6b7280';
+      return {
+        label:this._dreLabels[c]||c, logo:this._dreLogos[c]||'',
+        bg:on?'#18283e':'rgba(255,255,255,0.04)', border:on?'rgba(255,255,255,0.15)':'rgba(255,255,255,0.09)',
+        color:on?'#f1f5f9':'#64748b', shadow:on?'inset 3px 0 0 '+col:'none',
+        toggleFn:()=>{
+          const base=(this.state.lancCos&&this.state.lancCos.length)?this.state.lancCos:selectedCos;
+          if(base.includes(c)){
+            if(base.length===1)return;
+            this.setState({lancCos:base.filter(x=>x!==c)});
+          } else {
+            this.setState({lancCos:dreIndiv.filter(x=>base.includes(x)||x===c)});
+          }
+        }
+      };
+    });
+    const lancMkPreset=(label,title,s,e)=>{
+      const on=lancMs===s&&lancMe===e;
+      return {label,title,
+        bg:on?'rgba(245,158,11,0.16)':'transparent',
+        border:on?'rgba(245,158,11,0.45)':'rgba(255,255,255,0.07)',
+        color:on?'#f59e0b':'#94a3b8', weight:on?'800':'600',
+        setFn:()=>this.setState({lancMs:s,lancMe:e})};
+    };
+    const lancPresets=[
+      lancMkPreset('Mês', `Somente ${this._months[mAtual]}`, mAtual, mAtual),
+      lancMkPreset('Trim.', `Trimestre corrente — ${this._months[triIni]} a ${this._months[mAtual]}`, triIni, mAtual),
+      lancMkPreset('YTD', `Acumulado do ano — Jan a ${this._months[mAtual]}`, 0, mAtual),
+      lancMkPreset('Ano', 'Ano inteiro — Jan a Dez/2026', 0, this._months.length-1),
+    ];
+
+    const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1):{rows:[],months:[]};
+    const lancNMonths=lancDet.months.length;
+    // Coluna da conta em largura FIXA (não fr) — uma faixa flexível como coluna
+    // sticky, junto com scroll horizontal, é receita pra bug de posicionamento
+    // (o valor "stuck" pode ficar preso a um recálculo de largura desatualizado).
+    const lancGridCols=`260px repeat(${lancNMonths},96px) 108px 108px`;
+    const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'rgba(251,191,36,0.08)':'transparent'};});
+    const lancFmtCell=(v,isHeader)=>{
+      if(isHeader) return {fmt:'',color:'transparent'};
+      if(Math.abs(v)<0.005) return {fmt:'—',color:'#334155'};
+      return {fmt:(v<0?'('+this._fmt(v)+')':this._fmt(v)), color:v>=0?'#94a3b8':'#f87171'};
+    };
+    // Estilo por tipo de linha — mesma linguagem visual da tabela DRE principal
+    // (âmbar pros subtotais "=", claro/negrito pros totais de bloco, indentação
+    // crescente Campo→Subcampo), só que reaplicada em cada uma das N colunas de mês.
+    const lancKindStyle={
+      header:      {bg:'rgba(15,23,42,0.65)', labelColor:'#64748b', labelSize:'9px',   labelWeight:'700', ls:'2px', tt:'uppercase', pad:'0px',  rowPad:'10px 18px 7px', border:'1px solid #1e3a5f'},
+      total:       {bg:'rgba(255,255,255,0.025)', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
+      'total-neg': {bg:'rgba(255,255,255,0.025)', labelColor:'#f1f5f9', labelSize:'11.5px', labelWeight:'700', ls:'0', tt:'none', pad:'0px',  rowPad:'8px 18px', border:'1px solid rgba(255,255,255,0.06)'},
+      subtotal:    {bg:'rgba(251,191,36,0.055)',  labelColor:'#fbbf24', labelSize:'11.5px', labelWeight:'800', ls:'0', tt:'none', pad:'0px',  rowPad:'9px 18px', border:'1px solid rgba(251,191,36,0.18)'},
+      campo:       {bg:'transparent', labelColor:'#e2e8f0', labelSize:'11px',   labelWeight:'600', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      leaf:        {bg:'transparent', labelColor:'#cbd5e1', labelSize:'11px',   labelWeight:'500', ls:'0', tt:'none', pad:'16px', rowPad:'6px 18px', border:'1px solid rgba(255,255,255,0.04)'},
+      sub:         {bg:'transparent', labelColor:'#94a3b8', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+      'campo-lite':{bg:'transparent', labelColor:'#7c8aa5', labelSize:'10.3px', labelWeight:'400', ls:'0', tt:'none', pad:'32px', rowPad:'5px 18px', border:'1px solid rgba(255,255,255,0.03)'},
+    };
+    // Corpo (Campo/Subcampo) tem fundo transparente por padrão — é onde o destaque
+    // âmbar do mês atual aparece. Header/Total/Subtotal já têm fundo próprio (a faixa
+    // colorida do tipo de linha), então mantêm o mesmo fundo em toda a largura.
+    const lancTintável=new Set(['campo','sub','leaf','campo-lite']);
+    const lancRows=lancDet.rows.map(r=>{
+      const st=lancKindStyle[r.kind]||lancKindStyle.leaf;
+      const isHeader=r.kind==='header';
+      const podeTintar=lancTintável.has(r.kind);
+      const cells=r.monthly.map((v,mi)=>{
+        const c=lancFmtCell(v,isHeader);
+        const cur=!!(lancHeaderCols[mi]&&lancHeaderCols[mi].color==='#f59e0b');
+        const bg=(cur&&podeTintar)?'rgba(251,191,36,0.05)':st.bg;
+        return {...c, bg, border:st.border};
+      });
+      const totalC=isHeader?{fmt:'',color:'transparent'}:lancFmtCell(r.total,false);
+      const mediaC=isHeader?{fmt:'',color:'transparent'}:lancFmtCell(lancNMonths?r.total/lancNMonths:0,false);
+      return {label:r.label, kind:r.kind, cells,
+        totalFmt:totalC.fmt, totalColor:totalC.color, mediaFmt:mediaC.fmt, mediaColor:mediaC.color,
+        bg:st.bg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight,
+        ls:st.ls, tt:st.tt, pad:st.pad, rowPad:st.rowPad, border:st.border};
+    });
+    const lancPeriodLabel=lancNMonths?(lancMs===lancMe?this._months[lancMs]:`${this._months[lancMs]} – ${this._months[lancMe]}`):'';
+    const lancCosLabel=lancCos.length===dreIndiv.length?'Todas as operações':lancCos.map(c=>this._dreLabels[c]||c).join(' + ');
+
     return {
       tab0Active:tab===0,tab1Active:tab===1,
       sidebarTab0Display:(()=>{const p=this._userProfile;return(!p||p.is_admin||p.can_resumo!==false)?'flex':'none';})(),
@@ -2437,7 +2676,15 @@ class Component extends DCLogic {
         }
       },
       setCompareMonthStart:e=>{const v=parseInt(e.target.value);this.setState({compareMonthStart:v,compareMonthEnd:Math.max(v,this.state.compareMonthEnd??v)});},
-      setCompareMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({compareMonthEnd:v,compareMonthStart:Math.min(v,this.state.compareMonthStart??v)});}
+      setCompareMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({compareMonthEnd:v,compareMonthStart:Math.min(v,this.state.compareMonthStart??v)});},
+      // Lançamentos Detalhados
+      lancOpen, lancCoButtons, lancPresets, lancHeaderCols, lancRows, lancGridCols, lancPeriodLabel, lancCosLabel,
+      lancMsVal:lancMs, lancMeVal:lancMe,
+      openLancDetalhe:()=>this.setState({lancOpen:true, lancCos:[...selectedCos], lancMs:ms, lancMe:me}),
+      closeLancDetalhe:()=>this.setState({lancOpen:false}),
+      closeLancIfBackdrop:e=>{if(e.target===e.currentTarget)this.setState({lancOpen:false});},
+      setLancMs:e=>{const v=parseInt(e.target.value);this.setState({lancMs:v,lancMe:Math.max(v,this.state.lancMe??me)});},
+      setLancMe:e=>{const v=parseInt(e.target.value);this.setState({lancMe:v,lancMs:Math.min(v,this.state.lancMs??ms)});}
     };
   }
 }
