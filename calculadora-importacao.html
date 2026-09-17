@@ -916,24 +916,30 @@
       bind('.f-qtd', 'qtd', v => (+v || 0));
       bind('.f-valorunit', 'valorUnitUSD', v => (moneyToNumber(v) || 0));
       bind('.f-peso', 'pesoKg', v => (moneyToNumber(v) || 0));
-      bind('.f-ii', 'aliqII', v => (+v || 0));
-      bind('.f-ipi', 'aliqIPI', v => (+v || 0));
-      bind('.f-pis', 'aliqPIS', v => (+v || 0));
-      bind('.f-cofins', 'aliqCOFINS', v => (+v || 0));
-      bind('.f-icms', 'aliqICMS', v => (+v || 0));
+      // As 5 alíquotas marcam a linha como "mexida manualmente" ao serem editadas
+      // pelo próprio usuário — depois disso a sugestão automática por NCM nunca
+      // mais sobrescreve nada nessa linha. Só reagem a digitação de verdade: o
+      // preenchimento automático abaixo seta prod.aliq* + input.value direto, sem
+      // passar por aqui, então não se auto-marca como "mexido".
+      const marcarAliqManual = () => { prod._aliqManual = true; };
+      bind('.f-ii', 'aliqII', v => (+v || 0)); tr.querySelector('.f-ii').addEventListener('input', marcarAliqManual);
+      bind('.f-ipi', 'aliqIPI', v => (+v || 0)); tr.querySelector('.f-ipi').addEventListener('input', marcarAliqManual);
+      bind('.f-pis', 'aliqPIS', v => (+v || 0)); tr.querySelector('.f-pis').addEventListener('input', marcarAliqManual);
+      bind('.f-cofins', 'aliqCOFINS', v => (+v || 0)); tr.querySelector('.f-cofins').addEventListener('input', marcarAliqManual);
+      bind('.f-icms', 'aliqICMS', v => (+v || 0)); tr.querySelector('.f-icms').addEventListener('input', marcarAliqManual);
       bind('.f-precovenda', 'precoVendaUnit', v => (moneyToNumber(v) || 0), detail);
 
-      // Sugere alíquotas pra esse NCM (só preenche se os campos ainda estiverem
-      // zerados — nunca sobrescreve o que o usuário já digitou). Prioridade:
+      // Sugere alíquotas pra esse NCM toda vez que o campo muda e perde o foco —
+      // inclusive se o usuário trocar de NCM de novo depois (não trava mais no
+      // primeiro preenchimento). Só para de sugerir se o usuário mexer manualmente
+      // em alguma das 5 alíquotas (marcarAliqManual acima). Prioridade:
       // 1) II/IPI da API pública oficial (Tabelas Fiscais — TIPI/TEC); PIS/COFINS/
       // ICMS não têm fonte oficial simples por NCM, então vêm do último uso local.
       // 2) se a API falhar/não achar o NCM, cai pro último uso local também pro
       // II/IPI. Nunca é aplicado sem avisar — o toast sempre diz de onde veio.
       tr.querySelector('.f-ncm').addEventListener('blur', async () => {
         const ncm = tr.querySelector('.f-ncm').value.trim();
-        if (!ncm) return;
-        const zerado = !prod.aliqII && !prod.aliqIPI && !prod.aliqPIS && !prod.aliqCOFINS;
-        if (!zerado) return;
+        if (!ncm || prod._aliqManual) return;
 
         let fonteApi = false;
         const digits = ncm.replace(/\D/g, '');
