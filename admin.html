@@ -155,6 +155,12 @@
     .badge-no  { background: rgba(100,116,139,0.12); color: #475569; border: 1px solid rgba(100,116,139,0.15); }
     .badge-admin { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.25); }
 
+    /* ── Barra de % de acesso ao sistema (quantas áreas o usuário pode ver) ── */
+    .access-cell { display: flex; align-items: center; gap: 10px; min-width: 130px; }
+    .access-track { flex: 1; height: 7px; border-radius: 4px; background: rgba(255,255,255,0.07); overflow: hidden; }
+    .access-fill { height: 100%; border-radius: 4px; transition: width 0.2s ease; }
+    .access-pct { font-size: 11.5px; font-weight: 700; font-variant-numeric: tabular-nums; width: 34px; text-align: right; flex-shrink: 0; }
+
     /* ── Ações ── */
     .td-actions { display: flex; align-items: center; gap: 8px; }
     .btn-action {
@@ -442,14 +448,12 @@
         <tr>
           <th>Nome / E-mail</th>
           <th>Função</th>
-          <th>Resumo Contábil</th>
-          <th>DRE</th>
-          <th>Operações DRE</th>
+          <th>Acesso ao Sistema</th>
           <th style="width:140px">Ações</th>
         </tr>
       </thead>
       <tbody id="users-tbody">
-        <tr class="loading-row"><td colspan="6">Carregando usuários...</td></tr>
+        <tr class="loading-row"><td colspan="4">Carregando usuários...</td></tr>
       </tbody>
     </table>
     </div>
@@ -866,32 +870,58 @@ async function logout() {
   redirect('/login');
 }
 
+// ── % de acesso ao sistema — proporção das áreas/telas do painel (switches
+// mestres) que o usuário tem liberadas. Resumo/DRE são opt-out (null = liberado,
+// só bloqueia com false explícito); as demais são opt-in (só libera com true) —
+// mesma regra usada em setToggle() no modal de edição logo abaixo. Admin sempre
+// 100%, já que ele ignora todos os switches e vê tudo.
+const ACCESS_DOMAINS = [
+  u => u.can_resumo !== false,
+  u => u.can_dre !== false,
+  u => u.can_mapa_societario === true,
+  u => u.can_funcionarios === true,
+  u => u.can_pedidos === true,
+  u => u.can_despesas_fixas === true,
+  u => u.can_fluxo_caixa === true,
+  u => u.can_lancamentos === true,
+  u => u.can_calc_importacao === true,
+  u => u.pedidos_pode_conciliar === true,
+];
+function computeAccessPct(u) {
+  if (u.is_admin) return 100;
+  const granted = ACCESS_DOMAINS.filter(check => check(u)).length;
+  return Math.round(granted / ACCESS_DOMAINS.length * 100);
+}
+function accessBarColor(pct) {
+  return pct >= 70 ? '#34d399' : pct >= 35 ? '#fbbf24' : '#f87171';
+}
+
 // ── Carregar usuários ─────────────────────────────────
 async function loadUsers() {
   const tbody = document.getElementById('users-tbody');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Carregando...</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="4">Carregando...</td></tr>';
 
   const { data, error } = await sb
     .from('user_profiles')
     .select('*')
     .order('created_at', { ascending: true });
 
-  if (error) { tbody.innerHTML = `<tr class="loading-row"><td colspan="6">Erro ao carregar: ${error.message}</td></tr>`; return; }
-  if (!data.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="6">Nenhum usuário cadastrado.</td></tr>'; return; }
+  if (error) { tbody.innerHTML = `<tr class="loading-row"><td colspan="4">Erro ao carregar: ${error.message}</td></tr>`; return; }
+  if (!data.length) { tbody.innerHTML = '<tr class="loading-row"><td colspan="4">Nenhum usuário cadastrado.</td></tr>'; return; }
+
+  // Ordem alfabética por nome (cai pro e-mail se ainda não tiver nome cadastrado).
+  data.sort((a, b) => (a.full_name || a.email || '').localeCompare(b.full_name || b.email || '', 'pt-BR', { sensitivity: 'base' }));
 
   window._usersMap = {};
   data.forEach(u => { window._usersMap[u.id] = u; });
 
   tbody.innerHTML = data.map(u => {
-    // Resumo/DRE e as 3 empresas do DRE são opt-out (null = liberado, só bloqueia com
-    // false explícito) — mesma regra usada em setToggle() no modal de edição logo
-    // abaixo. Comparar com truthy aqui mostraria "Não"/vazio pra quem nunca teve esses
-    // campos tocados, mesmo tendo acesso de verdade.
-    const canResumo = u.is_admin || u.can_resumo !== false;
-    const canDre = u.is_admin || u.can_dre !== false;
-    const dreOps = canDre
-      ? [(u.is_admin || u.dre_epgip !== false) ? '<span class="badge badge-yes">GIP</span>' : '', (u.is_admin || u.dre_exposicao !== false) ? '<span class="badge badge-yes">Exposição</span>' : '', (u.is_admin || u.dre_viacloset !== false) ? '<span class="badge badge-yes">Via Closet</span>' : ''].filter(Boolean).join(' ') || '<span class="badge badge-no">Nenhuma</span>'
-      : '<span style="color:#334155;font-size:12px">—</span>';
+    const accessPct = computeAccessPct(u);
+    const accessColor = accessBarColor(accessPct);
+    const accessCell = `<div class="access-cell">
+        <div class="access-track"><div class="access-fill" style="width:${accessPct}%;background:${accessColor}"></div></div>
+        <span class="access-pct" style="color:${accessColor}">${accessPct}%</span>
+      </div>`;
 
     const isAdmin = u.is_admin;
     const actions = isAdmin
@@ -910,9 +940,7 @@ async function loadUsers() {
         <div style="font-size:11px;color:#64748b;margin-top:1px">${esc(u.email)}</div>
       </td>
       <td class="td-role">${esc(u.role || '—')}</td>
-      <td>${canResumo ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
-      <td>${canDre ? '<span class="badge badge-yes">Sim</span>' : '<span class="badge badge-no">Não</span>'}</td>
-      <td>${dreOps}</td>
+      <td>${accessCell}</td>
       <td>${actions}</td>
     </tr>`;
   }).join('');
