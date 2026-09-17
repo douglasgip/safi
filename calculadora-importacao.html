@@ -923,21 +923,43 @@
       bind('.f-icms', 'aliqICMS', v => (+v || 0));
       bind('.f-precovenda', 'precoVendaUnit', v => (moneyToNumber(v) || 0), detail);
 
-      // Sugere alíquotas salvas pra esse NCM (só preenche se os campos ainda
-      // estiverem zerados — nunca sobrescreve o que o usuário já digitou).
-      tr.querySelector('.f-ncm').addEventListener('blur', e => {
-        const ncm = e.target.value.trim();
+      // Sugere alíquotas pra esse NCM (só preenche se os campos ainda estiverem
+      // zerados — nunca sobrescreve o que o usuário já digitou). Prioridade:
+      // 1) II/IPI da API pública oficial (Tabelas Fiscais — TIPI/TEC); PIS/COFINS/
+      // ICMS não têm fonte oficial simples por NCM, então vêm do último uso local.
+      // 2) se a API falhar/não achar o NCM, cai pro último uso local também pro
+      // II/IPI. Nunca é aplicado sem avisar — o toast sempre diz de onde veio.
+      tr.querySelector('.f-ncm').addEventListener('blur', async () => {
+        const ncm = tr.querySelector('.f-ncm').value.trim();
         if (!ncm) return;
-        const preset = getNcmPresets()[ncm];
-        if (!preset) return;
         const zerado = !prod.aliqII && !prod.aliqIPI && !prod.aliqPIS && !prod.aliqCOFINS;
         if (!zerado) return;
-        prod.aliqII = preset.ii || 0; prod.aliqIPI = preset.ipi || 0; prod.aliqPIS = preset.pis || 0;
-        prod.aliqCOFINS = preset.cofins || 0; prod.aliqICMS = preset.icms || prod.aliqICMS;
+
+        let fonteApi = false;
+        const digits = ncm.replace(/\D/g, '');
+        if (digits.length === 8) {
+          try {
+            const res = await fetch(`https://tabelasfiscais.com.br/api/v1/ncm/${digits}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.ii && data.ipi && data.ii.aliquota != null && data.ipi.aliquota != null) {
+                prod.aliqII = +data.ii.aliquota || 0;
+                prod.aliqIPI = +data.ipi.aliquota || 0;
+                fonteApi = true;
+              }
+            }
+          } catch (e) { /* API fora do ar ou sem rede — segue pro fallback local, sem travar nada */ }
+        }
+
+        const preset = getNcmPresets()[ncm];
+        if (!fonteApi && preset) { prod.aliqII = preset.ii || 0; prod.aliqIPI = preset.ipi || 0; }
+        if (preset) { prod.aliqPIS = preset.pis || 0; prod.aliqCOFINS = preset.cofins || 0; prod.aliqICMS = preset.icms || prod.aliqICMS; }
+
+        if (!fonteApi && !preset) return;
         tr.querySelector('.f-ii').value = prod.aliqII; tr.querySelector('.f-ipi').value = prod.aliqIPI;
         tr.querySelector('.f-pis').value = prod.aliqPIS; tr.querySelector('.f-cofins').value = prod.aliqCOFINS;
         tr.querySelector('.f-icms').value = prod.aliqICMS;
-        showToast('Alíquotas preenchidas do último uso desse NCM — confira', 'green');
+        showToast(fonteApi ? 'II/IPI preenchidos pela tabela fiscal oficial (TIPI/TEC) — confira antes de confiar' : 'Alíquotas preenchidas do último uso desse NCM — confira', 'green');
         recalcAll();
       });
 
