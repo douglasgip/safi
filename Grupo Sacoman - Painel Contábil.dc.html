@@ -1446,7 +1446,7 @@
             <sc-for list="{{ lancRows }}" as="row" hint-placeholder-count="40">
               <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }};contain:paint">{{ row.label }}</div>
               <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
-                <div style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }}">
+                <div data-ask="{{ cell.ask }}" title="{{ cell.askTitle }}" style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }};cursor:{{ cell.askCursor }}">
                   <div style="font-size:13px;font-weight:{{ cell.weight }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
                   <div style="font-size:9px;font-variant-numeric:tabular-nums;margin-top:3px;white-space:nowrap">
                     <span style="color:#f1f5f9">{{ cell.avFmt }}</span>
@@ -1454,11 +1454,11 @@
                   </div>
                 </div>
               </sc-for>
-              <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }}">
+              <div data-ask="{{ row.totalAsk }}" title="{{ row.aggAskTitle }}" style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-left:1px solid rgba(255,255,255,0.06);border-bottom:{{ row.border }};cursor:{{ row.aggAskCursor }}">
                 <div style="font-size:13px;font-weight:{{ row.valueWeight }};color:{{ row.totalColor }};font-variant-numeric:tabular-nums">{{ row.totalFmt }}</div>
                 <div style="font-size:9px;color:#f1f5f9;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.totalAvFmt }}</div>
               </div>
-              <div style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-bottom:{{ row.border }};opacity:0.8">
+              <div data-ask="{{ row.mediaAsk }}" title="{{ row.aggAskTitle }}" style="padding:{{ row.rowPad }};text-align:right;background:{{ row.bg }};border-bottom:{{ row.border }};opacity:0.8;cursor:{{ row.aggAskCursor }}">
                 <div style="font-size:13px;font-weight:{{ row.valueWeight }};color:{{ row.mediaColor }};font-variant-numeric:tabular-nums">{{ row.mediaFmt }}</div>
                 <div style="font-size:9px;color:#f1f5f9;font-variant-numeric:tabular-nums;margin-top:3px">{{ row.mediaAvFmt }}</div>
               </div>
@@ -2739,7 +2739,12 @@ class Component extends DCLogic {
     // Colunas bem mais largas e fontes maiores (v. lancKindStyle) — o pedido foi
     // "menos coisa de uma vez, números maiores", mesmo que role mais pros lados/baixo.
     const lancGridCols=`340px repeat(${lancNMonths},178px) 180px 180px`;
-    const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'rgba(251,191,36,0.1)':'#0a0f1e'};});
+    const lancCosLabel=lancCos.length===lancEntList.length?(lancPorCnpj?'Todos os CNPJs':'Todas as operações'):lancCos.map(c=>lancEntLabels[c]||c).join(' + ');
+    // bg do mês atual em cor SÓLIDA (não rgba translúcido) — o cabeçalho é sticky
+    // e fica por cima das linhas ao rolar; com transparência o texto das linhas
+    // por baixo vazava através do destaque âmbar. #22211f = mistura opaca
+    // equivalente a âmbar 10% sobre o fundo #0a0f1e.
+    const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'#22211f':'#0a0f1e'};});
     // Formata uma célula {v,av,ah} → texto do valor + AV%/AH% igual a AV/AH da
     // tabela principal do DRE: AV% = |valor| sobre a Receita Bruta do mês; AH% =
     // variação vs o mês anterior. Valor positivo em verde, negativo em vermelho.
@@ -2798,20 +2803,28 @@ class Component extends DCLogic {
         const f=lancFmtCell(c,isHeader);
         const cur=!!(lancHeaderCols[mi]&&lancHeaderCols[mi].color==='#f59e0b');
         const bg=(cur&&podeTintar)?'#2a2210':rowBg;
-        return {...f, bg, border:st.border, weight:st.valueWeight};
+        const monthLabel=lancDet.months[mi]?this._months[lancDet.months[mi]-1]:'';
+        const canAsk=!isHeader && c.v!=null && Math.abs(c.v)>=0.005;
+        return {...f, bg, border:st.border, weight:st.valueWeight,
+          ask:canAsk?`Pode me explicar o valor de "${r.label}" em ${monthLabel} — ${f.fmt} (${lancCosLabel})? O que está por trás desse número?`:'',
+          askCursor:canAsk?'pointer':'default',
+          askTitle:canAsk?'Clique duas vezes para perguntar ao Gerôn':''};
       });
       const totalC=lancFmtAgg(r.total,isHeader,r.baseTotal);
       const mediaC=lancFmtAgg(lancNMonths?r.total/lancNMonths:0,isHeader,r.baseTotal);
+      const canAskAgg=!isHeader && Math.abs(r.total)>=0.005;
+      const totalAsk=canAskAgg?`Pode me explicar o valor de "${r.label}" no total de ${lancPeriodLabel} — ${totalC.fmt} (${lancCosLabel})? O que está por trás desse número?`:'';
+      const mediaAsk=canAskAgg?`Pode me explicar a média mensal de "${r.label}" em ${lancPeriodLabel} — ${mediaC.fmt} (${lancCosLabel})? O que está por trás desse número?`:'';
+      const aggAskCursor=canAskAgg?'pointer':'default', aggAskTitle=canAskAgg?'Clique duas vezes para perguntar ao Gerôn':'';
       // AV% de Total e de Média são a mesma razão (numerador e denominador escalam
       // juntos por N) — reaproveita o de Total pra Média não dividir por N duas vezes.
       return {label:r.label, kind:r.kind, cells,
-        totalFmt:totalC.fmt, totalColor:totalC.color, totalAvFmt:totalC.avFmt,
-        mediaFmt:mediaC.fmt, mediaColor:mediaC.color, mediaAvFmt:totalC.avFmt,
+        totalFmt:totalC.fmt, totalColor:totalC.color, totalAvFmt:totalC.avFmt, totalAsk, aggAskCursor, aggAskTitle,
+        mediaFmt:mediaC.fmt, mediaColor:mediaC.color, mediaAvFmt:totalC.avFmt, mediaAsk,
         bg:rowBg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight, valueWeight:st.valueWeight,
         ls:st.ls, tt:st.tt, pad:st.pad, rowPad:st.rowPad, border:st.border};
     });
     const lancPeriodLabel=lancNMonths?(lancMs===lancMe?this._months[lancMs]:`${this._months[lancMs]} – ${this._months[lancMe]}`):'';
-    const lancCosLabel=lancCos.length===lancEntList.length?(lancPorCnpj?'Todos os CNPJs':'Todas as operações'):lancCos.map(c=>lancEntLabels[c]||c).join(' + ');
 
     return {
       tab0Active:tab===0,tab1Active:tab===1,
