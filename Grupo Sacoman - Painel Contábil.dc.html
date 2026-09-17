@@ -1707,7 +1707,11 @@ class Component extends DCLogic {
     else{document.title='SAFI | Resumo Contábil';}
     const initTab=this.state.tab;
     setTimeout(()=>{ if(initTab===1){this._initDreEvo();this._initDrePie();this._initDreMargem();this._initLine();setTimeout(()=>this._animKPIs(),80);}else{this._initBar();} }, 500);
-    setTimeout(()=>{ if(window.AskGeron) window.AskGeron.attachDelegation(document.getElementById('dre-tab-outer')); }, 500);
+    // No document.body, não só em #dre-tab-outer — o modal de Lançamentos Detalhados
+    // (sc-if lancOpen) é IRMÃO de #dre-tab-outer no DOM (esse container fecha antes
+    // dele começar no template), não filho, então um duplo-clique lá dentro nunca
+    // borbulhava até um listener preso só ao dre-tab-outer.
+    setTimeout(()=>{ if(window.AskGeron) window.AskGeron.attachDelegation(document.body); }, 500);
     // Atalho direto pros Lançamentos Detalhados (link vindo da tela de Lançamentos) —
     // espera os dados/permissões assentarem antes de abrir, senão selectedCos ainda
     // pode estar com o valor inicial não filtrado.
