@@ -1339,6 +1339,19 @@
     </div>
   </sc-if>
 
+  <!-- Barra de rolagem própria dos Lançamentos Detalhados — mais grossa e em âmbar,
+       pra ficar fácil de ver e pegar com o mouse numa tabela larga com muita coluna
+       (Firefox só aceita "auto"/"thin"/"none" de espessura — engrossar de verdade só
+       funciona em Chrome/Edge/Safari, via ::-webkit-scrollbar). -->
+  <style>
+    .lanc-scroll { scrollbar-width: auto; scrollbar-color: #f59e0b rgba(255,255,255,0.06); }
+    .lanc-scroll::-webkit-scrollbar { width: 18px; height: 18px; }
+    .lanc-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    .lanc-scroll::-webkit-scrollbar-thumb { background: #f59e0b; border-radius: 9px; border: 2px solid #0f1626; }
+    .lanc-scroll::-webkit-scrollbar-thumb:hover { background: #fbbf24; }
+    .lanc-scroll::-webkit-scrollbar-corner { background: #0f1626; }
+  </style>
+
   <!-- ══ LANÇAMENTOS DETALHADOS — linha a linha, mês a mês (estilo planilha) ══ -->
   <sc-if value="{{ lancOpen }}" hint-placeholder-val="{{ false }}">
     <div onClick="{{ closeLancIfBackdrop }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:600;display:flex;align-items:center;justify-content:center;padding:{{ lancBackdropPad }}">
@@ -1412,7 +1425,7 @@
              grid por linha — é o que faz o "Conta" grudar tanto no topo quanto na esquerda
              corretamente ao rolar: com uma grid por linha, sticky:left perde a referência
              de scroll (cada linha vira seu próprio containing block) e o texto foge. -->
-        <div style="flex:1;min-width:0;min-height:0;overflow:auto;position:relative">
+        <div class="lanc-scroll" style="flex:1;min-width:0;min-height:0;overflow:auto;position:relative">
           <div style="display:grid;grid-template-columns:{{ lancGridCols }}">
             <div style="position:sticky;top:0;left:0;z-index:5;background:#0a0f1e;padding:12px 18px;font-size:10.5px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.1);contain:paint;will-change:transform">Conta</div>
             <sc-for list="{{ lancHeaderCols }}" as="hc" hint-placeholder-count="9">
@@ -1787,6 +1800,18 @@ class Component extends DCLogic {
     };
   }
 
+  // Rótulos do eixo X dos gráficos de mês. Com a comparação de período ligada, os
+  // dois lados quase sempre são meses do calendário DIFERENTES (ex: A=Jan–Mar,
+  // B=Abr–Jun) — usar o nome do mês de A nas 3 posições faria o traçado de B (que é
+  // Abr/Mai/Jun) aparecer rotulado como Jan/Fev/Mar, o que é enganoso. Nesse caso o
+  // eixo passa a ser posicional ("Mês 1, Mês 2..."), e cada série já diz seu período
+  // real no rótulo da legenda (ex: "GIP Ecommerce · Abr/2026 – Jun/2026").
+  _cmpAxisLabels(ms, me, cmpOn) {
+    return cmpOn
+      ? Array.from({length: me-ms+1}, (_,i) => `Mês ${i+1}`)
+      : this._months.slice(ms, me+1);
+  }
+
   // ══ Lançamentos Detalhados ═══════════════════════════════════════════════
   // Mesma taxonomia Classe > Campo > Subcampo que alimenta o DRE, só que expandida
   // mês a mês (em vez de um único período agregado) e descendo até o Subcampo —
@@ -2026,8 +2051,9 @@ class Component extends DCLogic {
         datasets.push({label:(this._dreLabels[co]||co)+' · '+cmp.bPeriodo,data,borderColor:s.b,backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:0,pointHoverRadius:4,tension:0.4});
       });
     }
+    const lineLabels=this._cmpAxisLabels(ms,me,cmp.on);
     const ex=this._gc(el);
-    if(ex){ex.data.labels=this._months.slice(ms,me+1);ex.data.datasets=datasets;ex.update();this._c.line=ex;this._bindLineAsk(el);return;}
+    if(ex){ex.data.labels=lineLabels;ex.data.datasets=datasets;ex.update();this._c.line=ex;this._bindLineAsk(el);return;}
     if(this._c.line)try{this._c.line.destroy();}catch(e){};
     const drag={active:false,startIdx:null,endIdx:null};
     const dragPlugin={id:'dragRange',afterDraw(chart){
@@ -2097,7 +2123,7 @@ class Component extends DCLogic {
     el.addEventListener('touchstart',e=>{drag.active=true;drag.startIdx=getIdx(e);drag.endIdx=drag.startIdx;this._c.line&&this._c.line.draw();},{passive:true});
     el.addEventListener('touchmove',e=>{if(!drag.active)return;e.preventDefault();drag.endIdx=getIdx(e);this._c.line&&this._c.line.draw();},{passive:false});
     el.addEventListener('touchend',endDrag);
-    this._c.line=new window.Chart(el,{type:'line',data:{labels:this._months.slice(ms,me+1),datasets},options:{...this._bOpts(),scales:{x:this._sD(),y:this._sD(v=>'R$'+(v/1000).toFixed(0)+'k')}},plugins:[dragPlugin]});
+    this._c.line=new window.Chart(el,{type:'line',data:{labels:lineLabels,datasets},options:{...this._bOpts(),scales:{x:this._sD(),y:this._sD(v=>'R$'+(v/1000).toFixed(0)+'k')}},plugins:[dragPlugin]});
     this._bindLineAsk(el);
     el.style.cursor='crosshair';
   }
@@ -2116,11 +2142,11 @@ class Component extends DCLogic {
     const {selectedCos,chartMetric,monthStart,monthEnd}=this.state;
     const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
     const isBRL=chartMetric!=='margem';
-    const sliceLabels=this._months.slice(ms,me+1);
     const datasets=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:this._coMonthly(co,chartMetric).slice(ms,me+1),backgroundColor:this._alpha(s.f,0.72),borderColor:s.pborder,borderWidth:s.pbw||1,borderRadius:3,_ol:s.shadow,_olc:s.sc};});
     // Comparação: barras extras (mais claras, contorno tracejado) com o lado B,
     // alinhadas por posição no período (1º mês de A x 1º mês de B).
     const cmp=this._cmpSides();
+    const sliceLabels=this._cmpAxisLabels(ms,me,cmp.on);
     if(cmp.on){
       const Lm=me-ms+1;
       cmp.bCos.forEach(co=>{
@@ -2233,12 +2259,12 @@ class Component extends DCLogic {
     const {selectedCos,monthStart,monthEnd}=this.state;
     const ms=Math.min(monthStart,monthEnd), me=Math.max(monthStart,monthEnd);
     const mgs=this._margens;
-    const sliceLabels=this._months.slice(ms,me+1);
     const datasets=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(mgs[co]||[]).slice(ms,me+1),borderColor:s.b,backgroundColor:this._alpha(s.f,0.08),borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:4,tension:0.4,_ol:s.shadow,_olc:s.sc};});
     // Comparação: sobrepõe, tracejado, o lado B (período próprio e, se escolhido,
     // operações diferentes) — alinhado por posição (1º mês de A x 1º mês de B),
     // não pela data do calendário, pra dar pra ler lado a lado.
     const cmp=this._cmpSides();
+    const sliceLabels=this._cmpAxisLabels(ms,me,cmp.on);
     if(cmp.on){
       const Lm=me-ms+1;
       cmp.bCos.forEach(co=>{
@@ -2297,7 +2323,7 @@ class Component extends DCLogic {
           ds.push({label:(this._dreLabels[co]||co)+' · '+cmpL.bPeriodo,data:Array.from({length:Ln},(_,i)=>i<raw.length?raw[i]:null),borderColor:s.b,backgroundColor:'transparent',borderWidth:2,borderDash:[5,4],pointRadius:0,pointHoverRadius:5,tension:0.4});
         });
       }
-      this._c.modal=new window.Chart(el,{type:'line',data:{labels:this._months.slice(msL,meL+1),datasets:ds},options:{...bOpts,scales:{x:sOpts(),y:sOpts(v=>'R$'+(v/1000).toFixed(0)+'k')}}});
+      this._c.modal=new window.Chart(el,{type:'line',data:{labels:this._cmpAxisLabels(msL,meL,cmpL.on),datasets:ds},options:{...bOpts,scales:{x:sOpts(),y:sOpts(v=>'R$'+(v/1000).toFixed(0)+'k')}}});
     } else if(id==='dre-evo'){
       const {labels,datasets,isBRL}=this._buildDreEvoData();
       this._c.modal=new window.Chart(el,{type:'bar',data:{labels,datasets},options:{...bOpts,scales:{x:sOpts(),y:sOpts(v=>isBRL?'R$'+(v/1000).toFixed(0)+'k':v+'%')}}});
@@ -2326,9 +2352,9 @@ class Component extends DCLogic {
       const {selectedCos,monthStart,monthEnd}=this.state;
       const ms3=Math.min(monthStart,monthEnd), me3=Math.max(monthStart,monthEnd);
       const mgs=this._margens;
-      const sliceLabels3=this._months.slice(ms3,me3+1);
       const ds=selectedCos.map(co=>{const s=this._cSt(co);return{label:this._dreLabels[co]||co,data:(mgs[co]||[]).slice(ms3,me3+1),borderColor:s.b,backgroundColor:'transparent',borderWidth:2,pointBackgroundColor:s.pfill,pointBorderColor:s.pborder,pointBorderWidth:s.pbw,pointRadius:5,tension:0.4,_ol:s.shadow,_olc:s.sc};});
       const cmpM=this._cmpSides();
+      const sliceLabels3=this._cmpAxisLabels(ms3,me3,cmpM.on);
       if(cmpM.on){
         const Ln3=me3-ms3+1;
         cmpM.bCos.forEach(co=>{const s=this._cSt(co);
