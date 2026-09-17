@@ -1448,7 +1448,14 @@
             </div>
 
             <sc-for list="{{ lancRows }}" as="row" hint-placeholder-count="40">
-              <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }};border-bottom:{{ row.border }};contain:paint">{{ row.label }}</div>
+              <div style="position:sticky;left:0;z-index:2;background:{{ row.bg }};padding:{{ row.rowPad }};padding-left:calc(18px + {{ row.pad }});border-bottom:{{ row.border }};contain:paint;display:flex;align-items:center;gap:7px">
+                <sc-if value="{{ row.canCollapse }}" hint-placeholder-val="{{ false }}">
+                  <button type="button" onClick="{{ row.toggleGroupFn }}" title="Recolher/expandir detalhe" aria-label="Recolher/expandir detalhe" style="background:transparent;border:none;padding:0;margin:0;cursor:pointer;color:{{ row.labelColor }};display:flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;transform:rotate({{ row.chevronRotate }});transition:transform .15s ease">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </button>
+                </sc-if>
+                <span style="font-size:{{ row.labelSize }};font-weight:{{ row.labelWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.ls }};text-transform:{{ row.tt }}">{{ row.label }}</span>
+              </div>
               <sc-for list="{{ row.cells }}" as="cell" hint-placeholder-count="9">
                 <div data-ask="{{ cell.ask }}" title="{{ cell.askTitle }}" style="padding:{{ row.rowPad }};text-align:right;background:{{ cell.bg }};border-bottom:{{ cell.border }};cursor:{{ cell.askCursor }}">
                   <div style="font-size:13px;font-weight:{{ cell.weight }};color:{{ cell.color }};font-variant-numeric:tabular-nums">{{ cell.fmt }}</div>
@@ -1524,7 +1531,12 @@ class Component extends DCLogic {
     // disso o painel tem seu próprio período/operações, independente do filtro de cima.
     // lancModo: 'operacao' (padrão) agrupa EP+Guilherme em "GIP Ecommerce"; 'cnpj' mostra
     // cada CNPJ separado (EP/Guilherme/Isabela/Juliane) — só existe dentro desse painel.
-    lancOpen: false, lancCos: null, lancMs: null, lancMe: null, lancModo: 'operacao', lancFullscreen: false };
+    lancOpen: false, lancCos: null, lancMs: null, lancMe: null, lancModo: 'operacao', lancFullscreen: false,
+    // Recolher/expandir os campos de detalhe sob uma linha em destaque (Deduções,
+    // Custos Variáveis, Gastos Operacionais...) — por rótulo da linha-pai, não por
+    // índice (índice muda se o período/operações filtradas mudarem a lista de
+    // linhas). Vazio por padrão = tudo aberto, como pedido.
+    lancCollapsedGroups: {} };
 
   // Índice do "mês de referência" do DRE dentro de _months (0=Jan) — o mês ANTERIOR
   // ao calendário, nunca o corrente: o DRE fecha com defasagem de um mês, então nunca
@@ -2761,7 +2773,7 @@ class Component extends DCLogic {
       if(isHeader) return {fmt:'',avFmt:'',ahFmt:'',color:'transparent',ahColor:'transparent'};
       const v=c.v;
       if(v==null||Math.abs(v)<0.005) return {fmt:'—',avFmt:'—',ahFmt:'—',color:'#334155',ahColor:'#475569'};
-      const fmt=v<0?'('+this._fmt(v)+')':this._fmt(v);
+      const fmt=v<0?'-'+this._fmt(v):this._fmt(v);
       const color=v>0?'#4ade80':'#f87171';
       const avFmt=c.av!=null?c.av.toFixed(1).replace('.',',')+'%':'—';
       const ahFmt=c.ah!=null?(c.ah>=0?'+':'')+c.ah.toFixed(1).replace('.',',')+'%':'—';
@@ -2771,7 +2783,7 @@ class Component extends DCLogic {
     const lancFmtAgg=(total,isHeader,baseTotal)=>{
       if(isHeader) return {fmt:'',avFmt:'',color:'transparent'};
       if(Math.abs(total)<0.005) return {fmt:'—',avFmt:'—',color:'#334155'};
-      const fmt=total<0?'('+this._fmt(total)+')':this._fmt(total);
+      const fmt=total<0?'-'+this._fmt(total):this._fmt(total);
       const color=total>0?'#4ade80':'#f87171';
       const avFmt=baseTotal>0?(Math.abs(total)/baseTotal*100).toFixed(1).replace('.',',')+'%':'—';
       return {fmt,avFmt,color};
@@ -2803,10 +2815,22 @@ class Component extends DCLogic {
     // rolar uma tabela com muita coisa. Header/Total/"=" já têm cor própria e não listram.
     let lancBodyIdx=0;
     const lancZebra=['#0f1626','#141d33'];
+    // Agrupamento pra recolher/expandir: toda linha 'campo'/'leaf'/'sub'/'campo-lite'
+    // pertence ao grupo da linha 'total'/'total-neg' em destaque mais recente acima
+    // dela (ex: Campo/Subcampo de "(-) Custos Variáveis" pertencem a esse grupo);
+    // um header/subtotal fecha o grupo em aberto. Usa o rótulo da linha-pai como
+    // chave (não o índice), pra sobreviver a filtros que mudam a lista de linhas.
+    const lancGrupoPaiKinds=new Set(['total','total-neg']);
+    const lancGrupoFilhoKinds=new Set(['campo','leaf','sub','campo-lite']);
+    let lancGrupoAtual=null;
     const lancRows=lancDet.rows.map(r=>{
       const st=lancKindStyle[r.kind]||lancKindStyle.leaf;
       const isHeader=r.kind==='header';
       const podeTintar=lancTintável.has(r.kind);
+      const isGroupParent=lancGrupoPaiKinds.has(r.kind);
+      if(isGroupParent) lancGrupoAtual=r.label;
+      else if(!lancGrupoFilhoKinds.has(r.kind)) lancGrupoAtual=null;
+      const grupo=lancGrupoFilhoKinds.has(r.kind)?lancGrupoAtual:null;
       const rowBg=podeTintar?lancZebra[lancBodyIdx++%2]:st.bg;
       const cells=r.cells.map((c,mi)=>{
         const f=lancFmtCell(c,isHeader);
@@ -2827,12 +2851,26 @@ class Component extends DCLogic {
       const aggAskCursor=canAskAgg?'pointer':'default', aggAskTitle=canAskAgg?'Clique duas vezes para perguntar ao Gerôn':'';
       // AV% de Total e de Média são a mesma razão (numerador e denominador escalam
       // juntos por N) — reaproveita o de Total pra Média não dividir por N duas vezes.
-      return {label:r.label, kind:r.kind, cells,
+      return {label:r.label, kind:r.kind, cells, grupo, isGroupParent,
         totalFmt:totalC.fmt, totalColor:totalC.color, totalAvFmt:totalC.avFmt, totalAsk, aggAskCursor, aggAskTitle,
         mediaFmt:mediaC.fmt, mediaColor:mediaC.color, mediaAvFmt:totalC.avFmt, mediaAsk,
         bg:rowBg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight, valueWeight:st.valueWeight,
         ls:st.ls, tt:st.tt, pad:st.pad, rowPad:st.rowPad, border:st.border};
     });
+    // Só ganham seta as linhas-pai que realmente têm algum filho nesse período/
+    // filtro (ex: "Receita Operacional Bruta" só quebra por operação com 2+
+    // operações selecionadas — sem isso, não tem o que recolher). Por padrão
+    // (lancCollapsedGroups vazio) tudo fica aberto, como pedido.
+    const lancGruposComFilho=new Set(lancRows.filter(r=>r.grupo).map(r=>r.grupo));
+    const lancCollapsedSet=this.state.lancCollapsedGroups||{};
+    const lancRowsFinal=lancRows
+      .map(r=>r.isGroupParent?{...r,
+        canCollapse:lancGruposComFilho.has(r.label),
+        collapsed:!!lancCollapsedSet[r.label],
+        chevronRotate:lancCollapsedSet[r.label]?'-90deg':'0deg',
+        toggleGroupFn:()=>{const c={...this.state.lancCollapsedGroups};c[r.label]=!c[r.label];this.setState({lancCollapsedGroups:c});}
+      }:r)
+      .filter(r=>!(r.grupo&&lancCollapsedSet[r.grupo]));
 
     return {
       tab0Active:tab===0,tab1Active:tab===1,
@@ -2907,7 +2945,7 @@ class Component extends DCLogic {
       setCompareMonthStart:e=>{const v=parseInt(e.target.value);this.setState({compareMonthStart:v,compareMonthEnd:Math.max(v,this.state.compareMonthEnd??v)});},
       setCompareMonthEnd:e=>{const v=parseInt(e.target.value);this.setState({compareMonthEnd:v,compareMonthStart:Math.min(v,this.state.compareMonthStart??v)});},
       // Lançamentos Detalhados
-      lancOpen, lancCoButtons, lancModoBtns, lancPresets, lancHeaderCols, lancRows, lancGridCols, lancPeriodLabel, lancCosLabel,
+      lancOpen, lancCoButtons, lancModoBtns, lancPresets, lancHeaderCols, lancRows:lancRowsFinal, lancGridCols, lancPeriodLabel, lancCosLabel,
       lancFullscreen:!!lancFullscreen, lancBackdropPad, lancModalStyle, lancFullscreenTitle,
       toggleLancFullscreen:()=>this.setState({lancFullscreen:!this.state.lancFullscreen}),
       lancEntLabel:lancPorCnpj?'CNPJs':'Operações',
