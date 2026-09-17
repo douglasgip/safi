@@ -58,6 +58,11 @@
     .dc-sidebar-backdrop.open { display: block; }
     .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
     .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #fb7185 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #fb7185; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #fda4af; }
     .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
     .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(244,63,94,0.12); color: #fda4af; }
     .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
