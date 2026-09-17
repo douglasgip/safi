@@ -328,7 +328,19 @@
 
     <!-- ── Dados gerais do processo ── -->
     <div class="panel">
-      <div class="ci-panel-head">Dados Gerais do Processo</div>
+      <div class="ci-panel-head">
+        Dados Gerais do Processo
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn-ghost" style="padding:7px 12px;font-size:11px" onclick="openPresetsModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 12h16v8H4z"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
+            Minhas Configurações
+          </button>
+          <button type="button" class="btn-ghost" style="padding:7px 12px;font-size:11px" onclick="openSavePresetModal()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+            Salvar Configuração
+          </button>
+        </div>
+      </div>
 
       <div class="ci-grid-3">
         <div class="field">
@@ -485,11 +497,42 @@
     </div>
   </div>
 
-  <!-- Confirmar exclusão do histórico -->
+  <!-- Modal: salvar configuração -->
+  <div class="modal-overlay" id="save-preset-modal">
+    <div class="modal-card">
+      <div class="modal-title">Salvar Configuração</div>
+      <div class="modal-sub">Salva só os Dados Gerais do Processo (câmbio, despesas, alíquota padrão, crédito de impostos) — é pessoal, só você vê e usa essa configuração.</div>
+      <div class="modal-error" id="save-preset-modal-error"></div>
+      <form id="save-preset-form">
+        <div class="field">
+          <label>Nome desta configuração</label>
+          <input type="text" id="f-save-preset-nome" placeholder="Ex: Fornecedor China — Marítimo" required>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="btn-save-preset-submit">Salvar</button>
+          <button type="button" class="btn-cancel" onclick="closeSavePresetModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: minhas configurações -->
+  <div class="modal-overlay" id="presets-modal">
+    <div class="modal-card wide">
+      <div class="modal-title">Minhas Configurações</div>
+      <div class="modal-sub">Só suas — configurações salvas por outros usuários não aparecem aqui, e as suas não aparecem para eles.</div>
+      <div id="presets-list"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-cancel" style="flex:1" onclick="closePresetsModal()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmar exclusão (histórico ou configuração) -->
   <div class="confirm-overlay" id="confirm-modal">
     <div class="confirm-card">
       <div class="confirm-icon">⚠️</div>
-      <div class="confirm-title">Remover do histórico?</div>
+      <div class="confirm-title" id="confirm-title">Remover do histórico?</div>
       <div class="confirm-text" id="confirm-text">Esse cálculo salvo será removido para todos.</div>
       <div class="confirm-actions">
         <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
@@ -974,6 +1017,7 @@
     let deleteHistTarget = null;
     function confirmDeleteHist(item) {
       deleteHistTarget = item;
+      g('confirm-title').textContent = 'Remover do histórico?';
       g('confirm-text').textContent = `"${item.nome}" será removido do histórico compartilhado.`;
       g('confirm-modal').classList.add('open');
       g('btn-confirm-delete').onclick = async () => {
@@ -984,8 +1028,94 @@
         openHistoricoModal();
       };
     }
-    function closeConfirm() { g('confirm-modal').classList.remove('open'); deleteHistTarget = null; }
+    function closeConfirm() { g('confirm-modal').classList.remove('open'); deleteHistTarget = null; deletePresetTarget = null; }
     g('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
+
+    // ── Configurações salvas (privadas por usuário — Dados Gerais do Processo,
+    // sem produtos) ──
+    function openSavePresetModal() {
+      g('f-save-preset-nome').value = '';
+      g('save-preset-modal-error').className = 'modal-error';
+      g('save-preset-modal').classList.add('open');
+      setTimeout(() => g('f-save-preset-nome').focus(), 50);
+    }
+    function closeSavePresetModal() { g('save-preset-modal').classList.remove('open'); }
+    g('save-preset-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeSavePresetModal(); });
+
+    g('save-preset-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const nome = g('f-save-preset-nome').value.trim();
+      if (!nome) return;
+      const btn = g('btn-save-preset-submit');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Salvando...';
+
+      const { data: sessData } = await sb.auth.getSession();
+      const userId = sessData?.session?.user?.id || null;
+      const { error } = await sb.from('calc_importacao_presets').insert({ nome, user_id: userId, dados: readHeader() });
+      btn.disabled = false; btn.innerHTML = 'Salvar';
+      if (error) { g('save-preset-modal-error').textContent = error.message; g('save-preset-modal-error').className = 'modal-error visible'; return; }
+      closeSavePresetModal();
+      showToast('Configuração salva', 'green');
+    });
+
+    async function openPresetsModal() {
+      g('presets-modal').classList.add('open');
+      g('presets-list').innerHTML = '<div class="ci-empty">Carregando…</div>';
+      const { data, error } = await sb.from('calc_importacao_presets').select('*').order('created_at', { ascending: false });
+      if (error) { g('presets-list').innerHTML = `<div class="ci-empty">Erro ao carregar: ${esc(error.message)}</div>`; return; }
+      if (!data || !data.length) { g('presets-list').innerHTML = '<div class="ci-empty">Você ainda não salvou nenhuma configuração.</div>'; return; }
+      g('presets-list').innerHTML = data.map(p => `<div class="ci-hist-item" data-id="${esc(p.id)}">
+          <div class="ci-hist-info">
+            <div class="ci-hist-nome">${esc(p.nome)}</div>
+            <div class="ci-hist-meta">${fmtDate((p.created_at || '').slice(0,10))}</div>
+          </div>
+          <div class="ci-hist-actions">
+            <button type="button" class="ci-icon-btn btn-preset-apply" title="Aplicar">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </button>
+            <button type="button" class="ci-icon-btn danger btn-preset-delete" title="Remover">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+            </button>
+          </div>
+        </div>`).join('');
+
+      g('presets-list').querySelectorAll('.btn-preset-apply').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = data.find(p => p.id === btn.closest('.ci-hist-item').dataset.id);
+          if (item) applyPreset(item);
+        });
+      });
+      g('presets-list').querySelectorAll('.btn-preset-delete').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const item = data.find(p => p.id === btn.closest('.ci-hist-item').dataset.id);
+          if (item) confirmDeletePreset(item);
+        });
+      });
+    }
+    function closePresetsModal() { g('presets-modal').classList.remove('open'); }
+    g('presets-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closePresetsModal(); });
+
+    function applyPreset(item) {
+      writeHeader(item.dados || {});
+      recalcAll();
+      closePresetsModal();
+      showToast(`Configuração "${item.nome}" aplicada`, 'green');
+    }
+
+    let deletePresetTarget = null;
+    function confirmDeletePreset(item) {
+      deletePresetTarget = item;
+      g('confirm-title').textContent = 'Remover configuração?';
+      g('confirm-text').textContent = `"${item.nome}" será removida — essa ação não afeta outros usuários nem seus cálculos salvos.`;
+      g('confirm-modal').classList.add('open');
+      g('btn-confirm-delete').onclick = async () => {
+        closeConfirm();
+        const { error } = await sb.from('calc_importacao_presets').delete().eq('id', deletePresetTarget.id);
+        if (error) { showToast(error.message, 'red'); return; }
+        showToast('Configuração removida', 'green');
+        openPresetsModal();
+      };
+    }
 
     // ── Init ──
     async function init() {
