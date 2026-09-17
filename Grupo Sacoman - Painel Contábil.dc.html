@@ -2740,6 +2740,7 @@ class Component extends DCLogic {
     // "menos coisa de uma vez, números maiores", mesmo que role mais pros lados/baixo.
     const lancGridCols=`340px repeat(${lancNMonths},178px) 180px 180px`;
     const lancCosLabel=lancCos.length===lancEntList.length?(lancPorCnpj?'Todos os CNPJs':'Todas as operações'):lancCos.map(c=>lancEntLabels[c]||c).join(' + ');
+    const lancPeriodLabel=lancNMonths?(lancMs===lancMe?this._months[lancMs]:`${this._months[lancMs]} – ${this._months[lancMe]}`):'';
     // bg do mês atual em cor SÓLIDA (não rgba translúcido) — o cabeçalho é sticky
     // e fica por cima das linhas ao rolar; com transparência o texto das linhas
     // por baixo vazava através do destaque âmbar. #22211f = mistura opaca
@@ -2824,7 +2825,6 @@ class Component extends DCLogic {
         bg:rowBg, labelColor:st.labelColor, labelSize:st.labelSize, labelWeight:st.labelWeight, valueWeight:st.valueWeight,
         ls:st.ls, tt:st.tt, pad:st.pad, rowPad:st.rowPad, border:st.border};
     });
-    const lancPeriodLabel=lancNMonths?(lancMs===lancMe?this._months[lancMs]:`${this._months[lancMs]} – ${this._months[lancMe]}`):'';
 
     return {
       tab0Active:tab===0,tab1Active:tab===1,
