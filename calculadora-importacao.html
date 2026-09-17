@@ -120,6 +120,11 @@
     .ci-table td { padding: 8px 10px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
     .ci-table tbody tr.ci-prod-row:hover { background: rgba(255,255,255,0.02); }
     .ci-table input, .ci-table select { width: 100%; padding: 7px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 7px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 12px; color-scheme: dark; }
+    /* Tira as setinhas de incrementar/decrementar dos campos numéricos (Qtd, alíquotas
+       II/IPI/PIS/COFINS/ICMS etc.) — na tabela densa elas só atrapalham o clique/digitação. */
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
     .ci-table input:focus { outline: none; border-color: #2dd4bf; }
     .ci-col-desc { min-width: 170px; }
     .ci-col-num { width: 88px; }
@@ -345,7 +350,11 @@
       <div class="ci-grid-3">
         <div class="field">
           <label>Taxa Cambial (R$ / US$)</label>
-          <input type="text" inputmode="decimal" id="h-cambio" value="5,00">
+          <div class="ci-inline-input">
+            <input type="text" inputmode="decimal" id="h-cambio" value="5,00">
+            <button type="button" class="ci-mini-btn" id="btn-cambio-refresh" onclick="fetchCambio(true)" title="Buscar cotação atual">↻</button>
+          </div>
+          <div class="ci-optional" id="cambio-fonte" style="margin-top:4px"></div>
         </div>
         <div class="field">
           <label>Modalidade da Empresa</label>
@@ -382,7 +391,13 @@
               </div>
             </div>
             <div class="field"><label>Capatazia / THC (R$)</label><input type="text" inputmode="decimal" id="h-capatazia" value="0,00"></div>
-            <div class="field"><label>AFRMM (R$)</label><input type="text" inputmode="decimal" id="h-afrmm" value="0,00"></div>
+            <div class="field">
+              <label>AFRMM (R$)</label>
+              <div class="ci-inline-input">
+                <input type="text" inputmode="decimal" id="h-afrmm" value="0,00">
+                <button type="button" class="ci-mini-btn" onclick="useAfrmmPadrao()" title="25% do frete internacional — alíquota padrão pra navegação de longo curso">25% frete</button>
+              </div>
+            </div>
             <div class="field"><label>Outras despesas (R$)</label><input type="text" inputmode="decimal" id="h-outras" value="0,00"></div>
           </div>
         </div>
@@ -585,6 +600,44 @@
     function useSiscomexValue() {
       g('h-siscomex').value = numberToMoneyMasked(calcSiscomex(+g('siscomex-adicoes').value || 0));
       g('siscomex-helper').classList.remove('open');
+      recalcAll();
+    }
+
+    // ── Cotação do dólar automática (AwesomeAPI — fonte de mercado, gratuita,
+    // sem chave) — usa "ask" (venda), que é o preço que o importador de fato
+    // paga pra comprar dólar. Só preenche o campo sozinha no carregamento da
+    // página (com o câmbio ainda no padrão); depois disso é sempre por ação
+    // explícita do usuário no botão ↻, nunca sobrescreve o que foi digitado.
+    async function fetchCambio(manual) {
+      const btn = g('btn-cambio-refresh');
+      if (btn) { btn.disabled = true; btn.textContent = '…'; }
+      try {
+        const res = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+        if (!res.ok) throw new Error('Falha ao buscar cotação');
+        const data = await res.json();
+        const info = data && data.USDBRL;
+        const rate = info && (+info.ask || +info.bid);
+        if (!rate) throw new Error('Cotação indisponível');
+        g('h-cambio').value = numberToMoneyMasked(rate);
+        const hora = info.create_date ? info.create_date.slice(11,16) : '';
+        g('cambio-fonte').textContent = `Dólar venda: ${hora ? 'atualizado ' + hora : 'cotação de mercado'} (AwesomeAPI)`;
+        recalcAll();
+        if (manual) showToast('Cotação do dólar atualizada', 'green');
+      } catch (e) {
+        if (manual) showToast('Não consegui buscar a cotação agora — preencha manualmente', 'red');
+      } finally {
+        if (btn) { btn.disabled = false; btn.textContent = '↻'; }
+      }
+    }
+
+    // ── AFRMM padrão — 25% do frete internacional é a alíquota legal pra
+    // navegação de longo curso (a mais comum em importação marítima). Cabotagem
+    // (10%) e fluvial/lacustre na região Norte (40%) têm regras diferentes —
+    // por isso é um botão, não um preenchimento automático: o usuário confirma. ──
+    function useAfrmmPadrao() {
+      const h = readHeader();
+      const freteRS = h.frete * h.cambio;
+      g('h-afrmm').value = numberToMoneyMasked(freteRS * 0.25);
       recalcAll();
     }
 
@@ -920,7 +973,9 @@
       produtos = [];
       editingHistId = null;
       writeHeader({ cambio: 5, modalidade: 'REAL', icmsPadrao: 18, frete: 0, seguro: 0, siscomex: 0, capatazia: 0, afrmm: 0, outras: 0, despachante: 0, inspecoes: 0, demurrage: 0, freteInterno: 0, armazenagem: 0, outrosServicos: 0, credICMS: true, credIPI: true, credPIS: true, credCOFINS: true });
+      g('cambio-fonte').textContent = '';
       renderAllProdutos();
+      fetchCambio(false);
     }
 
     // ── Salvar no histórico ──
@@ -1006,6 +1061,7 @@
       const d = item.dados || {};
       editingHistId = item.id;
       writeHeader(d.header || {});
+      g('cambio-fonte').textContent = '';
       produtos = [];
       nextProdId = 1;
       (d.produtos || []).forEach(p => produtos.push(Object.assign({ id: nextProdId++, detailOpen: false }, p)));
@@ -1097,6 +1153,7 @@
 
     function applyPreset(item) {
       writeHeader(item.dados || {});
+      g('cambio-fonte').textContent = '';
       recalcAll();
       closePresetsModal();
       showToast(`Configuração "${item.nome}" aplicada`, 'green');
