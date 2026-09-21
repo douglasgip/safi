@@ -500,8 +500,8 @@
       blocos.push({ tipo: 'kpis', opcao: 'kpis', titulo: 'Indicadores - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')', itens });
       const imgs = [];
       if (sel.opcoes.graficos) {
-        const a = SafiPdf.imgDeCanvas(g('ch-evol')); if (a) imgs.push({ t: 'Evolução - últimos 12 meses (faturamento e EBITDA)', url: a.url, ratio: a.ratio });
-        if (charts.ponte) { const b = SafiPdf.imgDeCanvas(g('ch-ponte')); if (b) imgs.push({ t: g('ponte-title').textContent.replace('→', 'para'), url: b.url, ratio: b.ratio }); }
+        const a = SafiPdf.imgDeCanvas(g('ch-evol')); if (a) imgs.push({ t: 'Evolução - últimos 12 meses (faturamento e EBITDA)', url: a.url, ratio: a.ratio, png: a.png, dados: a.dados });
+        if (charts.ponte) { const b = SafiPdf.imgDeCanvas(g('ch-ponte'), { nomesCores: { '#64748b': 'EBITDA base', 'rgba(52,211,153,0.75)': 'Aumento', 'rgba(248,113,113,0.75)': 'Redução', '#38bdf8': 'EBITDA atual' }, sinaisCores: { 'rgba(52,211,153,0.75)': '+', 'rgba(248,113,113,0.75)': '-' } }); if (b) imgs.push({ t: g('ponte-title').textContent.replace('→', 'para'), url: b.url, ratio: b.ratio, png: b.png, dados: b.dados }); }
       }
       blocos.push({ tipo: 'graficos', opcao: 'graficos', titulo: 'Gráficos', itens: imgs });
       if (U.opSel === 'todas' && opsVisiveis.length > 1) {

@@ -17,7 +17,7 @@
     var out = [];
     lista.forEach(function (c) {
       var cv = g(c[0]); if (!cv || !cv.offsetParent) return;
-      var img = SafiPdf.imgDeCanvas(cv); if (img) out.push({ t: c[1], url: img.url, ratio: img.ratio });
+      var img = SafiPdf.imgDeCanvas(cv); if (img) out.push({ t: c[1], url: img.url, ratio: img.ratio, png: img.png, dados: img.dados });
     });
     return out;
   }

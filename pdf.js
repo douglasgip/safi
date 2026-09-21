@@ -60,15 +60,148 @@
       img.src = '/public/logo cheia.png';
     });
   }
-  // Gráfico da tela → imagem para o PDF (fundo escuro, para manter as cores e o texto claro do gráfico legíveis no papel).
-  function imgDeCanvas(canvas, largura) {
+  // ── Gráficos para impressão (preto e branco) ──────────────────────────────
+  // Refaz o gráfico da tela em versão de papel: fundo branco, preto/cinza, PADRÕES (hachuras) em vez de cores,
+  // linhas com traços e marcadores diferentes, valores escritos sobre as barras/pontos, legenda clara
+  // e uma tabela com os números (montada a partir dos mesmos dados).
+  var ORIENT = 'vertical';
+  function scratch(w, h) { var c = document.createElement('canvas'); c.width = w; c.height = h; return c; }
+  function padrao(tipo) {
+    var c = scratch(14, 14), x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, 14, 14); x.strokeStyle = '#000'; x.fillStyle = '#000'; x.lineWidth = 2.2;
+    var diag = function (inv) { x.beginPath(); for (var k = -14; k <= 28; k += 7) { if (inv) { x.moveTo(k, 0); x.lineTo(k - 14, 14); } else { x.moveTo(k, 14); x.lineTo(k + 14, 0); } } x.stroke(); };
+    if (tipo === 'escuro') { x.fillStyle = '#222'; x.fillRect(0, 0, 14, 14); }
+    else if (tipo === 'claro') { x.fillStyle = '#cfcfcf'; x.fillRect(0, 0, 14, 14); }
+    else if (tipo === 'diag') diag(false);
+    else if (tipo === 'diag2') diag(true);
+    else if (tipo === 'cruz') { diag(false); diag(true); }
+    else if (tipo === 'pontos') { x.beginPath(); x.arc(3.5, 3.5, 2.4, 0, 7); x.arc(10.5, 10.5, 2.4, 0, 7); x.fill(); }
+    else if (tipo === 'horiz') { x.beginPath(); x.moveTo(0, 3.5); x.lineTo(14, 3.5); x.moveTo(0, 10.5); x.lineTo(14, 10.5); x.stroke(); }
+    else if (tipo === 'vert') { x.beginPath(); x.moveTo(3.5, 0); x.lineTo(3.5, 14); x.moveTo(10.5, 0); x.lineTo(10.5, 14); x.stroke(); }
+    return x.createPattern(c, 'repeat');
+  }
+  var SEQ_PADRAO = ['escuro', 'diag', 'pontos', 'claro', 'cruz', 'diag2', 'horiz', 'vert'];
+  var TRACOS = [[], [12, 6], [3, 5], [14, 5, 3, 5]];
+  var MARCAS = ['circle', 'triangle', 'rect', 'rectRot', 'cross'];
+  function compacto(v) {
+    var a = Math.abs(v), s = v < 0 ? '-' : '';
+    if (a >= 1e6) return s + (a / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' mi';
+    if (a >= 1e3) return s + Math.round(a / 1e3).toLocaleString('pt-BR') + ' mil';
+    return s + a.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  }
+  function inteiro(v) { return (Math.round(v) < 0 ? '-' : '') + Math.abs(Math.round(v)).toLocaleString('pt-BR'); }
+
+  // opt: { nomesCores: {corOriginal: 'nome na legenda'}, sinaisCores: {corOriginal: '+' | '-'} } — para gráficos com cor por barra (ponte).
+  function imgDeCanvas(canvas, opt) {
+    opt = opt || {};
+    var ch = null;
+    try { ch = window.Chart && window.Chart.getChart && window.Chart.getChart(canvas); } catch (e) {}
+    if (!ch) return imgSimples(canvas);
+    try { return imprimivel(ch, opt) || imgSimples(canvas); } catch (e) { return imgSimples(canvas); }
+  }
+  // Plano B: copia a imagem da tela sobre fundo escuro.
+  function imgSimples(canvas) {
     if (!canvas || !canvas.width || !canvas.height) return null;
-    // Garante que o gráfico está no estado final (sem animação em andamento) antes de copiar.
-    try { var gr = window.Chart && window.Chart.getChart && window.Chart.getChart(canvas); if (gr) { gr.stop(); gr.update('none'); } } catch (e) {}
-    var pad = 14, c = document.createElement('canvas');
-    c.width = canvas.width + pad * 2; c.height = canvas.height + pad * 2;
-    var x = c.getContext('2d'); x.fillStyle = '#0f172a'; x.fillRect(0, 0, c.width, c.height); x.drawImage(canvas, pad, pad);
+    var pad = 14, c = scratch(canvas.width + pad * 2, canvas.height + pad * 2), x = c.getContext('2d');
+    x.fillStyle = '#0f172a'; x.fillRect(0, 0, c.width, c.height); x.drawImage(canvas, pad, pad);
     return { url: c.toDataURL('image/jpeg', 0.92), ratio: c.width / c.height };
+  }
+
+  function imprimivel(ch, opt) {
+    var land = ORIENT === 'horizontal', W = land ? 1400 : 1000, H = Math.round(W / (land ? 2.7 : 1.9));
+    var tipo = ch.config.type || 'bar', pizza = tipo === 'pie' || tipo === 'doughnut';
+    var labels = (ch.data.labels || []).map(function (l) { return Array.isArray(l) ? l.join(' ') : String(l); });
+    var vis = []; ch.data.datasets.forEach(function (d, i) { if (ch.isDatasetVisible(i)) vis.push(d); });
+    if (!vis.length) return null;
+    var fmtTick = {};
+    Object.keys(ch.scales || {}).forEach(function (id) { var t = ch.scales[id].options && ch.scales[id].options.ticks; if (t && typeof t.callback === 'function') fmtTick[id] = t.callback; });
+    var maxAbs = 0; vis.forEach(function (d) { (d.data || []).forEach(function (v) { var n = Array.isArray(v) ? Math.max(Math.abs(v[0]), Math.abs(v[1])) : Math.abs(+v || 0); if (n > maxAbs) maxAbs = n; }); });
+    var fmtValor = function (v, axisId) { if (maxAbs >= 1000) return compacto(v); var cb = fmtTick[axisId || 'y']; return cb ? String(cb(v)) : compacto(v); };
+    var fmtTabela = function (v, axisId) { if (maxAbs >= 1000) return inteiro(v); var cb = fmtTick[axisId || 'y']; return cb ? String(cb(v)) : String(Math.round(v * 10) / 10).replace('.', ','); };
+
+    var linhaIdx = 0, barraIdx = 0, coresUnicas = [], legendaCustom = null;
+    var datasets = vis.map(function (d, si) {
+      var t = d.type || tipo, o = { type: d.type, label: d.label, data: d.data, yAxisID: d.yAxisID, xAxisID: d.xAxisID, stack: d.stack, order: d.order };
+      if (t === 'line') {
+        o.borderColor = '#000'; o.borderWidth = 3; o.borderDash = TRACOS[linhaIdx % TRACOS.length]; o.pointStyle = MARCAS[linhaIdx % MARCAS.length];
+        o.pointRadius = 7; o.pointBorderColor = '#000'; o.pointBorderWidth = 2; o.pointBackgroundColor = linhaIdx % 2 ? '#000' : '#fff'; o.fill = false; o.tension = 0.15; o.spanGaps = !!d.spanGaps;
+        linhaIdx++;
+      } else if (Array.isArray(d.backgroundColor)) {
+        o.backgroundColor = d.backgroundColor.map(function (c) { var k = coresUnicas.indexOf(c); if (k < 0) { coresUnicas.push(c); k = coresUnicas.length - 1; } return padrao(SEQ_PADRAO[k % SEQ_PADRAO.length]); });
+        o.borderColor = '#000'; o.borderWidth = 2;
+        if (pizza) o.borderWidth = 2.5;
+        legendaCustom = function () { return coresUnicas.map(function (c, k) { return { text: (opt.nomesCores && opt.nomesCores[c]) || (pizza ? '' : 'Série ' + (k + 1)), fillStyle: padrao(SEQ_PADRAO[k % SEQ_PADRAO.length]), strokeStyle: '#000', lineWidth: 2, hidden: false, index: k }; }); };
+      } else {
+        o.backgroundColor = padrao(SEQ_PADRAO[barraIdx % SEQ_PADRAO.length]); o.borderColor = '#000'; o.borderWidth = 2; barraIdx++;
+      }
+      return o;
+    });
+
+    // Pizza: legenda com valor e percentual
+    var totalPizza = 0; if (pizza) (vis[0].data || []).forEach(function (v) { totalPizza += +v || 0; });
+    var legendaPizza = pizza ? function () { return labels.map(function (l, k) { var v = +vis[0].data[k] || 0; return { text: l + ' - ' + compacto(v) + ' (' + (totalPizza ? (v / totalPizza * 100).toFixed(1).replace('.', ',') : '0') + '%)', fillStyle: datasets[0].backgroundColor[k], strokeStyle: '#000', lineWidth: 2, hidden: false, index: k }; }); } : null;
+
+    var legendaPadrao = function () {
+      return datasets.map(function (o, i) {
+        var linha = (o.type || tipo) === 'line';
+        return { text: o.label || ('Série ' + (i + 1)), datasetIndex: i, hidden: false, pointStyle: linha ? 'line' : 'rect', fillStyle: linha ? '#fff' : o.backgroundColor, strokeStyle: '#000', lineWidth: linha ? 3 : 2, lineDash: linha ? o.borderDash : [] };
+      });
+    };
+    var scales = {};
+    if (!pizza) Object.keys(ch.scales || {}).forEach(function (id) {
+      var sc = ch.scales[id], eixoY = sc.axis === 'y';
+      scales[id] = { position: sc.position, stacked: sc.options && sc.options.stacked, ticks: { color: '#000', font: { size: 18 }, maxRotation: 0, autoSkip: true, callback: function (v, i) { return eixoY ? (fmtValor(+v, id)) : (labels[i] != null ? labels[i] : v); } },
+        grid: { color: eixoY && id === Object.keys(ch.scales).filter(function (k) { return ch.scales[k].axis === 'y'; })[0] ? '#bdbdbd' : 'rgba(0,0,0,0)', drawOnChartArea: eixoY && id === Object.keys(ch.scales).filter(function (k) { return ch.scales[k].axis === 'y'; })[0] }, border: { color: '#000', width: 2 } };
+    });
+
+    // Valores escritos no gráfico (só quando não polui)
+    var nPontos = labels.length, nSeries = datasets.length;
+    var comRotulos = !pizza && ((nPontos <= 13 && nSeries <= 2) || coresUnicas.length > 0);
+    var rotulos = {
+      id: 'rotulosImpressao',
+      afterDatasetsDraw: function (c) {
+        if (!comRotulos) return;
+        var x = c.ctx; x.save(); x.font = 'bold 17px Helvetica, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'bottom';
+        c.data.datasets.forEach(function (d, di) {
+          var meta = c.getDatasetMeta(di); if (meta.hidden) return;
+          var orig = vis[di]; var axisId = (orig && orig.yAxisID) || 'y';
+          meta.data.forEach(function (el, i) {
+            var raw = d.data[i]; if (raw == null) return;
+            var txt, px = el.x, py = el.y;
+            if (Array.isArray(raw)) {
+              var cor = orig.backgroundColor[i], mag = Math.abs(raw[1] - raw[0]);
+              txt = ((opt.sinaisCores && opt.sinaisCores[cor]) || '') + compacto(mag); py = Math.min(el.y, el.base);
+            } else txt = fmtValor(+raw, axisId);
+            var w = x.measureText(txt).width;
+            x.fillStyle = 'rgba(255,255,255,0.92)'; x.fillRect(px - w / 2 - 3, py - 26, w + 6, 22);
+            x.fillStyle = '#000'; x.fillText(txt, px, py - 6);
+          });
+        });
+        x.restore();
+      }
+    };
+    var fundo = { id: 'fundoBranco', beforeDraw: function (c) { c.ctx.save(); c.ctx.fillStyle = '#fff'; c.ctx.fillRect(0, 0, c.width, c.height); c.ctx.restore(); } };
+
+    var cv = scratch(W, H), cfg = {
+      type: pizza ? tipo : (ch.config.type || 'bar'), data: { labels: labels, datasets: datasets },
+      options: { responsive: false, animation: false, devicePixelRatio: 1, maintainAspectRatio: false, layout: { padding: { top: 14, right: 14, bottom: 6, left: 6 } },
+        plugins: { legend: { display: !!(legendaCustom || pizza || datasets.length > 1), position: pizza ? 'right' : 'top', labels: { color: '#000', font: { size: 19 }, boxWidth: 44, boxHeight: 20, padding: 16, usePointStyle: !(legendaPizza || legendaCustom), generateLabels: legendaPizza || legendaCustom || legendaPadrao } }, tooltip: { enabled: false } },
+        scales: scales },
+      plugins: [fundo, rotulos]
+    };
+    var chart = new window.Chart(cv, cfg); chart.update('none');
+    var url = cv.toDataURL('image/png'); chart.destroy();
+
+    // Tabela com os mesmos números
+    var dados;
+    if (pizza) {
+      dados = { colunas: ['Item', 'Valor', '%'], linhas: labels.map(function (l, k) { var v = +vis[0].data[k] || 0; return [l, fmtTabela(v), (totalPizza ? (v / totalPizza * 100).toFixed(1).replace('.', ',') : '0') + '%']; }) };
+    } else if (coresUnicas.length) {
+      dados = { colunas: ['Item'].concat(labels), linhas: [['Valor'].concat(vis[0].data.map(function (v, i) { var mag = Array.isArray(v) ? Math.abs(v[1] - v[0]) : +v; var s = (opt.sinaisCores && opt.sinaisCores[vis[0].backgroundColor[i]]) || ''; return s + fmtTabela(mag); }))] };
+    } else {
+      dados = { colunas: ['Série'].concat(labels), linhas: vis.map(function (d) { return [d.label || 'Série'].concat((d.data || []).map(function (v) { return v == null ? '-' : fmtTabela(+v, d.yAxisID || 'y'); })); }) };
+    }
+    return { url: url, ratio: W / H, dados: dados, png: true };
   }
 
   // ── Botão no cabeçalho ──
@@ -156,7 +289,7 @@
         '<div class="sp-lbl2">Orientação da folha</div>' +
         '<div class="sp-orient"><label><input type="radio" name="sp-or" value="vertical" checked><span class="fo"></span>Vertical</label><label><input type="radio" name="sp-or" value="horizontal"><span class="fo h"></span>Horizontal</label></div>' +
         '<div class="sp-lbl2">O que incluir</div>' +
-        '<div class="sp-ops">' + CFG.opcoes.map(function (o) {
+        '<div class="sp-ops">' + opcoesComExtras().map(function (o) {
           return '<label><input type="checkbox" data-op="' + esc(o.id) + '"' + (o.padrao === false ? '' : ' checked') + '><span>' + esc(o.label) + (o.dica ? '<small>' + esc(o.dica) + '</small>' : '') + '</span></label>';
         }).join('') + '</div>' +
         '<div class="sp-lbl2">Finalidade desta exportação <span style="color:#fca5a5">*</span></div>' +
@@ -168,6 +301,13 @@
     $('#sp-fechar', ov).addEventListener('click', function () { if (!ocupado) fecharJanela(); });
     $('#sp-gerar', ov).addEventListener('click', gerar);
     setTimeout(function () { var t = $('#sp-fin'); if (t) t.focus(); }, 300);
+  }
+  // Onde há gráficos, oferece também a tabela com os valores (ajuda muito na impressão em preto e branco).
+  function opcoesComExtras() {
+    var l = CFG.opcoes.slice(), i = -1;
+    l.forEach(function (o, k) { if (o.id === 'graficos') i = k; });
+    if (i >= 0 && !l.some(function (o) { return o.id === 'dadosGraficos'; })) l.splice(i + 1, 0, { id: 'dadosGraficos', label: 'Tabela com os valores de cada gráfico', dica: 'Recomendado para impressão em preto e branco.' });
+    return l;
   }
   function fecharJanela() { var ov = $('#sp-janela'); if (ov) ov.classList.remove('open'); }
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !ocupado) fecharJanela(); });
@@ -188,10 +328,11 @@
     var nome = limpa(CFG.nomeArquivo()).replace(/[^\w\-.]+/g, '-').replace(/-+/g, '-') + '.pdf';
     var filtros = []; try { filtros = CFG.filtros() || []; } catch (e) {}
     var comIA = !!sel.opcoes.ia, avisoIA = '';
+    ORIENT = orient;
 
     status('Registrando…');
     registrar({ tela: CFG.chave, tela_titulo: CFG.titulo, filtros: filtros.map(function (f) { return f[0] + ': ' + f[1]; }).join(' | '), orientacao: orient,
-      secoes: CFG.opcoes.filter(function (o) { return sel.opcoes[o.id]; }).map(function (o) { return o.label; }), com_ia: comIA, finalidade: fin, arquivo: nome })
+      secoes: opcoesComExtras().filter(function (o) { return sel.opcoes[o.id]; }).map(function (o) { return o.label; }), com_ia: comIA, finalidade: fin, arquivo: nome })
     .then(function () { status('Carregando…'); return Promise.all([carregarLibs(), carregarLogo()]); })
     .then(function () { status('Coletando dados…'); return Promise.resolve(CFG.coletar(sel)); })
     .then(function (dados) {
@@ -337,19 +478,21 @@
       y += 4;
     }
     function graficos(b) {
-      titulo(b.titulo);
-      var n = b.itens.length, cols = land && n > 1 ? 2 : 1, gap = 12, cw = (CW - gap * (cols - 1)) / cols, maxH = land ? 215 : 235;
-      for (var i = 0; i < n; i += cols) {
-        var linha = b.itens.slice(i, i + cols), alt = 0;
-        var dims = linha.map(function (it) { var w = it.ratio < 1.5 ? cw * 0.5 : cw, h = w / it.ratio; if (h > maxH) { h = maxH; w = h * it.ratio; } if (h + 16 > alt) alt = h + 16; return { w: w, h: h }; });
-        garante(alt + 6);
-        linha.forEach(function (it, j) {
-          var x = M + j * (cw + gap);
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(8); cor(COR.mut); txt(it.t || '', x, y + 8);
-          doc.addImage(it.url, 'JPEG', x, y + 12, dims[j].w, dims[j].h);
-        });
-        y += alt + 8;
-      }
+      var n = b.itens.length, maxH = land ? 300 : 290, primeiro = true;
+      b.itens.forEach(function (it) {
+        var w = CW, h = w / it.ratio; if (h > maxH) { h = maxH; w = h * it.ratio; }
+        garante(h + 34 + (primeiro && b.titulo ? 24 : 0));   // título + gráfico juntos, nunca separados
+        if (primeiro) { titulo(b.titulo); primeiro = false; }
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); cor(COR.tx); txt(it.t || '', M, y + 6);
+        doc.addImage(it.url, it.png ? 'PNG' : 'JPEG', M + (CW - w) / 2, y + 12, w, h);
+        cor(COR.lin, 'draw'); doc.setLineWidth(0.5); doc.rect(M + (CW - w) / 2, y + 12, w, h);
+        y += h + 20;
+        if (it.dados && sel.opcoes.dadosGraficos !== false) {
+          var nc = it.dados.colunas.length;
+          tabela({ tipo: 'tabela', fonte: nc > 9 ? 6.3 : 7, colunas: it.dados.colunas.map(function (c, i) { return { h: c, al: i === 0 ? 'left' : 'right', larg: i === 0 ? 1.9 : 1 }; }), linhas: it.dados.linhas.map(function (l) { return { c: l }; }) });
+          y += 2;
+        }
+      });
       y += 2;
     }
     function tabela(b) {
