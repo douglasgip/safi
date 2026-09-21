@@ -108,7 +108,7 @@
   }
 
   function imprimivel(ch, opt) {
-    var land = ORIENT === 'horizontal', W = land ? 1400 : 1000, H = Math.round(W / (land ? 2.7 : 1.9));
+    var land = ORIENT === 'horizontal', W = land ? 900 : 1000, H = Math.round(W / (land ? 1.95 : 2.6)), F = land ? 1.25 : 1;   // horizontal: dois gráficos lado a lado; F aumenta a letra para continuar legível
     var tipo = ch.config.type || 'bar', pizza = tipo === 'pie' || tipo === 'doughnut';
     var labels = (ch.data.labels || []).map(function (l) { return Array.isArray(l) ? l.join(' ') : String(l); });
     var vis = []; ch.data.datasets.forEach(function (d, i) { if (ch.isDatasetVisible(i)) vis.push(d); });
@@ -150,7 +150,7 @@
     var scales = {};
     if (!pizza) Object.keys(ch.scales || {}).forEach(function (id) {
       var sc = ch.scales[id], eixoY = sc.axis === 'y';
-      scales[id] = { position: sc.position, stacked: sc.options && sc.options.stacked, ticks: { color: '#000', font: { size: 18 }, maxRotation: 0, autoSkip: true, callback: function (v, i) { return eixoY ? (fmtValor(+v, id)) : (labels[i] != null ? labels[i] : v); } },
+      scales[id] = { position: sc.position, stacked: sc.options && sc.options.stacked, ticks: { color: '#000', font: { size: Math.round(18 * F) }, maxRotation: 0, autoSkip: true, callback: function (v, i) { return eixoY ? (fmtValor(+v, id)) : (labels[i] != null ? labels[i] : v); } },
         grid: { color: eixoY && id === Object.keys(ch.scales).filter(function (k) { return ch.scales[k].axis === 'y'; })[0] ? '#bdbdbd' : 'rgba(0,0,0,0)', drawOnChartArea: eixoY && id === Object.keys(ch.scales).filter(function (k) { return ch.scales[k].axis === 'y'; })[0] }, border: { color: '#000', width: 2 } };
     });
 
@@ -161,7 +161,7 @@
       id: 'rotulosImpressao',
       afterDatasetsDraw: function (c) {
         if (!comRotulos) return;
-        var x = c.ctx; x.save(); x.font = 'bold 17px Helvetica, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'bottom';
+        var x = c.ctx; x.save(); x.font = 'bold ' + Math.round(17 * F) + 'px Helvetica, Arial, sans-serif'; x.textAlign = 'center'; x.textBaseline = 'bottom';
         c.data.datasets.forEach(function (d, di) {
           var meta = c.getDatasetMeta(di); if (meta.hidden) return;
           var orig = vis[di]; var axisId = (orig && orig.yAxisID) || 'y';
@@ -173,7 +173,7 @@
               txt = ((opt.sinaisCores && opt.sinaisCores[cor]) || '') + compacto(mag); py = Math.min(el.y, el.base);
             } else txt = fmtValor(+raw, axisId);
             var w = x.measureText(txt).width;
-            x.fillStyle = 'rgba(255,255,255,0.92)'; x.fillRect(px - w / 2 - 3, py - 26, w + 6, 22);
+            x.fillStyle = 'rgba(255,255,255,0.92)'; x.fillRect(px - w / 2 - 3, py - Math.round(26 * F), w + 6, Math.round(22 * F));
             x.fillStyle = '#000'; x.fillText(txt, px, py - 6);
           });
         });
@@ -185,7 +185,7 @@
     var cv = scratch(W, H), cfg = {
       type: pizza ? tipo : (ch.config.type || 'bar'), data: { labels: labels, datasets: datasets },
       options: { responsive: false, animation: false, devicePixelRatio: 1, maintainAspectRatio: false, layout: { padding: { top: 14, right: 14, bottom: 6, left: 6 } },
-        plugins: { legend: { display: !!(legendaCustom || pizza || datasets.length > 1), position: pizza ? 'right' : 'top', labels: { color: '#000', font: { size: 19 }, boxWidth: 44, boxHeight: 20, padding: 16, usePointStyle: !(legendaPizza || legendaCustom), generateLabels: legendaPizza || legendaCustom || legendaPadrao } }, tooltip: { enabled: false } },
+        plugins: { legend: { display: !!(legendaCustom || pizza || datasets.length > 1), position: pizza ? 'right' : 'top', labels: { color: '#000', font: { size: Math.round(19 * F) }, boxWidth: Math.round(44 * F), boxHeight: Math.round(20 * F), padding: 14, usePointStyle: !(legendaPizza || legendaCustom), generateLabels: legendaPizza || legendaCustom || legendaPadrao } }, tooltip: { enabled: false } },
         scales: scales },
       plugins: [fundo, rotulos]
     };
@@ -477,37 +477,18 @@
       }
       y += 4;
     }
-    function graficos(b) {
-      var n = b.itens.length, maxH = land ? 300 : 290, primeiro = true;
-      b.itens.forEach(function (it) {
-        var w = CW, h = w / it.ratio; if (h > maxH) { h = maxH; w = h * it.ratio; }
-        garante(h + 34 + (primeiro && b.titulo ? 24 : 0));   // título + gráfico juntos, nunca separados
-        if (primeiro) { titulo(b.titulo); primeiro = false; }
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); cor(COR.tx); txt(it.t || '', M, y + 6);
-        doc.addImage(it.url, it.png ? 'PNG' : 'JPEG', M + (CW - w) / 2, y + 12, w, h);
-        cor(COR.lin, 'draw'); doc.setLineWidth(0.5); doc.rect(M + (CW - w) / 2, y + 12, w, h);
-        y += h + 20;
-        if (it.dados && sel.opcoes.dadosGraficos !== false) {
-          var nc = it.dados.colunas.length;
-          tabela({ tipo: 'tabela', fonte: nc > 9 ? 6.3 : 7, colunas: it.dados.colunas.map(function (c, i) { return { h: c, al: i === 0 ? 'left' : 'right', larg: i === 0 ? 1.9 : 1 }; }), linhas: it.dados.linhas.map(function (l) { return { c: l }; }) });
-          y += 2;
-        }
-      });
-      y += 2;
-    }
-    function tabela(b) {
-      titulo(b.titulo);
-      var fonte = b.fonte || 8, cols = b.colunas;
-      var total = cols.reduce(function (a, c) { return a + (c.larg || 1); }, 0);
-      var estilos = {};
-      cols.forEach(function (c, i) { estilos[i] = { halign: c.al || 'left', cellWidth: CW * (c.larg || 1) / total }; });
-      doc.autoTable({
+    // Mede quanto uma tabela ocupa (num PDF de rascunho, com as mesmas fontes) — para decidir se cabe na página
+    // inteira e nunca cortar uma tabela ao meio quando ela cabe numa página só.
+    var docMedida = null;
+    function estiloTabela(b, fonte, cols, largura, geo) {
+      var total = cols.reduce(function (a, c) { return a + (c.larg || 1); }, 0), estilos = {};
+      cols.forEach(function (c, i) { estilos[i] = { halign: c.al || 'left', cellWidth: largura * (c.larg || 1) / total }; });
+      return {
         head: [cols.map(function (c) { return limpa(c.h); })],
         body: b.linhas.map(function (l) { return l.c.map(limpa); }),
-        startY: y, margin: { left: M, right: M, top: TOPO, bottom: BASE }, tableWidth: CW,
+        tableWidth: largura, theme: 'plain', columnStyles: estilos,
         styles: { font: 'helvetica', fontSize: fonte, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, lineColor: COR.lin, lineWidth: 0.3, textColor: COR.tx, overflow: 'linebreak' },
         headStyles: { fillColor: COR.navy, textColor: 255, fontStyle: 'bold', fontSize: fonte - 0.5 },
-        columnStyles: estilos, theme: 'plain',
         didParseCell: function (d) {
           if (d.section === 'head') { d.cell.styles.halign = cols[d.column.index].al || 'left'; return; }
           if (d.section !== 'body') return;
@@ -518,10 +499,60 @@
           else if (k === 'S') { d.cell.styles.textColor = COR.mut; if (d.column.index === 0) d.cell.styles.cellPadding = { top: 2.2, bottom: 2.2, left: 14, right: 4 }; }
           else if (k === 'SS') { d.cell.styles.textColor = COR.mut; d.cell.styles.fontSize = fonte - 0.8; if (d.column.index === 0) d.cell.styles.cellPadding = { top: 2, bottom: 2, left: 24, right: 4 }; }
           if (l.cor && l.cor[d.column.index]) d.cell.styles.textColor = l.cor[d.column.index];
-        },
-        didDrawPage: function () { cabecalhoCorrida(); }
-      });
-      y = doc.lastAutoTable.finalY + 12;
+        }
+      };
+    }
+    function alturaTabela(b, fonte, cols, largura) {
+      try {
+        if (!docMedida) docMedida = new J({ orientation: land ? 'l' : 'p', unit: 'pt', format: 'a4' });
+        while (docMedida.getNumberOfPages() > 1) docMedida.deletePage(docMedida.getNumberOfPages());
+        var cfg = estiloTabela(b, fonte, cols, largura); cfg.startY = TOPO; cfg.margin = { left: M, right: M, top: TOPO, bottom: BASE };
+        docMedida.autoTable(cfg);
+        var paginas = docMedida.getNumberOfPages();
+        return paginas > 1 ? 1e6 : docMedida.lastAutoTable.finalY - TOPO;   // 1e6 = não cabe numa página: pode dividir
+      } catch (e) { return 1e6; }
+    }
+    // geo (opcional): { x, w, y } desenha a tabela numa coluna específica e devolve o y final (sem mexer no cursor).
+    function tabela(b, geo) {
+      var fonte = b.fonte || 8, cols = b.colunas, largura = geo ? geo.w : CW, usavel = H - TOPO - BASE;
+      if (!geo) {
+        var h = alturaTabela(b, fonte, cols, largura), extra = (b.titulo ? 26 : 0) + 8;
+        // Cabe numa página inteira? Então a tabela (com o título) fica junta: vai para a próxima página se não couber aqui.
+        if (h <= usavel - extra) { if (y + h + extra > H - BASE) novaPagina(); }
+        else garante(80);                                          // tabela longa: pelo menos título + cabeçalho + algumas linhas
+        titulo(b.titulo);
+      }
+      var cfg = estiloTabela(b, fonte, cols, largura);
+      cfg.startY = geo ? geo.y : y; cfg.margin = geo ? { left: geo.x, right: W - geo.x - geo.w, top: TOPO, bottom: BASE } : { left: M, right: M, top: TOPO, bottom: BASE };
+      cfg.didDrawPage = function () { cabecalhoCorrida(); };
+      doc.autoTable(cfg);
+      var fim = doc.lastAutoTable.finalY;
+      if (geo) return fim;
+      y = fim + 12;
+    }
+    function graficos(b) {
+      var itens = b.itens, cols = land && itens.length > 1 ? 2 : 1, gap = 14, cw = (CW - gap * (cols - 1)) / cols, maxH = land ? 172 : 215, primeiro = true;
+      var comDados = function (it) { return it.dados && sel.opcoes.dadosGraficos !== false; };
+      var cfgDados = function (it, larg) { var nc = it.dados.colunas.length; return { tipo: 'tabela', fonte: nc > 9 ? (larg < 450 ? 5.6 : 6.3) : (larg < 450 ? 6.4 : 7), colunas: it.dados.colunas.map(function (c, i) { return { h: c, al: i === 0 ? 'left' : 'right', larg: i === 0 ? 1.9 : 1 }; }), linhas: it.dados.linhas.map(function (l) { return { c: l }; }) }; };
+      for (var i = 0; i < itens.length; i += cols) {
+        var linha = itens.slice(i, i + cols);
+        var dims = linha.map(function (it) { var w = cw, h = w / it.ratio; if (h > maxH) { h = maxH; w = h * it.ratio; } return { w: w, h: h }; });
+        var altImg = Math.max.apply(null, dims.map(function (d) { return d.h; })) + 18;
+        var altTab = 0;
+        linha.forEach(function (it) { if (comDados(it)) { var c = cfgDados(it, cw), a = alturaTabela(c, c.fonte, c.colunas, cw); altTab = Math.max(altTab, a >= 1e6 ? 60 : a); } });
+        garante(altImg + altTab + 8 + (primeiro && b.titulo ? 26 : 0));   // título + gráfico(s) + tabela(s) sempre juntos
+        if (primeiro) { titulo(b.titulo); primeiro = false; }
+        linha.forEach(function (it, j) {
+          var x = M + j * (cw + gap), xi = x + (cw - dims[j].w) / 2;
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); cor(COR.tx); txt(it.t || '', x, y + 6);
+          doc.addImage(it.url, it.png ? 'PNG' : 'JPEG', xi, y + 12, dims[j].w, dims[j].h);
+          cor(COR.lin, 'draw'); doc.setLineWidth(0.5); doc.rect(xi, y + 12, dims[j].w, dims[j].h);
+        });
+        var yTab = y + altImg, yMax = yTab;
+        linha.forEach(function (it, j) { if (comDados(it)) { var f = tabela(cfgDados(it, cw), { x: M + j * (cw + gap), w: cw, y: yTab }); if (f > yMax) yMax = f; } });
+        y = yMax + 12;
+      }
+      y += 2;
     }
     function texto(b) {
       titulo(b.titulo);
