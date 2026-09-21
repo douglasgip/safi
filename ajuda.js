@@ -369,16 +369,19 @@
 
   // Abre o tour sozinho na primeira visita: espera a tela terminar de carregar (alvos visíveis, sem janela aberta).
   function agendarAuto() {
-    var tentativas = 0;
+    var tentativas = 0, anterior = -1;
     (function tenta() {
       if (ST.tour) return;
       tentativas++;
       var ocupada = $('.modal-overlay.open, .sa-ov.open, #perm-overlay');
       var perm = $('#perm-overlay'); if (perm && getComputedStyle(perm).display === 'none') ocupada = $('.modal-overlay.open, .sa-ov.open');
-      var passos = tourSteps(ST.ctx.key).filter(function (s) { return !s.sidebar && !s.clicar && s.sel !== '#sa-help-btn'; });
-      var pronto = passos.length && achar(passos[0].sel);
-      if (pronto && !ocupada) return setTimeout(function () { if (!ST.tour && lsGet(vistoKey()) === null) iniciarTour(); }, 500);
-      if (tentativas < 24) setTimeout(tenta, 500);
+      // Conta quantos passos da tela estão visíveis (o que a pessoa não pode ver simplesmente não entra no tour).
+      // Começa quando há pelo menos um e a contagem parou de mudar (a tela terminou de carregar).
+      var visiveis = tourSteps(ST.ctx.key).filter(function (s) { return !s.sidebar && !s.clicar && s.sel !== '#sa-help-btn' && achar(s.sel); }).length;
+      var estavel = visiveis > 0 && visiveis === anterior;
+      anterior = visiveis;
+      if (estavel && !ocupada) return setTimeout(function () { if (!ST.tour && lsGet(vistoKey()) === null) iniciarTour(); }, 300);
+      if (tentativas < 28) setTimeout(tenta, 500);
     })();
   }
 
@@ -396,7 +399,7 @@
   function remotoGravar(v) {
     var sb = ST.ctx && ST.ctx.sb, uid = ST.ctx && ST.ctx.profile && ST.ctx.profile.id;
     if (!sb || !uid) return;
-    sb.from('ajuda_vistas').upsert({ user_id: uid, chave: ST.ctx.key, versao: v, visto_em: new Date().toISOString() }, { onConflict: 'user_id,chave' }).then(function () {}, function () {});
+    try { sb.from('ajuda_vistas').upsert({ user_id: uid, chave: ST.ctx.key, versao: v, visto_em: new Date().toISOString() }, { onConflict: 'user_id,chave' }).then(function () {}, function () {}); } catch (e) { /* gravar o "já viu" nunca pode impedir o tour */ }
   }
 
   function attach(o) {

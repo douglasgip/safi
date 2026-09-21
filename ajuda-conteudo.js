@@ -11,7 +11,7 @@ window.SAFI_AJUDA = { telas: {
     titulo: 'Home', versao: 1,
     resumo: 'A <b>Home</b> é a porta de entrada do SAFI: mostra o resumo do mês e leva você para cada tela, organizadas por <b>setor</b>. Só aparece o que o seu acesso libera.',
     passos: [
-      { t: 'Veja o resumo do mês', d: 'A faixa de indicadores no topo mostra os números do período. Use as setas <b>‹ ›</b> para trocar de mês.' },
+      { t: 'Veja o resumo do mês', d: 'Para quem tem acesso ao DRE ou ao Resumo Contábil, a faixa de indicadores no topo mostra os números do período. Use as setas <b>‹ ›</b> para trocar de mês.' },
       { t: 'Escolha o setor', d: 'Os cartões estão agrupados em <b>Conselho, Financeiro, Contábil, Compras, Pessoal e Gestão</b>. Clique no cartão para abrir a tela.' },
       { t: 'Converse com o GerônIA', d: 'O cartão do <b>GerônIA</b> abre o conselheiro de IA, que responde sobre os números do grupo e sobre como usar o SAFI.' },
       { t: 'Navegue pelo menu', d: 'O botão de menu (☰) abre a barra lateral com as mesmas telas, agrupadas por setor, em qualquer página.' },
