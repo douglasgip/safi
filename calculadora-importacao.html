@@ -172,25 +172,6 @@
     .modal-card.wide { max-width: 640px; }
     .modal-card.xwide { max-width: 780px; }
 
-    /* ── Conteúdo do modal "Como Usar" (mesmo texto do guia em PDF, no tema escuro) ── */
-    .help-intro { background: rgba(45,212,191,0.07); border: 1px solid rgba(45,212,191,0.22); border-radius: 10px; padding: 13px 16px; margin-bottom: 18px; font-size: 12.5px; color: #cbd5e1; line-height: 1.5; }
-    .help-intro b { color: #5eead4; }
-    .help-section-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #5eead4; margin-bottom: 12px; }
-    .help-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 20px; margin-bottom: 22px; }
-    .help-step { display: flex; gap: 11px; }
-    .help-step-num { flex-shrink: 0; width: 25px; height: 25px; border-radius: 50%; background: #0d9488; color: #f0fdfa; font-weight: 800; font-size: 12.5px; display: flex; align-items: center; justify-content: center; }
-    .help-step-title { font-size: 12.5px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
-    .help-step-text { font-size: 11.5px; color: #94a3b8; line-height: 1.48; }
-    .help-step-text b { color: #e2e8f0; }
-    .help-two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
-    .help-box-title { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: #5eead4; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(45,212,191,0.2); }
-    ul.help-tips { list-style: none; }
-    ul.help-tips li { font-size: 11.5px; color: #94a3b8; margin-bottom: 10px; padding-left: 16px; position: relative; line-height: 1.46; }
-    ul.help-tips li::before { content: "●"; color: #2dd4bf; position: absolute; left: 0; font-size: 8px; top: 5px; }
-    ul.help-tips li b { color: #e2e8f0; }
-    .help-warn { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); border-radius: 10px; padding: 12px 15px; margin-top: 12px; font-size: 11.5px; color: #fde68a; line-height: 1.48; }
-    .help-warn b { color: #fbbf24; }
-    @media (max-width: 700px) { .help-steps, .help-two-col { grid-template-columns: 1fr; } }
     @keyframes modalIn { from { opacity: 0; transform: translateY(10px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .modal-title { font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
     .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 22px; }
@@ -275,10 +256,6 @@
         <div class="ci-toolbar-sub">Custo de desembarque (landed cost) por produto — para decidir se vale a pena comprar.</div>
       </div>
       <div class="ci-toolbar-actions">
-        <button class="btn-ghost" onclick="openHelpModal()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          Como Usar
-        </button>
         <button class="btn-ghost" onclick="openHistoricoModal()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
           Histórico
@@ -443,79 +420,6 @@
     </div>
 
   </main>
-
-  <!-- Modal: Como Usar (mesmo conteúdo do guia em PDF) -->
-  <div class="modal-overlay" id="help-modal">
-    <div class="modal-card xwide">
-      <div class="modal-title">Calculadora de Importação — Como Usar</div>
-      <div class="modal-sub">Guia rápido — o mesmo conteúdo do PDF que circula pela equipe.</div>
-
-      <div class="help-intro">
-        A calculadora estima o <b>custo real de desembarque</b> (landed cost) de um produto ou container importado — somando frete, seguro, impostos (II, IPI, PIS, COFINS, ICMS) e despesas do processo — para você decidir, antes de comprar, se o produto compensa e qual preço de venda faz sentido.
-      </div>
-
-      <div class="help-section-label">Como usar em 4 passos</div>
-      <div class="help-steps">
-        <div class="help-step">
-          <div class="help-step-num">1</div>
-          <div>
-            <div class="help-step-title">Confira os Dados Gerais do Processo</div>
-            <div class="help-step-text">A <b>Taxa Cambial</b> já vem preenchida sozinha com a cotação do dia (botão ↻ atualiza na hora). Preencha modalidade da empresa (<b>Real/Presumido</b> ou <b>Simples</b>), frete e seguro internacional, Capatazia e as despesas extras. No <b>AFRMM</b>, o botão "25% frete" já aplica a alíquota padrão. Vale para <b>todos</b> os produtos do cálculo.</div>
-          </div>
-        </div>
-        <div class="help-step">
-          <div class="help-step-num">2</div>
-          <div>
-            <div class="help-step-title">Adicione os produtos</div>
-            <div class="help-step-text">Clique em <b>"+ Adicionar Produto"</b> e preencha NCM, descrição, quantidade, valor unitário (US$) e peso líquido. Ao sair do campo NCM, o <b>II e o IPI</b> são sugeridos automaticamente pela tabela oficial (TIPI/TEC) — confira antes de confiar. PIS/COFINS/ICMS continuam manuais. Pode adicionar quantos produtos quiser — o sistema rateia frete (por peso) e seguro/demais despesas (por valor) entre eles.</div>
-          </div>
-        </div>
-        <div class="help-step">
-          <div class="help-step-num">3</div>
-          <div>
-            <div class="help-step-title">Veja o resultado em tempo real</div>
-            <div class="help-step-text">O <b>Custo Total</b> e o <b>Custo Unitário</b> de cada produto atualizam sozinhos a cada valor digitado. Clique na setinha (▾) da linha para abrir o detalhamento fiscal completo e, se quiser, informar o <b>preço de venda pretendido</b> e ver a margem estimada na hora.</div>
-          </div>
-        </div>
-        <div class="help-step">
-          <div class="help-step-num">4</div>
-          <div>
-            <div class="help-step-title">Salve no Histórico</div>
-            <div class="help-step-text">Clique em <b>"Salvar no Histórico"</b> e dê um nome (ex: "Container Julho — Fio Viscose"). Fica guardado para toda a equipe com acesso — o botão <b>"Histórico"</b> lista os 10 cálculos mais recentes, com opção de reabrir ou excluir.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="help-two-col">
-        <div>
-          <div class="help-box-title">Dicas importantes</div>
-          <ul class="help-tips">
-            <li><b>Capatazia/THC</b> não entra na base de II/IPI/PIS/COFINS — só na base do ICMS. É calculado automaticamente, não precisa se preocupar.</li>
-            <li>O botão <b>"calcular"</b> ao lado da Taxa SISCOMEX estima o valor pela quantidade de adições da DI, se você não souber o valor exato.</li>
-            <li>Trocou o <b>NCM</b> de um produto? II/IPI são buscados de novo automaticamente. Só param de sugerir se você editar a alíquota na mão — aí ela sempre respeita o que você digitou.</li>
-            <li><b>"Salvar Configuração"</b> guarda os Dados Gerais do Processo (câmbio, despesas etc.) com um nome pra reusar depois — é <b>privado</b>, só você vê as suas em "Minhas Configurações".</li>
-            <li>Em <b>Simples Nacional</b>, normalmente não há aproveitamento de crédito de ICMS/IPI/PIS/COFINS — o sistema já desmarca sozinho ao trocar a modalidade, mas o Imposto de Importação (II) <b>nunca</b> gera crédito.</li>
-            <li>Um cálculo salvo no <b>Histórico não sobrescreve</b> o anterior — reabrir e salvar de novo sempre cria um registro novo, visível pra toda a equipe.</li>
-          </ul>
-        </div>
-        <div>
-          <div class="help-box-title">O que ela NÃO substitui</div>
-          <ul class="help-tips">
-            <li>Não é a <b>Declaração de Importação (DI)</b> oficial nem um documento fiscal — é uma ferramenta de <b>estimativa</b> para decisão de compra.</li>
-            <li>II e IPI vêm sugeridos automaticamente por NCM (fonte TIPI/TEC), mas <b>sempre confira</b> — é uma tabela de terceiros, não a Receita direto. PIS/COFINS/ICMS continuam 100% manuais.</li>
-            <li>Benefícios fiscais específicos de regime (ex: crédito presumido, suspensão de ICMS) não são calculados — se o produto usa algum desses, ajuste o resultado manualmente.</li>
-          </ul>
-          <div class="help-warn">
-            <b>Dúvidas ou algo não bateu?</b> Chama o Douglas — qualquer ajuste na calculadora (nova alíquota padrão, novo campo, etc.) pode ser feito rapidinho.
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-actions">
-        <button type="button" class="btn-cancel" style="flex:1" onclick="closeHelpModal()">Fechar</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Modal: salvar no histórico -->
   <div class="modal-overlay" id="save-modal">
@@ -1042,10 +946,6 @@
       fetchCambio(false);
     }
 
-    // ── Como Usar ──
-    function openHelpModal() { g('help-modal').classList.add('open'); }
-    function closeHelpModal() { g('help-modal').classList.remove('open'); }
-    g('help-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeHelpModal(); });
 
     // ── Salvar no histórico ──
     function openSaveModal() {

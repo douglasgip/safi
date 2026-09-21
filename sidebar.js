@@ -187,6 +187,19 @@
     }
   }
 
+  // "Sobre esta tela": carrega o motor (ajuda.js) e o conteúdo (ajuda-conteudo.js) sob demanda.
+  var ajudaCbs = null;
+  function carregarAjuda(cb) {
+    if (window.SafiAjuda && window.SAFI_AJUDA) return cb();
+    if (ajudaCbs) return ajudaCbs.push(cb);
+    ajudaCbs = [cb];
+    var falta = 2, fim = function () { if (--falta) return; var l = ajudaCbs; ajudaCbs = null; l.forEach(function (f) { try { f(); } catch (e) { console.error(e); } }); };
+    ['/ajuda-conteudo.js', '/ajuda.js'].forEach(function (src) {
+      var sc = document.createElement('script'); sc.src = src; sc.onload = fim; sc.onerror = function () { ajudaCbs = null; };
+      document.head.appendChild(sc);
+    });
+  }
+
   function apply(prefix, profile, opts) {
     opts = opts || {};
     var root = document.getElementById(prefix + '-sidebar');
@@ -228,6 +241,8 @@
         '</div>';
       if (window.UserMenu && opts.sb) window.UserMenu.attach(userEl, opts.sb);
     }
+
+    if (profile.id && root._safiActive) carregarAjuda(function () { window.SafiAjuda.attach({ prefix: prefix, key: root._safiActive, profile: profile, accent: root._safiAccent }); if (profile.is_admin && opts.sb) window.SafiAjuda.sincronizarManual(opts.sb); });
   }
 
   window.SafiSidebar = { mount: mount, apply: apply };

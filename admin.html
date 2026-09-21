@@ -16,6 +16,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/user-menu.js"></script>
+  <script src="/ajuda-conteudo.js"></script>
+  <script src="/ajuda.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -900,6 +902,8 @@ async function init() {
   if (data.session.user.email !== ADMIN_EMAIL) return redirect('/');
   currentSession = data.session;
   loadUsers();
+  if (window.SafiAjuda) SafiAjuda.sincronizarManual(sb);
+  if (window.SafiAjuda) SafiAjuda.attach({ prefix: 'admin', key: 'admin', profile: { id: data.session.user.id }, accent: { g1: '#f59e0b' } });
 
   const { data: profRows } = await sb.from('user_profiles').select('full_name,role,is_admin').eq('id', data.session.user.id).limit(1);
   const prof = (profRows && profRows[0]) || null;
