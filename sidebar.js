@@ -223,7 +223,21 @@
       sec.style.display = any ? 'flex' : 'none';
     });
 
-    if (profile.is_admin) show('admin');
+    if (profile.is_admin) {
+      show('admin');
+      // Selo com a quantidade de exportações de PDF ainda não vistas (só o admin consegue ler a tabela).
+      if (opts.sb) {
+        try {
+          opts.sb.from('exportacoes_pdf').select('id', { count: 'exact', head: true }).eq('lida', false).then(function (r) {
+            var n = r && r.count, link = document.getElementById(prefix + '-sidebar-admin');
+            if (!n || !link || link.querySelector('.sb-adm-badge')) return;
+            var b = document.createElement('span'); b.className = 'sb-adm-badge'; b.textContent = n > 99 ? '99+' : n; b.title = n + ' exportação(ões) de PDF ainda não vista(s)';
+            b.style.cssText = 'margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#f59e0b;color:#1a0a00;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center';
+            link.appendChild(b);
+          }, function () {});
+        } catch (e) { /* selo é opcional */ }
+      }
+    }
 
     // Cartão do usuário (iniciais + nome + cargo).
     var acc = root._safiAccent || {};

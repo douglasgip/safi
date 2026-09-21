@@ -257,6 +257,7 @@
   <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/pdf.js"></script>
   <script>
     const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
@@ -273,7 +274,7 @@
     const g = id => document.getElementById(id);
     const ym = (a, m) => a * 100 + m;
     const addM = (a, m, n) => { const t = a * 12 + (m - 1) + n; return { ano: Math.floor(t / 12), mes: (t % 12) + 1 }; };
-    const brl = v => v == null ? '—' : 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+    const brl = v => v == null ? '—' : (Math.round(v) < 0 ? '-' : '') + 'R$ ' + Math.abs(Math.round(v)).toLocaleString('pt-BR');
     const pct = v => v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
     const compact = v => Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + ' mil' : String(Math.round(v));
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -282,6 +283,7 @@
     let porChave = {};            // "op|ano|mes" -> linha
     let opsVisiveis = [];
     let charts = { evol: null, ponte: null };
+    let ULTIMO = null;            // estado da última renderização (usado pelo PDF)
 
     // Fotografia de um mês (ou de um conjunto de operações) com todas as linhas derivadas.
     function snap(raw) {
@@ -452,11 +454,83 @@
       if (!base) msgs.push('Sem dados para o comparativo "' + CMP_LABEL[modo] + '" — escolha outra base.');
       if (parcial) msgs.push('Orçamento lançado só para ' + opsO.map(o => OP_NOME[o] || o).join(' + ') + ' neste mês — o "Orçado" dos indicadores compara apenas esse conjunto.');
       note.textContent = msgs.join(' '); note.classList.toggle('on', msgs.length > 0);
+      ULTIMO = { ops, ano, mes, modo, opSel, cur, base, orc: orc && curOrc ? orc : null, curOrc, parcial, opsO, msgs };
       renderKpis(cur, base, orc && curOrc ? orc : null, curOrc, parcial ? opsO.map(o => OP_NOME[o] || o).join(' + ') : '');
       renderEvolucao(ops, ano, mes);
       renderPonte(cur, base);
       g('panel-ops').style.display = opSel === 'todas' && opsVisiveis.length > 1 ? '' : 'none';
       renderOps(ano, mes, modo);
+    }
+
+
+    // ── PDF ─────────────────────────────────────────────────────────────────
+    const brlS = v => v == null ? '—' : (Math.round(v) < 0 ? '-' : '') + 'R$ ' + Math.abs(Math.round(v)).toLocaleString('pt-BR');
+    const OK = [21, 128, 61], RUIM = [185, 28, 28];
+    function pdfFiltros() {
+      if (!ULTIMO) return [];
+      const opTxt = ULTIMO.opSel === 'todas' ? 'Todas as operações (' + opsVisiveis.map(o => OP_NOME[o]).join(', ') + ')' : OP_NOME[ULTIMO.opSel];
+      return [['Mês', MESES[ULTIMO.mes - 1] + ' / ' + ULTIMO.ano], ['Comparar com', CMP_LABEL[ULTIMO.modo]], ['Operação', opTxt]];
+    }
+    function kpiItens(U) {
+      return KPIS.map(k => {
+        const v = k.v(U.cur), linhas = [];
+        if (k.pct) linhas.push({ t: pct(k.pct(U.cur)) + ' do faturamento' });
+        if (U.base) {
+          const b = k.v(U.base.s), d = v - b, rel = b ? d / Math.abs(b) : null, up = d >= 0, bom = k.custo ? !up : up;
+          linhas.push({ t: (up ? '+' : '-') + (rel == null ? brlS(Math.abs(d)) : pct(Math.abs(rel))) + ' vs ' + U.base.rot + ' (' + brlS(b) + ')', cor: bom ? OK : RUIM });
+          if (k.pct && k.pct(U.cur) != null && k.pct(U.base.s) != null) {
+            const pp = (k.pct(U.cur) - k.pct(U.base.s)) * 100;
+            linhas.push({ t: (Math.abs(pp) < 0.05 ? '=' : pp >= 0 ? '+' : '-') + ' ' + Math.abs(pp).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p. na margem', cor: Math.abs(pp) < 0.05 ? null : pp >= 0 ? OK : RUIM });
+          }
+        } else linhas.push({ t: 'sem base de comparação' });
+        if (U.orc) {
+          const ov = k.v(U.orc), vr = k.v(U.curOrc), ating = ov ? vr / ov : null;
+          let t = 'Orçado' + (U.parcial ? ' (' + U.opsO.map(o => OP_NOME[o] || o).join(' + ') + ')' : '') + ': ' + brlS(ov) + (ating != null && isFinite(ating) ? ' - ' + (k.custo ? 'gastou ' : 'atingiu ') + pct(ating) : '');
+          if (k.pct && U.orc[k.pctK] != null && U.curOrc[k.pctK] != null) { const pp = (U.curOrc[k.pctK] - U.orc[k.pctK]) * 100; t += ' - margem orçada ' + pct(U.orc[k.pctK]) + ' (' + (pp >= 0 ? '+' : '') + pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.)'; }
+          linhas.push({ t, cor: [29, 78, 216] });
+        }
+        return { l: k.l, v: brlS(v), vCor: v < 0 ? RUIM : null, linhas, barra: k.hi ? [2, 132, 199] : null };
+      });
+    }
+    async function pdfColetar(sel) {
+      const U = ULTIMO; if (!U) throw new Error('nada para exportar ainda');
+      const blocos = [];
+      const nomeOps = U.opSel === 'todas' ? 'Todas as operações' : OP_NOME[U.opSel];
+      const itens = kpiItens(U);
+      blocos.push({ tipo: 'kpis', opcao: 'kpis', titulo: 'Indicadores - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')', itens });
+      const imgs = [];
+      if (sel.opcoes.graficos) {
+        const a = SafiPdf.imgDeCanvas(g('ch-evol')); if (a) imgs.push({ t: 'Evolução - últimos 12 meses (faturamento e EBITDA)', url: a.url, ratio: a.ratio });
+        if (charts.ponte) { const b = SafiPdf.imgDeCanvas(g('ch-ponte')); if (b) imgs.push({ t: g('ponte-title').textContent.replace('→', 'para'), url: b.url, ratio: b.ratio }); }
+      }
+      blocos.push({ tipo: 'graficos', opcao: 'graficos', titulo: 'Gráficos', itens: imgs });
+      if (U.opSel === 'todas' && opsVisiveis.length > 1) {
+        const linhas = [];
+        const mk = (nome, x, k) => {
+          const d = x.base ? x.cur.ebitda - x.base.s.ebitda : null;
+          const cor = {}; if (x.cur.ebitda < 0) cor[3] = RUIM; if (x.cur.res < 0) cor[5] = RUIM; if (d != null) cor[6] = d >= 0 ? OK : RUIM;
+          linhas.push({ k, cor, c: [nome, brlS(x.cur.rb), pct(x.cur.mcPct), brlS(x.cur.ebitda), pct(x.cur.ebitdaPct), brlS(x.cur.res), d == null ? '—' : (d >= 0 ? '+' : '-') + brlS(Math.abs(d)).replace('-', ''), x.orc && x.orc.ebitda ? pct(x.cur.ebitda / x.orc.ebitda) : '—'] });
+        };
+        opsVisiveis.forEach(op => { const cur = realizado([op], U.ano, U.mes); if (cur) mk(OP_NOME[op] || op, { cur, base: baseDe(U.modo, [op], U.ano, U.mes), orc: orcado([op], U.ano, U.mes) }); });
+        const tot = realizado(opsVisiveis, U.ano, U.mes); if (linhas.length > 1 && tot) mk('Total', { cur: tot, base: baseDe(U.modo, opsVisiveis, U.ano, U.mes), orc: orcado(opsVisiveis, U.ano, U.mes) }, 'T');
+        blocos.push({ tipo: 'tabela', opcao: 'ops', titulo: 'Por operação - ' + MESES[U.mes - 1] + ' / ' + U.ano,
+          colunas: [{ h: 'Operação', larg: 1.7 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem contrib. %', al: 'right', larg: 1.1 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'Var. EBITDA vs base', al: 'right', larg: 1.3 }, { h: 'EBITDA x orçado', al: 'right', larg: 1.1 }], linhas });
+      }
+      // Série mensal (os 12 meses do gráfico, em números)
+      const serie = [];
+      for (let i = 11; i >= 0; i--) {
+        const p = addM(U.ano, U.mes, -i), s = realizado(U.ops, p.ano, p.mes), o = orcado(U.ops, p.ano, p.mes);
+        if (!s) continue;
+        const cor = {}; if (s.ebitda < 0) cor[3] = RUIM; if (s.res < 0) cor[5] = RUIM;
+        serie.push({ k: i === 0 ? 'R' : '', cor, c: [MES_CURTO[p.mes - 1] + '/' + p.ano, brlS(s.rb), brlS(s.mc), brlS(s.ebitda), pct(s.ebitdaPct), brlS(s.res), o ? brlS(o.ebitda) : '—'] });
+      }
+      blocos.push({ tipo: 'tabela', opcao: 'serie', titulo: 'Série mensal - últimos 12 meses (' + nomeOps + ')',
+        colunas: [{ h: 'Mês', larg: 1 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem de contribuição', al: 'right', larg: 1.4 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'EBITDA orçado', al: 'right', larg: 1.2 }], linhas: serie });
+      const notas = (U.msgs || []).join(' ');
+      blocos.push({ tipo: 'nota', opcao: 'notas', texto: (notas ? 'Avisos da tela: ' + notas + ' ' : '') +
+        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Orçado" aparece quando há orçamento lançado para o mês e a operação.' });
+      const ctx = itens.map(it => '- ' + it.l + ': ' + it.v + ' | ' + it.linhas.map(l => l.t).join(' | ')).join('\n');
+      return { blocos, subtitulo: MESES[U.mes - 1] + ' / ' + U.ano + '  -  ' + nomeOps, contextoIA: ctx };
     }
 
     async function carregar() {
@@ -497,6 +571,18 @@
       const prof = (rows && rows[0]) || null;
       if (!prof || !(prof.is_admin || prof.can_dre !== false)) return window.location.replace('/');
       SafiSidebar.apply('co', prof, { email: data.session.user.email, sb });
+      SafiPdf.iniciar({ chave: 'conselho', titulo: 'Painel do Conselho', sb, profile: prof, accent: '#38bdf8',
+        opcoes: [
+          { id: 'kpis', label: 'Indicadores (Faturamento, MC, EBITDA, resultado…)' },
+          { id: 'graficos', label: 'Gráficos (evolução de 12 meses e ponte do EBITDA)' },
+          { id: 'ops', label: 'Tabela por operação', dica: 'Só existe quando o filtro é "Todas as operações".' },
+          { id: 'serie', label: 'Série mensal em tabela (12 meses)' },
+          { id: 'notas', label: 'Notas e definições' },
+          { id: 'ia', label: 'Resumo executivo do GerônIA', padrao: false, dica: 'Texto gerado por IA a partir dos números da tela.' },
+        ],
+        filtros: pdfFiltros,
+        nomeArquivo: () => 'SAFI-Painel-do-Conselho-' + (ULTIMO ? ULTIMO.ano + '-' + String(ULTIMO.mes).padStart(2, '0') + '-' + (ULTIMO.opSel === 'todas' ? 'Todas' : OP_NOME[ULTIMO.opSel].replace(/\s+/g, '')) : 'geral'),
+        coletar: pdfColetar });
       try { await carregar(); }
       catch (err) { g('co-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
       if (!dados.length) { g('co-loading').textContent = 'Sem dados de DRE disponíveis para o seu acesso.'; return; }

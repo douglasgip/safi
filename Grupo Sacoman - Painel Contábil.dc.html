@@ -21,6 +21,8 @@
 </script>
 <script src="/user-menu.js"></script>
 <script src="/sidebar.js"></script>
+<script src="/pdf.js"></script>
+<script src="/pdf-dc.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -1574,6 +1576,7 @@ class Component extends DCLogic {
       this._userProfile = prof;
       window._userProfile = prof;
       if(window.SafiSidebar) SafiSidebar.apply('dc', prof, { email: userEmail, sb: window._sbClient });
+      window.__dcApp = this; if(window.SafiPdfDC) SafiPdfDC.iniciar(this, prof, window._sbClient);
       emps.forEach(e => this._empMap[e.id] = e);
       resumo.forEach(r => {
         if(!this._resumoMap[r.empresa_id]) this._resumoMap[r.empresa_id] = {};
