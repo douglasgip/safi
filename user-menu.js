@@ -109,28 +109,6 @@ function wireSidebarToggle(prefix) {
   backdrop.addEventListener('click', close);
 }
 
-// Recolhe/expande o submenu de Lançamentos sob DRE na sidebar — preferência
-// lembrada entre telas via localStorage.
-function wireDreCollapseToggle(prefix) {
-  var KEY = 'sidebar-lancamentos-collapsed';
-  var btn = document.getElementById(prefix + '-sidebar-dre-toggle');
-  var sub = document.getElementById(prefix + '-sidebar-dre-submenu');
-  if (!btn || !sub) return;
-  var collapsed = localStorage.getItem(KEY) === '1';
-  function apply() {
-    sub.classList.toggle('collapsed', collapsed);
-    btn.classList.toggle('collapsed', collapsed);
-    btn.setAttribute('aria-expanded', String(!collapsed));
-  }
-  apply();
-  btn.addEventListener('click', function(e) {
-    e.preventDefault();
-    collapsed = !collapsed;
-    localStorage.setItem(KEY, collapsed ? '1' : '0');
-    apply();
-  });
-}
-
 (function(){
   var STYLE_ID = 'usermenu-styles';
   function ensureStyles(){

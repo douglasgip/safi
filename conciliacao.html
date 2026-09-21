@@ -16,6 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -138,75 +139,7 @@
   <div class="grid-overlay"></div>
 
   <div class="dc-sidebar-backdrop" id="con-sidebar-backdrop"></div>
-  <aside class="dc-sidebar" id="con-sidebar">
-    <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,0.07)">
-      <div id="con-sidebar-user" style="display:flex;align-items:center;gap:12px;margin-bottom:4px"></div>
-      <div style="font-size:9px;font-weight:600;color:#334155;letter-spacing:2px;text-transform:uppercase;margin-top:12px">Navegação</div>
-    </div>
-    <div style="padding:12px 12px;flex:1;display:flex;flex-direction:column;gap:4px">
-      <a href="/" class="dc-sidebar-nav-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Home
-      </a>
-      <a href="/resumocontabil" id="con-sidebar-resumo" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-        Resumo Contábil
-      </a>
-      <div id="con-sidebar-dre" class="dc-sidebar-group-row" style="display:none">
-        <a href="/dre" class="dc-sidebar-nav-btn" style="flex:1">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          DRE
-        </a>
-        <button type="button" id="con-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-        </button>
-      </div>
-      <div class="dc-sidebar-submenu" id="con-sidebar-dre-submenu">
-        <a href="/lancamentos" id="con-sidebar-lancamentos" class="dc-sidebar-nav-btn dc-sidebar-sub-btn" style="display:none">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="12" y2="16"/></svg>
-          Lançamentos
-        </a>
-      </div>
-      <a href="/fluxo-caixa" id="con-sidebar-fluxocaixa" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
-        Fluxo de Caixa
-      </a>
-      <a href="/geronia" class="dc-sidebar-nav-btn">
-        <img src="/public/GerônIA.png" alt="GerônIA" style="width:18px;height:18px;border-radius:50%;object-fit:cover;flex-shrink:0">
-        GerônIA
-      </a>
-      <a href="/mapa-societario" id="con-sidebar-mapasoc" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="7" height="10" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><path d="M10 16h4M17 10v4"/></svg>
-        Mapa Societário
-      </a>
-      <a href="/funcionarios" id="con-sidebar-funcionarios" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Funcionários
-      </a>
-      <a href="/pedidos" id="con-sidebar-pedidos" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-        Pedidos
-      </a>
-      <a href="/despesas-fixas" id="con-sidebar-despfixas" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/></svg>
-        Despesas Fixas
-      </a>
-      <a href="/conciliacao" class="dc-sidebar-nav-btn active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-        Conciliação
-      </a>
-      <a href="/calculadora-importacao" id="con-sidebar-calcimport" class="dc-sidebar-nav-btn" style="display:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><line x1="6" y1="11" x2="6" y2="11.01"/><line x1="18" y1="11" x2="18" y2="11.01"/></svg>
-        Calculadora de Importação
-      </a>
-    </div>
-    <div style="padding:12px 12px 28px;border-top:1px solid rgba(255,255,255,0.07)">
-      <a href="/admin" id="con-sidebar-admin" style="display:none;align-items:center;gap:12px;padding:13px 20px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);border-radius:10px;color:#f59e0b;font-family:Inter,sans-serif;font-size:14px;font-weight:600;text-decoration:none">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
-        Admin
-      </a>
-    </div>
-  </aside>
+  <aside class="dc-sidebar" id="con-sidebar"></aside>
 
   <header class="header">
     <div class="header-brand">
@@ -376,8 +309,8 @@
     let despAno = REAL_MES === 1 ? REAL_ANO - 1 : REAL_ANO;
 
     // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
+    SafiSidebar.mount('con', { active: 'conciliacao', accent: { g1: '#22d3ee', g2: '#0891b2', text: '#042f2e' } });
     wireSidebarToggle('con');
-    wireDreCollapseToggle('con');
 
     function populateEmpresaFilters() {
       document.getElementById('f-empresa').innerHTML = '<option value="">Todas as empresas</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
@@ -587,50 +520,7 @@
       document.getElementById('no-company-notice').style.display = (podeConciliarPedidos && !allowedCompanies.length) ? 'block' : 'none';
       document.getElementById('desp-no-company-notice').style.display = (podeConciliarDespesas && !allowedCompaniesDesp.length) ? 'block' : 'none';
 
-      if (prof.is_admin) {
-        const a = document.getElementById('con-sidebar-admin'); if (a) a.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_resumo !== false) {
-        const s = document.getElementById('con-sidebar-resumo'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_dre !== false) {
-        const s = document.getElementById('con-sidebar-dre'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_mapa_societario === true) {
-        const s = document.getElementById('con-sidebar-mapasoc'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_funcionarios === true) {
-        const s = document.getElementById('con-sidebar-funcionarios'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_pedidos === true) {
-        const s = document.getElementById('con-sidebar-pedidos'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_despesas_fixas === true) {
-        const s = document.getElementById('con-sidebar-despfixas'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_calc_importacao === true) {
-        const s = document.getElementById('con-sidebar-calcimport'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_fluxo_caixa === true) {
-        const s = document.getElementById('con-sidebar-fluxocaixa'); if (s) s.style.display = 'flex';
-      }
-      if (prof.is_admin || prof.can_lancamentos === true) {
-        const s = document.getElementById('con-sidebar-lancamentos'); if (s) s.style.display = 'flex';
-        const t = document.getElementById('con-sidebar-dre-toggle'); if (t) t.style.display = 'flex';
-      }
-
-      const name = (prof.full_name || data.session.user.email.split('@')[0] || 'Usuário').trim();
-      const parts = name.split(/\s+/);
-      const initials = parts.length >= 2 ? (parts[0][0]+parts[parts.length-1][0]).toUpperCase() : name.slice(0,2).toUpperCase();
-      const sidebarUserEl = document.getElementById('con-sidebar-user');
-      if (sidebarUserEl) {
-        sidebarUserEl.innerHTML = '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#22d3ee,#0891b2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#042f2e;flex-shrink:0">'+initials+'</div>'
-          +'<div style="display:flex;flex-direction:column;gap:1px;min-width:0">'
-          +'<div style="font-size:12px;font-weight:700;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px">'+esc(name)+'</div>'
-          +(prof.role ? '<div style="font-size:9px;font-weight:600;color:#64748b;white-space:nowrap">'+(prof.is_admin?'&#9670; ':'')+esc(prof.role)+'</div>' : '')
-          +'</div>';
-        if (window.UserMenu) window.UserMenu.attach(sidebarUserEl, sb);
-      }
+      SafiSidebar.apply('con', prof, { email: data.session.user.email, sb });
 
       document.getElementById('con-loading').style.display = 'none';
       document.getElementById('con-main').style.display = 'block';
