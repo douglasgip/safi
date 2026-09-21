@@ -253,6 +253,7 @@
         <input type="file" id="import-file-input" accept=".xlsx,.xls" style="display:none" onchange="handleImportFile(event)">
         <button class="btn-save" id="btn-save-valores" onclick="saveValores()">Salvar Lançamentos</button>
       </div>
+      <div id="lock-banner" style="display:none;margin-bottom:14px;padding:12px 16px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:12px;color:#6ee7b7;font-size:12.5px;line-height:1.5"></div>
       <div id="entry-tree"></div>
     </div>
 
@@ -508,6 +509,23 @@
       sel.innerHTML = allowedEmpresas.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
     }
 
+    // Mês travado (Fechamento do Mês) — a RLS do banco já bloqueia a gravação; aqui só
+    // avisamos e travamos a tela pra ninguém digitar à toa e perder o trabalho.
+    let mesTravado = false;
+    const operacaoDeEmpresa = e => (e === 'EP' || e === 'GIP') ? 'GIP' : e;
+    const MSG_TRAVADO = 'Este mês está travado para esta operação — a edição está bloqueada. Peça a quem fecha o mês (Douglas, Aldemar ou Guilherme) para destravar, se precisar corrigir algo.';
+    function msgErroGravacao(error) {
+      return /row-level security/i.test(error.message || '') ? 'Não foi possível salvar: algum mês está travado para esta operação (ou você não tem permissão). Peça a quem fecha o mês para destravar.' : error.message;
+    }
+    function aplicarTravaMes() {
+      const banner = document.getElementById('lock-banner');
+      banner.style.display = mesTravado ? 'block' : 'none';
+      if (mesTravado) banner.textContent = '🔒 ' + MSG_TRAVADO;
+      document.querySelectorAll('.subcampo-input').forEach(i => { i.disabled = mesTravado; });
+      const btn = document.getElementById('btn-save-valores');
+      if (btn) { btn.disabled = mesTravado; btn.style.opacity = mesTravado ? '0.45' : ''; btn.style.cursor = mesTravado ? 'not-allowed' : ''; }
+    }
+
     async function loadEntryValues() {
       const empresa = document.getElementById('f-empresa').value;
       const mes = parseInt(document.getElementById('f-mes').value);
@@ -516,7 +534,10 @@
       const { data, error } = await sb.from('lancamentos_valores').select('subcampo_id,valor').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes);
       valoresAtuais = {};
       if (!error) (data||[]).forEach(v => { valoresAtuais[v.subcampo_id] = +v.valor||0; });
+      const { data: fech } = await sb.from('fechamentos').select('status').eq('operacao', operacaoDeEmpresa(empresa)).eq('ano', ano).eq('mes', mes).maybeSingle();
+      mesTravado = !!fech && fech.status === 'travado';
       renderEntryTree();
+      aplicarTravaMes();
     }
 
     function renderEntryTree() {
@@ -764,7 +785,7 @@
       btn.disabled = false; btn.textContent = 'Confirmar importação';
       if (error) {
         const el = document.getElementById('import-modal-error');
-        el.textContent = error.message; el.className = 'modal-error visible';
+        el.textContent = msgErroGravacao(error); el.className = 'modal-error visible';
         return;
       }
       closeImportModal();
@@ -777,6 +798,7 @@
       const mes = parseInt(document.getElementById('f-mes').value);
       const ano = parseInt(document.getElementById('f-ano').value);
       if (!empresa) return;
+      if (mesTravado) { showToast(MSG_TRAVADO, 'red'); return; }
       const btn = document.getElementById('btn-save-valores');
       btn.disabled = true; btn.textContent = 'Salvando...';
 
@@ -788,7 +810,7 @@
       });
       const { error } = await sb.from('lancamentos_valores').upsert(rows, { onConflict: 'subcampo_id,empresa_id,ano,mes' });
       btn.disabled = false; btn.textContent = 'Salvar Lançamentos';
-      if (error) showToast(error.message, 'red');
+      if (error) showToast(msgErroGravacao(error), 'red');
       else showToast('Lançamentos salvos — o DRE já foi atualizado', 'green');
     }
 

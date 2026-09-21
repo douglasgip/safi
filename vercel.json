@@ -14,7 +14,8 @@
     { "source": "/pedidos", "destination": "/pedidos.html" },
     { "source": "/despesas-fixas", "destination": "/despesas-fixas.html" },
     { "source": "/conciliacao", "destination": "/conciliacao.html" },
-    { "source": "/calculadora-importacao", "destination": "/calculadora-importacao.html" }
+    { "source": "/calculadora-importacao", "destination": "/calculadora-importacao.html" },
+    { "source": "/fechamento", "destination": "/fechamento.html" }
   ],
   "headers": [
     {

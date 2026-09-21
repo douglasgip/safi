@@ -324,21 +324,9 @@
         </a>
       </div>
 
-      <div class="dash-section" id="section-contabil" style="display:none">
-        <div class="section-label"><span class="section-label-bar"></span>Contábil</div>
+      <div class="dash-section" id="section-financeiro" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Financeiro</div>
         <div class="dash-grid">
-
-          <a href="/resumocontabil" id="card-resumo" class="dash-card theme-amber" style="display:none">
-            <div class="dash-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
-            </div>
-            <div class="dash-card-title">Resumo Contábil</div>
-            <div class="dash-card-desc">Visão geral das entradas, saídas e resultado por empresa e competência.</div>
-            <div class="dash-card-arrow">
-              Acessar
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </div>
-          </a>
 
           <a href="/dre" id="card-dre" class="dash-card theme-indigo" style="display:none">
             <div class="dash-card-icon">
@@ -364,19 +352,12 @@
             </div>
           </a>
 
-        </div>
-      </div>
-
-      <div class="dash-section" id="section-operacoes" style="display:none">
-        <div class="section-label"><span class="section-label-bar"></span>Operações</div>
-        <div class="dash-grid">
-
-          <a href="/pedidos" id="card-pedidos" class="dash-card theme-amber" style="display:none">
+          <a href="/fluxo-caixa" id="card-fluxocaixa" class="dash-card theme-green" style="display:none">
             <div class="dash-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
             </div>
-            <div class="dash-card-title">Pedidos</div>
-            <div class="dash-card-desc">Pedidos feitos às lojas, condições de pagamento e chegada de mercadoria.</div>
+            <div class="dash-card-title">Fluxo de Caixa</div>
+            <div class="dash-card-desc">Movimentação de caixa, ativos e passivos do grupo.</div>
             <div class="dash-card-arrow">
               Acessar
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -395,24 +376,62 @@
             </div>
           </a>
 
-          <a href="/conciliacao" id="card-conciliacao" class="dash-card theme-cyan" style="display:none">
+        </div>
+      </div>
+
+      <div class="dash-section" id="section-contabil" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Contábil</div>
+        <div class="dash-grid">
+
+          <a href="/resumocontabil" id="card-resumo" class="dash-card theme-amber" style="display:none">
             <div class="dash-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             </div>
-            <div class="dash-card-title">Conciliação</div>
-            <div class="dash-card-desc">Compara o valor previsto dos pedidos com o valor real conferido — identifica divergências.</div>
+            <div class="dash-card-title">Resumo Contábil</div>
+            <div class="dash-card-desc">Visão geral das entradas, saídas e resultado por empresa e competência.</div>
             <div class="dash-card-arrow">
               Acessar
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
             </div>
           </a>
 
-          <a href="/fluxo-caixa" id="card-fluxocaixa" class="dash-card theme-green" style="display:none">
+          <a href="/fechamento" id="card-fechamento" class="dash-card theme-cyan" style="display:none">
             <div class="dash-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/></svg>
             </div>
-            <div class="dash-card-title">Fluxo de Caixa</div>
-            <div class="dash-card-desc">Movimentação de caixa, ativos e passivos do grupo.</div>
+            <div class="dash-card-title">Fechamento do Mês</div>
+            <div class="dash-card-desc">Aprove e trave cada mês por operação, veja as conferências automáticas e a trilha de quem alterou o quê.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+        </div>
+      </div>
+
+      <div class="dash-section" id="section-compras" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Compras</div>
+        <div class="dash-grid">
+
+          <a href="/pedidos" id="card-pedidos" class="dash-card theme-amber" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+            </div>
+            <div class="dash-card-title">Pedidos</div>
+            <div class="dash-card-desc">Pedidos feitos às lojas, condições de pagamento e chegada de mercadoria.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+          <a href="/conciliacao" id="card-conciliacao" class="dash-card theme-cyan" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            </div>
+            <div class="dash-card-title">Conciliação</div>
+            <div class="dash-card-desc">Compara o valor previsto dos pedidos com o valor real conferido — identifica divergências.</div>
             <div class="dash-card-arrow">
               Acessar
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -434,6 +453,25 @@
         </div>
       </div>
 
+      <div class="dash-section" id="section-pessoal" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Pessoal</div>
+        <div class="dash-grid">
+
+          <a href="/funcionarios" id="card-funcionarios" class="dash-card theme-purple" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="dash-card-title">Funcionários</div>
+            <div class="dash-card-desc">Cadastro de colaboradores do grupo — dados pessoais e tempo de casa por empresa.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+        </div>
+      </div>
+
       <div class="dash-section" id="section-gestao" style="display:none">
         <div class="section-label"><span class="section-label-bar"></span>Gestão</div>
         <div class="dash-grid">
@@ -444,18 +482,6 @@
             </div>
             <div class="dash-card-title">Mapa Societário</div>
             <div class="dash-card-desc">Estrutura societária das empresas do grupo — CNPJs, sócios e participação.</div>
-            <div class="dash-card-arrow">
-              Acessar
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-            </div>
-          </a>
-
-          <a href="/funcionarios" id="card-funcionarios" class="dash-card theme-purple" style="display:none">
-            <div class="dash-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-            </div>
-            <div class="dash-card-title">Funcionários</div>
-            <div class="dash-card-desc">Cadastro de colaboradores do grupo — dados pessoais e tempo de casa por empresa.</div>
             <div class="dash-card-arrow">
               Acessar
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -522,6 +548,8 @@
       if (showConciliacao) {
         const c=document.getElementById('card-conciliacao'); if(c) c.style.display='';
       }
+      const showFechamento = !!prof && (prof.is_admin || prof.can_fechar_mes === true);
+      if (showFechamento) { const c=document.getElementById('card-fechamento'); if(c) c.style.display=''; }
       const showCalcImport = !!prof && (prof.is_admin || prof.can_calc_importacao === true);
       if (showCalcImport) {
         const c=document.getElementById('card-calcimport'); if(c) c.style.display='';
@@ -543,11 +571,13 @@
       }
 
       // Cada seção só aparece se tiver pelo menos um card liberado dentro dela — evita
-      // um rótulo de seção "Contábil"/"Operações"/"Gestão" flutuando sem nada embaixo.
+      // um rótulo de setor flutuando sem nada embaixo (mesmos setores da barra lateral).
       [
-        ['section-contabil', ['card-resumo','card-dre','card-lancamentos']],
-        ['section-operacoes', ['card-pedidos','card-despfixas','card-conciliacao','card-fluxocaixa','card-calcimport']],
-        ['section-gestao', ['card-mapasoc','card-funcionarios']],
+        ['section-financeiro', ['card-dre','card-lancamentos','card-fluxocaixa','card-despfixas']],
+        ['section-contabil', ['card-resumo','card-fechamento']],
+        ['section-compras', ['card-pedidos','card-conciliacao','card-calcimport']],
+        ['section-pessoal', ['card-funcionarios']],
+        ['section-gestao', ['card-mapasoc']],
       ].forEach(([sectionId, cardIds]) => {
         const anyVisible = cardIds.some(id => { const el = document.getElementById(id); return el && el.style.display !== 'none'; });
         const sec = document.getElementById(sectionId);

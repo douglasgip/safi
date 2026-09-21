@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Fechamento do Mês</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+
+    .bg { position: fixed; inset: 0; z-index: 0; background:
+        radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #38bdf8; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #fe-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #fe-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #7dd3fc; }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .fe-select:focus { outline: none; border-color: #38bdf8; }
+    select option { background: #0f172a; color: #f1f5f9; }
+
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .tab .badge-n { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px; border-radius: 9px; background: rgba(251,191,36,0.18); color: #fbbf24; font-size: 10.5px; font-weight: 800; }
+
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
+
+    .op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+    .op-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 14px; }
+    .op-card.travado { border-color: rgba(52,211,153,0.35); }
+    .op-card.aprovado { border-color: rgba(251,191,36,0.35); }
+    .op-head { display: flex; align-items: center; gap: 12px; }
+    .op-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+    .op-name { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .op-period { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; align-self: flex-start; }
+    .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .st-aberto { background: rgba(148,163,184,0.14); color: #cbd5e1; } .st-aberto .dot { background: #94a3b8; }
+    .st-aprovado { background: rgba(251,191,36,0.14); color: #fcd34d; } .st-aprovado .dot { background: #fbbf24; }
+    .st-travado { background: rgba(52,211,153,0.14); color: #6ee7b7; } .st-travado .dot { background: #34d399; }
+    .op-meta { font-size: 11.5px; color: #64748b; line-height: 1.5; min-height: 34px; }
+    .op-alertas { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 10px; }
+    .op-alertas.ok { background: rgba(52,211,153,0.1); color: #6ee7b7; }
+    .op-alertas.warn { background: rgba(251,191,36,0.1); color: #fcd34d; cursor: pointer; }
+    .op-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+
+    .btn-primary { flex: 1; padding: 11px 14px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
+    .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+
+    .matrix-scroll { overflow-x: auto; }
+    .matrix { border-collapse: separate; border-spacing: 6px; min-width: 640px; }
+    .matrix th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; padding: 4px 6px; text-align: center; }
+    .matrix th.row-h { text-align: left; color: #cbd5e1; font-size: 12px; text-transform: none; letter-spacing: 0; white-space: nowrap; padding-right: 12px; }
+    .mx-cell { width: 44px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; font-size: 10px; font-weight: 800; color: #475569; }
+    .mx-cell.aprovado { background: rgba(251,191,36,0.18); border-color: rgba(251,191,36,0.4); color: #fcd34d; }
+    .mx-cell.travado { background: rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.4); color: #6ee7b7; }
+    .mx-cell.sel { outline: 2px solid #38bdf8; outline-offset: 1px; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: #64748b; }
+    .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .legend .l-aberto::before { background: rgba(255,255,255,0.12); } .legend .l-aprovado::before { background: #fbbf24; } .legend .l-travado::before { background: #34d399; }
+
+    .chk-list { display: flex; flex-direction: column; gap: 8px; }
+    .chk { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    .chk-sev { flex-shrink: 0; margin-top: 2px; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+    .sev-alerta { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .sev-info { background: rgba(56,189,248,0.14); color: #7dd3fc; }
+    .chk-body { min-width: 0; flex: 1; }
+    .chk-msg { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+    .chk-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .chk-op { font-size: 11px; font-weight: 800; color: #94a3b8; white-space: nowrap; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 460px; }
+    table.tbl { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tbl thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 11px 12px; font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    .tbl td { padding: 10px 12px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tbl .muted { color: #64748b; }
+    .delta-pos { color: #4ade80; } .delta-neg { color: #f87171; }
+    .acao { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; }
+    .acao.INSERT { background: rgba(52,211,153,0.14); color: #6ee7b7; } .acao.UPDATE { background: rgba(56,189,248,0.14); color: #7dd3fc; } .acao.DELETE { background: rgba(248,113,113,0.14); color: #fca5a5; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
+    .modal-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
+    .modal-error.visible { display: block; }
+    .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
+    .field textarea { width: 100%; min-height: 84px; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; resize: vertical; color-scheme: dark; }
+    .field textarea:focus { outline: none; border-color: #38bdf8; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+    #fe-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 900px) { .op-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 16px; } .tabs { max-width: none; } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="fe-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="fe-sidebar"></aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="fe-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Fechamento do Mês</div>
+    </div>
+  </header>
+
+  <div id="fe-loading">Carregando…</div>
+
+  <main class="main" id="fe-main" style="display:none">
+    <div class="fe-toolbar">
+      <div>
+        <h1>Fechamento do Mês</h1>
+        <div class="fe-toolbar-sub">Aprove e trave cada mês por operação. Mês travado não aceita edição de Lançamentos; tudo fica registrado em log.</div>
+      </div>
+      <select class="fe-select" id="sel-periodo" aria-label="Mês de referência"></select>
+    </div>
+
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="fechamento">Fechamento</button>
+      <button class="tab" data-tab="conferencias">Conferências<span class="badge-n" id="badge-conf" style="display:none"></span></button>
+      <button class="tab" data-tab="historico">Histórico</button>
+    </div>
+
+    <!-- ── Aba: Fechamento ── -->
+    <section id="tab-fechamento">
+      <div class="op-grid" id="op-grid"></div>
+      <div class="panel">
+        <div class="panel-head">Últimos 12 meses — clique num mês para abrir</div>
+        <div class="matrix-scroll"><table class="matrix" id="matrix"></table></div>
+        <div class="legend"><span class="l-aberto">Aberto</span><span class="l-aprovado">Aprovado (ainda editável)</span><span class="l-travado">Travado (bloqueado para edição)</span></div>
+      </div>
+    </section>
+
+    <!-- ── Aba: Conferências ── -->
+    <section id="tab-conferencias" style="display:none">
+      <div class="panel">
+        <div class="panel-head">Conferências automáticas — <span id="conf-periodo"></span></div>
+        <div class="chk-list" id="chk-list"><div class="empty">Carregando…</div></div>
+      </div>
+    </section>
+
+    <!-- ── Aba: Histórico ── -->
+    <section id="tab-historico" style="display:none">
+      <div class="panel">
+        <div class="panel-head">Fechamentos, travas e destravas (mais recentes)</div>
+        <div class="table-scroll" style="max-height:300px"><table class="tbl" id="tbl-log"></table></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">Alterações nos Lançamentos — <span id="hist-periodo"></span></div>
+        <div class="filters">
+          <select class="fe-select" id="hist-op"><option value="">Todas as operações</option><option value="GIP">GIP Ecommerce</option><option value="Exposicao">Exposição Paulista</option><option value="ViaCloset">Via Closet</option></select>
+        </div>
+        <div class="table-scroll"><table class="tbl" id="tbl-trilha"></table></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="status-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="sm-title">—</div>
+      <div class="modal-sub" id="sm-sub"></div>
+      <div class="modal-warn" id="sm-warn" style="display:none"></div>
+      <div class="modal-error" id="sm-error"></div>
+      <div class="field">
+        <label id="sm-label">Motivo</label>
+        <textarea id="sm-motivo" placeholder="Explique o motivo — fica registrado no log e pode ser auditado"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="sm-confirm">Confirmar</button>
+        <button class="btn-cancel" onclick="closeStatusModal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    SafiSidebar.mount('fe', { active: 'fechamento', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('fe');
+
+    const OPS = [
+      { id: 'GIP',       nome: 'GIP Ecommerce',      logo: '/public/gipecommerce_logo.png' },
+      { id: 'Exposicao', nome: 'Exposição Paulista', logo: '/public/exposicaopaulista_logo.png' },
+      { id: 'ViaCloset', nome: 'Via Closet',         logo: '/public/viacloset_logo.png' },
+    ];
+    const OP_NOME = Object.fromEntries(OPS.map(o => [o.id, o.nome]));
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const STATUS_LABEL = { aberto: 'Aberto', aprovado: 'Aprovado', travado: 'Travado' };
+
+    const g = id => document.getElementById(id);
+    function fmtBRL(v) { return v == null ? '—' : 'R$ ' + (+v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function fmtDateTime(iso) { return iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'; }
+
+    let fechamentos = {};      // "op|ano|mes" -> row
+    let alertas = [];          // resultado de auditoria_checagens do mês selecionado
+    let sel = { ano: 0, mes: 0 };
+    let podeFechar = false;
+
+    const key = (op, a, m) => op + '|' + a + '|' + m;
+    const statusDe = (op, a, m) => (fechamentos[key(op, a, m)] || {}).status || 'aberto';
+
+    // ── período ──
+    function buildPeriodOptions() {
+      const hoje = new Date();
+      const opts = [];
+      for (let i = 0; i < 24; i++) {
+        const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        opts.push({ ano: d.getFullYear(), mes: d.getMonth() + 1 });
+      }
+      g('sel-periodo').innerHTML = opts.map(o => `<option value="${o.ano}-${o.mes}">${MESES[o.mes - 1]} / ${o.ano}</option>`).join('');
+      const prev = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+      sel = { ano: prev.getFullYear(), mes: prev.getMonth() + 1 };
+      g('sel-periodo').value = sel.ano + '-' + sel.mes;
+    }
+    g('sel-periodo').addEventListener('change', e => {
+      const [a, m] = e.target.value.split('-').map(Number);
+      selecionarMes(a, m);
+    });
+    function selecionarMes(a, m) {
+      sel = { ano: a, mes: m };
+      g('sel-periodo').value = a + '-' + m;
+      carregarTudo();
+    }
+
+    // ── dados ──
+    async function carregarFechamentos() {
+      const { data, error } = await sb.from('fechamentos').select('*');
+      if (error) { showToast('Erro ao carregar fechamentos: ' + error.message, 'red'); return; }
+      fechamentos = {};
+      (data || []).forEach(r => { fechamentos[key(r.operacao, r.ano, r.mes)] = r; });
+    }
+    async function carregarAlertas() {
+      const { data, error } = await sb.rpc('auditoria_checagens', { p_ano: sel.ano, p_mes: sel.mes });
+      if (error) { alertas = []; g('chk-list').innerHTML = `<div class="empty">Erro ao carregar conferências: ${esc(error.message)}</div>`; return false; }
+      alertas = data || [];
+      return true;
+    }
+    async function carregarTudo() {
+      g('conf-periodo').textContent = MESES[sel.mes - 1] + ' / ' + sel.ano;
+      g('hist-periodo').textContent = MESES[sel.mes - 1] + ' / ' + sel.ano;
+      await Promise.all([carregarFechamentos(), carregarAlertas()]);
+      renderCards(); renderMatrix(); renderConferencias();
+      carregarHistorico();
+    }
+
+    // ── render: cards por operação ──
+    function alertasDa(op) { return alertas.filter(a => a.operacao === op && a.severidade === 'alerta'); }
+
+    function renderCards() {
+      g('op-grid').innerHTML = OPS.map(o => {
+        const f = fechamentos[key(o.id, sel.ano, sel.mes)];
+        const st = (f && f.status) || 'aberto';
+        const nAl = alertasDa(o.id).length;
+        const meta = f && f.updated_at ? `Última alteração em ${fmtDateTime(f.updated_at)}` : 'Ainda não foi aprovado nem travado.';
+        let acoes = '';
+        if (podeFechar) {
+          if (st === 'aberto') acoes = `<button class="btn-primary" data-act="aprovado" data-op="${o.id}">Aprovar mês</button>`;
+          if (st === 'aprovado') acoes = `<button class="btn-primary" data-act="travado" data-op="${o.id}">Travar mês</button><button class="btn-ghost" data-act="aberto" data-op="${o.id}">Reabrir</button>`;
+          if (st === 'travado') acoes = `<button class="btn-ghost" style="flex:1" data-act="aberto" data-op="${o.id}">Destravar</button>`;
+        }
+        return `<div class="op-card ${st}">
+          <div class="op-head"><img class="op-logo" src="${o.logo}" alt=""><div><div class="op-name">${esc(o.nome)}</div><div class="op-period">${MESES[sel.mes - 1]} / ${sel.ano}</div></div></div>
+          <span class="status-badge st-${st}"><span class="dot"></span>${STATUS_LABEL[st]}</span>
+          <div class="op-meta">${esc(meta)}</div>
+          <div class="op-alertas ${nAl ? 'warn' : 'ok'}" ${nAl ? 'data-goto-conf="1"' : ''}>${nAl ? nAl + ' conferência' + (nAl > 1 ? 's' : '') + ' com alerta — ver detalhes' : 'Nenhum alerta nas conferências'}</div>
+          <div class="op-actions">${acoes}</div>
+        </div>`;
+      }).join('');
+      g('op-grid').querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', () => abrirStatusModal(b.dataset.op, b.dataset.act)));
+      g('op-grid').querySelectorAll('[data-goto-conf]').forEach(b => b.addEventListener('click', () => setTab('conferencias')));
+      const total = alertas.filter(a => a.severidade === 'alerta').length;
+      const badge = g('badge-conf');
+      badge.style.display = total ? 'inline-block' : 'none'; badge.textContent = total;
+    }
+
+    function renderMatrix() {
+      const hoje = new Date();
+      const meses = [];
+      for (let i = 11; i >= 0; i--) { const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1); meses.push({ ano: d.getFullYear(), mes: d.getMonth() + 1 }); }
+      g('matrix').innerHTML =
+        '<thead><tr><th></th>' + meses.map(m => `<th>${MES_CURTO[m.mes - 1]}<br><span style="font-weight:500;opacity:.7">${String(m.ano).slice(2)}</span></th>`).join('') + '</tr></thead><tbody>' +
+        OPS.map(o => `<tr><th class="row-h">${esc(o.nome)}</th>` + meses.map(m => {
+          const st = statusDe(o.id, m.ano, m.mes);
+          const isSel = m.ano === sel.ano && m.mes === sel.mes;
+          return `<td><button class="mx-cell ${st} ${isSel ? 'sel' : ''}" data-a="${m.ano}" data-m="${m.mes}" title="${STATUS_LABEL[st]}">${st === 'travado' ? '🔒' : st === 'aprovado' ? '✓' : ''}</button></td>`;
+        }).join('') + '</tr>').join('') + '</tbody>';
+      g('matrix').querySelectorAll('.mx-cell').forEach(b => b.addEventListener('click', () => selecionarMes(+b.dataset.a, +b.dataset.m)));
+    }
+
+    function renderConferencias() {
+      const box = g('chk-list');
+      if (!alertas.length) { box.innerHTML = '<div class="empty">✓ Nenhuma pendência encontrada neste mês.</div>'; return; }
+      const ordem = { alerta: 0, info: 1 };
+      box.innerHTML = alertas.slice().sort((a, b) => (ordem[a.severidade] ?? 2) - (ordem[b.severidade] ?? 2)).map(a => {
+        const vals = (a.valor_a != null || a.valor_b != null) ? `<div class="chk-meta">${a.valor_a != null ? fmtBRL(a.valor_a) : ''}${a.valor_b != null ? ' × ' + fmtBRL(a.valor_b) : ''}</div>` : '';
+        return `<div class="chk"><span class="chk-sev sev-${esc(a.severidade)}">${esc(a.severidade)}</span>
+          <div class="chk-body"><div class="chk-msg">${esc(a.mensagem)}</div>${vals}</div>
+          <span class="chk-op">${esc(OP_NOME[a.operacao] || a.operacao || '')}</span></div>`;
+      }).join('');
+    }
+
+    // ── histórico ──
+    async function carregarHistorico() {
+      const { data: log, error: e1 } = await sb.from('fechamentos_log').select('*').order('created_at', { ascending: false }).limit(100);
+      g('tbl-log').innerHTML = e1 ? `<tbody><tr><td class="muted">Erro: ${esc(e1.message)}</td></tr></tbody>` :
+        (!log || !log.length) ? '<tbody><tr><td class="muted">Nenhum fechamento registrado ainda.</td></tr></tbody>' :
+        '<thead><tr><th>Data</th><th>Operação</th><th>Mês</th><th>Mudança</th><th>Usuário</th><th>Motivo</th></tr></thead><tbody>' +
+        log.map(r => `<tr><td class="muted">${fmtDateTime(r.created_at)}</td><td>${esc(OP_NOME[r.operacao] || r.operacao)}</td><td>${String(r.mes).padStart(2, '0')}/${r.ano}</td>
+          <td><span class="status-badge st-${esc(r.status_anterior)}" style="padding:2px 9px;font-size:11px">${STATUS_LABEL[r.status_anterior] || r.status_anterior}</span> → <span class="status-badge st-${esc(r.status_novo)}" style="padding:2px 9px;font-size:11px">${STATUS_LABEL[r.status_novo] || r.status_novo}</span></td>
+          <td>${esc(r.user_nome || '—')}</td><td class="muted">${esc(r.motivo || '—')}</td></tr>`).join('') + '</tbody>';
+      carregarTrilha();
+    }
+
+    async function carregarTrilha() {
+      const op = g('hist-op').value;
+      let q = sb.from('lancamentos_auditoria').select('*').eq('ano', sel.ano).eq('mes', sel.mes).order('created_at', { ascending: false }).limit(300);
+      if (op) q = q.eq('operacao', op);
+      const { data, error } = await q;
+      const t = g('tbl-trilha');
+      if (error) { t.innerHTML = `<tbody><tr><td class="muted">Erro: ${esc(error.message)}</td></tr></tbody>`; return; }
+      if (!data || !data.length) { t.innerHTML = '<tbody><tr><td class="muted">Nenhuma alteração registrada neste mês. A trilha só registra o que for alterado a partir da ativação (set/2026).</td></tr></tbody>'; return; }
+      t.innerHTML = '<thead><tr><th>Data</th><th>Usuário</th><th>Operação</th><th>Conta</th><th>Ação</th><th style="text-align:right">Antes</th><th style="text-align:right">Depois</th></tr></thead><tbody>' +
+        data.map(r => {
+          const delta = (r.valor_depois || 0) - (r.valor_antes || 0);
+          const conta = [r.classe_nome, r.campo_nome, r.subcampo_nome].filter(Boolean).map(esc).join(' › ');
+          return `<tr><td class="muted">${fmtDateTime(r.created_at)}</td><td>${esc(r.user_nome || '—')}</td><td>${esc(OP_NOME[r.operacao] || r.operacao)}<div class="muted" style="font-size:10.5px">${esc(r.empresa_id)}</div></td>
+            <td>${conta}</td><td><span class="acao ${r.acao}">${r.acao === 'INSERT' ? 'Criado' : r.acao === 'UPDATE' ? 'Alterado' : 'Removido'}</span></td>
+            <td class="num muted">${fmtBRL(r.valor_antes)}</td><td class="num ${delta >= 0 ? 'delta-pos' : 'delta-neg'}">${fmtBRL(r.valor_depois)}</td></tr>`;
+        }).join('') + '</tbody>';
+    }
+    g('hist-op').addEventListener('change', carregarTrilha);
+
+    // ── abas ──
+    function setTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      ['fechamento', 'conferencias', 'historico'].forEach(n => { g('tab-' + n).style.display = n === name ? 'block' : 'none'; });
+    }
+    g('tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.tab); });
+
+    // ── modal de mudança de status ──
+    let pendente = null;
+    const TEXTO = {
+      aprovado: ['Aprovar mês', 'Marca o mês como conferido. Ainda dá para editar Lançamentos — para bloquear a edição, trave o mês depois.', false],
+      travado:  ['Travar mês', 'Bloqueia qualquer criação, alteração ou remoção de Lançamentos deste mês nesta operação, para todos, até alguém autorizado destravar.', false],
+      aberto:   ['Reabrir / destravar mês', 'Devolve o mês para "Aberto" e libera a edição de Lançamentos. O motivo é obrigatório e fica registrado no log.', true],
+    };
+    function abrirStatusModal(op, novo) {
+      const atual = statusDe(op, sel.ano, sel.mes);
+      const [titulo, sub, motivoObrigatorio] = TEXTO[novo];
+      pendente = { op, novo, motivoObrigatorio };
+      g('sm-title').textContent = titulo + ' — ' + OP_NOME[op];
+      g('sm-sub').textContent = `${MESES[sel.mes - 1]} / ${sel.ano} · de ${STATUS_LABEL[atual]} para ${STATUS_LABEL[novo]}. ${sub}`;
+      g('sm-label').textContent = motivoObrigatorio ? 'Motivo (obrigatório)' : 'Observação (opcional)';
+      g('sm-motivo').value = '';
+      g('sm-error').className = 'modal-error';
+      const nAl = alertasDa(op).length;
+      const w = g('sm-warn');
+      if (novo !== 'aberto' && nAl) { w.style.display = 'block'; w.textContent = `Atenção: há ${nAl} conferência(s) com alerta para esta operação neste mês. Você pode seguir, mas vale revisar antes.`; }
+      else w.style.display = 'none';
+      g('status-modal').classList.add('open');
+    }
+    function closeStatusModal() { g('status-modal').classList.remove('open'); pendente = null; }
+    g('status-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeStatusModal(); });
+
+    g('sm-confirm').addEventListener('click', async () => {
+      if (!pendente) return;
+      const motivo = g('sm-motivo').value.trim();
+      if (pendente.motivoObrigatorio && motivo.length < 5) {
+        g('sm-error').textContent = 'Informe o motivo (mínimo 5 caracteres).'; g('sm-error').className = 'modal-error visible'; return;
+      }
+      const btn = g('sm-confirm'); btn.disabled = true; btn.textContent = 'Salvando…';
+      const { error } = await sb.rpc('fechamento_definir', { p_operacao: pendente.op, p_ano: sel.ano, p_mes: sel.mes, p_status: pendente.novo, p_motivo: motivo || null });
+      btn.disabled = false; btn.textContent = 'Confirmar';
+      if (error) { g('sm-error').textContent = error.message; g('sm-error').className = 'modal-error visible'; return; }
+      closeStatusModal();
+      showToast('Mês atualizado e registrado no log', 'green');
+      await carregarFechamentos(); renderCards(); renderMatrix(); carregarHistorico();
+    });
+
+    // ── init ──
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (rows && rows[0]) || null;
+      const allowed = !!prof && (prof.is_admin || prof.can_fechar_mes === true);
+      if (!allowed) return window.location.replace('/');
+      podeFechar = true;
+      SafiSidebar.apply('fe', prof, { email: data.session.user.email, sb });
+
+      buildPeriodOptions();
+      g('fe-loading').style.display = 'none';
+      g('fe-main').style.display = 'block';
+      await carregarTudo();
+    }
+    init();
+  </script>
+</body>
+</html>

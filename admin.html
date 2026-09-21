@@ -748,6 +748,17 @@
           </div>
         </div>
 
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Fechamento do Mês</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Aprovar, travar e destravar meses (com registro em log), ver conferências e a trilha de alterações — visível por padrão só pra ninguém</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-fechamento">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('fechamento', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('fechamento', false)">Não</button>
+          </div>
+        </div>
+
         <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
             <div>
@@ -885,6 +896,7 @@ const ACCESS_DOMAINS = [
   u => u.can_fluxo_caixa === true,
   u => u.can_lancamentos === true,
   u => u.can_calc_importacao === true,
+  u => u.can_fechar_mes === true,
   u => u.pedidos_pode_conciliar === true,
 ];
 function computeAccessPct(u) {
@@ -996,7 +1008,7 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-conciliar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-conciliar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','fechamento'].forEach(k => setToggle(k, false));
   setToggle('ped-lancar', true);
   setToggle('ped-conferir', true);
   document.getElementById('modal-error').className   = 'modal-error';
@@ -1044,6 +1056,7 @@ function openEditModal(u) {
   setToggle('df-viacloset',    !!u.despesas_fixas_viacloset);
   setToggle('fluxocaixa',      !!u.can_fluxo_caixa);
   setToggle('calcimport',      !!u.can_calc_importacao);
+  setToggle('fechamento',      !!u.can_fechar_mes);
   setToggle('lancamentos',       !!u.can_lancamentos);
   setToggle('lanc-ep',           !!u.lancamentos_ep);
   setToggle('lanc-gip',          !!u.lancamentos_gip);
@@ -1102,6 +1115,7 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     despesas_fixas_viacloset: toggleState['df-viacloset'],
     can_fluxo_caixa: toggleState.fluxocaixa,
     can_calc_importacao: toggleState.calcimport,
+    can_fechar_mes: toggleState.fechamento,
     can_lancamentos:       toggleState.lancamentos,
     lancamentos_ep:        toggleState['lanc-ep'],
     lancamentos_gip:       toggleState['lanc-gip'],
