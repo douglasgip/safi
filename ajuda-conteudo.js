@@ -57,7 +57,7 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Some no consolidado', d: '<b>Clique nos cartões</b> das empresas que quer somar: o total do grupo se recalcula na hora.' },
       { t: 'Analise os gráficos', d: 'A seção de gráficos compara entrada, saída e despesa por empresa e mostra a evolução mensal.' },
     ],
-    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e <b>informa a finalidade</b> — toda exportação fica registrada para o administrador.', 'O Resumo Contábil é lançado por empresa na aba <b>Resumo Contábil</b> da tela de Lançamentos.', 'A alíquota é a do mês (pode mudar mês a mês, ex.: Simples Nacional pela receita acumulada).'],
+    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'O Resumo Contábil é lançado por empresa na aba <b>Resumo Contábil</b> da tela de Lançamentos.', 'A alíquota é a do mês (pode mudar mês a mês, ex.: Simples Nacional pela receita acumulada).'],
     naoFaz: ['Não substitui a contabilidade oficial — é a visão gerencial dos números lançados.', 'Não edita valores; para corrigir, use Lançamentos.'],
     termos: [{ t: 'Resultado', d: 'Saída − (Despesa + Entrada), calculado automaticamente.' }, { t: 'Estoque contábil', d: 'Valor do estoque informado no lançamento do mês.' }],
     quemVe: 'Quem tem acesso ao Resumo Contábil (liberado por padrão; o admin pode desativar).',
@@ -67,7 +67,7 @@ window.SAFI_AJUDA = { telas: {
       { sel: '#resumo-empresas-grid', t: 'Cartões por empresa', d: 'Entrada, saída, despesa e resultado de cada empresa. <b>Clique nos cartões</b> para somar apenas as que quiser no consolidado.' },
       { sel: '#resumo-totais-5col', t: 'Consolidado', d: 'O total do que você selecionou: entrada, saída, despesa, resultado e estoque.' },
       { sel: '#chart-bar', t: 'Gráficos', d: 'Compare entrada, saída e despesa entre as empresas.' },
-      { sel: '#sp-btn', t: 'Gerar PDF', d: 'Gera um arquivo PDF (folha A4, vertical ou horizontal) com os <b>filtros que estão selecionados agora</b>. Você escolhe o que incluir e informa a <b>finalidade</b>' + ' (ela fica registrada para o administrador).' },
+      { sel: '#sp-btn', t: 'Gerar PDF', d: 'Gera um arquivo PDF (folha A4, vertical ou horizontal) com os <b>filtros que estão selecionados agora</b>. Você escolhe o que incluir e informa a <b>finalidade</b>' + '.' },
     ],
   },
 
@@ -81,7 +81,7 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Compare períodos', d: 'O botão <b>Comparar</b> abre o painel A × B para confrontar dois períodos ou operações, com as diferenças.' },
       { t: 'Abra o detalhe', d: 'Na tabela do DRE, <b>AV%</b> é a participação vertical e <b>AH%</b> a variação em relação ao mês anterior. <b>Lançamentos Detalhados</b> mostra a composição linha a linha.' },
     ],
-    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e <b>informa a finalidade</b> — toda exportação fica registrada para o administrador.', 'Os números vêm dos Lançamentos: se algo não bate, confira lá (e se o mês está travado).', 'Nos gráficos você pode arrastar para comparar períodos.', 'O EBITDA do grupo = Resultado Líquido + Despesas Financeiras + IR e CSLL — está no Painel do Conselho.'],
+    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Os números vêm dos Lançamentos: se algo não bate, confira lá (e se o mês está travado).', 'Nos gráficos você pode arrastar para comparar períodos.', 'O EBITDA do grupo = Resultado Líquido + Despesas Financeiras + IR e CSLL — está no Painel do Conselho.'],
     naoFaz: ['Não é onde se lança — os valores entram em <b>Lançamentos</b>.', 'Não calcula depreciação (o DRE do grupo não tem essa linha).'],
     termos: [
       { t: 'Margem de Contribuição', d: 'Receita líquida menos custos variáveis: o que sobra para cobrir os gastos operacionais.' },
@@ -97,7 +97,7 @@ window.SAFI_AJUDA = { telas: {
       { sel: '#dre-minicards-grid', t: 'Uma operação por cartão', d: 'Veja como cada operação contribuiu para o total.' },
       { sel: '#chart-dre-evo', t: 'Evolução mensal', d: 'Acompanhe o resultado mês a mês.' },
       { sel: '#dre-table-scroll', t: 'Tabela do DRE', d: 'Conta a conta, com <b>AV%</b> e <b>AH%</b>. O botão <b>Lançamentos Detalhados</b> (acima) mostra a composição de cada linha.' },
-      { sel: '#sp-btn', t: 'Gerar PDF', d: 'Gera um arquivo PDF (folha A4, vertical ou horizontal) com os <b>filtros que estão selecionados agora</b>. Você escolhe o que incluir e informa a <b>finalidade</b>' + ' (ela fica registrada para o administrador).' },
+      { sel: '#sp-btn', t: 'Gerar PDF', d: 'Gera um arquivo PDF (folha A4, vertical ou horizontal) com os <b>filtros que estão selecionados agora</b>. Você escolhe o que incluir e informa a <b>finalidade</b>' + '.' },
     ],
   },
 
@@ -282,7 +282,7 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Leia os indicadores', d: 'Cada cartão mostra o valor, a variação (verde = melhor, vermelho = pior) e, havendo orçamento, o <b>atingimento do orçado</b>.' },
       { t: 'Entenda o que mudou', d: 'A <b>ponte do EBITDA</b> mostra quanto cada linha (receita, deduções, custos, gastos) somou ou subtraiu entre a base e o mês.' },
     ],
-    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e <b>informa a finalidade</b> — toda exportação fica registrada para o administrador.', 'Percentuais são sobre o Faturamento.', 'O "× Orçado" só aparece para as operações com meta lançada no mês; se for parcial, a tela avisa quais.', 'A faixa "Ações do conselho" leva às decisões pendentes e vencidas.'],
+    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Percentuais são sobre o Faturamento.', 'O "× Orçado" só aparece para as operações com meta lançada no mês; se for parcial, a tela avisa quais.', 'A faixa "Ações do conselho" leva às decisões pendentes e vencidas.'],
     naoFaz: ['Não é onde se lança nada — os números vêm dos Lançamentos e do Orçamento.', 'Não considera depreciação (o DRE do grupo não tem).'],
     termos: [
       { t: 'EBITDA', d: 'Resultado Líquido + Despesas Financeiras + IR e CSLL. Retiradas de Sócios continuam como despesa.' },
@@ -297,7 +297,7 @@ window.SAFI_AJUDA = { telas: {
       { sel: '.co-row > .panel:nth-child(1)', t: 'Evolução de 12 meses', d: 'Faturamento em barras e EBITDA em linha (com o orçado tracejado, se houver).' },
       { sel: '.co-row > .panel:nth-child(2)', t: 'Ponte do EBITDA', d: 'Mostra o que explica a diferença de EBITDA entre a base e o mês: receita, deduções, custos e gastos.' },
       { sel: '#panel-ops', t: 'Por operação', d: 'Compare as operações lado a lado, com o total.' },
-      { sel: '#sp-btn', t: 'Gerar PDF', d: 'Gera um arquivo PDF (folha A4, vertical ou horizontal) com os <b>filtros que estão selecionados agora</b>. Você escolhe o que incluir e informa a <b>finalidade</b>' + ' (ela fica registrada para o administrador).' },
+      { sel: '#sp-btn', t: 'Gerar PDF', d: 'Gera um arquivo PDF (folha A4, vertical ou horizontal) com os <b>filtros que estão selecionados agora</b>. Você escolhe o que incluir e informa a <b>finalidade</b>' + '.' },
     ],
   },
 
@@ -402,7 +402,7 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Defina os acessos', d: 'Ligue ou desligue cada área (DRE, Lançamentos, Pedidos, Fechamento, Orçamento, Reuniões, Produtos…) e, quando houver, as empresas liberadas.' },
       { t: 'Acompanhe a lista', d: 'A barra de cada usuário mostra o percentual de áreas liberadas.' },
     ],
-    dicas: ['As <b>Exportações de PDF</b> feitas por qualquer usuário aparecem no topo desta tela: quem exportou, qual tela, quando e a finalidade informada. Novas ficam destacadas e o número aparece também ao lado do link Admin no menu.', '<b>Resumo Contábil e DRE</b> vêm liberados por padrão; as demais áreas começam desligadas.', 'A GerônIA respeita as mesmas permissões ao responder.'],
+    dicas: ['<b>Resumo Contábil e DRE</b> vêm liberados por padrão; as demais áreas começam desligadas.', 'A GerônIA respeita as mesmas permissões ao responder.'],
     naoFaz: ['Só o admin do painel acessa esta tela.'],
     quemVe: 'Somente o administrador do SAFI.',
     dados: 'Cadastro de usuários e permissões.',

@@ -161,7 +161,6 @@
         }).join('') + '</div>' +
         '<div class="sp-lbl2">Finalidade desta exportação <span style="color:#fca5a5">*</span></div>' +
         '<textarea class="sp-txt" id="sp-fin" maxlength="300" placeholder="Ex.: Enviar o resultado de agosto para o conselheiro Fabiano antes da reunião"></textarea>' +
-        '<div class="sp-aviso">Todo PDF fica registrado: o administrador é avisado de <b>quem</b> exportou, <b>qual tela</b>, <b>quando</b> e a <b>finalidade</b> informada acima.</div>' +
         '<div class="sp-erro" id="sp-erro"></div><div class="sp-ok" id="sp-ok"></div>' +
         '<div class="sp-acoes"><button type="button" class="sp-b pri" id="sp-gerar">Gerar PDF</button><button type="button" class="sp-b" id="sp-fechar">Cancelar</button></div>' +
       '</div>';
@@ -233,7 +232,7 @@
     return new Promise(function (ok, no) {
       try {
         sb.from('exportacoes_pdf').insert(reg).then(function (r) {
-          if (r && r.error) return no(new Error('o registro da exportação falhou (' + r.error.message + ')'));
+          if (r && r.error) return no(new Error('não foi possível concluir agora, tente novamente em instantes'));
           ok();
         }, function (e) { no(e); });
       } catch (e) { no(e); }
