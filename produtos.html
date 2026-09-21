@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Produtos & Estoque</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+
+    .bg { position: fixed; inset: 0; z-index: 0; background:
+        radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #38bdf8; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #pr-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #pr-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #7dd3fc; }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .fe-select:focus { outline: none; border-color: #38bdf8; }
+    select option { background: #0f172a; color: #f1f5f9; }
+
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .tab .badge-n { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px; border-radius: 9px; background: rgba(251,191,36,0.18); color: #fbbf24; font-size: 10.5px; font-weight: 800; }
+
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
+
+    .op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+    .op-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 14px; }
+    .op-card.travado { border-color: rgba(52,211,153,0.35); }
+    .op-card.aprovado { border-color: rgba(251,191,36,0.35); }
+    .op-head { display: flex; align-items: center; gap: 12px; }
+    .op-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+    .op-name { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .op-period { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; align-self: flex-start; }
+    .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .st-aberto { background: rgba(148,163,184,0.14); color: #cbd5e1; } .st-aberto .dot { background: #94a3b8; }
+    .st-aprovado { background: rgba(251,191,36,0.14); color: #fcd34d; } .st-aprovado .dot { background: #fbbf24; }
+    .st-travado { background: rgba(52,211,153,0.14); color: #6ee7b7; } .st-travado .dot { background: #34d399; }
+    .op-meta { font-size: 11.5px; color: #64748b; line-height: 1.5; min-height: 34px; }
+    .op-alertas { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 10px; }
+    .op-alertas.ok { background: rgba(52,211,153,0.1); color: #6ee7b7; }
+    .op-alertas.warn { background: rgba(251,191,36,0.1); color: #fcd34d; cursor: pointer; }
+    .op-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+
+    .btn-primary { flex: 1; padding: 11px 14px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
+    .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+
+    .matrix-scroll { overflow-x: auto; }
+    .matrix { border-collapse: separate; border-spacing: 6px; min-width: 640px; }
+    .matrix th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; padding: 4px 6px; text-align: center; }
+    .matrix th.row-h { text-align: left; color: #cbd5e1; font-size: 12px; text-transform: none; letter-spacing: 0; white-space: nowrap; padding-right: 12px; }
+    .mx-cell { width: 44px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; font-size: 10px; font-weight: 800; color: #475569; }
+    .mx-cell.aprovado { background: rgba(251,191,36,0.18); border-color: rgba(251,191,36,0.4); color: #fcd34d; }
+    .mx-cell.travado { background: rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.4); color: #6ee7b7; }
+    .mx-cell.sel { outline: 2px solid #38bdf8; outline-offset: 1px; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: #64748b; }
+    .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .legend .l-aberto::before { background: rgba(255,255,255,0.12); } .legend .l-aprovado::before { background: #fbbf24; } .legend .l-travado::before { background: #34d399; }
+
+    .chk-list { display: flex; flex-direction: column; gap: 8px; }
+    .chk { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    .chk-sev { flex-shrink: 0; margin-top: 2px; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+    .sev-alerta { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .sev-info { background: rgba(56,189,248,0.14); color: #7dd3fc; }
+    .chk-body { min-width: 0; flex: 1; }
+    .chk-msg { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+    .chk-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .chk-op { font-size: 11px; font-weight: 800; color: #94a3b8; white-space: nowrap; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 460px; }
+    table.tbl { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tbl thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 11px 12px; font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    .tbl td { padding: 10px 12px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tbl .muted { color: #64748b; }
+    .delta-pos { color: #4ade80; } .delta-neg { color: #f87171; }
+    .acao { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; }
+    .acao.INSERT { background: rgba(52,211,153,0.14); color: #6ee7b7; } .acao.UPDATE { background: rgba(56,189,248,0.14); color: #7dd3fc; } .acao.DELETE { background: rgba(248,113,113,0.14); color: #fca5a5; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
+    .modal-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
+    .modal-error.visible { display: block; }
+    .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
+    .field textarea { width: 100%; min-height: 84px; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; resize: vertical; color-scheme: dark; }
+    .field textarea:focus { outline: none; border-color: #38bdf8; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+    #pr-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 900px) { .op-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 16px; } .tabs { max-width: none; } }
+  
+    .pr-top { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .pr-top .f { display: flex; flex-direction: column; gap: 4px; }
+    .pr-top label, .imp-l { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+    .kpi { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 16px 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 4px; }
+    .kpi.warn { border-color: rgba(251,191,36,0.35); }
+    .kpi-l { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #64748b; }
+    .kpi-v { font-size: 24px; font-weight: 800; color: #f8fafc; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+    .kpi-s { font-size: 11.5px; color: #94a3b8; font-weight: 600; }
+    .pr-note { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d; border-radius: 12px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .pr-note.info { background: rgba(56,189,248,0.07); border-color: rgba(56,189,248,0.22); color: #93c5fd; }
+    .filters input[type=search], .in-text { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; min-width: 220px; }
+    .filters input[type=search]:focus, .in-text:focus { outline: none; border-color: #38bdf8; }
+    .tbl th.r, .tbl td.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tbl td .sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 800; }
+    .tag.sg { background: rgba(251,191,36,0.16); color: #fcd34d; } .tag.rp { background: rgba(248,113,113,0.16); color: #fca5a5; }
+    .pager { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; font-size: 12px; color: #64748b; }
+    .pager button { padding: 8px 14px; }
+    .chart-box { position: relative; height: 300px; }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .imp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .imp-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .imp-card h3 { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .imp-card p { font-size: 12px; color: #94a3b8; line-height: 1.55; }
+    .map-grid { display: grid; grid-template-columns: 130px 1fr; gap: 8px 10px; align-items: center; }
+    .map-grid label { font-size: 12px; color: #cbd5e1; font-weight: 600; }
+    .map-grid select { padding: 8px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; color-scheme: dark; }
+    .prev { overflow: auto; max-height: 200px; border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; }
+    .prev table { border-collapse: collapse; width: 100%; font-size: 11.5px; } .prev td, .prev th { padding: 6px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; text-align: left; }
+    .prev th { color: #64748b; font-size: 10px; text-transform: uppercase; }
+    .imp-msg { font-size: 12px; line-height: 1.6; } .imp-msg.err { color: #fca5a5; } .imp-msg.ok { color: #6ee7b7; } .imp-msg.warn { color: #fcd34d; }
+    #pr-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .row2, .imp-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .kpi-grid { grid-template-columns: 1fr; } .kpi-v { font-size: 21px; } }
+
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="pr-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="pr-sidebar"></aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="pr-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Produtos & Estoque</div>
+    </div>
+  </header>
+
+  <div id="pr-loading">Carregando…</div>
+
+  <main class="main" id="pr-main" style="display:none">
+    <div class="fe-toolbar">
+      <div>
+        <h1>Produtos &amp; Estoque</h1>
+        <div class="fe-toolbar-sub">Estoque, giro, cobertura, valor médio de venda e sazonalidade por SKU — alimentado por planilha do Tiny/Olist ou do Seta.</div>
+      </div>
+      <div class="pr-top"><div class="f"><label for="sel-op">Operação</label>
+        <select class="fe-select" id="sel-op"><option value="">Todas as operações</option><option value="GIP">GIP Ecommerce</option><option value="Exposicao">Exposição Paulista</option><option value="ViaCloset">Via Closet</option></select></div></div>
+    </div>
+
+    <div class="tabs" id="tabs" style="max-width:520px">
+      <button class="tab active" data-tab="geral">Visão geral</button>
+      <button class="tab" data-tab="saz">Sazonalidade</button>
+      <button class="tab" data-tab="imp">Importar dados</button>
+    </div>
+
+    <!-- Visão geral -->
+    <section id="tab-geral">
+      <div class="pr-note info" id="pr-nota" style="display:none"></div>
+      <div class="kpi-grid" id="kpis"></div>
+      <div class="panel">
+        <div class="filters">
+          <input type="search" id="f-busca" placeholder="Buscar por SKU ou nome…" aria-label="Buscar">
+          <select class="fe-select" id="f-forn" aria-label="Fornecedor"><option value="">Todos os fornecedores</option></select>
+          <select class="fe-select" id="f-cat" aria-label="Categoria"><option value="">Todas as categorias</option></select>
+          <select class="fe-select" id="f-sit" aria-label="Situação">
+            <option value="">Todos os itens</option><option value="estoque">Com estoque</option><option value="sem_giro">Sem giro</option><option value="ruptura">Em ruptura</option><option value="cob180">Cobertura acima de 180 dias</option>
+          </select>
+          <select class="fe-select" id="f-ord" aria-label="Ordenar">
+            <option value="valor_estoque">Maior valor em estoque</option><option value="cobertura_dias">Maior cobertura</option><option value="vend_3m">Mais vendidos (3 meses)</option><option value="margem">Maior margem</option><option value="nome">Nome (A–Z)</option>
+          </select>
+        </div>
+        <div class="table-scroll" style="max-height:none"><table class="tbl" id="tbl-prod"></table></div>
+        <div class="pager"><span id="pg-info"></span><span><button class="btn-ghost" id="pg-prev" type="button">‹ Anterior</button> <button class="btn-ghost" id="pg-next" type="button">Próxima ›</button></span></div>
+      </div>
+    </section>
+
+    <!-- Sazonalidade -->
+    <section id="tab-saz" style="display:none">
+      <div class="panel">
+        <div class="filters">
+          <select class="fe-select" id="s-forn" aria-label="Fornecedor"><option value="">Todos os fornecedores</option></select>
+          <select class="fe-select" id="s-cat" aria-label="Categoria"><option value="">Todas as categorias</option></select>
+          <input type="search" id="s-sku" placeholder="SKU específico (opcional)" aria-label="SKU">
+        </div>
+        <div class="pr-note info" id="saz-nota" style="margin-bottom:0"></div>
+      </div>
+      <div class="row2">
+        <div class="panel"><div class="panel-head">Índice sazonal (100 = média mensal)</div><div class="chart-box"><canvas id="ch-idx"></canvas></div></div>
+        <div class="panel"><div class="panel-head">Vendas mensais (unidades e R$)</div><div class="chart-box"><canvas id="ch-serie"></canvas></div></div>
+      </div>
+    </section>
+
+    <!-- Importar -->
+    <section id="tab-imp" style="display:none">
+      <div class="pr-note info">Exporte a planilha no Tiny/Olist ou no Seta (Excel ou CSV) e envie aqui — o sistema reconhece as colunas e você confere antes de importar. Escolha a operação de cada arquivo. Quando houver integração direta (API do Tiny), o processo passa a ser automático.</div>
+      <div class="imp-grid">
+        <div class="imp-card" id="card-estoque">
+          <h3>1. Cadastro e posição de estoque</h3>
+          <p>Uma linha por produto: SKU, nome, fornecedor, categoria, custo, preço de venda e saldo em estoque. Reimportar atualiza os produtos existentes (não apaga os que não vierem na planilha).</p>
+          <div class="imp-l">Operação</div>
+          <select class="fe-select" id="e-op"><option value="GIP">GIP Ecommerce</option><option value="Exposicao">Exposição Paulista</option><option value="ViaCloset">Via Closet</option></select>
+          <input type="file" id="e-file" accept=".xlsx,.xls,.csv" class="in-text">
+          <div id="e-map"></div>
+        </div>
+        <div class="imp-card" id="card-vendas">
+          <h3>2. Vendas por produto</h3>
+          <p>Vendas por SKU com data (ou ano e mês), quantidade e valor. Importe meses completos: os meses presentes na planilha <b>substituem</b> o que já existia daquela operação. Base do giro, cobertura, valor médio de venda e sazonalidade.</p>
+          <div class="imp-l">Operação</div>
+          <select class="fe-select" id="v-op"><option value="GIP">GIP Ecommerce</option><option value="Exposicao">Exposição Paulista</option><option value="ViaCloset">Via Closet</option></select>
+          <input type="file" id="v-file" accept=".xlsx,.xls,.csv" class="in-text">
+          <div id="v-map"></div>
+        </div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-head">Últimas importações</div>
+        <div class="table-scroll" style="max-height:260px"><table class="tbl" id="tbl-imp"></table></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    SafiSidebar.mount('pr', { active: 'produtos', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('pr');
+
+    const OP_NOME = { GIP: 'GIP Ecommerce', Exposicao: 'Exposição Paulista', ViaCloset: 'Via Closet' };
+    const MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const PAGE = 50;
+
+    const g = id => document.getElementById(id);
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    const N = v => v == null ? null : Number(v);
+    const brl = v => v == null ? '—' : 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+    const brl2 = v => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const int = v => v == null ? '—' : Math.round(v).toLocaleString('pt-BR');
+    const pct = v => v == null ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    const compact = v => Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + ' mil' : String(Math.round(v));
+    const fmtDT = iso => iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—';
+    const mesRefTxt = r => r ? MES_CURTO[(r % 100) - 1] + '/' + Math.floor(r / 100) : null;
+    const opSel = () => g('sel-op').value || null;
+
+    let page = 0, total = 0, charts = {}, me = null;
+
+    // ── Visão geral ────────────────────────────────────────────────────────
+    async function carregarResumo() {
+      const { data, error } = await sb.rpc('produtos_resumo', { p_operacao: opSel() });
+      if (error) { showToast('Erro ao carregar o resumo: ' + error.message, 'red'); return; }
+      const r = (data && data[0]) || {};
+      const semVendas = !r.mes_ref;
+      g('kpis').innerHTML = [
+        ['SKUs cadastrados', int(N(r.skus)), int(N(r.com_estoque)) + ' com estoque', ''],
+        ['Unidades em estoque', int(N(r.unidades)), '', ''],
+        ['Valor em estoque (a custo)', brl(N(r.valor_estoque)), '', ''],
+        ['Cobertura média', r.cobertura_media_dias == null ? '—' : int(N(r.cobertura_media_dias)) + ' dias', 'estoque ÷ vendas dos últimos 3 meses', ''],
+        ['Sem giro', int(N(r.sem_giro)), brl(N(r.valor_sem_giro)) + ' parados', N(r.sem_giro) > 0 ? 'warn' : ''],
+        ['Em ruptura', int(N(r.rupturas)), 'estoque zerado, mas vendendo', N(r.rupturas) > 0 ? 'warn' : ''],
+      ].map(k => '<div class="kpi ' + k[3] + '"><div class="kpi-l">' + k[0] + '</div><div class="kpi-v">' + k[1] + '</div><div class="kpi-s">' + esc(k[2]) + '</div></div>').join('');
+      const nota = g('pr-nota');
+      if (!N(r.skus)) { nota.style.display = ''; nota.textContent = 'Nenhum produto cadastrado ainda. Vá em "Importar dados" e envie a planilha de estoque.'; }
+      else if (semVendas) { nota.style.display = ''; nota.textContent = 'Ainda não há vendas importadas para este recorte — giro, cobertura e valor médio de venda ficam vazios até você importar as vendas.'; }
+      else { nota.style.display = ''; nota.textContent = 'Vendas consideradas até ' + mesRefTxt(r.mes_ref) + '. Estoque atualizado em ' + fmtDT(r.atualizado_em) + '. Cobertura = estoque ÷ média diária das vendas dos últimos 3 meses.'; }
+    }
+
+    async function carregarFiltros() {
+      const { data } = await sb.rpc('produtos_filtros', { p_operacao: opSel() });
+      const rows = data || [];
+      const fill = (ids, tipo, vazio) => {
+        const vals = rows.filter(x => x.tipo === tipo).map(x => x.valor).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        ids.forEach(id => { const cur = g(id).value; g(id).innerHTML = '<option value="">' + vazio + '</option>' + vals.map(v => '<option value="' + esc(v) + '">' + esc(v) + '</option>').join(''); g(id).value = vals.includes(cur) ? cur : ''; });
+      };
+      fill(['f-forn', 's-forn'], 'fornecedor', 'Todos os fornecedores');
+      fill(['f-cat', 's-cat'], 'categoria', 'Todas as categorias');
+    }
+
+    async function carregarLista() {
+      let q = sb.from('produtos_analise').select('*', { count: 'exact' });
+      if (opSel()) q = q.eq('operacao', opSel());
+      const busca = g('f-busca').value.replace(/[,()%*\\]/g, ' ').trim();
+      if (busca) q = q.or('sku.ilike.%' + busca + '%,nome.ilike.%' + busca + '%');
+      if (g('f-forn').value) q = q.eq('fornecedor', g('f-forn').value);
+      if (g('f-cat').value) q = q.eq('categoria', g('f-cat').value);
+      const sit = g('f-sit').value;
+      if (sit === 'estoque') q = q.gt('estoque', 0);
+      if (sit === 'sem_giro') q = q.eq('sem_giro', true);
+      if (sit === 'ruptura') q = q.eq('ruptura', true);
+      if (sit === 'cob180') q = q.gt('cobertura_dias', 180);
+      const ord = g('f-ord').value;
+      q = q.order(ord, { ascending: ord === 'nome', nullsFirst: false }).range(page * PAGE, page * PAGE + PAGE - 1);
+      const { data, count, error } = await q;
+      if (error) { g('tbl-prod').innerHTML = '<tbody><tr><td class="muted" style="padding:24px">Erro ao carregar: ' + esc(error.message) + '</td></tr></tbody>'; return; }
+      total = count || 0;
+      const todas = !opSel();
+      g('tbl-prod').innerHTML = data.length ? '<thead><tr><th>SKU</th><th>Produto</th>' + (todas ? '<th>Operação</th>' : '') + '<th class="r">Custo</th><th class="r">Venda</th><th class="r">Margem</th><th class="r">Estoque</th><th class="r">Vend. 3m</th><th class="r">Cobertura</th><th class="r">Valor médio venda</th><th class="r">Valor em estoque</th></tr></thead><tbody>' +
+        data.map(p => '<tr><td>' + esc(p.sku) + '</td><td>' + esc(p.nome || '—') + (p.sem_giro ? ' <span class="tag sg">sem giro</span>' : '') + (p.ruptura ? ' <span class="tag rp">ruptura</span>' : '') + '<div class="sub">' + esc([p.fornecedor, p.categoria].filter(Boolean).join(' · ')) + '</div></td>' +
+          (todas ? '<td class="muted">' + esc(OP_NOME[p.operacao] || p.operacao) + '</td>' : '') +
+          '<td class="r">' + brl2(N(p.custo)) + '</td><td class="r">' + brl2(N(p.preco)) + '</td><td class="r">' + pct(N(p.margem)) + '</td><td class="r">' + int(N(p.estoque)) + '</td><td class="r">' + int(N(p.vend_3m)) + '</td>' +
+          '<td class="r">' + (p.cobertura_dias == null ? '—' : int(N(p.cobertura_dias)) + ' d') + '</td><td class="r">' + brl2(N(p.vmv)) + '</td><td class="r">' + brl(N(p.valor_estoque)) + '</td></tr>').join('') + '</tbody>'
+        : '<tbody><tr><td class="muted" style="padding:28px;text-align:center">Nenhum produto neste filtro.</td></tr></tbody>';
+      const ate = Math.min(total, page * PAGE + PAGE);
+      g('pg-info').textContent = total ? (page * PAGE + 1) + '–' + ate + ' de ' + total.toLocaleString('pt-BR') : '';
+      g('pg-prev').disabled = page === 0; g('pg-next').disabled = ate >= total;
+    }
+
+    let tBusca;
+    g('f-busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { page = 0; carregarLista(); }, 300); });
+    ['f-forn', 'f-cat', 'f-sit', 'f-ord'].forEach(id => g(id).addEventListener('change', () => { page = 0; carregarLista(); }));
+    g('pg-prev').addEventListener('click', () => { if (page > 0) { page--; carregarLista(); } });
+    g('pg-next').addEventListener('click', () => { page++; carregarLista(); });
+
+    // ── Sazonalidade ───────────────────────────────────────────────────────
+    const grid = 'rgba(255,255,255,0.06)', tick = '#64748b';
+    async function carregarSaz() {
+      const sku = g('s-sku').value.trim();
+      const { data, error } = await sb.rpc('produtos_sazonalidade', { p_operacao: opSel(), p_fornecedor: g('s-forn').value || null, p_categoria: g('s-cat').value || null, p_sku: sku || null });
+      if (error) { showToast('Erro ao carregar a sazonalidade: ' + error.message, 'red'); return; }
+      const rows = (data || []).map(r => ({ ano: r.ano, mes: r.mes, qtd: N(r.qtd), receita: N(r.receita) }));
+      Object.values(charts).forEach(c => c && c.destroy()); charts = {};
+      const nota = g('saz-nota');
+      if (!rows.length) { nota.textContent = 'Sem vendas importadas para este recorte.'; return; }
+      // Índice: média da quantidade de cada mês do calendário ÷ média geral dessas médias.
+      const porMes = Array.from({ length: 12 }, () => []);
+      rows.forEach(r => porMes[r.mes - 1].push(r.qtd));
+      const medias = porMes.map(a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+      const validas = medias.filter(x => x != null);
+      const geral = validas.reduce((x, y) => x + y, 0) / validas.length;
+      const idx = medias.map(m => m == null || !geral ? null : m / geral * 100);
+      const meses = rows.length, anos = new Set(rows.map(r => r.ano)).size;
+      nota.textContent = meses + ' meses de vendas (' + anos + ' ano(s)).' + (meses < 12 ? ' Histórico menor que 12 meses: o índice é provisório e alguns meses ficam sem dado.' : (anos < 2 ? '' : ' Cada mês do índice é a média dos anos disponíveis.'));
+      charts.idx = new Chart(g('ch-idx'), { type: 'bar', data: { labels: MES_CURTO, datasets: [{ data: idx, backgroundColor: idx.map(v => v == null ? 'transparent' : v >= 100 ? 'rgba(52,211,153,0.7)' : 'rgba(56,189,248,0.45)'), borderRadius: 4 }] }, options: {
+        responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => 'Índice ' + Math.round(c.parsed.y) + ' · média ' + int(medias[c.dataIndex]) + ' un.' } } },
+        scales: { x: { ticks: { color: tick }, grid: { display: false } }, y: { ticks: { color: tick }, grid: { color: grid } } } } });
+      const ult = rows.slice(-24);
+      charts.serie = new Chart(g('ch-serie'), { data: { labels: ult.map(r => MES_CURTO[r.mes - 1] + '/' + String(r.ano).slice(2)), datasets: [
+        { type: 'bar', label: 'Unidades', data: ult.map(r => r.qtd), backgroundColor: 'rgba(56,189,248,0.4)', borderRadius: 3, yAxisID: 'y' },
+        { type: 'line', label: 'Receita (R$)', data: ult.map(r => r.receita), borderColor: '#6ee7b7', backgroundColor: '#6ee7b7', tension: .25, pointRadius: 2, yAxisID: 'y1' }] }, options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12 } } },
+        scales: { x: { ticks: { color: tick, font: { size: 10 } }, grid: { display: false } }, y: { position: 'left', ticks: { color: tick, callback: v => compact(v) }, grid: { color: grid } }, y1: { position: 'right', ticks: { color: '#6ee7b7', callback: v => compact(v) }, grid: { display: false } } } } });
+    }
+    let tSaz;
+    ['s-forn', 's-cat'].forEach(id => g(id).addEventListener('change', carregarSaz));
+    g('s-sku').addEventListener('input', () => { clearTimeout(tSaz); tSaz = setTimeout(carregarSaz, 400); });
+
+    // ── Importação ─────────────────────────────────────────────────────────
+    const norm = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+    const CAMPOS = {
+      estoque: [
+        { k: 'sku', l: 'SKU / código', req: true, al: ['sku', 'codigo', 'cod', 'referencia', 'ref', 'codigo sku', 'codigo do produto', 'cod produto', 'codigo produto', 'codigo sku produto'] },
+        { k: 'nome', l: 'Nome / descrição', al: ['nome', 'descricao', 'produto', 'descricao do produto', 'nome do produto'] },
+        { k: 'fornecedor', l: 'Fornecedor', al: ['fornecedor', 'marca', 'nome fornecedor'] },
+        { k: 'categoria', l: 'Categoria', al: ['categoria', 'grupo', 'departamento', 'linha', 'familia'] },
+        { k: 'custo', l: 'Custo', al: ['custo', 'preco de custo', 'preco custo', 'custo medio', 'custo unitario', 'vlr custo', 'valor custo'] },
+        { k: 'preco', l: 'Preço de venda', al: ['preco', 'preco de venda', 'preco venda', 'valor venda', 'vlr venda', 'preco unitario'] },
+        { k: 'estoque', l: 'Saldo em estoque', req: true, al: ['estoque', 'saldo', 'saldo estoque', 'estoque atual', 'saldo fisico', 'quantidade', 'qtd', 'qtde'] },
+      ],
+      vendas: [
+        { k: 'sku', l: 'SKU / código', req: true, al: ['sku', 'codigo', 'cod', 'referencia', 'ref', 'codigo sku', 'codigo do produto', 'cod produto', 'codigo produto'] },
+        { k: 'data', l: 'Data da venda', al: ['data', 'data venda', 'data da venda', 'emissao', 'data emissao', 'data do pedido', 'data pedido'] },
+        { k: 'ano', l: 'Ano (se não há data)', al: ['ano'] },
+        { k: 'mes', l: 'Mês (se não há data)', al: ['mes'] },
+        { k: 'qtd', l: 'Quantidade', req: true, al: ['quantidade', 'qtd', 'qtde', 'qtd vendida', 'quantidade vendida', 'itens'] },
+        { k: 'valor', l: 'Valor vendido (R$)', al: ['valor', 'valor total', 'total', 'vlr total', 'receita', 'faturamento', 'valor vendido', 'valor liquido'] },
+      ],
+    };
+    const IMP = { estoque: null, vendas: null };   // { nome, header, linhas, map }
+
+    function detectMap(tipo, header) {
+      const h = header.map(norm); const usado = new Set(); const map = {};
+      CAMPOS[tipo].forEach(c => {
+        let i = h.findIndex((x, j) => !usado.has(j) && c.al.includes(x));
+        if (i < 0) i = h.findIndex((x, j) => !usado.has(j) && x && c.al.some(a => a.length > 3 && x.includes(a) && !(c.k === 'preco' && x.includes('custo'))));
+        if (i >= 0) { map[c.k] = i; usado.add(i); }
+      });
+      return map;
+    }
+    function toNum(v) {
+      if (v == null || v === '') return null;
+      if (typeof v === 'number') return isFinite(v) ? v : null;
+      let s = String(v).replace(/R\$|\s/g, '');
+      if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+      const n = parseFloat(s); return isNaN(n) ? null : n;
+    }
+    function toSku(v) { if (v == null) return ''; if (typeof v === 'number') return Number.isInteger(v) ? String(v) : String(v); return String(v).trim(); }
+    function toAnoMes(v) {
+      if (v instanceof Date && !isNaN(v)) { const d = new Date(v.getTime() + 12 * 3600 * 1000); return { ano: d.getUTCFullYear(), mes: d.getUTCMonth() + 1 }; }
+      if (typeof v === 'number' && v > 20000 && v < 80000) { const d = new Date(Math.round((v - 25569) * 86400 * 1000)); return { ano: d.getUTCFullYear(), mes: d.getUTCMonth() + 1 }; }
+      const s = String(v == null ? '' : v).trim();
+      let m = s.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})/); if (m) return { ano: +m[3] < 100 ? 2000 + +m[3] : +m[3], mes: +m[2] };
+      m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); if (m) return { ano: +m[1], mes: +m[2] };
+      m = s.match(/^(\d{1,2})[\/.-](\d{4})$/); if (m) return { ano: +m[2], mes: +m[1] };
+      return null;
+    }
+
+    function renderMap(tipo) {
+      const st = IMP[tipo], box = g(tipo === 'estoque' ? 'e-map' : 'v-map');
+      if (!st) { box.innerHTML = ''; return; }
+      const opts = '<option value="">— não usar —</option>' + st.header.map((h, i) => '<option value="' + i + '">' + esc(h || ('Coluna ' + (i + 1))) + '</option>').join('');
+      box.innerHTML = '<div class="imp-l" style="margin:6px 0">Colunas reconhecidas (' + st.linhas.length.toLocaleString('pt-BR') + ' linhas em "' + esc(st.nome) + '")</div><div class="map-grid">' +
+        CAMPOS[tipo].map(c => '<label>' + esc(c.l) + (c.req ? ' *' : '') + '</label><select data-tipo="' + tipo + '" data-k="' + c.k + '">' + opts + '</select>').join('') + '</div>' +
+        '<div class="prev" id="' + tipo + '-prev" style="margin-top:10px"></div><div class="imp-msg" id="' + tipo + '-msg"></div>' +
+        '<button class="btn-primary" type="button" id="' + tipo + '-go" style="align-self:flex-start;flex:0 0 auto;padding:11px 22px">Importar</button>';
+      box.querySelectorAll('select').forEach(sel => { const v = st.map[sel.dataset.k]; sel.value = v == null ? '' : String(v); sel.addEventListener('change', () => { readMap(tipo); renderPreview(tipo); }); });
+      g(tipo + '-go').addEventListener('click', () => importar(tipo));
+      renderPreview(tipo);
+    }
+    function readMap(tipo) { const m = {}; document.querySelectorAll('select[data-tipo="' + tipo + '"]').forEach(s => { if (s.value !== '') m[s.dataset.k] = +s.value; }); IMP[tipo].map = m; }
+
+    // Converte as linhas da planilha em registros prontos para gravar (e conta problemas).
+    function montar(tipo) {
+      const st = IMP[tipo], m = st.map, out = new Map(); let semSku = 0, invalidas = 0;
+      st.linhas.forEach(row => {
+        const sku = m.sku == null ? '' : toSku(row[m.sku]);
+        if (!sku) { semSku++; return; }
+        if (tipo === 'estoque') {
+          const est = m.estoque == null ? null : toNum(row[m.estoque]);
+          const cur = out.get(sku);
+          if (cur) { cur.estoque += est || 0; return; }   // mesmo SKU em várias linhas (ex.: grade/depósitos): soma o saldo
+          out.set(sku, { sku, nome: m.nome == null ? null : (String(row[m.nome] || '').trim() || null), fornecedor: m.fornecedor == null ? null : (String(row[m.fornecedor] || '').trim() || null),
+            categoria: m.categoria == null ? null : (String(row[m.categoria] || '').trim() || null), custo: m.custo == null ? null : toNum(row[m.custo]), preco: m.preco == null ? null : toNum(row[m.preco]), estoque: est || 0 });
+        } else {
+          let am = m.data != null ? toAnoMes(row[m.data]) : null;
+          if (!am && m.ano != null && m.mes != null) { const a = toNum(row[m.ano]), me_ = toNum(row[m.mes]); if (a && me_ >= 1 && me_ <= 12) am = { ano: a, mes: me_ }; }
+          const q = m.qtd == null ? null : toNum(row[m.qtd]);
+          if (!am || q == null || am.ano < 2000 || am.ano > 2100) { invalidas++; return; }
+          const key = sku + '|' + am.ano + '|' + am.mes, v = m.valor == null ? 0 : (toNum(row[m.valor]) || 0);
+          const cur = out.get(key);
+          if (cur) { cur.qtd += q; cur.receita += v; } else out.set(key, { sku, ano: am.ano, mes: am.mes, qtd: q, receita: v });
+        }
+      });
+      return { regs: [...out.values()], semSku, invalidas };
+    }
+    function renderPreview(tipo) {
+      const st = IMP[tipo]; const { regs, semSku, invalidas } = montar(tipo);
+      const cols = tipo === 'estoque' ? ['sku', 'nome', 'fornecedor', 'categoria', 'custo', 'preco', 'estoque'] : ['sku', 'ano', 'mes', 'qtd', 'receita'];
+      g(tipo + '-prev').innerHTML = '<table><thead><tr>' + cols.map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>' + regs.slice(0, 5).map(r => '<tr>' + cols.map(c => '<td>' + esc(r[c] == null ? '' : r[c]) + '</td>').join('') + '</tr>').join('') + '</tbody></table>';
+      const req = CAMPOS[tipo].filter(c => c.req && st.map[c.k] == null).map(c => c.l);
+      const semData = tipo === 'vendas' && st.map.data == null && !(st.map.ano != null && st.map.mes != null);
+      const msg = g(tipo + '-msg'); const erro = req.length ? 'Falta indicar: ' + req.join(', ') + '.' : (semData ? 'Indique a coluna de data (ou ano e mês).' : '');
+      let txt = erro || (regs.length.toLocaleString('pt-BR') + (tipo === 'estoque' ? ' produtos' : ' registros SKU×mês') + ' prontos para importar');
+      if (!erro && semSku) txt += ' · ' + semSku + ' linha(s) sem SKU ignoradas';
+      if (!erro && invalidas) txt += ' · ' + invalidas + ' linha(s) sem data/quantidade válida ignoradas';
+      msg.className = 'imp-msg ' + (erro ? 'err' : (semSku || invalidas ? 'warn' : 'ok')); msg.textContent = txt;
+      g(tipo + '-go').disabled = !!erro || !regs.length;
+    }
+
+    // CSV: UTF-8 ou, se não for válido, Windows-1252 (padrão dos sistemas brasileiros); separador , ; ou tab.
+    function decodeTexto(buf) { try { return new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { return new TextDecoder('windows-1252').decode(buf); } }
+    function parseCSV(text) {
+      text = text.replace(/^\uFEFF/, '');
+      const first = text.split(/\r?\n/).slice(0, 8).join('\n');
+      const delim = [';', '\t', ','].map(d => [d, first.split(d).length]).sort((x, y) => y[1] - x[1])[0][0];
+      const rows = []; let row = [], cur = '', q = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+        else if (c === '"') q = true;
+        else if (c === delim) { row.push(cur); cur = ''; }
+        else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; rows.push(row); row = []; }
+        else cur += c;
+      }
+      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+      return rows;
+    }
+    async function lerArquivo(tipo, file) {
+      const msg = g(tipo === 'estoque' ? 'e-map' : 'v-map');
+      try {
+        const buf = await file.arrayBuffer();
+        let rows;
+        if (/\.csv$/i.test(file.name)) rows = parseCSV(decodeTexto(buf));
+        else {
+          const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+          rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: true, defval: '' });
+        }
+        // cabeçalho = primeira linha (entre as 15 primeiras) com pelo menos 3 células preenchidas
+        let hi = rows.slice(0, 15).findIndex(r => r.filter(c => String(c).trim() !== '').length >= 3); if (hi < 0) hi = 0;
+        const header = (rows[hi] || []).map(c => String(c == null ? '' : c).trim());
+        const linhas = rows.slice(hi + 1).filter(r => r.some(c => String(c).trim() !== ''));
+        IMP[tipo] = { nome: file.name, header, linhas, map: detectMap(tipo, header) };
+        renderMap(tipo);
+      } catch (err) { IMP[tipo] = null; msg.innerHTML = '<div class="imp-msg err">Não foi possível ler o arquivo: ' + esc(err.message) + '</div>'; }
+    }
+    g('e-file').addEventListener('change', e => { if (e.target.files[0]) lerArquivo('estoque', e.target.files[0]); });
+    g('v-file').addEventListener('change', e => { if (e.target.files[0]) lerArquivo('vendas', e.target.files[0]); });
+
+    async function lotes(tabela, regs, onConflict) {
+      for (let i = 0; i < regs.length; i += 500) {
+        const { error } = await sb.from(tabela).upsert(regs.slice(i, i + 500), { onConflict });
+        if (error) throw error;
+        g('toast-msg').textContent = 'Gravando… ' + Math.min(i + 500, regs.length) + ' de ' + regs.length;
+      }
+    }
+    async function importar(tipo) {
+      readMap(tipo);
+      const op = g(tipo === 'estoque' ? 'e-op' : 'v-op').value, st = IMP[tipo];
+      const { regs } = montar(tipo); if (!regs.length) return;
+      let aviso;
+      if (tipo === 'estoque') aviso = 'Importar ' + regs.length.toLocaleString('pt-BR') + ' produtos para ' + OP_NOME[op] + '? Produtos existentes (mesmo SKU) serão atualizados.';
+      else {
+        const periodos = [...new Set(regs.map(r => r.ano * 100 + r.mes))].sort();
+        aviso = 'Importar ' + regs.length.toLocaleString('pt-BR') + ' registros de vendas de ' + OP_NOME[op] + ', de ' + mesRefTxt(periodos[0]) + ' a ' + mesRefTxt(periodos[periodos.length - 1]) + '?\n\nAs vendas já gravadas desses ' + periodos.length + ' mês(es) para esta operação serão SUBSTITUÍDAS.';
+      }
+      if (!confirm(aviso)) return;
+      const btn = g(tipo + '-go'); btn.disabled = true; btn.textContent = 'Importando…';
+      const toast = g('toast'); toast.classList.add('visible');
+      try {
+        if (tipo === 'estoque') {
+          const agora = new Date().toISOString();
+          await lotes('produtos', regs.map(r => ({ operacao: op, ...r, atualizado_em: agora })), 'operacao,sku');
+        } else {
+          for (const p of [...new Set(regs.map(r => r.ano * 100 + r.mes))]) {
+            const { error } = await sb.from('produtos_vendas_mes').delete().eq('operacao', op).eq('ano', Math.floor(p / 100)).eq('mes', p % 100);
+            if (error) throw error;
+          }
+          await lotes('produtos_vendas_mes', regs.map(r => ({ operacao: op, ...r })), 'operacao,sku,ano,mes');
+        }
+        await sb.from('produtos_importacoes').insert({ tipo, operacao: op, arquivo: st.nome, linhas: regs.length });
+        showToast('Importação concluída: ' + regs.length.toLocaleString('pt-BR') + ' registros.', 'green');
+        IMP[tipo] = null; renderMap(tipo); g(tipo === 'estoque' ? 'e-file' : 'v-file').value = '';
+        await Promise.all([carregarImportacoes(), atualizarTudo()]);
+      } catch (err) { showToast('Erro na importação: ' + err.message, 'red'); btn.disabled = false; btn.textContent = 'Importar'; }
+    }
+    async function carregarImportacoes() {
+      const { data } = await sb.from('produtos_importacoes').select('*').order('created_at', { ascending: false }).limit(15);
+      g('tbl-imp').innerHTML = (data && data.length) ? '<thead><tr><th>Quando</th><th>Quem</th><th>Tipo</th><th>Operação</th><th>Arquivo</th><th class="r">Registros</th></tr></thead><tbody>' +
+        data.map(i => '<tr><td>' + fmtDT(i.created_at) + '</td><td>' + esc(i.user_nome || '—') + '</td><td>' + (i.tipo === 'estoque' ? 'Estoque' : 'Vendas') + '</td><td>' + esc(OP_NOME[i.operacao] || i.operacao) + '</td><td class="muted">' + esc(i.arquivo || '—') + '</td><td class="r">' + int(i.linhas) + '</td></tr>').join('') + '</tbody>'
+        : '<tbody><tr><td class="muted" style="padding:20px;text-align:center">Nenhuma importação ainda.</td></tr></tbody>';
+    }
+
+    // ── Geral ──────────────────────────────────────────────────────────────
+    async function atualizarTudo() { page = 0; await carregarFiltros(); await Promise.all([carregarResumo(), carregarLista(), carregarSaz()]); }
+    g('sel-op').addEventListener('change', atualizarTudo);
+    document.addEventListener('click', e => {
+      const t = e.target.closest('#tabs [data-tab]'); if (!t) return;
+      document.querySelectorAll('#tabs .tab').forEach(b => b.classList.toggle('active', b === t));
+      ['geral', 'saz', 'imp'].forEach(x => { g('tab-' + x).style.display = x === t.dataset.tab ? '' : 'none'; });
+      if (t.dataset.tab === 'saz') carregarSaz();
+    });
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      me = (rows && rows[0]) || null;
+      if (!me || !(me.is_admin || me.can_produtos === true)) return window.location.replace('/');
+      SafiSidebar.apply('pr', me, { email: data.session.user.email, sb });
+      g('pr-loading').style.display = 'none';
+      g('pr-main').style.display = 'block';
+      await Promise.all([atualizarTudo(), carregarImportacoes()]);
+    }
+    init();
+  </script>
+</body>
+</html>

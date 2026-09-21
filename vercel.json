@@ -18,7 +18,8 @@
     { "source": "/fechamento", "destination": "/fechamento.html" },
     { "source": "/conselho", "destination": "/conselho.html" },
     { "source": "/orcamento", "destination": "/orcamento.html" },
-    { "source": "/reunioes", "destination": "/reunioes.html" }
+    { "source": "/reunioes", "destination": "/reunioes.html" },
+    { "source": "/produtos", "destination": "/produtos.html" }
   ],
   "headers": [
     {
