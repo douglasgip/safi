@@ -204,6 +204,37 @@
     .lc-in.chg { border-color: rgba(251,191,36,0.65); }
     .lc-in:disabled { opacity: .5; cursor: not-allowed; }
     #lc-dirty { font-size: 12px; font-weight: 700; color: #fcd34d; }
+    /* ── Gerenciar Estrutura, no mesmo padrão visual da grade de Lançamentos ── */
+    .mg-intro { font-size: 12px; color: #64748b; line-height: 1.5; }
+    .mg-intro b { color: #94a3b8; }
+    #manage-tree { overflow: auto; max-height: 74vh; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; background: rgba(15,23,42,0.7); -webkit-overflow-scrolling: touch; }
+    .mg-head, .mg-cls, .mg-fx, .mg-row { display: grid; grid-template-columns: minmax(0, 1fr) 210px 150px; align-items: center; gap: 8px; padding: 6px 14px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .mg-head { position: sticky; top: 0; z-index: 3; background: #101728; padding-top: 10px; padding-bottom: 10px; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; }
+    .mg-head .mg-acoes { justify-content: flex-end; }
+    .mg-cls { background: #1d1a3d; border-bottom-color: rgba(139,92,246,0.25); padding-top: 8px; padding-bottom: 8px; }
+    .mg-cls .mg-lbl { font-size: 12.5px; font-weight: 800; letter-spacing: .3px; }
+    .mg-cls .mg-lbl.positivo { color: #4ade80; } .mg-cls .mg-lbl.negativo { color: #f87171; }
+    .mg-fx { background: #14102e; border-top: 1px solid rgba(139,92,246,0.3); }
+    .mg-fx .mg-lbl { color: #c4b5fd; font-weight: 800; font-size: 12.5px; }
+    .mg-nota { font-size: 11px; color: #475569; }
+    .mg-lbl { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .mg-lbl.sub { padding-left: 24px; }
+    .mg-tipo { font-size: 11px; color: #64748b; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .mg-chip { display: inline-block; padding: 2px 8px; border-radius: 8px; background: rgba(255,255,255,0.06); color: #94a3b8; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+    .mg-chip.prot { background: rgba(52,211,153,0.1); color: #6ee7b7; }
+    .mg-acoes { display: flex; justify-content: flex-end; align-items: center; gap: 5px; }
+    .mg-row.camp { background: #0f1729; }
+    .mg-row.camp .campo-nome { font-weight: 700; color: #e2e8f0; font-size: 12.5px; }
+    .mg-row.in.z-a { background: #0f1729; }
+    .mg-row.in.z-b { background: #1a1838; }
+    .mg-row.in .campo-nome { font-weight: 600; color: #e2e8f0; font-size: 12.5px; }
+    .mg-row .subcampo-nome { font-size: 12px; color: #94a3b8; }
+    .mg-addrow { background: #0d1424; }
+    .manage-campo-row, .manage-subcampo-row { display: block; padding: 0; border: none; border-radius: 0; background: none; }
+    .manage-campo-row:nth-child(even), .manage-subcampo-row:nth-child(even) { background: none; }
+    .manage-campo-row.sortable-chosen > .mg-row, .manage-subcampo-row.sortable-chosen > .mg-row { background: rgba(139,92,246,0.22) !important; }
+    .btn-add-inline.mini { margin: 0; padding: 4px 10px; font-size: 11px; }
+    @media (max-width: 768px) { .mg-head, .mg-cls, .mg-fx, .mg-row { grid-template-columns: minmax(0, 1fr) 120px; } .mg-tipo { display: none; } }
     #lc-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
 
     @media (max-width: 768px) {
@@ -281,6 +312,7 @@
 
     <!-- ══ MODO: GERENCIAR ESTRUTURA ══ -->
     <div id="view-gerenciar" style="display:none">
+      <div class="entry-filters"><span class="mg-intro"><b>Estrutura das contas do DRE.</b> A ordem e os nomes definidos aqui valem para a grade de <b>Lançar DRE</b> e para o modelo de planilha. Arraste pelo ⋮⋮ para reordenar.</span></div>
       <div id="manage-tree"></div>
     </div>
 
@@ -909,60 +941,55 @@
     // no DRE, mas isso não aparece mais nesta tela).
     function renderManageTree() {
       const el = document.getElementById('manage-tree');
-      el.innerHTML = classes.map(classe => {
+      const I_EDIT = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+      const I_DEL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
+      const I_LOCK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>';
+      const btnEdit = (tipo, id, nome) => `<button class="icon-btn" title="Renomear" onclick="openEditModal('${tipo}','${id}','${esc(nome)}')">${I_EDIT}</button>`;
+      const btnDel = (tipo, id, nome) => `<button class="icon-btn danger" title="Excluir" onclick="confirmToggleAtivo('${tipo}','${id}','${esc(nome)}',false)">${I_DEL}</button>`;
+      let h = '<div class="mg-head"><div>Conta</div><div class="mg-tipo">Tipo</div><div class="mg-acoes">Ações</div></div>';
+      classes.forEach(classe => {
         if (classe.tipo === 'formula') {
-          return `<div class="classe-card formula-card">
-            <div class="classe-head">
-              <span class="classe-nome formula">${esc(classe.nome)}</span>
-              <span style="font-size:11px;color:#475569">calculado automaticamente</span>
-            </div>
-          </div>`;
+          h += `<div class="mg-fx"><div class="mg-lbl">${esc(classe.nome)}</div><div class="mg-tipo"><span class="mg-chip">Resultado</span></div><div class="mg-acoes"><span class="mg-nota">calculado automaticamente</span></div></div>`;
+          return;
         }
         const camposHtml = camposDaClasse(classe.id).filter(c => c.ativo).map(campo => {
-          const subsHtml = subcamposDoCampo(campo.id).filter(s => s.ativo).map(s => {
+          const subs = subcamposDoCampo(campo.id).filter(s => s.ativo);
+          const subsHtml = subs.map(s => {
             const locked = !!s.chave;
-            return `<div class="manage-subcampo-row" data-id="${s.id}">
-              <div style="display:flex;align-items:center;gap:7px;min-width:0">
-                <span class="drag-handle" title="Arrastar para reordenar">${DRAG_ICON}</span>
-                <span class="subcampo-nome">${esc(s.nome)}</span>
-              </div>
-              <div class="row-actions">
-                <button class="icon-btn" title="Renomear" onclick="openEditModal('subcampo','${s.id}','${esc(s.nome)}')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                </button>
-                ${locked
-                  ? `<span class="icon-btn locked" title="Protegido — usado por outras partes do sistema, não pode ser excluído"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>`
-                  : `<button class="icon-btn danger" title="Excluir" onclick="confirmToggleAtivo('subcampo','${s.id}','${esc(s.nome)}',false)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>`
-                }
-              </div>
-            </div>`;
+            return `<div class="manage-subcampo-row" data-id="${s.id}"><div class="mg-row in">
+              <div class="mg-lbl sub"><span class="drag-handle" title="Arrastar para reordenar">${DRAG_ICON}</span><span class="subcampo-nome">${esc(s.nome)}</span></div>
+              <div class="mg-tipo"><span class="mg-chip">Subcampo</span>${locked ? '<span class="mg-chip prot" title="Protegido — usado por outras partes do sistema">Protegido</span>' : ''}</div>
+              <div class="mg-acoes row-actions">${btnEdit('subcampo', s.id, s.nome)}${locked ? `<span class="icon-btn locked" title="Protegido — usado por outras partes do sistema, não pode ser excluído">${I_LOCK}</span>` : btnDel('subcampo', s.id, s.nome)}</div>
+            </div></div>`;
           }).join('');
-          return `<div class="manage-campo-row" data-id="${campo.id}" style="flex-direction:column;align-items:stretch">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-              <div style="display:flex;align-items:center;gap:7px;min-width:0">
-                <span class="drag-handle" title="Arrastar para reordenar">${DRAG_ICON}</span>
-                <span class="campo-nome">${esc(campo.nome)}</span>
-              </div>
-              <div class="row-actions">
-                <button class="icon-btn" title="Renomear" onclick="openEditModal('campo','${campo.id}','${esc(campo.nome)}')">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                </button>
-                <button class="icon-btn danger" title="Excluir" onclick="confirmToggleAtivo('campo','${campo.id}','${esc(campo.nome)}',false)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
-              </div>
-            </div>
-            ${campo.folha ? '' : `<div class="subs-list" data-campo-id="${campo.id}">${subsHtml}</div>`}
-            <button class="btn-add-inline" onclick="openCreateModal('subcampo','${campo.id}')">${campo.folha ? '+ Detalhar em subcampos' : '+ Adicionar Subcampo'}</button>
+          const cabec = campo.folha
+            ? `<div class="mg-row in">
+                <div class="mg-lbl"><span class="drag-handle" title="Arrastar para reordenar">${DRAG_ICON}</span><span class="campo-nome">${esc(campo.nome)}</span></div>
+                <div class="mg-tipo"><span class="mg-chip">Campo (linha única)</span></div>
+                <div class="mg-acoes row-actions"><button class="btn-add-inline mini" title="Transforma o campo em vários subcampos" onclick="openCreateModal('subcampo','${campo.id}')">+ Detalhar</button>${btnEdit('campo', campo.id, campo.nome)}${btnDel('campo', campo.id, campo.nome)}</div>
+              </div>`
+            : `<div class="mg-row camp">
+                <div class="mg-lbl"><span class="drag-handle" title="Arrastar para reordenar">${DRAG_ICON}</span><span class="campo-nome">${esc(campo.nome)}</span></div>
+                <div class="mg-tipo"><span class="mg-chip">Campo com subcampos</span></div>
+                <div class="mg-acoes row-actions">${btnEdit('campo', campo.id, campo.nome)}${btnDel('campo', campo.id, campo.nome)}</div>
+              </div>`;
+          return `<div class="manage-campo-row" data-id="${campo.id}">
+            ${cabec}
+            ${campo.folha ? '' : `<div class="subs-list" data-campo-id="${campo.id}">${subsHtml}</div>
+            <div class="mg-row mg-addrow"><div class="mg-lbl sub"><button class="btn-add-inline mini" onclick="openCreateModal('subcampo','${campo.id}')">+ Adicionar subcampo</button></div><div></div><div></div></div>`}
           </div>`;
         }).join('');
-        return `<div class="classe-card">
-          <div class="classe-head"><span class="classe-nome ${classe.sinal}">${esc(classe.nome)}</span></div>
-          <div class="classe-body">
-            <div class="campos-list" data-classe-id="${classe.id}">${camposHtml}</div>
-            <button class="btn-add-inline" onclick="openCreateModal('campo','${classe.id}')">+ Adicionar Campo</button>
-          </div>
-        </div>`;
-      }).join('');
+        h += `<div class="mg-cls"><div class="mg-lbl ${classe.sinal}">${esc(classe.nome)}</div><div class="mg-tipo"><span class="mg-chip">Classe</span></div><div class="mg-acoes"><button class="btn-add-inline mini" onclick="openCreateModal('campo','${classe.id}')">+ Adicionar campo</button></div></div>
+          <div class="campos-list" data-classe-id="${classe.id}">${camposHtml || ''}</div>`;
+      });
+      el.innerHTML = h;
       initSortables();
+      aplicarZebraEstrutura();
+    }
+    // Tons alternados nas linhas de conta (campo de linha única e subcampo), contínuos — igual à grade de Lançamentos.
+    function aplicarZebraEstrutura() {
+      let z = 0;
+      document.querySelectorAll('#manage-tree .mg-row.in').forEach(r => { r.classList.remove('z-a', 'z-b'); r.classList.add(z++ % 2 === 0 ? 'z-a' : 'z-b'); });
     }
 
     // ── Arrastar e soltar pra reordenar campos/subcampos ──
@@ -977,14 +1004,14 @@
         new Sortable(el, {
           handle: '.drag-handle',
           animation: 150,
-          onEnd: () => persistOrder('campo', el),
+          onEnd: () => { persistOrder('campo', el); aplicarZebraEstrutura(); },
         });
       });
       document.querySelectorAll('.subs-list').forEach(el => {
         new Sortable(el, {
           handle: '.drag-handle',
           animation: 150,
-          onEnd: () => persistOrder('subcampo', el),
+          onEnd: () => { persistOrder('subcampo', el); aplicarZebraEstrutura(); },
         });
       });
     }

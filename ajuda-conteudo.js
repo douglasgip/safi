@@ -122,7 +122,7 @@ window.SAFI_AJUDA = { telas: {
       { sel: '#entry-tree', t: 'A grade', d: 'Contas nas linhas, meses nas colunas — igual ao Orçamento. Linhas em tons alternados, totais por campo e por classe, e o resultado calculado ao vivo. Meses travados aparecem com 🔒.' },
       { sel: '.lc-in:not(:disabled)', t: 'Cada célula', d: 'Digite o valor do mês. <b>Enter</b> desce, <b>Tab</b> avança, e você pode <b>colar um bloco</b> copiado do Excel. Células alteradas ficam com borda âmbar.' },
       { sel: '#btn-save-valores', t: 'Salvar', d: 'Grava só o que você alterou (o número aparece no botão), atualiza o DRE e registra quem mudou o quê.' },
-      { sel: '#manage-tree', clicar: '#tab-gerenciar', voltar: '#tab-lancar', t: 'Gerenciar Estrutura', d: 'Crie, renomeie e ordene classes, campos e subcampos do DRE.' },
+      { sel: '#manage-tree', clicar: '#tab-gerenciar', voltar: '#tab-lancar', t: 'Gerenciar Estrutura', d: 'Crie, renomeie, exclua e <b>arraste para reordenar</b> classes, campos e subcampos do DRE. A lista segue o mesmo formato da grade de lançamento, e a ordem definida aqui vale para a grade e para o modelo de planilha.' },
       { sel: '#view-resumo', clicar: '#tab-resumo', t: 'Resumo Contábil', d: 'Informe entrada, saída, despesa, estoque e alíquota do mês — alimenta a tela de Resumo Contábil.' },
     ],
   },
