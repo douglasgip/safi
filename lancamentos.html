@@ -175,6 +175,35 @@
     .undo-btn { padding: 5px 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.18); border-radius: 7px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; margin-left: 4px; }
     .undo-btn:hover { background: rgba(255,255,255,0.18); }
 
+    /* ── Grade de lançamento (contas × meses), no padrão da tela de Orçamento ── */
+    #entry-tree { overflow: auto; max-height: 74vh; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; background: rgba(15,23,42,0.7); -webkit-overflow-scrolling: touch; }
+    table.lc-tbl { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1720px; }
+    .lc-tbl th, .lc-tbl td { padding: 4px 5px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
+    .lc-tbl thead th { position: sticky; top: 0; z-index: 3; background: #101728; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: right; padding: 10px 8px; }
+    .lc-tbl thead th.lbl { left: 0; z-index: 5; text-align: left; padding-left: 14px; }
+    .lc-tbl thead th.trav { color: #6ee7b7; }
+    .lc-tbl .lbl { position: sticky; left: 0; z-index: 2; text-align: left; font-size: 12.5px; font-weight: 600; min-width: 250px; max-width: 300px; overflow: hidden; text-overflow: ellipsis; padding-left: 14px; background: #0d1424; color: #e2e8f0; }
+    .lc-tbl .lbl.sub { padding-left: 32px; color: #94a3b8; font-weight: 500; font-size: 12px; }
+    .lc-tbl td.num { text-align: right; font-size: 12px; color: #94a3b8; font-variant-numeric: tabular-nums; padding: 4px 10px; }
+    .lc-tbl td.tot, .lc-tbl th.tot { border-left: 1px solid rgba(255,255,255,0.1); font-weight: 700; color: #cbd5e1; min-width: 120px; }
+    .lc-tbl tr.cls td { background: #1d1a3d; border-bottom-color: rgba(139,92,246,0.25); }
+    .lc-tbl tr.cls td.lbl { font-size: 12.5px; font-weight: 800; letter-spacing: .3px; }
+    .lc-tbl tr.cls td.lbl.positivo { color: #4ade80; } .lc-tbl tr.cls td.lbl.negativo { color: #f87171; }
+    .lc-tbl tr.cls td.num { color: #e2e8f0; font-weight: 800; }
+    .lc-tbl tr.camp td { background: #0f1729; }
+    .lc-tbl tr.camp td.lbl { font-weight: 700; color: #e2e8f0; }
+    .lc-tbl tr.in.z-a td { background: #0f1729; }
+    .lc-tbl tr.in.z-b td { background: #1a1838; }
+    .lc-tbl tr.fx td { background: #14102e; border-top: 1px solid rgba(139,92,246,0.3); }
+    .lc-tbl tr.fx td.lbl { color: #c4b5fd; font-weight: 800; }
+    .lc-tbl tr.fx td.num { font-weight: 800; font-size: 12.5px; }
+    .lc-tbl td.trav { box-shadow: inset 0 0 0 999px rgba(52,211,153,0.05); }
+    .lc-tbl td.vazio { font-size: 11.5px; color: #475569; padding: 8px 14px; }
+    .lc-in { width: 104px; padding: 7px 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .lc-in:focus { outline: none; border-color: #8b5cf6; background: rgba(139,92,246,0.14); }
+    .lc-in.chg { border-color: rgba(251,191,36,0.65); }
+    .lc-in:disabled { opacity: .5; cursor: not-allowed; }
+    #lc-dirty { font-size: 12px; font-weight: 700; color: #fcd34d; }
     #lc-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
 
     @media (max-width: 768px) {
@@ -232,15 +261,8 @@
       </div>
       <div class="entry-filters" id="entry-filters" style="display:none">
         <select id="f-empresa" onchange="loadEntryValues()"></select>
-        <select id="f-mes" onchange="loadEntryValues()">
-          <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
-          <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
-          <option value="7">Julho</option><option value="8">Agosto</option><option value="9">Setembro</option>
-          <option value="10">Outubro</option><option value="11">Novembro</option><option value="12">Dezembro</option>
-        </select>
-        <select id="f-ano" onchange="loadEntryValues()">
-          <option value="2026">2026</option>
-        </select>
+        <select id="f-ano" onchange="loadEntryValues()"></select>
+        <span id="lc-dirty" style="display:none"></span>
         <div style="flex:1"></div>
         <button class="btn-outline" type="button" title="Baixa uma planilha com a estrutura atual e os valores já lançados no ano selecionado" onclick="downloadTemplate()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -418,6 +440,7 @@
       document.getElementById('view-lancar').style.display = mode==='lancar' ? 'block' : 'none';
       document.getElementById('view-gerenciar').style.display = mode==='gerenciar' ? 'block' : 'none';
       document.getElementById('view-resumo').style.display = mode==='resumo' ? 'block' : 'none';
+      if (mode==='lancar' && ctxGrade.empresa) renderGrade();   // reflete mudanças feitas em Gerenciar Estrutura, sem perder o que já foi digitado
       if (mode==='gerenciar') renderManageTree();
       if (mode==='resumo') {
         if (!document.getElementById('rs-empresa').children.length) populateResumoEmpresaSelect();
@@ -503,144 +526,204 @@
       else showToast('Resumo salvo — a tela de Resumo Contábil já foi atualizada', 'green');
     }
 
-    // ── Modo Lançar Valores ──
+    // ── Modo Lançar Valores — grade: contas × 12 meses (mesma estrutura da tela de Orçamento) ──
     function populateEmpresaSelect() {
       const sel = document.getElementById('f-empresa');
       sel.innerHTML = allowedEmpresas.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
     }
+    function populateAnoSelect() {
+      const y = new Date().getFullYear(), sel = document.getElementById('f-ano');
+      sel.innerHTML = [y - 1, y, y + 1].map(a => `<option value="${a}"${a === y ? ' selected' : ''}>${a}</option>`).join('');
+    }
 
     // Mês travado (Fechamento do Mês) — a RLS do banco já bloqueia a gravação; aqui só
-    // avisamos e travamos a tela pra ninguém digitar à toa e perder o trabalho.
-    let mesTravado = false;
+    // avisamos e travamos as colunas dos meses travados pra ninguém digitar à toa e perder o trabalho.
+    let mesesTravados = new Set();          // meses (1-12) travados para a operação/ano em tela
     const operacaoDeEmpresa = e => (e === 'EP' || e === 'GIP') ? 'GIP' : e;
     const MSG_TRAVADO = 'Este mês está travado para esta operação — a edição está bloqueada. Peça a quem fecha o mês (Douglas, Aldemar ou Guilherme) para destravar, se precisar corrigir algo.';
     function msgErroGravacao(error) {
       return /row-level security/i.test(error.message || '') ? 'Não foi possível salvar: algum mês está travado para esta operação (ou você não tem permissão). Peça a quem fecha o mês para destravar.' : error.message;
     }
+
+    // Estado da grade. vals = o que está nas células agora; orig = o que está gravado no banco.
+    // Só as células que MUDARAM são enviadas ao salvar (nada além disso é tocado).
+    let vals = {}, orig = {};
+    let ctxGrade = { empresa: null, ano: null };
+    const kv = (sid, m) => sid + '|' + m;
+    const subPorId = () => { const o = {}; subcampos.forEach(s => { o[String(s.id)] = s; }); return o; };
+    function celulasAlteradas() {
+      const out = [];
+      new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(k => { if (Math.abs((vals[k] || 0) - (orig[k] || 0)) > 0.004) out.push(k); });
+      return out;
+    }
+    function atualizarSujo() {
+      const n = celulasAlteradas().length;
+      const el = document.getElementById('lc-dirty'); if (el) { el.textContent = n ? '● ' + n + ' célula(s) alterada(s), ainda não salvas' : ''; el.style.display = n ? 'inline' : 'none'; }
+      const btn = document.getElementById('btn-save-valores'); if (btn && !btn.dataset.busy) btn.textContent = n ? 'Salvar Lançamentos (' + n + ')' : 'Salvar Lançamentos';
+      document.querySelectorAll('#entry-tree .lc-in').forEach(i => { i.classList.toggle('chg', Math.abs((vals[kv(i.dataset.sub, i.dataset.mes)] || 0) - (orig[kv(i.dataset.sub, i.dataset.mes)] || 0)) > 0.004); });
+    }
+    window.addEventListener('beforeunload', e => { if (celulasAlteradas().length) { e.preventDefault(); e.returnValue = ''; } });
+
+    async function buscarTodos(build) {
+      const out = [], passo = 1000;
+      for (let from = 0; ; from += passo) {
+        const { data, error } = await build().range(from, from + passo - 1);
+        if (error) throw error;
+        out.push(...data);
+        if (data.length < passo) break;
+      }
+      return out;
+    }
+
+    async function loadEntryValues(opts) {
+      const selE = document.getElementById('f-empresa'), selA = document.getElementById('f-ano');
+      const empresa = selE.value, ano = parseInt(selA.value);
+      if (!empresa) return;
+      if (!(opts && opts.force) && celulasAlteradas().length && !confirm('Há alterações não salvas nesta grade. Descartar e trocar de empresa/ano?')) {
+        if (ctxGrade.empresa) { selE.value = ctxGrade.empresa; selA.value = ctxGrade.ano; }
+        return;
+      }
+      let rows, fech;
+      try {
+        [rows, fech] = await Promise.all([
+          buscarTodos(() => sb.from('lancamentos_valores').select('subcampo_id,mes,valor').eq('empresa_id', empresa).eq('ano', ano)),
+          sb.from('fechamentos').select('mes,status').eq('operacao', operacaoDeEmpresa(empresa)).eq('ano', ano),
+        ]);
+      } catch (err) {
+        showToast('Não foi possível carregar os lançamentos: ' + (err.message || err), 'red');
+        return;   // não desenha uma grade vazia (parecia "sem dados") — nada é alterado
+      }
+      vals = {}; orig = {};
+      rows.forEach(v => { const k = kv(v.subcampo_id, v.mes), n = +v.valor || 0; vals[k] = n; orig[k] = n; });
+      mesesTravados = new Set(((fech && fech.data) || []).filter(f => f.status === 'travado').map(f => f.mes));
+      ctxGrade = { empresa, ano };
+      renderGrade();
+    }
+
+    function renderGrade() {
+      const el = document.getElementById('entry-tree');
+      let z = 0; const zebra = () => (z++ % 2 === 0) ? 'z-a' : 'z-b';
+      const cols = Array.from({ length: 12 }, (_, i) => i + 1);
+      const celulasNum = (attr, id) => cols.map(m => `<td class="num${mesesTravados.has(m) ? ' trav' : ''}" ${attr}="${id}|${m}"></td>`).join('') + `<td class="num tot" ${attr}="${id}|T"></td>`;
+      let h = '<table class="lc-tbl" id="lc-grid"><thead><tr><th class="lbl">Conta</th>' +
+        cols.map(m => `<th class="${mesesTravados.has(m) ? 'trav' : ''}" title="${mesesTravados.has(m) ? 'Mês travado — edição bloqueada' : ''}">${MESES_ABREV[m - 1]}${mesesTravados.has(m) ? ' 🔒' : ''}</th>`).join('') + '<th class="tot">Total do ano</th></tr></thead><tbody>';
+      const inputRow = (s, rotulo, cls) => `<tr class="in ${zebra()}"><td class="lbl ${cls || ''}" title="${esc(rotulo)}">${esc(rotulo)}</td>` + cols.map(m => {
+        const v = vals[kv(s.id, m)];
+        return `<td class="${mesesTravados.has(m) ? 'trav' : ''}"><input type="text" inputmode="decimal" class="lc-in" data-sub="${s.id}" data-mes="${m}" value="${v ? numberToMoneyMasked(v) : ''}" placeholder="—" ${mesesTravados.has(m) ? 'disabled' : ''} aria-label="${esc(rotulo)} ${MESES_ABREV[m - 1]}"></td>`;
+      }).join('') + `<td class="num tot" data-rowtot="${s.id}"></td></tr>`;
+
+      classes.forEach(classe => {
+        if (classe.tipo === 'formula') {
+          h += `<tr class="fx"><td class="lbl">${esc(classe.nome)}</td>${celulasNum('data-fx', classe.chave)}</tr>`;
+          return;
+        }
+        h += `<tr class="cls"><td class="lbl ${classe.sinal}">${esc(classe.nome)}</td>${celulasNum('data-clsm', classe.id)}</tr>`;
+        const camposAtivos = camposDaClasse(classe.id).filter(c => c.ativo);
+        if (!camposAtivos.length) h += `<tr><td class="vazio" colspan="14">Nenhum campo nesta classe.</td></tr>`;
+        camposAtivos.forEach(campo => {
+          const subs = subcamposDoCampo(campo.id).filter(s => s.ativo);
+          if (campo.folha && subs.length === 1) { h += inputRow(subs[0], campo.nome); return; }   // campo folha: uma linha só
+          h += `<tr class="camp"><td class="lbl">${esc(campo.nome)}</td>${celulasNum('data-campm', campo.id)}</tr>`;
+          if (!subs.length) h += `<tr><td class="vazio" colspan="14">Nenhum subcampo cadastrado — crie em "Gerenciar Estrutura".</td></tr>`;
+          subs.forEach(s => { h += inputRow(s, s.nome, 'sub'); });
+        });
+      });
+      el.innerHTML = h + '</tbody></table>';
+      el.querySelectorAll('.lc-in').forEach(attachMoneyMask);
+      aplicarTravaMes();
+      recomputeTotals();
+      atualizarSujo();
+    }
+
     function aplicarTravaMes() {
       const banner = document.getElementById('lock-banner');
-      banner.style.display = mesTravado ? 'block' : 'none';
-      if (mesTravado) banner.textContent = '🔒 ' + MSG_TRAVADO;
-      document.querySelectorAll('.subcampo-input').forEach(i => { i.disabled = mesTravado; });
-      const btn = document.getElementById('btn-save-valores');
-      if (btn) { btn.disabled = mesTravado; btn.style.opacity = mesTravado ? '0.45' : ''; btn.style.cursor = mesTravado ? 'not-allowed' : ''; }
+      const lista = [...mesesTravados].sort((a, b) => a - b).map(m => MESES_ABREV[m - 1]);
+      banner.style.display = lista.length ? 'block' : 'none';
+      if (lista.length) banner.textContent = '🔒 Meses travados para esta operação: ' + lista.join(', ') + '. Esses meses ficam bloqueados para edição. Peça a quem fecha o mês (Douglas, Aldemar ou Guilherme) para destravar, se precisar corrigir algo.';
     }
 
-    async function loadEntryValues() {
-      const empresa = document.getElementById('f-empresa').value;
-      const mes = parseInt(document.getElementById('f-mes').value);
-      const ano = parseInt(document.getElementById('f-ano').value);
-      if (!empresa) return;
-      const { data, error } = await sb.from('lancamentos_valores').select('subcampo_id,valor').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes);
-      valoresAtuais = {};
-      if (!error) (data||[]).forEach(v => { valoresAtuais[v.subcampo_id] = +v.valor||0; });
-      const { data: fech } = await sb.from('fechamentos').select('status').eq('operacao', operacaoDeEmpresa(empresa)).eq('ano', ano).eq('mes', mes).maybeSingle();
-      mesTravado = !!fech && fech.status === 'travado';
-      renderEntryTree();
-      aplicarTravaMes();
-    }
-
-    function renderEntryTree() {
-      const el = document.getElementById('entry-tree');
-      // Listrado (zebra): alterna 2 tons entre as linhas com input (campo-folha e
-      // subcampo), contínuo pela tela inteira — não reinicia a cada classe/campo —
-      // pra ficar mais fácil não perder a linha numa lista comprida.
-      let zebraIdx = 0;
-      const zebra = () => (zebraIdx++ % 2 === 0) ? 'zebra-a' : 'zebra-b';
-      el.innerHTML = classes.map(classe => {
-        // Classes de fórmula (Receita Líquida, Margem, Resultado) não recebem lançamento —
-        // aparecem só como linha de resultado, calculada ao vivo.
-        if (classe.tipo === 'formula') {
-          return `<div class="classe-card formula-card">
-            <div class="classe-head">
-              <span class="classe-nome formula">${esc(classe.nome)}</span>
-              <span class="classe-total" id="classe-total-${classe.id}">R$ 0,00</span>
-            </div>
-          </div>`;
-        }
-        const camposAtivos = camposDaClasse(classe.id).filter(c => c.ativo);
-        const camposHtml = camposAtivos.map(campo => {
-          const subs = subcamposDoCampo(campo.id).filter(s => s.ativo);
-          // Campo folha: uma linha só, o input fica direto no campo (como na planilha,
-          // onde Deduções e Custos Variáveis são itens diretos, sem sub-nível).
-          if (campo.folha && subs.length === 1) {
-            const s = subs[0];
-            return `<div class="campo-row folha ${zebra()}">
-              <div class="campo-head">
-                <span class="campo-nome">${esc(campo.nome)}</span>
-                <span class="money-wrap"><input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()"></span>
-              </div>
-            </div>`;
-          }
-          const subsHtml = subs.map(s => `<div class="subcampo-row ${zebra()}">
-              <span class="subcampo-nome">${esc(s.nome)}</span>
-              <span class="money-wrap"><input type="text" inputmode="decimal" class="subcampo-input" id="in-${s.id}" value="${valoresAtuais[s.id] ? numberToMoneyMasked(valoresAtuais[s.id]) : ''}" oninput="recomputeTotals()"></span>
-            </div>`).join('');
-          return `<div class="campo-row">
-            <div class="campo-head">
-              <span class="campo-nome">${esc(campo.nome)}</span>
-              <span class="campo-total" id="campo-total-${campo.id}">R$ 0,00</span>
-            </div>
-            ${subsHtml || '<div style="font-size:11.5px;color:#475569;padding-left:16px">Nenhum subcampo cadastrado — crie em "Gerenciar Estrutura".</div>'}
-          </div>`;
-        }).join('');
-        return `<div class="classe-card">
-          <div class="classe-head">
-            <span class="classe-nome ${classe.sinal}">${esc(classe.nome)}</span>
-            <span class="classe-total" id="classe-total-${classe.id}">R$ 0,00</span>
-          </div>
-          <div class="classe-body">${camposHtml || '<div style="font-size:12px;color:#475569;padding:10px 0">Nenhum campo nesta classe.</div>'}</div>
-        </div>`;
-      }).join('');
-      document.querySelectorAll('.subcampo-input').forEach(attachMoneyMask);
-      recomputeTotals();
-    }
-
-    function totalDaClasse(classe) {
-      let total = 0;
-      camposDaClasse(classe.id).filter(c => c.ativo).forEach(campo => {
-        subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
-          const inp = document.getElementById('in-'+s.id);
-          if (inp) total += moneyToNumber(inp.value)||0;
-        });
-      });
-      return total;
-    }
-
+    // Totais por campo/classe/mês, linhas de resultado (fórmulas da planilha do Aldemar) e total do ano.
     function recomputeTotals() {
-      campos.forEach(campo => {
-        const el = document.getElementById('campo-total-'+campo.id);
-        if (!el) return;
-        let total = 0;
-        subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
-          const inp = document.getElementById('in-'+s.id);
-          if (inp) total += moneyToNumber(inp.value)||0;
-        });
-        el.textContent = fmtR(total);
-      });
-
-      const porChave = {};
+      const fmt = v => v ? numberToMoneyMasked(v) : '—';
+      const campM = {}, clsM = {}, rowT = {};
+      const somar = (obj, id, m, v) => { (obj[id] ||= Array(13).fill(0))[m] += v; };
       classes.filter(c => c.tipo === 'entrada').forEach(classe => {
-        const total = totalDaClasse(classe);
-        porChave[classe.chave] = total;
-        const el = document.getElementById('classe-total-'+classe.id);
-        if (el) el.textContent = fmtR(total);
+        camposDaClasse(classe.id).filter(c => c.ativo).forEach(campo => {
+          subcamposDoCampo(campo.id).filter(s => s.ativo).forEach(s => {
+            for (let m = 1; m <= 12; m++) { const v = vals[kv(s.id, m)] || 0; if (!v) continue; somar(campM, campo.id, m, v); somar(clsM, classe.id, m, v); rowT[s.id] = (rowT[s.id] || 0) + v; }
+          });
+        });
       });
-
-      // Fórmulas, exatamente como na planilha do Aldemar
-      const rb = porChave['receita_bruta'] || 0;
-      const rl = rb - (porChave['deducoes'] || 0);
-      const mc = rl - (porChave['custos_variaveis'] || 0);
-      const res = mc - (porChave['gastos_operacionais'] || 0);
-      const formulas = { receita_liquida: rl, margem_contribuicao: mc, resultado_liquido: res };
-      classes.filter(c => c.tipo === 'formula').forEach(classe => {
-        const el = document.getElementById('classe-total-'+classe.id);
-        if (!el) return;
-        const v = formulas[classe.chave] || 0;
-        el.textContent = fmtR(v);
-        el.style.color = v >= 0 ? '#4ade80' : '#f87171';
-      });
+      const preencher = (attr, id, arr, colorir) => {
+        for (let m = 1; m <= 12; m++) {
+          const td = document.querySelector(`[${attr}="${id}|${m}"]`); if (!td) continue;
+          const v = arr ? arr[m] : 0; td.textContent = fmt(v); if (colorir) td.style.color = v > 0 ? '#4ade80' : v < 0 ? '#f87171' : '';
+        }
+        const tt = document.querySelector(`[${attr}="${id}|T"]`);
+        if (tt) { const s = arr ? arr.slice(1).reduce((a, b) => a + b, 0) : 0; tt.textContent = fmt(s); if (colorir) tt.style.color = s > 0 ? '#4ade80' : s < 0 ? '#f87171' : ''; }
+      };
+      campos.forEach(c => preencher('data-campm', c.id, campM[c.id]));
+      classes.filter(c => c.tipo === 'entrada').forEach(c => preencher('data-clsm', c.id, clsM[c.id]));
+      document.querySelectorAll('[data-rowtot]').forEach(td => { td.textContent = fmt(rowT[td.getAttribute('data-rowtot')] || 0); });
+      // Fórmulas: Receita Líquida = RB − deduções; Margem = RL − custos variáveis; Resultado = Margem − gastos operacionais
+      const cls = chave => { const c = classes.find(x => x.chave === chave); return c ? (clsM[c.id] || Array(13).fill(0)) : Array(13).fill(0); };
+      const rb = cls('receita_bruta'), de = cls('deducoes'), cv = cls('custos_variaveis'), go = cls('gastos_operacionais');
+      const rl = rb.map((v, m) => v - de[m]), mc = rl.map((v, m) => v - cv[m]), rs = mc.map((v, m) => v - go[m]);
+      preencher('data-fx', 'receita_liquida', rl, true); preencher('data-fx', 'margem_contribuicao', mc, true); preencher('data-fx', 'resultado_liquido', rs, true);
     }
+
+    // Digitação: atualiza o valor da célula, os totais e a marca de "alterada".
+    function valorDaCelula(inp) { const n = moneyToNumber(inp.value); return n == null ? null : n; }
+    document.getElementById('entry-tree').addEventListener('input', e => {
+      const inp = e.target.closest('.lc-in'); if (!inp) return;
+      const k = kv(inp.dataset.sub, inp.dataset.mes), n = valorDaCelula(inp);
+      if (n == null) delete vals[k]; else vals[k] = n;
+      recomputeTotals(); atualizarSujo();
+    });
+    document.getElementById('entry-tree').addEventListener('focusin', e => { const inp = e.target.closest('.lc-in'); if (inp) setTimeout(() => inp.select(), 0); });
+
+    // Navegação estilo planilha: Enter/↓ desce na mesma coluna, Shift+Enter/↑ sobe.
+    document.getElementById('entry-tree').addEventListener('keydown', e => {
+      const inp = e.target.closest('.lc-in'); if (!inp) return;
+      const desce = (e.key === 'Enter' && !e.shiftKey) || e.key === 'ArrowDown', sobe = (e.key === 'Enter' && e.shiftKey) || e.key === 'ArrowUp';
+      if (!desce && !sobe) return;
+      e.preventDefault();
+      const coluna = [...document.querySelectorAll(`#entry-tree .lc-in[data-mes="${inp.dataset.mes}"]`)].filter(i => !i.disabled);
+      const i = coluna.indexOf(inp), alvo = coluna[i + (desce ? 1 : -1)];
+      if (alvo) alvo.focus();
+    });
+
+    // Colar um bloco copiado do Excel/planilha: preenche a partir da célula em foco (linhas × meses).
+    function numeroColado(t) {
+      let s = String(t == null ? '' : t).replace(/R\$|\s/g, '');
+      if (s === '' || s === '-') return null;
+      const neg = /^\(.*\)$/.test(s) || s[0] === '-'; s = s.replace(/[()\-]/g, '');
+      if (s.includes(',') && s.includes('.')) s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+      else if (s.includes(',')) s = s.replace(',', '.');
+      else if (/^\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+      const n = parseFloat(s); return isNaN(n) ? undefined : (neg ? -n : n);
+    }
+    document.getElementById('entry-tree').addEventListener('paste', e => {
+      const inp = e.target.closest('.lc-in'); if (!inp) return;
+      const txt = (e.clipboardData || window.clipboardData).getData('text');
+      if (!/[\t\n]/.test(txt.replace(/\n$/, ''))) return;         // um valor só: cola normal (a máscara cuida)
+      e.preventDefault();
+      const linhas = txt.replace(/\r/g, '').replace(/\n$/, '').split('\n').map(l => l.split('\t'));
+      const todas = [...document.querySelectorAll('#entry-tree .lc-in')];
+      const linhaInputs = []; // agrupa os inputs por linha (ordem do DOM), 12 por linha
+      for (let i = 0; i < todas.length; i += 12) linhaInputs.push(todas.slice(i, i + 12));
+      const r0 = linhaInputs.findIndex(l => l.includes(inp)), c0 = +inp.dataset.mes - 1;
+      let colados = 0, ignorados = 0, invalidos = 0;
+      linhas.forEach((cels, dr) => cels.forEach((t, dc) => {
+        const alvo = linhaInputs[r0 + dr] && linhaInputs[r0 + dr][c0 + dc]; if (!alvo) return;
+        const n = numeroColado(t); if (n === null) return;                 // célula em branco não mexe no que existe
+        if (n === undefined) { invalidos++; return; }
+        if (alvo.disabled) { ignorados++; return; }
+        alvo.value = numberToMoneyMasked(n); vals[kv(alvo.dataset.sub, alvo.dataset.mes)] = n; colados++;
+      }));
+      recomputeTotals(); atualizarSujo();
+      showToast(colados + ' célula(s) preenchida(s) — revise e clique em Salvar' + (ignorados ? ' · ' + ignorados + ' em mês travado ignorada(s)' : '') + (invalidos ? ' · ' + invalidos + ' valor(es) inválido(s) ignorado(s)' : ''), colados ? 'green' : 'red');
+    });
 
     // ── Baixar modelo (.xlsx) ──
     // Cobre o ano inteiro da empresa selecionada (não só o mês em tela) — já vem preenchido
@@ -685,6 +768,7 @@
       const file = event.target.files[0];
       event.target.value = ''; // permite escolher o mesmo arquivo de novo depois
       if (!file) return;
+      if (celulasAlteradas().length && !confirm('Há alterações não salvas na grade — importar agora vai descartá-las. Continuar?')) return;
       const empresaId = document.getElementById('f-empresa').value;
       const ano = parseInt(document.getElementById('f-ano').value);
       if (!empresaId) { showToast('Selecione uma empresa antes de importar.', 'red'); return; }
@@ -718,7 +802,7 @@
       const byNomeTriplo = {};
       linhasParaPlanilha().forEach(l => { byNomeTriplo[l.classe.nome + '|' + l.campo.nome + '|' + l.subcampo.nome] = l.subcampo; });
 
-      const rows = [];
+      let rows = [];
       const warnings = [];
       for (let r = 1; r < aoa.length; r++) {
         const linha = aoa[r];
@@ -743,6 +827,8 @@
         }
       }
 
+      const travNaPlanilha = [...new Set(rows.filter(r => mesesTravados.has(r.mes)).map(r => r.mes))].sort((x, y) => x - y);
+      if (travNaPlanilha.length) { warnings.push('Meses travados (' + travNaPlanilha.map(m => MESES_ABREV[m - 1]).join(', ') + ') não aceitam edição — os valores desses meses foram ignorados.'); rows = rows.filter(r => !mesesTravados.has(r.mes)); }
       if (!rows.length) {
         showToast(warnings.length ? 'Nenhum valor válido — ' + warnings[0] : 'Nenhum valor preenchido na planilha.', 'red');
         return;
@@ -790,28 +876,29 @@
       }
       closeImportModal();
       showToast('Planilha importada — o DRE já foi atualizado', 'green');
-      await loadEntryValues();
+      await loadEntryValues({ force: true });
     }
 
+    // Salvar: envia SÓ as células que mudaram desde o último carregamento/salvamento — nada mais é
+    // tocado (antes o mês inteiro era regravado, inclusive com zeros de células em branco).
     async function saveValores() {
-      const empresa = document.getElementById('f-empresa').value;
-      const mes = parseInt(document.getElementById('f-mes').value);
-      const ano = parseInt(document.getElementById('f-ano').value);
+      const { empresa, ano } = ctxGrade;
       if (!empresa) return;
-      if (mesTravado) { showToast(MSG_TRAVADO, 'red'); return; }
+      const ks = celulasAlteradas().filter(k => !mesesTravados.has(+k.split('|')[1]));
+      if (!ks.length) { showToast(celulasAlteradas().length ? MSG_TRAVADO : 'Nenhuma alteração para salvar.', celulasAlteradas().length ? 'red' : 'green'); return; }
+      const subs = subPorId(), agora = new Date().toISOString();
+      const rows = ks.map(k => { const [sid, m] = k.split('|'); return { subcampo_id: subs[sid] ? subs[sid].id : sid, empresa_id: empresa, ano, mes: +m, valor: vals[k] || 0, updated_at: agora }; });
       const btn = document.getElementById('btn-save-valores');
-      btn.disabled = true; btn.textContent = 'Salvando...';
-
-      const rows = [];
-      subcampos.filter(s => s.ativo).forEach(s => {
-        const inp = document.getElementById('in-'+s.id);
-        if (!inp) return;
-        rows.push({ subcampo_id: s.id, empresa_id: empresa, ano, mes, valor: moneyToNumber(inp.value)||0, updated_at: new Date().toISOString() });
-      });
-      const { error } = await sb.from('lancamentos_valores').upsert(rows, { onConflict: 'subcampo_id,empresa_id,ano,mes' });
-      btn.disabled = false; btn.textContent = 'Salvar Lançamentos';
-      if (error) showToast(msgErroGravacao(error), 'red');
-      else showToast('Lançamentos salvos — o DRE já foi atualizado', 'green');
+      btn.dataset.busy = '1'; btn.disabled = true; btn.textContent = 'Salvando...';
+      let error = null;
+      for (let i = 0; i < rows.length && !error; i += 500) {
+        ({ error } = await sb.from('lancamentos_valores').upsert(rows.slice(i, i + 500), { onConflict: 'subcampo_id,empresa_id,ano,mes' }));
+      }
+      delete btn.dataset.busy; btn.disabled = false;
+      if (error) { atualizarSujo(); showToast(msgErroGravacao(error), 'red'); return; }   // nada é marcado como salvo se falhou
+      ks.forEach(k => { orig[k] = vals[k] || 0; });
+      atualizarSujo();
+      showToast(rows.length + ' célula(s) salva(s) — o DRE já foi atualizado', 'green');
     }
 
     // ── Modo Gerenciar Estrutura ──
@@ -1059,7 +1146,8 @@
       await loadTaxonomy();
       if (allowedEmpresas.length) {
         populateEmpresaSelect();
-        await loadEntryValues();
+        populateAnoSelect();
+        await loadEntryValues({ force: true });
       }
 
       document.getElementById('lc-loading').style.display = 'none';
