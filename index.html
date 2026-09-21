@@ -324,6 +324,25 @@
         </a>
       </div>
 
+      <div class="dash-section" id="section-conselho" style="display:none">
+        <div class="section-label"><span class="section-label-bar"></span>Conselho</div>
+        <div class="dash-grid">
+
+          <a href="/conselho" id="card-conselho" class="dash-card theme-indigo" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg>
+            </div>
+            <div class="dash-card-title">Painel do Conselho</div>
+            <div class="dash-card-desc">Faturamento, margem, EBITDA e resultado com comparativos, evolução de 12 meses e ponte do EBITDA.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+        </div>
+      </div>
+
       <div class="dash-section" id="section-financeiro" style="display:none">
         <div class="section-label"><span class="section-label-bar"></span>Financeiro</div>
         <div class="dash-grid">
@@ -346,6 +365,18 @@
             </div>
             <div class="dash-card-title">Lançamentos</div>
             <div class="dash-card-desc">Lance e organize os dados do DRE por Classe, Campo e Subcampo.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+          <a href="/orcamento" id="card-orcamento" class="dash-card theme-purple" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+            </div>
+            <div class="dash-card-title">Orçamento</div>
+            <div class="dash-card-desc">Metas mensais por operação, na estrutura do DRE, para comparar com o realizado.</div>
             <div class="dash-card-arrow">
               Acessar
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -548,6 +579,9 @@
       if (showConciliacao) {
         const c=document.getElementById('card-conciliacao'); if(c) c.style.display='';
       }
+      const showOrcamento = !!prof && (prof.is_admin || prof.can_orcamento === true);
+      if (showOrcamento) { const c=document.getElementById('card-orcamento'); if(c) c.style.display=''; }
+      if (showDre) { const c=document.getElementById('card-conselho'); if(c) c.style.display=''; }
       const showFechamento = !!prof && (prof.is_admin || prof.can_fechar_mes === true);
       if (showFechamento) { const c=document.getElementById('card-fechamento'); if(c) c.style.display=''; }
       const showCalcImport = !!prof && (prof.is_admin || prof.can_calc_importacao === true);
@@ -573,7 +607,8 @@
       // Cada seção só aparece se tiver pelo menos um card liberado dentro dela — evita
       // um rótulo de setor flutuando sem nada embaixo (mesmos setores da barra lateral).
       [
-        ['section-financeiro', ['card-dre','card-lancamentos','card-fluxocaixa','card-despfixas']],
+        ['section-conselho', ['card-conselho']],
+        ['section-financeiro', ['card-dre','card-lancamentos','card-orcamento','card-fluxocaixa','card-despfixas']],
         ['section-contabil', ['card-resumo','card-fechamento']],
         ['section-compras', ['card-pedidos','card-conciliacao','card-calcimport']],
         ['section-pessoal', ['card-funcionarios']],

@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Orçamento</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+
+    .bg { position: fixed; inset: 0; z-index: 0; background:
+        radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #38bdf8; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #or-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #or-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #7dd3fc; }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .fe-select:focus { outline: none; border-color: #38bdf8; }
+    select option { background: #0f172a; color: #f1f5f9; }
+
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .tab .badge-n { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px; border-radius: 9px; background: rgba(251,191,36,0.18); color: #fbbf24; font-size: 10.5px; font-weight: 800; }
+
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
+
+    .op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+    .op-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 14px; }
+    .op-card.travado { border-color: rgba(52,211,153,0.35); }
+    .op-card.aprovado { border-color: rgba(251,191,36,0.35); }
+    .op-head { display: flex; align-items: center; gap: 12px; }
+    .op-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+    .op-name { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .op-period { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; align-self: flex-start; }
+    .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .st-aberto { background: rgba(148,163,184,0.14); color: #cbd5e1; } .st-aberto .dot { background: #94a3b8; }
+    .st-aprovado { background: rgba(251,191,36,0.14); color: #fcd34d; } .st-aprovado .dot { background: #fbbf24; }
+    .st-travado { background: rgba(52,211,153,0.14); color: #6ee7b7; } .st-travado .dot { background: #34d399; }
+    .op-meta { font-size: 11.5px; color: #64748b; line-height: 1.5; min-height: 34px; }
+    .op-alertas { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 10px; }
+    .op-alertas.ok { background: rgba(52,211,153,0.1); color: #6ee7b7; }
+    .op-alertas.warn { background: rgba(251,191,36,0.1); color: #fcd34d; cursor: pointer; }
+    .op-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+
+    .btn-primary { flex: 1; padding: 11px 14px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
+    .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+
+    .matrix-scroll { overflow-x: auto; }
+    .matrix { border-collapse: separate; border-spacing: 6px; min-width: 640px; }
+    .matrix th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; padding: 4px 6px; text-align: center; }
+    .matrix th.row-h { text-align: left; color: #cbd5e1; font-size: 12px; text-transform: none; letter-spacing: 0; white-space: nowrap; padding-right: 12px; }
+    .mx-cell { width: 44px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; font-size: 10px; font-weight: 800; color: #475569; }
+    .mx-cell.aprovado { background: rgba(251,191,36,0.18); border-color: rgba(251,191,36,0.4); color: #fcd34d; }
+    .mx-cell.travado { background: rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.4); color: #6ee7b7; }
+    .mx-cell.sel { outline: 2px solid #38bdf8; outline-offset: 1px; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: #64748b; }
+    .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .legend .l-aberto::before { background: rgba(255,255,255,0.12); } .legend .l-aprovado::before { background: #fbbf24; } .legend .l-travado::before { background: #34d399; }
+
+    .chk-list { display: flex; flex-direction: column; gap: 8px; }
+    .chk { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    .chk-sev { flex-shrink: 0; margin-top: 2px; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+    .sev-alerta { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .sev-info { background: rgba(56,189,248,0.14); color: #7dd3fc; }
+    .chk-body { min-width: 0; flex: 1; }
+    .chk-msg { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+    .chk-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .chk-op { font-size: 11px; font-weight: 800; color: #94a3b8; white-space: nowrap; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 460px; }
+    table.tbl { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tbl thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 11px 12px; font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    .tbl td { padding: 10px 12px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tbl .muted { color: #64748b; }
+    .delta-pos { color: #4ade80; } .delta-neg { color: #f87171; }
+    .acao { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; }
+    .acao.INSERT { background: rgba(52,211,153,0.14); color: #6ee7b7; } .acao.UPDATE { background: rgba(56,189,248,0.14); color: #7dd3fc; } .acao.DELETE { background: rgba(248,113,113,0.14); color: #fca5a5; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
+    .modal-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
+    .modal-error.visible { display: block; }
+    .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
+    .field textarea { width: 100%; min-height: 84px; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; resize: vertical; color-scheme: dark; }
+    .field textarea:focus { outline: none; border-color: #38bdf8; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+    #or-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 900px) { .op-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 16px; } .tabs { max-width: none; } }
+  
+    .or-note { background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.22); color: #93c5fd; border-radius: 12px; padding: 11px 14px; font-size: 12px; line-height: 1.55; margin-bottom: 16px; }
+    .or-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .or-num { width: 70px; padding: 10px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; text-align: right; }
+    .or-num:focus { outline: none; border-color: #38bdf8; }
+    .or-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .or-bar .grow { flex: 1; }
+    .or-dirty { font-size: 11.5px; font-weight: 700; color: #fcd34d; display: none; }
+    .or-dirty.on { display: inline; }
+    .or-scroll { overflow: auto; max-height: 68vh; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    table.or-tbl { border-collapse: separate; border-spacing: 0; min-width: 1500px; width: 100%; }
+    .or-tbl th, .or-tbl td { padding: 4px 5px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
+    .or-tbl thead th { position: sticky; top: 0; z-index: 3; background: #101728; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: right; padding: 10px 6px; }
+    .or-tbl .lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; font-size: 12px; color: #cbd5e1; min-width: 210px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; padding-left: 12px; }
+    .or-tbl thead th.lbl { z-index: 4; background: #101728; text-align: left; }
+    .or-tbl tr.cls td { background: #0f2036; color: #7dd3fc; font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; padding: 8px 12px; position: sticky; left: 0; }
+    .or-tbl tr.sum td { background: #111a2c; font-weight: 800; color: #f1f5f9; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; padding: 8px 8px; }
+    .or-tbl tr.sum td.lbl { background: #131c30; text-align: left; }
+    .or-tbl tr.sum.hi td { color: #6ee7b7; }
+    .or-tbl td.tot { text-align: right; font-size: 12px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; padding: 4px 10px; }
+    .or-in { width: 92px; padding: 7px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .or-in:focus { outline: none; border-color: #38bdf8; background: rgba(56,189,248,0.08); }
+    .or-in.chg { border-color: rgba(251,191,36,0.55); }
+    .or-fill { width: 26px; height: 26px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #64748b; cursor: pointer; font-size: 12px; }
+    .or-fill:hover { color: #7dd3fc; border-color: rgba(56,189,248,0.4); }
+    .or-foot { font-size: 11px; color: #64748b; margin-top: 12px; line-height: 1.6; }
+    #or-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } }
+
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="or-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="or-sidebar"></aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="or-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Orçamento</div>
+    </div>
+  </header>
+
+  <div id="or-loading">Carregando…</div>
+
+  <main class="main" id="or-main" style="display:none">
+    <div class="fe-toolbar">
+      <div>
+        <h1>Orçamento</h1>
+        <div class="fe-toolbar-sub">Meta mensal por operação, na mesma estrutura do DRE. Alimenta o comparativo "× Orçado" do Painel do Conselho.</div>
+      </div>
+      <div class="or-controls">
+        <select class="fe-select" id="sel-op" aria-label="Operação"></select>
+        <select class="fe-select" id="sel-ano" aria-label="Ano"></select>
+      </div>
+    </div>
+
+    <div class="or-note">Estrutura provisória: o nível de detalhe (por campo do DRE) e quem preenche serão definidos com o conselho. Enquanto não houver orçamento lançado, o Painel do Conselho mostra apenas o realizado.</div>
+
+    <div class="panel">
+      <div class="or-bar">
+        <button class="btn-ghost" id="btn-copy" type="button" title="Preenche só as células vazias com o realizado do ano anterior, com o reajuste informado">Preencher com realizado do ano anterior</button>
+        <label class="or-controls" style="gap:6px"><span style="font-size:11px;color:#64748b;font-weight:700">Reajuste %</span><input class="or-num" id="inp-reaj" value="0" inputmode="decimal" aria-label="Reajuste percentual"></label>
+        <span class="grow"></span>
+        <span class="or-dirty" id="dirty">● alterações não salvas</span>
+        <button class="btn-primary" id="btn-save" type="button" style="flex:0 0 auto;padding:11px 22px">Salvar orçamento</button>
+      </div>
+      <div class="or-scroll"><table class="or-tbl" id="or-tbl"></table></div>
+      <div class="or-foot">Valores sempre positivos, como nos Lançamentos. Deixe a célula vazia para "sem meta". A seta → repete o primeiro valor preenchido da linha nos meses vazios. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL.</div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    SafiSidebar.mount('or', { active: 'orcamento', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('or');
+
+    const OPS = [
+      { id: 'GIP',       nome: 'GIP Ecommerce',      empresas: ['EP', 'GIP'] },
+      { id: 'Exposicao', nome: 'Exposição Paulista', empresas: ['Exposicao'] },
+      { id: 'ViaCloset', nome: 'Via Closet',         empresas: ['ViaCloset'] },
+    ];
+    const MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const CLASSES = ['receita_bruta', 'deducoes', 'custos_variaveis', 'gastos_operacionais'];
+
+    const g = id => document.getElementById(id);
+    const fmt0 = v => (+v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    let classes = [];   // classes de entrada do DRE
+    let campos = [];    // campos ativos dessas classes
+    let vals = {};      // "campoId|mes" -> valor atual (ausente = sem meta)
+    let orig = {};      // idem, como está salvo no banco
+    let sel = { op: 'GIP', ano: new Date().getFullYear() };
+
+    const k = (cid, m) => cid + '|' + m;
+    function dirtyCount() { let n = 0; new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(x => { if (vals[x] !== orig[x]) n++; }); return n; }
+
+    async function fetchAll(build) {
+      const out = []; const step = 1000;
+      for (let from = 0; ; from += step) {
+        const { data, error } = await build().range(from, from + step - 1);
+        if (error) throw error;
+        out.push(...data);
+        if (data.length < step) break;
+      }
+      return out;
+    }
+
+    async function carregarEstrutura() {
+      const [cl, cp] = await Promise.all([
+        sb.from('lancamentos_classes').select('id,chave,nome,ordem').in('chave', CLASSES).order('ordem'),
+        sb.from('lancamentos_campos').select('id,nome,chave,classe_id,ordem,ativo').eq('ativo', true).order('ordem'),
+      ]);
+      if (cl.error || cp.error) throw (cl.error || cp.error);
+      classes = cl.data;
+      const ids = new Set(classes.map(c => c.id));
+      campos = cp.data.filter(c => ids.has(c.classe_id));
+    }
+
+    async function carregarOrcamento() {
+      const rows = await fetchAll(() => sb.from('orcamento').select('campo_id,mes,valor').eq('operacao', sel.op).eq('ano', sel.ano));
+      vals = {}; orig = {};
+      rows.forEach(r => { vals[k(r.campo_id, r.mes)] = +r.valor; orig[k(r.campo_id, r.mes)] = +r.valor; });
+    }
+
+    function render() {
+      let h = '<thead><tr><th class="lbl">Campo do DRE</th>' + MES_CURTO.map(m => '<th>' + m + '</th>').join('') + '<th>Total</th><th></th></tr></thead><tbody>';
+      classes.forEach(cl => {
+        h += '<tr class="cls"><td colspan="15">' + esc(cl.nome) + '</td></tr>';
+        campos.filter(c => c.classe_id === cl.id).forEach(c => {
+          h += '<tr><td class="lbl" title="' + esc(c.nome) + '">' + esc(c.nome) + '</td>';
+          for (let m = 1; m <= 12; m++) {
+            const v = vals[k(c.id, m)];
+            h += '<td><input class="or-in" data-campo="' + c.id + '" data-mes="' + m + '" value="' + (v == null ? '' : numberToMoneyMasked(v)) + '" placeholder="—" aria-label="' + esc(c.nome) + ' ' + MES_CURTO[m - 1] + '"></td>';
+          }
+          h += '<td class="tot" data-tot="' + c.id + '"></td><td><button type="button" class="or-fill" data-fill="' + c.id + '" title="Repetir o primeiro valor nos meses vazios">→</button></td></tr>';
+        });
+      });
+      [['rl', 'Receita Líquida'], ['mc', 'Margem de Contribuição'], ['res', 'Resultado Líquido'], ['ebitda', 'EBITDA']].forEach(([id, nome]) => {
+        h += '<tr class="sum' + (id === 'ebitda' ? ' hi' : '') + '"><td class="lbl">(=) ' + nome + '</td>' + Array.from({ length: 13 }, (_, i) => '<td data-sum="' + id + '|' + (i + 1) + '"></td>').join('') + '<td></td></tr>';
+      });
+      g('or-tbl').innerHTML = h + '</tbody>';
+      g('or-tbl').querySelectorAll('.or-in').forEach(el => attachMoneyMask(el));
+      recalc();
+    }
+
+    // Totais por linha e linhas de resultado (Receita Líquida, MC, Resultado, EBITDA), ao vivo.
+    function recalc() {
+      const chaveDaClasse = Object.fromEntries(classes.map(c => [c.id, c.chave]));
+      const porMes = Array.from({ length: 13 }, () => ({ rb: 0, ded: 0, cv: 0, go: 0, df: 0, ir: 0 })); // [12] = ano
+      campos.forEach(c => {
+        let tot = 0;
+        for (let m = 1; m <= 12; m++) {
+          const v = vals[k(c.id, m)]; if (v == null) continue;
+          tot += v;
+          const ch = chaveDaClasse[c.classe_id];
+          [porMes[m - 1], porMes[12]].forEach(b => {
+            if (ch === 'receita_bruta') b.rb += v; else if (ch === 'deducoes') b.ded += v; else if (ch === 'custos_variaveis') b.cv += v;
+            else if (ch === 'gastos_operacionais') { b.go += v; if (c.chave === 'despesas_financeiras') b.df += v; if (c.chave === 'ir_csll') b.ir += v; }
+          });
+        }
+        const el = document.querySelector('[data-tot="' + c.id + '"]'); if (el) el.textContent = tot ? fmt0(tot) : '';
+      });
+      porMes.forEach((b, i) => {
+        const rl = b.rb - b.ded, mc = rl - b.cv, res = mc - b.go, ebitda = res + b.df + b.ir;
+        const any = b.rb || b.ded || b.cv || b.go;
+        const put = (id, v) => { const el = document.querySelector('[data-sum="' + id + '|' + (i + 1) + '"]'); if (el) el.textContent = any ? fmt0(v) : ''; };
+        put('rl', rl); put('mc', mc); put('res', res); put('ebitda', ebitda);
+      });
+      document.querySelectorAll('.or-in').forEach(el => { const key = k(el.dataset.campo, el.dataset.mes); el.classList.toggle('chg', vals[key] !== orig[key]); });
+      g('dirty').classList.toggle('on', dirtyCount() > 0);
+    }
+
+    g('or-tbl').addEventListener('input', e => {
+      const el = e.target.closest('.or-in'); if (!el) return;
+      const n = moneyToNumber(el.value);
+      const key = k(el.dataset.campo, el.dataset.mes);
+      if (n == null) delete vals[key]; else vals[key] = n;
+      recalc();
+    });
+    g('or-tbl').addEventListener('click', e => {
+      const b = e.target.closest('[data-fill]'); if (!b) return;
+      const cid = b.dataset.fill;
+      let first = null;
+      for (let m = 1; m <= 12 && first == null; m++) if (vals[k(cid, m)] != null) first = vals[k(cid, m)];
+      if (first == null) return showToast('Preencha ao menos um mês da linha primeiro.', 'red');
+      for (let m = 1; m <= 12; m++) if (vals[k(cid, m)] == null) { vals[k(cid, m)] = first; const el = document.querySelector('.or-in[data-campo="' + cid + '"][data-mes="' + m + '"]'); if (el) el.value = numberToMoneyMasked(first); }
+      recalc();
+    });
+
+    // Realizado do ano anterior por campo/mês — só preenche as células vazias.
+    g('btn-copy').addEventListener('click', async () => {
+      const reaj = 1 + ((moneyToNumber(g('inp-reaj').value) || 0) / 100);
+      const btn = g('btn-copy'); btn.disabled = true; btn.textContent = 'Buscando…';
+      try {
+        const emp = OPS.find(o => o.id === sel.op).empresas;
+        const subs = await fetchAll(() => sb.from('lancamentos_subcampos').select('id,campo_id'));
+        const campoDe = Object.fromEntries(subs.map(s => [s.id, s.campo_id]));
+        const rows = await fetchAll(() => sb.from('lancamentos_valores').select('subcampo_id,mes,valor').eq('ano', sel.ano - 1).in('empresa_id', emp));
+        const acc = {};
+        rows.forEach(r => { const c = campoDe[r.subcampo_id]; if (!c) return; acc[k(c, r.mes)] = (acc[k(c, r.mes)] || 0) + (+r.valor); });
+        let n = 0;
+        campos.forEach(c => { for (let m = 1; m <= 12; m++) { const key = k(c.id, m); if (acc[key] && vals[key] == null) { vals[key] = Math.round(acc[key] * reaj * 100) / 100; n++; } } });
+        render();
+        showToast(n ? n + ' células preenchidas com o realizado de ' + (sel.ano - 1) + '. Revise e salve.' : 'Nada a preencher: sem realizado em ' + (sel.ano - 1) + ' ou células já preenchidas.', n ? 'green' : 'red');
+      } catch (err) { showToast('Erro ao buscar o realizado: ' + err.message, 'red'); }
+      btn.disabled = false; btn.textContent = 'Preencher com realizado do ano anterior';
+    });
+
+    g('btn-save').addEventListener('click', async () => {
+      const upserts = [], dels = {};
+      new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(key => {
+        if (vals[key] === orig[key]) return;
+        const [cid, m] = key.split('|');
+        if (vals[key] == null) (dels[m] = dels[m] || []).push(cid);
+        else upserts.push({ operacao: sel.op, ano: sel.ano, mes: +m, campo_id: cid, valor: vals[key] });
+      });
+      if (!upserts.length && !Object.keys(dels).length) return showToast('Nenhuma alteração para salvar.', 'green');
+      const btn = g('btn-save'); btn.disabled = true; btn.textContent = 'Salvando…';
+      try {
+        if (upserts.length) { const { error } = await sb.from('orcamento').upsert(upserts, { onConflict: 'operacao,ano,mes,campo_id' }); if (error) throw error; }
+        for (const m of Object.keys(dels)) { const { error } = await sb.from('orcamento').delete().eq('operacao', sel.op).eq('ano', sel.ano).eq('mes', +m).in('campo_id', dels[m]); if (error) throw error; }
+        orig = { ...vals }; recalc();
+        showToast('Orçamento salvo.', 'green');
+      } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
+      btn.disabled = false; btn.textContent = 'Salvar orçamento';
+    });
+
+    async function trocar() {
+      const op = g('sel-op').value, ano = +g('sel-ano').value;
+      if (dirtyCount() > 0 && !confirm('Há alterações não salvas. Descartar e trocar?')) { g('sel-op').value = sel.op; g('sel-ano').value = sel.ano; return; }
+      sel = { op, ano };
+      try { await carregarOrcamento(); render(); } catch (err) { showToast('Erro ao carregar: ' + err.message, 'red'); }
+    }
+    g('sel-op').addEventListener('change', trocar);
+    g('sel-ano').addEventListener('change', trocar);
+    window.addEventListener('beforeunload', e => { if (dirtyCount() > 0) { e.preventDefault(); e.returnValue = ''; } });
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (rows && rows[0]) || null;
+      if (!prof || !(prof.is_admin || prof.can_orcamento === true)) return window.location.replace('/');
+      SafiSidebar.apply('or', prof, { email: data.session.user.email, sb });
+
+      g('sel-op').innerHTML = OPS.map(o => '<option value="' + o.id + '">' + o.nome + '</option>').join('');
+      const y = new Date().getFullYear();
+      g('sel-ano').innerHTML = [y - 1, y, y + 1].map(a => '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>').join('');
+      sel = { op: OPS[0].id, ano: y };
+      try { await carregarEstrutura(); await carregarOrcamento(); }
+      catch (err) { g('or-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
+      g('or-loading').style.display = 'none';
+      g('or-main').style.display = 'block';
+      render();
+    }
+    init();
+  </script>
+</body>
+</html>

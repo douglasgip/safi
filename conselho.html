@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Painel do Conselho</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+
+    .bg { position: fixed; inset: 0; z-index: 0; background:
+        radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #38bdf8; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #co-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #co-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #7dd3fc; }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .fe-select:focus { outline: none; border-color: #38bdf8; }
+    select option { background: #0f172a; color: #f1f5f9; }
+
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .tab .badge-n { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px; border-radius: 9px; background: rgba(251,191,36,0.18); color: #fbbf24; font-size: 10.5px; font-weight: 800; }
+
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
+
+    .op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+    .op-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 14px; }
+    .op-card.travado { border-color: rgba(52,211,153,0.35); }
+    .op-card.aprovado { border-color: rgba(251,191,36,0.35); }
+    .op-head { display: flex; align-items: center; gap: 12px; }
+    .op-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+    .op-name { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .op-period { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; align-self: flex-start; }
+    .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .st-aberto { background: rgba(148,163,184,0.14); color: #cbd5e1; } .st-aberto .dot { background: #94a3b8; }
+    .st-aprovado { background: rgba(251,191,36,0.14); color: #fcd34d; } .st-aprovado .dot { background: #fbbf24; }
+    .st-travado { background: rgba(52,211,153,0.14); color: #6ee7b7; } .st-travado .dot { background: #34d399; }
+    .op-meta { font-size: 11.5px; color: #64748b; line-height: 1.5; min-height: 34px; }
+    .op-alertas { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 10px; }
+    .op-alertas.ok { background: rgba(52,211,153,0.1); color: #6ee7b7; }
+    .op-alertas.warn { background: rgba(251,191,36,0.1); color: #fcd34d; cursor: pointer; }
+    .op-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+
+    .btn-primary { flex: 1; padding: 11px 14px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
+    .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+
+    .matrix-scroll { overflow-x: auto; }
+    .matrix { border-collapse: separate; border-spacing: 6px; min-width: 640px; }
+    .matrix th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; padding: 4px 6px; text-align: center; }
+    .matrix th.row-h { text-align: left; color: #cbd5e1; font-size: 12px; text-transform: none; letter-spacing: 0; white-space: nowrap; padding-right: 12px; }
+    .mx-cell { width: 44px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; font-size: 10px; font-weight: 800; color: #475569; }
+    .mx-cell.aprovado { background: rgba(251,191,36,0.18); border-color: rgba(251,191,36,0.4); color: #fcd34d; }
+    .mx-cell.travado { background: rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.4); color: #6ee7b7; }
+    .mx-cell.sel { outline: 2px solid #38bdf8; outline-offset: 1px; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: #64748b; }
+    .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .legend .l-aberto::before { background: rgba(255,255,255,0.12); } .legend .l-aprovado::before { background: #fbbf24; } .legend .l-travado::before { background: #34d399; }
+
+    .chk-list { display: flex; flex-direction: column; gap: 8px; }
+    .chk { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    .chk-sev { flex-shrink: 0; margin-top: 2px; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+    .sev-alerta { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .sev-info { background: rgba(56,189,248,0.14); color: #7dd3fc; }
+    .chk-body { min-width: 0; flex: 1; }
+    .chk-msg { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+    .chk-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .chk-op { font-size: 11px; font-weight: 800; color: #94a3b8; white-space: nowrap; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 460px; }
+    table.tbl { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tbl thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 11px 12px; font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    .tbl td { padding: 10px 12px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tbl .muted { color: #64748b; }
+    .delta-pos { color: #4ade80; } .delta-neg { color: #f87171; }
+    .acao { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; }
+    .acao.INSERT { background: rgba(52,211,153,0.14); color: #6ee7b7; } .acao.UPDATE { background: rgba(56,189,248,0.14); color: #7dd3fc; } .acao.DELETE { background: rgba(248,113,113,0.14); color: #fca5a5; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
+    .modal-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
+    .modal-error.visible { display: block; }
+    .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
+    .field textarea { width: 100%; min-height: 84px; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; resize: vertical; color-scheme: dark; }
+    .field textarea:focus { outline: none; border-color: #38bdf8; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+    #co-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 900px) { .op-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 16px; } .tabs { max-width: none; } }
+  
+    .co-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .co-filters .f { display: flex; flex-direction: column; gap: 4px; }
+    .co-filters label { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+    .kpi { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 18px 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 6px; }
+    .kpi.hi { border-color: rgba(56,189,248,0.4); background: linear-gradient(160deg, rgba(14,50,80,0.75), rgba(15,23,42,0.75)); }
+    .kpi-l { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #64748b; }
+    .kpi-v { font-size: 25px; font-weight: 800; color: #f8fafc; letter-spacing: -0.5px; font-variant-numeric: tabular-nums; }
+    .kpi-sub { font-size: 12px; font-weight: 700; color: #94a3b8; }
+    .kpi-d { font-size: 12px; font-weight: 700; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .kpi-d .base { color: #64748b; font-weight: 600; }
+    .up-good, .dn-good { color: #6ee7b7; } .up-bad, .dn-bad { color: #fca5a5; } .neutro { color: #94a3b8; }
+    .kpi-o { font-size: 11.5px; color: #93c5fd; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.08); margin-top: 2px; }
+    .kpi-o b { color: #bfdbfe; }
+    .co-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 0; }
+    .chart-box { position: relative; height: 300px; }
+    .co-note { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d; border-radius: 12px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 16px; display: none; }
+    .co-note.on { display: block; }
+    .co-foot { font-size: 11px; color: #64748b; line-height: 1.7; margin-top: 4px; }
+    .tbl th.r, .tbl td.r { text-align: right; }
+    .tbl tr.total td { font-weight: 800; background: rgba(255,255,255,0.03); }
+    #co-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .co-row { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .kpi-grid { grid-template-columns: 1fr; } .kpi-v { font-size: 22px; } }
+
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="co-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="co-sidebar"></aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="co-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Painel do Conselho</div>
+    </div>
+  </header>
+
+  <div id="co-loading">Carregando…</div>
+
+  <main class="main" id="co-main" style="display:none">
+    <div class="fe-toolbar">
+      <div>
+        <h1>Painel do Conselho</h1>
+        <div class="fe-toolbar-sub" id="co-sub">Visão consolidada do resultado, com comparativos e EBITDA.</div>
+      </div>
+      <div class="co-filters">
+        <div class="f"><label for="sel-mes">Mês</label><select class="fe-select" id="sel-mes"></select></div>
+        <div class="f"><label for="sel-cmp">Comparar com</label>
+          <select class="fe-select" id="sel-cmp">
+            <option value="anterior">Mês anterior</option>
+            <option value="ano">Mesmo mês do ano anterior</option>
+            <option value="media12">Média dos 12 meses anteriores</option>
+            <option value="melhor12">Melhor mês dos últimos 12</option>
+          </select></div>
+        <div class="f"><label for="sel-op">Operação</label><select class="fe-select" id="sel-op"></select></div>
+      </div>
+    </div>
+
+    <div class="co-note" id="co-note"></div>
+
+    <div class="kpi-grid" id="kpis"></div>
+
+    <div class="co-row">
+      <div class="panel">
+        <div class="panel-head">Evolução — últimos 12 meses</div>
+        <div class="chart-box"><canvas id="ch-evol"></canvas></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head" id="ponte-title">Ponte do EBITDA</div>
+        <div class="chart-box"><canvas id="ch-ponte"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-ops">
+      <div class="panel-head">Por operação — <span id="ops-periodo"></span></div>
+      <div class="table-scroll" style="max-height:none"><table class="tbl" id="tbl-ops"></table></div>
+    </div>
+
+    <div class="co-foot">
+      Receita Líquida = Faturamento − Deduções · Margem de Contribuição = Receita Líquida − Custos Variáveis · Resultado Líquido = Margem − Gastos Operacionais ·
+      <b>EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL</b> (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento.
+      "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Orçado" aparece quando há orçamento lançado para o mês e a operação.
+    </div>
+  </main>
+
+  <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    SafiSidebar.mount('co', { active: 'conselho', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('co');
+
+    const OP_NOME = { GIP: 'GIP Ecommerce', Exposicao: 'Exposição Paulista', ViaCloset: 'Via Closet' };
+    const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const CMP_LABEL = { anterior: 'mês anterior', ano: 'mesmo mês do ano anterior', media12: 'média dos 12 meses anteriores', melhor12: 'melhor mês (EBITDA) dos últimos 12' };
+
+    const g = id => document.getElementById(id);
+    const ym = (a, m) => a * 100 + m;
+    const addM = (a, m, n) => { const t = a * 12 + (m - 1) + n; return { ano: Math.floor(t / 12), mes: (t % 12) + 1 }; };
+    const brl = v => v == null ? '—' : 'R$ ' + Math.round(v).toLocaleString('pt-BR');
+    const pct = v => v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    const compact = v => Math.abs(v) >= 1e6 ? (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + ' mil' : String(Math.round(v));
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    let dados = [];               // linhas do RPC conselho_metricas (já filtradas pela RLS de quem consulta)
+    let porChave = {};            // "op|ano|mes" -> linha
+    let opsVisiveis = [];
+    let charts = { evol: null, ponte: null };
+
+    // Fotografia de um mês (ou de um conjunto de operações) com todas as linhas derivadas.
+    function snap(raw) {
+      const rb = raw.rb, ded = raw.ded, cv = raw.cv, opex = raw.go - raw.df - raw.ir;
+      const rl = rb - ded, mc = rl - cv, ebitda = mc - opex, res = ebitda - raw.df - raw.ir;
+      return { rb, ded, cv, opex, df: raw.df, ir: raw.ir, rl, mc, res, ebitda, mcPct: rb ? mc / rb : null, ebitdaPct: rb ? ebitda / rb : null };
+    }
+    const zero = () => ({ rb: 0, ded: 0, cv: 0, go: 0, df: 0, ir: 0 });
+    function somar(a, b) { Object.keys(a).forEach(x => { a[x] += b[x]; }); return a; }
+
+    function realizado(ops, ano, mes) {
+      const acc = zero(); let tem = false;
+      ops.forEach(op => {
+        const r = porChave[op + '|' + ano + '|' + mes]; if (!r) return;
+        somar(acc, { rb: +r.receita_bruta, ded: +r.deducoes, cv: +r.custos_variaveis, go: +r.gastos_operacionais, df: +r.desp_financeiras, ir: +r.ir_csll });
+        if (+r.receita_bruta || +r.custos_variaveis || +r.gastos_operacionais) tem = true;
+      });
+      return tem ? snap(acc) : null;
+    }
+    // Operações do escopo que têm orçamento lançado no mês (o comparativo vale só para elas).
+    const opsComOrc = (ops, ano, mes) => ops.filter(op => { const r = porChave[op + '|' + ano + '|' + mes]; return r && r.tem_orcamento; });
+    function orcado(ops, ano, mes) {
+      const acc = zero();
+      for (const op of ops) {
+        const r = porChave[op + '|' + ano + '|' + mes];
+        if (!r || !r.tem_orcamento) return null;
+        somar(acc, { rb: +r.orc_receita_bruta, ded: +r.orc_deducoes, cv: +r.orc_custos_variaveis, go: +r.orc_gastos_operacionais, df: +r.orc_desp_financeiras, ir: +r.orc_ir_csll });
+      }
+      return acc.rb || acc.go ? snap(acc) : null;
+    }
+    function ultimos12(ops, ano, mes) {
+      const out = [];
+      for (let i = 1; i <= 12; i++) { const p = addM(ano, mes, -i); const s = realizado(ops, p.ano, p.mes); if (s) out.push({ ...p, s }); }
+      return out;
+    }
+    function baseDe(modo, ops, ano, mes) {
+      if (modo === 'anterior') { const p = addM(ano, mes, -1); const s = realizado(ops, p.ano, p.mes); return s ? { s, rot: MES_CURTO[p.mes - 1] + '/' + p.ano } : null; }
+      if (modo === 'ano') { const s = realizado(ops, ano - 1, mes); return s ? { s, rot: MES_CURTO[mes - 1] + '/' + (ano - 1) } : null; }
+      const h = ultimos12(ops, ano, mes); if (!h.length) return null;
+      if (modo === 'media12') {
+        const acc = zero(); h.forEach(x => somar(acc, { rb: x.s.rb, ded: x.s.ded, cv: x.s.cv, go: x.s.opex + x.s.df + x.s.ir, df: x.s.df, ir: x.s.ir }));
+        Object.keys(acc).forEach(x => { acc[x] /= h.length; });
+        return { s: snap(acc), rot: 'média de ' + h.length + ' meses' };
+      }
+      const best = h.reduce((a, b) => (b.s.ebitda > a.s.ebitda ? b : a));
+      return { s: best.s, rot: MES_CURTO[best.mes - 1] + '/' + best.ano };
+    }
+
+    // ── KPIs ────────────────────────────────────────────────────────────────
+    const KPIS = [
+      { id: 'rb', l: 'Faturamento', v: s => s.rb, custo: false },
+      { id: 'rl', l: 'Receita Líquida', v: s => s.rl, custo: false },
+      { id: 'mc', l: 'Margem de Contribuição', v: s => s.mc, custo: false, pct: s => s.mcPct, pctK: 'mcPct' },
+      { id: 'ebitda', l: 'EBITDA', v: s => s.ebitda, custo: false, pct: s => s.ebitdaPct, pctK: 'ebitdaPct', hi: true },
+      { id: 'res', l: 'Resultado Líquido', v: s => s.res, custo: false },
+      { id: 'opex', l: 'Gastos Operacionais', v: s => s.opex, custo: true },
+    ];
+    function deltaHtml(cur, base, custo, rot) {
+      if (base == null) return '<span class="neutro">sem base de comparação</span>';
+      const d = cur - base;
+      const rel = base ? d / Math.abs(base) : null;
+      const up = d >= 0;
+      const bom = custo ? !up : up;
+      const cls = (up ? 'up-' : 'dn-') + (bom ? 'good' : 'bad');
+      return '<span class="' + cls + '">' + (up ? '▲' : '▼') + ' ' + (rel == null ? brl(Math.abs(d)) : pct(Math.abs(rel))) + '</span><span class="base">vs ' + esc(rot) + ' (' + brl(base) + ')</span>';
+    }
+    function renderKpis(cur, base, orc, curOrc, rotOrc) {
+      g('kpis').innerHTML = KPIS.map(k => {
+        const v = k.v(cur);
+        const sub = k.pct ? '<div class="kpi-sub">' + pct(k.pct(cur)) + ' do faturamento</div>' : '';
+        const dl = deltaHtml(v, base ? k.v(base.s) : null, k.custo, base ? base.rot : '');
+        let dp = '';
+        if (k.pct && base && k.pct(cur) != null && k.pct(base.s) != null) {
+          const pp = (k.pct(cur) - k.pct(base.s)) * 100;
+          const zeroPp = Math.abs(pp) < 0.05;
+          dp = '<div class="kpi-d"><span class="' + (zeroPp ? 'neutro' : pp >= 0 ? 'up-good' : 'dn-bad') + '">' + (zeroPp ? '=' : pp >= 0 ? '▲' : '▼') + ' ' + Math.abs(pp).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.</span><span class="base">na margem</span></div>';
+        }
+        let o = '';
+        if (orc) {
+          const ov = k.v(orc);
+          const vReal = k.v(curOrc);
+          const ating = ov ? vReal / ov : null;
+          let extra = '';
+          if (k.pct && orc[k.pctK] != null && curOrc[k.pctK] != null) {
+            const pp = (curOrc[k.pctK] - orc[k.pctK]) * 100;
+            extra = ' · margem orçada ' + pct(orc[k.pctK]) + ' (' + (pp >= 0 ? '+' : '') + pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.)';
+          }
+          o = '<div class="kpi-o">Orçado' + (rotOrc ? ' (' + esc(rotOrc) + ')' : '') + ': <b>' + brl(ov) + '</b>' + (ating != null && isFinite(ating) ? ' · ' + (k.custo ? 'gastou ' : 'atingiu ') + '<b>' + pct(ating) + '</b>' : '') + extra + '</div>';
+        }
+        return '<div class="kpi' + (k.hi ? ' hi' : '') + '"><div class="kpi-l">' + k.l + '</div><div class="kpi-v">' + brl(v) + '</div>' + sub +
+          '<div class="kpi-d">' + dl + '</div>' + dp + o + '</div>';
+      }).join('');
+    }
+
+    // ── Gráficos ────────────────────────────────────────────────────────────
+    const grid = 'rgba(255,255,255,0.06)', tick = '#64748b';
+    function renderEvolucao(ops, ano, mes) {
+      const lab = [], fat = [], eb = [], ebo = []; let temOrc = false;
+      for (let i = 11; i >= 0; i--) {
+        const p = addM(ano, mes, -i); const s = realizado(ops, p.ano, p.mes); const o = orcado(ops, p.ano, p.mes);
+        lab.push(MES_CURTO[p.mes - 1] + '/' + String(p.ano).slice(2));
+        fat.push(s ? s.rb : null); eb.push(s ? s.ebitda : null); ebo.push(o ? o.ebitda : null); if (o) temOrc = true;
+      }
+      const ds = [
+        { type: 'bar', label: 'Faturamento', data: fat, backgroundColor: 'rgba(56,189,248,0.35)', borderRadius: 4, yAxisID: 'y' },
+        { type: 'line', label: 'EBITDA', data: eb, borderColor: '#6ee7b7', backgroundColor: '#6ee7b7', tension: .25, pointRadius: 3, yAxisID: 'y1' },
+      ];
+      if (temOrc) ds.push({ type: 'line', label: 'EBITDA orçado', data: ebo, borderColor: '#fbbf24', borderDash: [5, 4], pointRadius: 2, tension: .25, yAxisID: 'y1', spanGaps: false });
+      if (charts.evol) charts.evol.destroy();
+      charts.evol = new Chart(g('ch-evol'), { data: { labels: lab, datasets: ds }, options: {
+        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => c.dataset.label + ': ' + brl(c.parsed.y) } } },
+        scales: { x: { ticks: { color: tick, font: { size: 10 } }, grid: { display: false } },
+          y: { position: 'left', ticks: { color: tick, callback: v => compact(v) }, grid: { color: grid } },
+          y1: { position: 'right', ticks: { color: '#6ee7b7', callback: v => compact(v) }, grid: { display: false } } } } });
+    }
+    function renderPonte(cur, base) {
+      g('ponte-title').textContent = base ? 'Ponte do EBITDA — ' + base.rot + ' → mês selecionado' : 'Ponte do EBITDA';
+      if (charts.ponte) { charts.ponte.destroy(); charts.ponte = null; }
+      if (!base) return;
+      const b = base.s;
+      const passos = [
+        ['Receita bruta', cur.rb - b.rb], ['Deduções', -(cur.ded - b.ded)], ['Custos variáveis', -(cur.cv - b.cv)], ['Gastos operac.', -(cur.opex - b.opex)],
+      ];
+      const lab = ['EBITDA base', ...passos.map(p => p[0]), 'EBITDA atual'];
+      const data = [], cores = [];
+      let run = b.ebitda;
+      data.push([Math.min(0, run), Math.max(0, run)]); cores.push('#64748b');
+      passos.forEach(([, d]) => { data.push([run, run + d]); cores.push(d >= 0 ? 'rgba(52,211,153,0.75)' : 'rgba(248,113,113,0.75)'); run += d; });
+      data.push([Math.min(0, cur.ebitda), Math.max(0, cur.ebitda)]); cores.push('#38bdf8');
+      const vals = [b.ebitda, ...passos.map(p => p[1]), cur.ebitda];
+      charts.ponte = new Chart(g('ch-ponte'), { type: 'bar', data: { labels: lab, datasets: [{ data, backgroundColor: cores, borderRadius: 4 }] }, options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => (c.dataIndex === 0 || c.dataIndex === vals.length - 1 ? '' : (vals[c.dataIndex] >= 0 ? '+' : '−')) + brl(Math.abs(vals[c.dataIndex])) } } },
+        scales: { x: { ticks: { color: tick, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: tick, callback: v => compact(v) }, grid: { color: grid } } } } });
+    }
+
+    // ── Tabela por operação ─────────────────────────────────────────────────
+    function renderOps(ano, mes, modo) {
+      g('ops-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
+      const linhas = opsVisiveis.map(op => ({ op, cur: realizado([op], ano, mes), base: baseDe(modo, [op], ano, mes), orc: orcado([op], ano, mes) })).filter(x => x.cur);
+      const tot = { cur: realizado(opsVisiveis, ano, mes), base: baseDe(modo, opsVisiveis, ano, mes), orc: orcado(opsVisiveis, ano, mes) };
+      const linha = (nome, x, cls) => {
+        const d = x.base ? x.cur.ebitda - x.base.s.ebitda : null;
+        return '<tr class="' + (cls || '') + '"><td>' + esc(nome) + '</td><td class="num">' + brl(x.cur.rb) + '</td><td class="num">' + pct(x.cur.mcPct) + '</td><td class="num">' + brl(x.cur.ebitda) + '</td><td class="num">' + pct(x.cur.ebitdaPct) + '</td><td class="num">' + brl(x.cur.res) + '</td>' +
+          '<td class="num ' + (d == null ? 'muted' : d >= 0 ? 'up-good' : 'dn-bad') + '">' + (d == null ? '—' : (d >= 0 ? '+' : '−') + brl(Math.abs(d))) + '</td>' +
+          '<td class="num ' + (x.orc ? '' : 'muted') + '">' + (x.orc && x.orc.ebitda ? pct(x.cur.ebitda / x.orc.ebitda) : '—') + '</td></tr>';
+      };
+      g('tbl-ops').innerHTML = '<thead><tr><th>Operação</th><th class="r">Faturamento</th><th class="r">Margem contrib. %</th><th class="r">EBITDA</th><th class="r">EBITDA %</th><th class="r">Resultado líquido</th><th class="r">Δ EBITDA vs base</th><th class="r">EBITDA × orçado</th></tr></thead><tbody>' +
+        linhas.map(x => linha(OP_NOME[x.op] || x.op, x)).join('') + (linhas.length > 1 && tot.cur ? linha('Total', tot, 'total') : '') + '</tbody>';
+    }
+
+    function render() {
+      const mesSel = g('sel-mes').value; if (!mesSel) return;
+      const [ano, mes] = mesSel.split('-').map(Number);
+      const modo = g('sel-cmp').value;
+      const opSel = g('sel-op').value;
+      const ops = opSel === 'todas' ? opsVisiveis : [opSel];
+      const cur = realizado(ops, ano, mes);
+      if (!cur) { g('kpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Sem dados para este mês.</div>'; return; }
+      const base = baseDe(modo, ops, ano, mes);
+      const opsO = opsComOrc(ops, ano, mes);
+      const orc = opsO.length ? orcado(opsO, ano, mes) : null;
+      const curOrc = orc ? realizado(opsO, ano, mes) : null;
+      const parcial = orc && opsO.length < ops.length;
+      const note = g('co-note');
+      const msgs = [];
+      if (!base) msgs.push('Sem dados para o comparativo "' + CMP_LABEL[modo] + '" — escolha outra base.');
+      if (parcial) msgs.push('Orçamento lançado só para ' + opsO.map(o => OP_NOME[o] || o).join(' + ') + ' neste mês — o "Orçado" dos indicadores compara apenas esse conjunto.');
+      note.textContent = msgs.join(' '); note.classList.toggle('on', msgs.length > 0);
+      renderKpis(cur, base, orc && curOrc ? orc : null, curOrc, parcial ? opsO.map(o => OP_NOME[o] || o).join(' + ') : '');
+      renderEvolucao(ops, ano, mes);
+      renderPonte(cur, base);
+      g('panel-ops').style.display = opSel === 'todas' && opsVisiveis.length > 1 ? '' : 'none';
+      renderOps(ano, mes, modo);
+    }
+
+    async function carregar() {
+      const hoje = new Date(); const y = hoje.getFullYear();
+      const { data, error } = await sb.rpc('conselho_metricas', { p_de: ym(y - 2, 1), p_ate: ym(y + 1, 12) });
+      if (error) throw error;
+      dados = data || [];
+      porChave = {}; dados.forEach(r => { porChave[r.operacao + '|' + r.ano + '|' + r.mes] = r; });
+      opsVisiveis = ['GIP', 'Exposicao', 'ViaCloset'].filter(op => dados.some(r => r.operacao === op));
+    }
+
+    function montarFiltros() {
+      g('sel-op').innerHTML = (opsVisiveis.length > 1 ? '<option value="todas">Todas as operações</option>' : '') + opsVisiveis.map(op => '<option value="' + op + '">' + OP_NOME[op] + '</option>').join('');
+      const meses = [...new Set(dados.filter(r => +r.receita_bruta > 0).map(r => ym(r.ano, r.mes)))].sort((a, b) => b - a);
+      g('sel-mes').innerHTML = meses.map(v => { const a = Math.floor(v / 100), m = v % 100; return '<option value="' + a + '-' + m + '">' + MESES[m - 1] + ' / ' + a + '</option>'; }).join('');
+      ['sel-mes', 'sel-cmp', 'sel-op'].forEach(id => g(id).addEventListener('change', render));
+    }
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (rows && rows[0]) || null;
+      if (!prof || !(prof.is_admin || prof.can_dre !== false)) return window.location.replace('/');
+      SafiSidebar.apply('co', prof, { email: data.session.user.email, sb });
+      try { await carregar(); }
+      catch (err) { g('co-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
+      if (!dados.length) { g('co-loading').textContent = 'Sem dados de DRE disponíveis para o seu acesso.'; return; }
+      montarFiltros();
+      g('co-loading').style.display = 'none';
+      g('co-main').style.display = 'block';
+      render();
+    }
+    init();
+  </script>
+</body>
+</html>

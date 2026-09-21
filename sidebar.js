@@ -26,6 +26,8 @@
     despfixas: SVG('<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/>'),
     conciliacao: SVG('<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'),
     calcimport: SVG('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><line x1="6" y1="11" x2="6" y2="11.01"/><line x1="18" y1="11" x2="18" y2="11.01"/>'),
+    conselho: SVG('<rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>'),
+    orcamento: SVG('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'),
     fechamento: SVG('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><path d="M9 16l2 2 4-4"/>'),
     admin: SVG('<circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/>'),
     chevron: SVG('<polyline points="6 9 12 15 18 9"/>', 14)
@@ -38,6 +40,8 @@
     geronia: { label: 'GerônIA', href: '/geronia', can: function () { return true; } },
     resumo: { label: 'Resumo Contábil', href: '/resumocontabil', can: function (p) { return p.is_admin || p.can_resumo !== false; } },
     fechamento: { label: 'Fechamento do Mês', href: '/fechamento', can: function (p) { return p.is_admin || p.can_fechar_mes === true; } },
+    conselho: { label: 'Painel do Conselho', href: '/conselho', can: function (p) { return p.is_admin || p.can_dre !== false; } },
+    orcamento: { label: 'Orçamento', href: '/orcamento', can: function (p) { return p.is_admin || p.can_orcamento === true; } },
     dre: { label: 'DRE', href: '/dre', can: function (p) { return p.is_admin || p.can_dre !== false; } },
     lancamentos: { label: 'Lançamentos', href: '/lancamentos', sub: true, can: function (p) { return p.is_admin || p.can_lancamentos === true; } },
     fluxocaixa: { label: 'Fluxo de Caixa', href: '/fluxo-caixa', can: function (p) { return p.is_admin || p.can_fluxo_caixa === true; } },
@@ -52,8 +56,8 @@
   // Setores, na ordem em que aparecem. 'lancamentos' fica aninhado sob 'dre'.
   var SECTIONS = [
     { id: 'geral', label: 'Visão Geral', items: ['home', 'geronia'] },
-    { id: 'conselho', label: 'Conselho', items: [] },
-    { id: 'financeiro', label: 'Financeiro', items: ['dre', 'fluxocaixa', 'despfixas'] },
+    { id: 'conselho', label: 'Conselho', items: ['conselho'] },
+    { id: 'financeiro', label: 'Financeiro', items: ['dre', 'orcamento', 'fluxocaixa', 'despfixas'] },
     { id: 'contabil', label: 'Contábil', items: ['resumo', 'fechamento'] },
     { id: 'compras', label: 'Compras', items: ['pedidos', 'conciliacao', 'calcimport'] },
     { id: 'pessoal', label: 'Pessoal', items: ['funcionarios'] },
@@ -64,7 +68,7 @@
     '/': 'home', '/resumocontabil': 'resumo', '/dre': 'dre', '/lancamentos': 'lancamentos',
     '/fluxo-caixa': 'fluxocaixa', '/geronia': 'geronia', '/mapa-societario': 'mapasoc',
     '/funcionarios': 'funcionarios', '/pedidos': 'pedidos', '/despesas-fixas': 'despfixas',
-    '/conciliacao': 'conciliacao', '/fechamento': 'fechamento', '/calculadora-importacao': 'calcimport'
+    '/conciliacao': 'conciliacao', '/fechamento': 'fechamento', '/conselho': 'conselho', '/orcamento': 'orcamento', '/calculadora-importacao': 'calcimport'
   };
 
   var COLLAPSED_KEY = 'safi-sidebar-collapsed-sections';
