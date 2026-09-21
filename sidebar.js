@@ -86,14 +86,18 @@
     var st = document.createElement('style');
     st.id = 'safi-sidebar-style';
     st.textContent =
-      '.sb-sec{display:flex;flex-direction:column;gap:4px}' +
+      '.sb-sec{display:flex;flex-direction:column}' +
       '.sb-sec + .sb-sec{margin-top:8px}' +
       '.sb-sec-h{display:flex;align-items:center;justify-content:space-between;width:100%;padding:8px 12px 6px;background:transparent;border:none;cursor:pointer;font-family:Inter,sans-serif;font-size:9.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#475569;text-align:left}' +
       '.sb-sec-h:hover{color:#94a3b8}' +
-      '.sb-sec-h svg{transition:transform .2s cubic-bezier(.16,1,.3,1)}' +
+      '.sb-sec-h svg{transition:transform .38s cubic-bezier(.4,0,.2,1)}' +
       '.sb-sec.collapsed .sb-sec-h svg{transform:rotate(-90deg)}' +
-      '.sb-sec-body{display:flex;flex-direction:column;gap:4px}' +
-      '.sb-sec.collapsed .sb-sec-body{display:none}';
+      '.sb-sec-body{display:grid;grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .38s cubic-bezier(.4,0,.2,1),opacity .3s ease,visibility 0s}' +
+      '.sb-sec-inner{min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:4px}' +
+      '.sb-sec.collapsed .sb-sec-body{grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .38s cubic-bezier(.4,0,.2,1),opacity .22s ease,visibility 0s linear .38s}' +
+      '.dc-sidebar-submenu{overflow:hidden;max-height:80px;opacity:1;transition:max-height .34s cubic-bezier(.4,0,.2,1),opacity .25s ease}' +
+      '.dc-sidebar-submenu.collapsed{display:flex !important;max-height:0;opacity:0;pointer-events:none}' +
+      '@media (prefers-reduced-motion:reduce){.sb-sec-body,.sb-sec.collapsed .sb-sec-body,.sb-sec-h svg,.dc-sidebar-submenu{transition:none}}';
     document.head.appendChild(st);
   }
 
@@ -116,7 +120,7 @@
     var inner = sec.items.map(function (k) { return k === 'dre' ? dreGroupHtml(prefix, active) : itemHtml(prefix, k, active); }).join('');
     return '<div class="sb-sec" data-sec="' + sec.id + '" style="display:none">' +
       '<button type="button" class="sb-sec-h" data-sec-toggle="' + sec.id + '" aria-expanded="true"><span>' + esc(sec.label) + '</span>' + ICONS.chevron + '</button>' +
-      '<div class="sb-sec-body">' + inner + '</div></div>';
+      '<div class="sb-sec-body"><div class="sb-sec-inner">' + inner + '</div></div></div>';
   }
 
   function mount(prefix, opts) {
