@@ -122,7 +122,13 @@
     var tentativas = 0;
     (function tenta() {
       var ajuda = $('#sa-help-btn');
-      if (ajuda) { ajuda.parentNode.insertBefore(b, ajuda); return; }
+      if (ajuda) {
+        ajuda.parentNode.insertBefore(b, ajuda);
+        // Na tela do DRE/Resumo o botão "Sobre" é empurrado para a direita por margem automática:
+        // passa essa margem para o "Gerar PDF", para os dois ficarem juntos à direita (e não colados à logo).
+        if (ajuda.style.marginLeft === 'auto') { b.style.marginLeft = 'auto'; b.style.marginRight = '10px'; ajuda.style.marginLeft = '0'; }
+        return;
+      }
       if (++tentativas < 30) return setTimeout(tenta, 200);
       var hdr = $('header.header') || $('.header'), dcNav = $('#dc-nav-right');
       if (hdr) hdr.appendChild(b); else if (dcNav) dcNav.parentNode.insertBefore(b, dcNav); else { b.classList.add('sp-float'); document.body.appendChild(b); }
