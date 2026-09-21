@@ -36,10 +36,11 @@
       '.sa-help-btn.sa-float{position:fixed;top:12px;right:16px;z-index:150;background:rgba(8,11,20,0.9)}' +
       '@media (max-width:768px){.sa-help-btn .sa-lbl{display:none}.sa-help-btn{padding:8px 9px}}' +
       /* guia */
-      '.sa-ov{position:fixed;inset:0;z-index:9500;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px)}' +
-      '.sa-ov.open{display:flex}' +
-      '.sa-card{width:100%;max-width:780px;max-height:88vh;overflow-y:auto;background:rgba(12,10,30,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 26px;box-shadow:0 24px 60px rgba(0,0,0,0.7);font-family:Inter,sans-serif;color:#e2e8f0;animation:saIn .22s ease}' +
-      '@keyframes saIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}' +
+      '.sa-ov{position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility 0s linear .25s}' +
+      '.sa-ov.open{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .25s ease,visibility 0s}' +
+      '.sa-ov .sa-card{transform:translateY(10px) scale(.98);transition:transform .28s cubic-bezier(.16,1,.3,1)}' +
+      '.sa-ov.open .sa-card{transform:none}' +
+      '.sa-card{width:100%;max-width:780px;max-height:88vh;overflow-y:auto;background:rgba(12,10,30,0.98);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:28px 26px;box-shadow:0 24px 60px rgba(0,0,0,0.7);font-family:Inter,sans-serif;color:#e2e8f0;}' +
       '.sa-title{font-size:18px;font-weight:800;color:#f8fafc;margin-bottom:4px}' +
       '.sa-sub{font-size:12.5px;color:#64748b;margin-bottom:18px}' +
       '.sa-intro{background:rgba(var(--sa-rgb),0.07);border:1px solid rgba(var(--sa-rgb),0.22);border-radius:10px;padding:13px 16px;margin-bottom:18px;font-size:12.5px;color:#cbd5e1;line-height:1.55}' +
@@ -71,9 +72,9 @@
       '.sa-ver{font-size:10px;color:#475569;margin-top:12px;text-align:right}' +
       '@media (max-width:700px){.sa-steps,.sa-two{grid-template-columns:1fr}.sa-card{padding:22px 18px}}' +
       /* tour */
-      '.sa-tour{position:fixed;inset:0;z-index:10000;background:rgba(4,8,20,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:clip-path .38s cubic-bezier(.4,0,.2,1),-webkit-clip-path .38s cubic-bezier(.4,0,.2,1)}' +
-      '.sa-ring{position:fixed;z-index:10001;border:2px solid var(--sa-acc);border-radius:12px;box-shadow:0 0 0 4px rgba(var(--sa-rgb),0.18),0 0 32px rgba(var(--sa-rgb),0.35);pointer-events:auto;transition:top .38s cubic-bezier(.4,0,.2,1),left .38s cubic-bezier(.4,0,.2,1),width .38s cubic-bezier(.4,0,.2,1),height .38s cubic-bezier(.4,0,.2,1),opacity .2s}' +
-      '.sa-tip{position:fixed;z-index:10002;width:340px;max-width:calc(100vw - 24px);background:rgba(12,14,34,0.99);border:1px solid rgba(var(--sa-rgb),0.35);border-radius:16px;padding:18px 18px 14px;box-shadow:0 20px 50px rgba(0,0,0,0.65);font-family:Inter,sans-serif;transition:top .38s cubic-bezier(.4,0,.2,1),left .38s cubic-bezier(.4,0,.2,1),opacity .2s}' +
+      '.sa-tour{position:fixed;inset:0;z-index:10000;background:rgba(4,8,20,0.55);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);transition:clip-path .38s cubic-bezier(.4,0,.2,1),-webkit-clip-path .38s cubic-bezier(.4,0,.2,1),opacity .35s ease}' +
+      '.sa-ring{position:fixed;z-index:10001;border:2px solid var(--sa-acc);border-radius:12px;box-shadow:0 0 0 4px rgba(var(--sa-rgb),0.18),0 0 32px rgba(var(--sa-rgb),0.35);pointer-events:auto;transition:top .38s cubic-bezier(.4,0,.2,1),left .38s cubic-bezier(.4,0,.2,1),width .38s cubic-bezier(.4,0,.2,1),height .38s cubic-bezier(.4,0,.2,1),opacity .35s ease}' +
+      '.sa-tip{position:fixed;z-index:10002;width:340px;max-width:calc(100vw - 24px);background:rgba(12,14,34,0.99);border:1px solid rgba(var(--sa-rgb),0.35);border-radius:16px;padding:18px 18px 14px;box-shadow:0 20px 50px rgba(0,0,0,0.65);font-family:Inter,sans-serif;transition:opacity .25s ease}' +
       '.sa-tip-t{font-size:14px;font-weight:800;color:#f8fafc;margin-bottom:6px}' +
       '.sa-tip-d{font-size:12.5px;color:#a8b4c6;line-height:1.55}' +
       '.sa-tip-d b{color:#e2e8f0}' +
@@ -85,7 +86,7 @@
       '.sa-nav:hover{background:rgba(255,255,255,0.1)}' +
       '.sa-nav.pri{background:var(--sa-acc);border-color:transparent;color:#06121f}' +
       '.sa-nav.pri:hover{filter:brightness(1.1)}' +
-      '@media (prefers-reduced-motion:reduce){.sa-tour,.sa-ring,.sa-tip{transition:none}.sa-card{animation:none}}';
+      '@media (prefers-reduced-motion:reduce){.sa-tour,.sa-ring,.sa-tip,.sa-ov,.sa-ov .sa-card{transition:none}}';
     document.head.appendChild(st);
   }
 
@@ -145,6 +146,7 @@
     var ov = $('#sa-guia');
     if (!ov) { ov = document.createElement('div'); ov.id = 'sa-guia'; ov.className = 'sa-ov'; ov.addEventListener('mousedown', function (e) { if (e.target === ov) fecharGuia(); }); document.body.appendChild(ov); }
     ov.innerHTML = '<div class="sa-card" role="dialog" aria-modal="true">' + guiaHtml(c) + '</div>';
+    void ov.offsetWidth; // garante o ponto de partida da transição
     ov.classList.add('open');
     $('#sa-close', ov).addEventListener('click', fecharGuia);
     var t = $('#sa-go-tour', ov); if (t) t.addEventListener('click', function () { fecharGuia(); iniciarTour(); });
@@ -156,7 +158,8 @@
   function setAccent() { var a = accent(); document.documentElement.style.setProperty('--sa-acc', a); document.documentElement.style.setProperty('--sa-rgb', hexRgb(a)); }
   function vistoKey() { return LS + ((ST.ctx.profile && ST.ctx.profile.id) || 'anon') + ':' + ST.ctx.key; }
   function marcarVisto() {
-    var c = conteudo(ST.ctx.key); lsSet(vistoKey(), String(c.versao));
+    var c = conteudo(ST.ctx.key), v = String(c.versao);
+    if (lsGet(vistoKey()) !== v) { lsSet(vistoKey(), v); remotoGravar(v); }
     var b = $('#sa-help-btn'); if (b) b.classList.remove('novo');
   }
 
@@ -187,16 +190,89 @@
     return 'path(evenodd, "M0 0H' + innerWidth + 'V' + innerHeight + 'H0Z M' + (l + r) + ' ' + t + 'H' + (R - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + R + ' ' + (t + r) + 'V' + (B - r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (R - r) + ' ' + B + 'H' + (l + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + l + ' ' + (B - r) + 'V' + (t + r) + 'A' + r + ' ' + r + ' 0 0 1 ' + (l + r) + ' ' + t + 'Z")';
   }
 
+  // Rolagem suave própria (a página desliza e o foco desliza junto; nada "pula").
+  function scrollerDe(el) {
+    for (var p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      var oy = getComputedStyle(p).overflowY;
+      if ((oy === 'auto' || oy === 'scroll') && p.scrollHeight > p.clientHeight + 2) return p;
+    }
+    return document.scrollingElement || document.documentElement;
+  }
+  function fixoOuCabecalho(el) {
+    if (el.closest('header, .header, #dc-nav-right')) return true;
+    for (var p = el; p && p !== document.body; p = p.parentElement) if (getComputedStyle(p).position === 'fixed') return true;
+    return false;
+  }
+  function suave(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+  function rolar(sc, para, ms, fim) {
+    var de = sc.scrollTop, dist = para - de, t0 = null, feito = false;
+    function acabar() { if (feito) return; feito = true; sc.scrollTop = para; fim(); }
+    if (Math.abs(dist) < 2) return fim();
+    setTimeout(acabar, ms + 250); // rede de segurança (aba em segundo plano não anima)
+    (function passo(ts) {
+      if (feito) return;
+      if (t0 === null) t0 = ts;
+      var k = Math.min(1, (ts - t0) / ms);
+      sc.scrollTop = de + dist * suave(k);
+      if (k < 1) requestAnimationFrame(passo); else acabar();
+    })(performance.now());
+  }
+  function planejarRolagem(el) {
+    if (fixoOuCabecalho(el)) return { sc: null, para: 0, delta: 0 };
+    var sc = scrollerDe(el), r = el.getBoundingClientRect(), vh = innerHeight, topo = 76, base = 20, util = vh - topo - base;
+    var ok = r.top >= topo - 4 && r.bottom <= vh - base + 4;
+    var desejado = r.height <= util ? sc.scrollTop + (r.top + r.height / 2 - (topo + util / 2)) : sc.scrollTop + (r.top - topo);
+    var max = sc.scrollHeight - sc.clientHeight;
+    var para = ok ? sc.scrollTop : Math.max(0, Math.min(max, desejado));
+    return { sc: sc, para: para, delta: para - sc.scrollTop };
+  }
+  // Retângulo do alvo já com a rolagem concluída (o foco vai direto para o lugar final).
+  function retanguloFinal(el, s, delta) {
+    if (s.sidebar) return { left: 0, top: 0, width: el.offsetWidth, height: el.offsetHeight };
+    var r = el.getBoundingClientRect();
+    return { left: r.left, top: r.top - delta, width: r.width, height: r.height };
+  }
+
+  function semTransicao(lista, fn) {
+    lista.forEach(function (e) { e.style.transition = 'none'; });
+    fn(); void lista[0].offsetWidth;
+    lista.forEach(function (e) { e.style.transition = ''; });
+  }
+  function aplicarAnel(rect, instantaneo) {
+    var tour = ST.tour, pad = 6, vw = innerWidth, vh = innerHeight;
+    var l = Math.max(4, rect.left - pad), t = Math.max(4, rect.top - pad);
+    var w = Math.max(8, Math.min(vw - 8 - l, rect.width + pad * 2)), h = Math.max(8, Math.min(vh - 8 - t, rect.height + pad * 2));
+    tour.caixa = { l: l, t: t, w: w, h: h };
+    var poe = function () {
+      tour.ring.style.left = l + 'px'; tour.ring.style.top = t + 'px'; tour.ring.style.width = w + 'px'; tour.ring.style.height = h + 'px';
+      var cp = roundedHole(l, t, w, h, 12); tour.ov.style.clipPath = cp; tour.ov.style.webkitClipPath = cp;
+    };
+    if (instantaneo) semTransicao([tour.ring, tour.ov], poe); else poe();
+  }
+  // Balão: abaixo do alvo, senão acima, senão ao lado, senão no canto.
+  function colocarTip(instantaneo) {
+    var tour = ST.tour, b = tour.caixa, tip = tour.tip, vw = innerWidth, vh = innerHeight;
+    var tw = Math.min(340, vw - 24), th = tip.offsetHeight || 170, gap = 14, tl, tt;
+    tl = Math.min(Math.max(12, b.l + b.w / 2 - tw / 2), vw - tw - 12);
+    if (b.t + b.h + gap + th <= vh - 8) tt = b.t + b.h + gap;
+    else if (b.t - gap - th >= 8) tt = b.t - gap - th;
+    else if (b.l + b.w + gap + tw <= vw - 8) { tl = b.l + b.w + gap; tt = Math.min(Math.max(12, b.t), vh - th - 12); }
+    else if (b.l - gap - tw >= 8) { tl = b.l - gap - tw; tt = Math.min(Math.max(12, b.t), vh - th - 12); }
+    else tt = vh - th - 12;
+    var poe = function () { tip.style.left = tl + 'px'; tip.style.top = Math.max(8, tt) + 'px'; };
+    if (instantaneo) semTransicao([tip], poe); else poe();
+  }
+
   function iniciarTour() {
     if (!ST.ctx || ST.tour) return;
     fecharGuia();
     var todos = tourSteps(ST.ctx.key).filter(function (s) { return s.clicar || achar(s.sel); });
     if (!todos.length) return;
     setAccent();
-    var tour = ST.tour = { steps: todos, i: 0, els: {} };
-    var ov = tour.ov = document.createElement('div'); ov.className = 'sa-tour';
-    var ring = tour.ring = document.createElement('div'); ring.className = 'sa-ring';
-    var tip = tour.tip = document.createElement('div'); tip.className = 'sa-tip'; tip.setAttribute('role', 'dialog');
+    var tour = ST.tour = { steps: todos, i: 0, gen: 0, caixa: { l: 0, t: 0, w: 0, h: 0 } };
+    var ov = tour.ov = document.createElement('div'); ov.className = 'sa-tour'; ov.style.opacity = '0';
+    var ring = tour.ring = document.createElement('div'); ring.className = 'sa-ring'; ring.style.opacity = '0';
+    var tip = tour.tip = document.createElement('div'); tip.className = 'sa-tip'; tip.setAttribute('role', 'dialog'); tip.style.opacity = '0';
     document.body.appendChild(ov); document.body.appendChild(ring); document.body.appendChild(tip);
     ov.addEventListener('click', function (e) { e.stopPropagation(); });
     tour.onKey = function (e) {
@@ -204,35 +280,57 @@
       else if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); ir(1); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); ir(-1); }
     };
-    tour.onMove = function () { if (tour.raf) return; tour.raf = requestAnimationFrame(function () { tour.raf = 0; posicionar(true); }); };
+    // Rolagem/redimensionamento feitos pela própria pessoa: o foco acompanha na hora.
+    tour.onMove = function () { if (tour.raf || tour.rolando) return; tour.raf = requestAnimationFrame(function () { tour.raf = 0; reposicionar(); }); };
     document.addEventListener('keydown', tour.onKey, true);
     window.addEventListener('resize', tour.onMove);
     window.addEventListener('scroll', tour.onMove, true);
     marcarVisto();
-    mostrar(0);
+    mostrar(0, 1, true);
   }
 
   function sidebarEls() { var p = ST.ctx.prefix; return [$('#' + p + '-sidebar'), $('#' + p + '-sidebar-backdrop')]; }
   function abrirSidebar(on) { sidebarEls().forEach(function (e) { if (e) e.classList[on ? 'add' : 'remove']('open'); }); }
 
-  function mostrar(i, dir) {
+  function reposicionar() {
+    var tour = ST.tour; if (!tour || !tour.el) return;
+    if (!document.body.contains(tour.el)) { var novo = achar(tour.step.sel); if (!novo) return; tour.el = novo; }
+    aplicarAnel(retanguloFinal(tour.el, tour.step, 0), true);
+    colocarTip(true);
+  }
+
+  // Mostra o passo i. `primeiro` = abertura do tour; passos que trocam de aba "esmaecem" em vez de deslizar.
+  function mostrar(i, dir, primeiro) {
     var tour = ST.tour; if (!tour) return;
-    var s = tour.steps[i];
+    var s = tour.steps[i], gen = ++tour.gen, corte = !!s.clicar && !primeiro;
+    tour.tip.style.opacity = '0';                       // o texto antigo sai antes de o novo entrar
+    if (corte) tour.ring.style.opacity = '0';
     abrirSidebar(!!s.sidebar);
-    var go = function () {
+    if (s.clicar) { var b = $(s.clicar); if (b) b.click(); if (s.voltar) tour.voltar = s.voltar; }
+    setTimeout(function () {
+      if (!ST.tour || tour.gen !== gen) return;
       var el = achar(s.sel);
-      if (!el) { // alvo sumiu (ex.: dados ainda carregando): pula na direção em que a pessoa está indo
+      if (!el) { // alvo indisponível (ex.: dados ainda carregando): segue na direção em que a pessoa está indo
         var prox = i + (dir || 1);
-        if (prox < 0 || prox >= tour.steps.length) { if (dir === -1) return mostrar(i + 1, 1); return fimTour(); }
-        return mostrar(prox, dir);
+        if (prox < 0 || prox >= tour.steps.length) { if (dir === -1) return mostrar(i + 1, 1, primeiro); return fimTour(); }
+        return mostrar(prox, dir, primeiro);
       }
       tour.i = i; tour.el = el; tour.step = s;
-      if (!s.sidebar) el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
-      render();
-      setTimeout(function () { posicionar(false); }, s.sidebar ? 340 : 60);
-    };
-    if (s.clicar) { var b = $(s.clicar); if (b) b.click(); if (s.voltar) tour.voltar = s.voltar; setTimeout(go, 200); }
-    else setTimeout(go, s.sidebar ? 20 : 0);
+      var plano = s.sidebar ? { sc: null, para: 0, delta: 0 } : planejarRolagem(el);
+      var rf = retanguloFinal(el, s, plano.delta);
+      var instantaneo = !!primeiro || corte;             // sem ponto de partida visível → aparece no lugar, com fade
+      tour.rolando = !!(plano.sc && plano.delta);
+      aplicarAnel(rf, instantaneo);
+      // Foco e rolagem viajam juntos (mesma duração e curva); ao fim, um ajuste fino sem movimento perceptível.
+      if (tour.rolando) rolar(plano.sc, plano.para, 380, function () { tour.rolando = false; if (ST.tour && tour.gen === gen) reposicionar(); });
+      requestAnimationFrame(function () { tour.ov.style.opacity = '1'; tour.ring.style.opacity = '1'; });
+      // Texto novo entra (já no lugar final) depois que o antigo saiu.
+      setTimeout(function () {
+        if (!ST.tour || tour.gen !== gen) return;
+        render(); colocarTip(true);
+        requestAnimationFrame(function () { tour.tip.style.opacity = '1'; });
+      }, primeiro ? 120 : 170);
+    }, s.clicar && !primeiro ? 220 : 0);
   }
 
   function render() {
@@ -252,40 +350,20 @@
     var j = tour.i + d;
     if (j >= tour.steps.length) return fimTour();
     if (j < 0) return;
-    mostrar(j, d);
-  }
-
-  function posicionar(instant) {
-    var tour = ST.tour; if (!tour || !tour.el) return;
-    var r = tour.el.getBoundingClientRect(), pad = 6, vw = innerWidth, vh = innerHeight;
-    var l = Math.max(4, r.left - pad), t = Math.max(4, r.top - pad);
-    var w = Math.min(vw - 8 - l, r.width + pad * 2), h = Math.min(vh - 8 - t, r.height + pad * 2);
-    var ring = tour.ring, ov = tour.ov, tip = tour.tip;
-    if (instant) { ring.style.transition = ov.style.transition = tip.style.transition = 'none'; }
-    ring.style.left = l + 'px'; ring.style.top = t + 'px'; ring.style.width = w + 'px'; ring.style.height = h + 'px';
-    var cp = roundedHole(l, t, w, h, 12);
-    ov.style.clipPath = cp; ov.style.webkitClipPath = cp;
-    // Balão: abaixo do alvo, senão acima, senão no canto inferior.
-    var tw = Math.min(340, vw - 24), th = tip.offsetHeight || 170, gap = 14, tl, tt;
-    tl = Math.min(Math.max(12, l + w / 2 - tw / 2), vw - tw - 12);
-    if (t + h + gap + th <= vh - 8) tt = t + h + gap;
-    else if (t - gap - th >= 8) tt = t - gap - th;
-    else if (l + w + gap + tw <= vw - 8) { tl = l + w + gap; tt = Math.min(Math.max(12, t), vh - th - 12); }
-    else if (l - gap - tw >= 8) { tl = l - gap - tw; tt = Math.min(Math.max(12, t), vh - th - 12); }
-    else tt = vh - th - 12;
-    tip.style.left = tl + 'px'; tip.style.top = Math.max(8, tt) + 'px';
-    if (instant) { void ring.offsetWidth; ring.style.transition = ov.style.transition = tip.style.transition = ''; }
+    mostrar(j, d, false);
   }
 
   function fimTour() {
     var tour = ST.tour; if (!tour) return;
+    ST.tour = null; tour.gen++;
     document.removeEventListener('keydown', tour.onKey, true);
     window.removeEventListener('resize', tour.onMove);
     window.removeEventListener('scroll', tour.onMove, true);
     abrirSidebar(false);
     if (tour.voltar) { var vb = $(tour.voltar); if (vb) vb.click(); }
-    [tour.ov, tour.ring, tour.tip].forEach(function (e) { if (e && e.parentNode) e.parentNode.removeChild(e); });
-    ST.tour = null;
+    // Sai com fade (nada some de repente).
+    [tour.ov, tour.ring, tour.tip].forEach(function (e) { if (e) { e.style.pointerEvents = 'none'; e.style.opacity = '0'; } });
+    setTimeout(function () { [tour.ov, tour.ring, tour.tip].forEach(function (e) { if (e && e.parentNode) e.parentNode.removeChild(e); }); }, 380);
     var b = $('#sa-help-btn'); if (b) b.focus({ preventScroll: true });
   }
 
@@ -299,19 +377,42 @@
       var perm = $('#perm-overlay'); if (perm && getComputedStyle(perm).display === 'none') ocupada = $('.modal-overlay.open, .sa-ov.open');
       var passos = tourSteps(ST.ctx.key).filter(function (s) { return !s.sidebar && !s.clicar && s.sel !== '#sa-help-btn'; });
       var pronto = passos.length && achar(passos[0].sel);
-      if (pronto && !ocupada) return setTimeout(function () { if (!ST.tour) iniciarTour(); }, 500);
+      if (pronto && !ocupada) return setTimeout(function () { if (!ST.tour && lsGet(vistoKey()) === null) iniciarTour(); }, 500);
       if (tentativas < 24) setTimeout(tenta, 500);
     })();
   }
 
+  // "Já viu?" vale por USUÁRIO (tabela ajuda_vistas), não só por navegador; o localStorage é só cache.
+  function remotoLer(cb) {
+    var sb = ST.ctx.sb, uid = ST.ctx.profile && ST.ctx.profile.id;
+    if (!sb || !uid) return cb(null, false);
+    try {
+      sb.from('ajuda_vistas').select('versao').eq('chave', ST.ctx.key).maybeSingle().then(function (r) {
+        if (r.error) return cb(null, false);
+        cb(r.data ? String(r.data.versao) : null, true);
+      }, function () { cb(null, false); });
+    } catch (e) { cb(null, false); }
+  }
+  function remotoGravar(v) {
+    var sb = ST.ctx && ST.ctx.sb, uid = ST.ctx && ST.ctx.profile && ST.ctx.profile.id;
+    if (!sb || !uid) return;
+    sb.from('ajuda_vistas').upsert({ user_id: uid, chave: ST.ctx.key, versao: v, visto_em: new Date().toISOString() }, { onConflict: 'user_id,chave' }).then(function () {}, function () {});
+  }
+
   function attach(o) {
     if (!o || !conteudo(o.key)) return;
-    if (ST.ctx && ST.ctx.key === o.key && $('#sa-help-btn')) { ST.ctx.profile = o.profile || ST.ctx.profile; return; }
-    ST.ctx = { prefix: o.prefix, key: o.key, profile: o.profile || {}, accent: o.accent || {} };
+    if (ST.ctx && ST.ctx.key === o.key && $('#sa-help-btn')) { ST.ctx.profile = o.profile || ST.ctx.profile; if (o.sb) ST.ctx.sb = o.sb; return; }
+    ST.ctx = { prefix: o.prefix, key: o.key, profile: o.profile || {}, accent: o.accent || {}, sb: o.sb || null };
     injectStyle(); setAccent(); injectButton();
-    var c = conteudo(o.key), visto = lsGet(vistoKey());
-    if (visto === null) agendarAuto();
-    else if (visto !== String(c.versao)) { var b = $('#sa-help-btn'); if (b) b.classList.add('novo'); }
+    var c = conteudo(o.key), versao = String(c.versao);
+    remotoLer(function (rem, ok) {
+      var local = lsGet(vistoKey());
+      if (ok && rem !== null) lsSet(vistoKey(), rem);
+      else if (ok && local !== null) remotoGravar(local);      // já tinha visto neste navegador: passa a valer em todos
+      var visto = rem !== null ? rem : local;
+      if (visto === null) agendarAuto();
+      else if (visto !== versao) { var b = $('#sa-help-btn'); if (b) b.classList.add('novo'); }
+    });
   }
 
   // ── Manual em texto puro (o GerônIA lê isto). A página Admin sincroniza com a tabela ajuda_manual. ──

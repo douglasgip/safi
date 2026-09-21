@@ -903,7 +903,7 @@ async function init() {
   currentSession = data.session;
   loadUsers();
   if (window.SafiAjuda) SafiAjuda.sincronizarManual(sb);
-  if (window.SafiAjuda) SafiAjuda.attach({ prefix: 'admin', key: 'admin', profile: { id: data.session.user.id }, accent: { g1: '#f59e0b' } });
+  if (window.SafiAjuda) SafiAjuda.attach({ prefix: 'admin', key: 'admin', profile: { id: data.session.user.id }, accent: { g1: '#f59e0b' }, sb: sb });
 
   const { data: profRows } = await sb.from('user_profiles').select('full_name,role,is_admin').eq('id', data.session.user.id).limit(1);
   const prof = (profRows && profRows[0]) || null;

@@ -800,7 +800,7 @@
         sb.from('geronia_threads').select('id,title,updated_at').eq('user_id', state.uid).order('updated_at', { ascending:false }).limit(20)
       ]);
       state.profile = (profRes && profRes.data) || {};
-      if (window.SafiAjuda) SafiAjuda.attach({ prefix: 'gr', key: 'geronia', profile: { id: state.uid }, accent: { g1: '#38bdf8' } });
+      if (window.SafiAjuda) SafiAjuda.attach({ prefix: 'gr', key: 'geronia', profile: { id: state.uid }, accent: { g1: '#38bdf8' }, sb: sb });
       state.threads = (threadsRes && threadsRes.data) || [];
       renderSidebar();
       renderSidebarFooter();

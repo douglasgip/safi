@@ -242,7 +242,7 @@
       if (window.UserMenu && opts.sb) window.UserMenu.attach(userEl, opts.sb);
     }
 
-    if (profile.id && root._safiActive) carregarAjuda(function () { window.SafiAjuda.attach({ prefix: prefix, key: root._safiActive, profile: profile, accent: root._safiAccent }); if (profile.is_admin && opts.sb) window.SafiAjuda.sincronizarManual(opts.sb); });
+    if (profile.id && root._safiActive) carregarAjuda(function () { window.SafiAjuda.attach({ prefix: prefix, key: root._safiActive, profile: profile, accent: root._safiAccent, sb: opts.sb }); if (profile.is_admin && opts.sb) window.SafiAjuda.sincronizarManual(opts.sb); });
   }
 
   window.SafiSidebar = { mount: mount, apply: apply };
