@@ -657,7 +657,8 @@
 
     const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    const fmtBRL = v => 'R$ ' + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+    // Mantém o sinal: valor negativo (ex.: resultado no prejuízo) aparece como -R$ 1.234, nunca sem o menos.
+    const fmtBRL = v => (v < 0 && Math.round(Math.abs(v)) > 0 ? '-' : '') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
     const fmtPct = v => v.toFixed(1).replace('.',',') + '%';
 
     // Mesmos agrupamentos do DRE: EPGIP = EP + GIP somados
