@@ -176,6 +176,9 @@
     .chart-box { position: relative; height: 300px; }
     .co-note { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d; border-radius: 12px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 16px; display: none; }
     .co-note.on { display: block; }
+    .co-acoes { display: none; align-items: center; gap: 10px; flex-wrap: wrap; padding: 11px 16px; margin-bottom: 16px; background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; font-size: 12.5px; font-weight: 700; color: #cbd5e1; text-decoration: none; }
+    .co-acoes:hover { border-color: rgba(56,189,248,0.35); }
+    .co-acoes .ven { color: #fca5a5; } .co-acoes .go { margin-left: auto; color: #7dd3fc; }
     .co-foot { font-size: 11px; color: #64748b; line-height: 1.7; margin-top: 4px; }
     .tbl th.r, .tbl td.r { text-align: right; }
     .tbl tr.total td { font-weight: 800; background: rgba(255,255,255,0.03); }
@@ -223,6 +226,8 @@
     </div>
 
     <div class="co-note" id="co-note"></div>
+
+    <a class="co-acoes" id="co-acoes" href="/reunioes"></a>
 
     <div class="kpi-grid" id="kpis"></div>
 
@@ -470,6 +475,21 @@
       ['sel-mes', 'sel-cmp', 'sel-op'].forEach(id => g(id).addEventListener('change', render));
     }
 
+    // Faixa com as ações do conselho (só aparece para quem tem acesso a Reuniões e Decisões — a RLS devolve vazio para os demais).
+    async function carregarAcoes() {
+      try {
+        const { data, error } = await sb.from('acoes').select('status,prazo');
+        if (error || !data) return;
+        const d = new Date(); const hoje = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        const ativas = data.filter(a => a.status === 'aberta' || a.status === 'em_andamento');
+        const venc = ativas.filter(a => a.prazo && a.prazo < hoje).length;
+        if (!data.length) return;
+        const el = g('co-acoes');
+        el.innerHTML = '<span>Ações do conselho:</span><span>' + ativas.length + ' em andamento</span>' + (venc ? '<span class="ven">' + venc + ' vencida(s)</span>' : '') + '<span class="go">Ver reuniões e decisões →</span>';
+        el.style.display = 'flex';
+      } catch (e) { /* faixa é opcional */ }
+    }
+
     async function init() {
       const { data } = await sb.auth.getSession();
       if (!data.session) return window.location.replace('/login');
@@ -484,6 +504,7 @@
       g('co-loading').style.display = 'none';
       g('co-main').style.display = 'block';
       render();
+      carregarAcoes();
     }
     init();
   </script>

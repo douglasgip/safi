@@ -761,6 +761,28 @@
 
         <div class="perm-row">
           <div>
+            <div class="perm-name">Reuniões e Decisões — ver</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Ver atas, ações e decisões do conselho; o responsável de uma ação também atualiza o andamento dela — visível por padrão só pra ninguém</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-reunioes">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('reunioes', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('reunioes', false)">Não</button>
+          </div>
+        </div>
+
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Reuniões e Decisões — registrar</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Cadastrar reuniões, atas e ações, e editar qualquer ação (inclui ver)</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-reunioes-editar">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('reunioes-editar', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('reunioes-editar', false)">Não</button>
+          </div>
+        </div>
+
+        <div class="perm-row">
+          <div>
             <div class="perm-name">Orçamento</div>
             <div style="font-size:10.5px;color:#64748b;margin-top:2px">Preencher as metas mensais por operação (o Painel do Conselho só lê) — visível por padrão só pra ninguém</div>
           </div>
@@ -909,6 +931,7 @@ const ACCESS_DOMAINS = [
   u => u.can_calc_importacao === true,
   u => u.can_fechar_mes === true,
   u => u.can_orcamento === true,
+  u => u.can_reunioes === true || u.can_reunioes_editar === true,
   u => u.pedidos_pode_conciliar === true,
 ];
 function computeAccessPct(u) {
@@ -1020,7 +1043,7 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-conciliar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','fechamento','orcamento'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-conciliar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','fechamento','orcamento','reunioes','reunioes-editar'].forEach(k => setToggle(k, false));
   setToggle('ped-lancar', true);
   setToggle('ped-conferir', true);
   document.getElementById('modal-error').className   = 'modal-error';
@@ -1070,6 +1093,8 @@ function openEditModal(u) {
   setToggle('calcimport',      !!u.can_calc_importacao);
   setToggle('fechamento',      !!u.can_fechar_mes);
   setToggle('orcamento',       !!u.can_orcamento);
+  setToggle('reunioes',        !!u.can_reunioes);
+  setToggle('reunioes-editar', !!u.can_reunioes_editar);
   setToggle('lancamentos',       !!u.can_lancamentos);
   setToggle('lanc-ep',           !!u.lancamentos_ep);
   setToggle('lanc-gip',          !!u.lancamentos_gip);
@@ -1130,6 +1155,8 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     can_calc_importacao: toggleState.calcimport,
     can_fechar_mes: toggleState.fechamento,
     can_orcamento: toggleState.orcamento,
+    can_reunioes: toggleState.reunioes,
+    can_reunioes_editar: toggleState['reunioes-editar'],
     can_lancamentos:       toggleState.lancamentos,
     lancamentos_ep:        toggleState['lanc-ep'],
     lancamentos_gip:       toggleState['lanc-gip'],

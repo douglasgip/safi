@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Reuniões e Decisões</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+
+    .bg { position: fixed; inset: 0; z-index: 0; background:
+        radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #38bdf8; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #re-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #re-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #7dd3fc; }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .fe-select:focus { outline: none; border-color: #38bdf8; }
+    select option { background: #0f172a; color: #f1f5f9; }
+
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .tab .badge-n { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px; border-radius: 9px; background: rgba(251,191,36,0.18); color: #fbbf24; font-size: 10.5px; font-weight: 800; }
+
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
+
+    .op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+    .op-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 14px; }
+    .op-card.travado { border-color: rgba(52,211,153,0.35); }
+    .op-card.aprovado { border-color: rgba(251,191,36,0.35); }
+    .op-head { display: flex; align-items: center; gap: 12px; }
+    .op-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
+    .op-name { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .op-period { font-size: 11px; color: #64748b; margin-top: 1px; }
+    .status-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; align-self: flex-start; }
+    .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .st-aberto { background: rgba(148,163,184,0.14); color: #cbd5e1; } .st-aberto .dot { background: #94a3b8; }
+    .st-aprovado { background: rgba(251,191,36,0.14); color: #fcd34d; } .st-aprovado .dot { background: #fbbf24; }
+    .st-travado { background: rgba(52,211,153,0.14); color: #6ee7b7; } .st-travado .dot { background: #34d399; }
+    .op-meta { font-size: 11.5px; color: #64748b; line-height: 1.5; min-height: 34px; }
+    .op-alertas { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 10px; }
+    .op-alertas.ok { background: rgba(52,211,153,0.1); color: #6ee7b7; }
+    .op-alertas.warn { background: rgba(251,191,36,0.1); color: #fcd34d; cursor: pointer; }
+    .op-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
+
+    .btn-primary { flex: 1; padding: 11px 14px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
+    .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+
+    .matrix-scroll { overflow-x: auto; }
+    .matrix { border-collapse: separate; border-spacing: 6px; min-width: 640px; }
+    .matrix th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; padding: 4px 6px; text-align: center; }
+    .matrix th.row-h { text-align: left; color: #cbd5e1; font-size: 12px; text-transform: none; letter-spacing: 0; white-space: nowrap; padding-right: 12px; }
+    .mx-cell { width: 44px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; font-size: 10px; font-weight: 800; color: #475569; }
+    .mx-cell.aprovado { background: rgba(251,191,36,0.18); border-color: rgba(251,191,36,0.4); color: #fcd34d; }
+    .mx-cell.travado { background: rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.4); color: #6ee7b7; }
+    .mx-cell.sel { outline: 2px solid #38bdf8; outline-offset: 1px; }
+    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: #64748b; }
+    .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+    .legend .l-aberto::before { background: rgba(255,255,255,0.12); } .legend .l-aprovado::before { background: #fbbf24; } .legend .l-travado::before { background: #34d399; }
+
+    .chk-list { display: flex; flex-direction: column; gap: 8px; }
+    .chk { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    .chk-sev { flex-shrink: 0; margin-top: 2px; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+    .sev-alerta { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .sev-info { background: rgba(56,189,248,0.14); color: #7dd3fc; }
+    .chk-body { min-width: 0; flex: 1; }
+    .chk-msg { font-size: 13px; color: #e2e8f0; font-weight: 600; }
+    .chk-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .chk-op { font-size: 11px; font-weight: 800; color: #94a3b8; white-space: nowrap; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 460px; }
+    table.tbl { width: 100%; border-collapse: collapse; min-width: 720px; }
+    .tbl thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 11px 12px; font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    .tbl td { padding: 10px 12px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tbl .muted { color: #64748b; }
+    .delta-pos { color: #4ade80; } .delta-neg { color: #f87171; }
+    .acao { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; }
+    .acao.INSERT { background: rgba(52,211,153,0.14); color: #6ee7b7; } .acao.UPDATE { background: rgba(56,189,248,0.14); color: #7dd3fc; } .acao.DELETE { background: rgba(248,113,113,0.14); color: #fca5a5; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
+    .modal-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
+    .modal-error.visible { display: block; }
+    .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
+    .field textarea { width: 100%; min-height: 84px; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; resize: vertical; color-scheme: dark; }
+    .field textarea:focus { outline: none; border-color: #38bdf8; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+    #re-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 900px) { .op-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 16px; } .tabs { max-width: none; } }
+  
+    .re-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+    .chip { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 14px 16px; cursor: pointer; text-align: left; font-family: Inter, sans-serif; color: inherit; }
+    .chip:hover { border-color: rgba(56,189,248,0.35); }
+    .chip.on { border-color: #38bdf8; background: rgba(56,189,248,0.1); }
+    .chip-n { font-size: 24px; font-weight: 800; color: #f8fafc; }
+    .chip-l { font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; margin-top: 2px; }
+    .chip.warn .chip-n { color: #fca5a5; }
+    .st { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .st-aberta { background: rgba(148,163,184,0.16); color: #cbd5e1; }
+    .st-em_andamento { background: rgba(56,189,248,0.16); color: #7dd3fc; }
+    .st-concluida { background: rgba(52,211,153,0.16); color: #6ee7b7; }
+    .st-cancelada { background: rgba(100,116,139,0.14); color: #64748b; text-decoration: line-through; }
+    .venc { color: #fca5a5; font-weight: 800; }
+    .tbl tr.click { cursor: pointer; } .tbl tr.click:hover td { background: rgba(255,255,255,0.03); }
+    .tbl td .sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .re-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+    .re-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 16px 18px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
+    .re-card:hover { border-color: rgba(56,189,248,0.35); }
+    .re-card-t { font-size: 14px; font-weight: 800; color: #f8fafc; }
+    .re-card-m { font-size: 11.5px; color: #64748b; }
+    .re-card-p { font-size: 12px; color: #94a3b8; line-height: 1.5; max-height: 54px; overflow: hidden; }
+    .re-card-c { font-size: 11.5px; font-weight: 700; color: #7dd3fc; margin-top: 2px; }
+    .tipo { display: inline-block; padding: 2px 8px; border-radius: 8px; background: rgba(129,140,248,0.16); color: #a5b4fc; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; margin-right: 6px; }
+    .modal-card.wide { max-width: 720px; }
+    .field { margin-bottom: 12px; }
+    .field input, .field select { width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; }
+    .field input:focus, .field select:focus { outline: none; border-color: #38bdf8; }
+    .field textarea.tall { min-height: 190px; }
+    .field input[disabled], .field select[disabled], .field textarea[disabled] { opacity: .65; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .sub-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .sub-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; cursor: pointer; font-size: 12.5px; }
+    .sub-item:hover { border-color: rgba(56,189,248,0.3); }
+    .sub-item .t { flex: 1; color: #e2e8f0; }
+    .sub-item .r { color: #64748b; font-size: 11px; white-space: nowrap; }
+    .hist { max-height: 150px; overflow: auto; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 6px; padding-top: 10px; font-size: 11.5px; color: #94a3b8; line-height: 1.6; }
+    .hist b { color: #cbd5e1; }
+    .btn-danger { padding: 11px 14px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: #fca5a5; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    #re-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    @media (max-width: 900px) { .chips { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .grid2 { grid-template-columns: 1fr; } }
+
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="re-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="re-sidebar"></aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="re-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Reuniões e Decisões</div>
+    </div>
+  </header>
+
+  <div id="re-loading">Carregando…</div>
+
+  <main class="main" id="re-main" style="display:none">
+    <div class="fe-toolbar">
+      <div>
+        <h1>Reuniões e Decisões</h1>
+        <div class="fe-toolbar-sub">Registre as reuniões e acompanhe o que ficou decidido: quem faz, até quando e em que pé está.</div>
+      </div>
+      <div class="re-actions" id="re-actions"></div>
+    </div>
+
+    <div class="tabs" id="tabs" style="max-width:360px">
+      <button class="tab active" data-tab="acoes">Ações e decisões</button>
+      <button class="tab" data-tab="reunioes">Reuniões</button>
+    </div>
+
+    <section id="tab-acoes">
+      <div class="chips" id="chips"></div>
+      <div class="panel">
+        <div class="filters">
+          <select class="fe-select" id="f-status" aria-label="Situação">
+            <option value="ativas">Em andamento (abertas + em andamento)</option>
+            <option value="vencidas">Vencidas</option>
+            <option value="concluida">Concluídas</option>
+            <option value="cancelada">Canceladas</option>
+            <option value="todas">Todas</option>
+          </select>
+          <select class="fe-select" id="f-resp" aria-label="Responsável"></select>
+          <select class="fe-select" id="f-op" aria-label="Operação">
+            <option value="">Todas as operações</option><option value="__geral">Geral (Grupo)</option>
+            <option value="GIP">GIP Ecommerce</option><option value="Exposicao">Exposição Paulista</option><option value="ViaCloset">Via Closet</option>
+          </select>
+        </div>
+        <div class="table-scroll" style="max-height:none"><table class="tbl" id="tbl-acoes"></table></div>
+      </div>
+    </section>
+
+    <section id="tab-reunioes" style="display:none">
+      <div class="re-cards" id="re-cards"></div>
+    </section>
+  </main>
+
+  <!-- Modal: reunião -->
+  <div class="modal-overlay" id="reu-modal">
+    <div class="modal-card wide">
+      <div class="modal-title" id="reu-title">Nova reunião</div>
+      <div class="modal-error" id="reu-error"></div>
+      <div class="grid2">
+        <div class="field"><label for="reu-titulo">Título</label><input id="reu-titulo" maxlength="140" placeholder="Ex.: Conselho — resultado de agosto"></div>
+        <div class="grid2">
+          <div class="field"><label for="reu-data">Data</label><input id="reu-data" type="date"></div>
+          <div class="field"><label for="reu-tipo">Tipo</label><select id="reu-tipo"><option value="conselho">Conselho</option><option value="diretoria">Diretoria</option><option value="operacional">Operacional</option><option value="outra">Outra</option></select></div>
+        </div>
+      </div>
+      <div class="field"><label for="reu-part">Participantes</label><input id="reu-part" maxlength="400" placeholder="Nomes separados por vírgula"></div>
+      <div class="field"><label for="reu-pauta">Pauta</label><textarea id="reu-pauta" style="min-height:70px" placeholder="Assuntos a tratar"></textarea></div>
+      <div class="field"><label for="reu-ata">Ata / resumo do que foi tratado</label><textarea id="reu-ata" class="tall" placeholder="O que foi discutido e decidido"></textarea></div>
+      <div id="reu-acoes-wrap" style="display:none">
+        <div class="field" style="margin-bottom:6px"><label>Ações e decisões desta reunião</label></div>
+        <div class="sub-list" id="reu-acoes"></div>
+        <button class="btn-ghost" type="button" id="reu-add-acao">+ Adicionar ação a esta reunião</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="reu-save" type="button">Salvar</button>
+        <button class="btn-danger" id="reu-del" type="button" style="display:none">Excluir</button>
+        <button class="btn-cancel" type="button" onclick="closeModal('reu-modal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: ação -->
+  <div class="modal-overlay" id="aca-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="aca-title">Nova ação</div>
+      <div class="modal-sub" id="aca-sub" style="display:none"></div>
+      <div class="modal-error" id="aca-error"></div>
+      <div class="field"><label for="aca-titulo">O que precisa ser feito</label><input id="aca-titulo" maxlength="200" placeholder="Ex.: Renegociar prazo com fornecedor X"></div>
+      <div class="field"><label for="aca-detalhe">Detalhes (opcional)</label><textarea id="aca-detalhe" style="min-height:64px"></textarea></div>
+      <div class="grid2">
+        <div class="field"><label for="aca-resp">Responsável</label><select id="aca-resp"></select></div>
+        <div class="field" id="aca-outro-wrap" style="display:none"><label for="aca-outro">Nome do responsável</label><input id="aca-outro" maxlength="80"></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="aca-prazo">Prazo</label><input id="aca-prazo" type="date"></div>
+        <div class="field"><label for="aca-op">Operação</label><select id="aca-op"><option value="">Geral (Grupo)</option><option value="GIP">GIP Ecommerce</option><option value="Exposicao">Exposição Paulista</option><option value="ViaCloset">Via Closet</option></select></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label for="aca-reu">Reunião de origem</label><select id="aca-reu"></select></div>
+        <div class="field"><label for="aca-status">Situação</label><select id="aca-status"><option value="aberta">Aberta</option><option value="em_andamento">Em andamento</option><option value="concluida">Concluída</option><option value="cancelada">Cancelada</option></select></div>
+      </div>
+      <div class="hist" id="aca-hist" style="display:none"></div>
+      <div class="modal-actions">
+        <button class="btn-primary" id="aca-save" type="button">Salvar</button>
+        <button class="btn-danger" id="aca-del" type="button" style="display:none">Excluir</button>
+        <button class="btn-cancel" type="button" onclick="closeModal('aca-modal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    SafiSidebar.mount('re', { active: 'reunioes', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('re');
+
+    const OP_NOME = { GIP: 'GIP Ecommerce', Exposicao: 'Exposição Paulista', ViaCloset: 'Via Closet' };
+    const ST_LABEL = { aberta: 'Aberta', em_andamento: 'Em andamento', concluida: 'Concluída', cancelada: 'Cancelada' };
+    const TIPO_LABEL = { conselho: 'Conselho', diretoria: 'Diretoria', operacional: 'Operacional', outra: 'Outra' };
+    const EVENTO_LABEL = { criada: 'Criada', status: 'Situação', prazo: 'Prazo', responsavel: 'Responsável', editada: 'Editada' };
+
+    const g = id => document.getElementById(id);
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    const hoje = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+    const fmtD = s => s ? s.slice(8, 10) + '/' + s.slice(5, 7) + '/' + s.slice(0, 4) : '—';
+    const fmtDT = iso => new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const ativa = a => a.status === 'aberta' || a.status === 'em_andamento';
+    const vencida = a => ativa(a) && a.prazo && a.prazo < hoje();
+
+    let me = null, podeEditar = false, ehAdmin = false;
+    let usuarios = [], reunioes = [], acoes = [];
+    let acaoAtual = null, reuAtual = null, chipSel = null;
+
+    function openModal(id) { g(id).classList.add('open'); }
+    function closeModal(id) { g(id).classList.remove('open'); }
+    function showErr(id, msg) { const e = g(id); e.textContent = msg || ''; e.classList.toggle('visible', !!msg); }
+    const reuNome = id => { const r = reunioes.find(x => x.id === id); return r ? r.titulo : null; };
+
+    async function carregar() {
+      const [r, a, u] = await Promise.all([
+        sb.from('reunioes').select('*').order('data', { ascending: false }),
+        sb.from('acoes').select('*').order('prazo', { ascending: true, nullsFirst: false }),
+        sb.rpc('reunioes_usuarios'),
+      ]);
+      const err = r.error || a.error || u.error;
+      if (err) throw err;
+      reunioes = r.data || []; acoes = a.data || []; usuarios = u.data || [];
+    }
+
+    // ── Aba: ações ─────────────────────────────────────────────────────────
+    function renderChips() {
+      const mesIni = hoje().slice(0, 7);
+      const n = {
+        ativas: acoes.filter(ativa).length,
+        vencidas: acoes.filter(vencida).length,
+        mes: acoes.filter(a => a.status === 'concluida' && a.concluida_em && a.concluida_em.slice(0, 7) === mesIni).length,
+        total: reunioes.length,
+      };
+      g('chips').innerHTML =
+        '<button class="chip' + (g('f-status').value === 'ativas' ? ' on' : '') + '" data-set="ativas"><div class="chip-n">' + n.ativas + '</div><div class="chip-l">Em andamento</div></button>' +
+        '<button class="chip warn' + (g('f-status').value === 'vencidas' ? ' on' : '') + '" data-set="vencidas"><div class="chip-n">' + n.vencidas + '</div><div class="chip-l">Vencidas</div></button>' +
+        '<button class="chip" data-set="concluida"><div class="chip-n">' + n.mes + '</div><div class="chip-l">Concluídas no mês</div></button>' +
+        '<button class="chip" data-tab="reunioes"><div class="chip-n">' + n.total + '</div><div class="chip-l">Reuniões registradas</div></button>';
+    }
+
+    function respFilterOptions() {
+      const nomes = [...new Set(acoes.map(a => a.responsavel_nome))].sort((x, y) => x.localeCompare(y, 'pt-BR'));
+      const cur = g('f-resp').value;
+      g('f-resp').innerHTML = '<option value="">Todos os responsáveis</option>' + nomes.map(n => '<option value="' + esc(n) + '">' + esc(n) + '</option>').join('');
+      g('f-resp').value = nomes.includes(cur) ? cur : '';
+    }
+
+    function renderAcoes() {
+      renderChips();
+      const fs = g('f-status').value, fr = g('f-resp').value, fo = g('f-op').value;
+      let rows = acoes.filter(a => {
+        if (fs === 'ativas' && !ativa(a)) return false;
+        if (fs === 'vencidas' && !vencida(a)) return false;
+        if (fs === 'concluida' && a.status !== 'concluida') return false;
+        if (fs === 'cancelada' && a.status !== 'cancelada') return false;
+        if (fr && a.responsavel_nome !== fr) return false;
+        if (fo === '__geral' ? !!a.operacao : (fo && a.operacao !== fo)) return false;
+        return true;
+      });
+      if (!rows.length) { g('tbl-acoes').innerHTML = '<tbody><tr><td class="muted" style="padding:28px;text-align:center">Nenhuma ação neste filtro.</td></tr></tbody>'; return; }
+      g('tbl-acoes').innerHTML = '<thead><tr><th>Ação</th><th>Responsável</th><th>Operação</th><th>Prazo</th><th>Situação</th><th>Reunião</th></tr></thead><tbody>' +
+        rows.map(a => '<tr class="click" data-acao="' + a.id + '"><td>' + esc(a.titulo) + (a.detalhe ? '<div class="sub">' + esc(a.detalhe.slice(0, 110)) + (a.detalhe.length > 110 ? '…' : '') + '</div>' : '') + '</td>' +
+          '<td>' + esc(a.responsavel_nome) + '</td><td class="muted">' + (a.operacao ? OP_NOME[a.operacao] : 'Geral') + '</td>' +
+          '<td class="' + (vencida(a) ? 'venc' : '') + '" style="white-space:nowrap">' + fmtD(a.prazo) + (vencida(a) ? ' · vencida' : '') + '</td>' +
+          '<td><span class="st st-' + a.status + '">' + ST_LABEL[a.status] + '</span></td><td class="muted">' + esc(reuNome(a.reuniao_id) || '—') + '</td></tr>').join('') + '</tbody>';
+    }
+
+    // ── Aba: reuniões ──────────────────────────────────────────────────────
+    function renderReunioes() {
+      if (!reunioes.length) { g('re-cards').innerHTML = '<div class="empty" style="grid-column:1/-1">Nenhuma reunião registrada ainda.</div>'; return; }
+      g('re-cards').innerHTML = reunioes.map(r => {
+        const as = acoes.filter(a => a.reuniao_id === r.id);
+        const ab = as.filter(ativa).length;
+        return '<div class="re-card" data-reu="' + r.id + '"><div class="re-card-t">' + esc(r.titulo) + '</div>' +
+          '<div class="re-card-m"><span class="tipo">' + TIPO_LABEL[r.tipo] + '</span>' + fmtD(r.data) + (r.participantes ? ' · ' + esc(r.participantes.slice(0, 70)) + (r.participantes.length > 70 ? '…' : '') : '') + '</div>' +
+          (r.ata || r.pauta ? '<div class="re-card-p">' + esc((r.ata || r.pauta).slice(0, 200)) + '</div>' : '') +
+          '<div class="re-card-c">' + (as.length ? as.length + ' ação(ões) · ' + ab + ' em andamento' : 'Sem ações registradas') + '</div></div>';
+      }).join('');
+    }
+
+    function renderTudo() { respFilterOptions(); renderAcoes(); renderReunioes(); }
+
+    // ── Modal: reunião ─────────────────────────────────────────────────────
+    function abrirReuniao(id) {
+      reuAtual = id ? reunioes.find(r => r.id === id) : null;
+      showErr('reu-error', '');
+      g('reu-title').textContent = reuAtual ? 'Reunião' : 'Nova reunião';
+      g('reu-titulo').value = reuAtual ? reuAtual.titulo : '';
+      g('reu-data').value = reuAtual ? reuAtual.data : hoje();
+      g('reu-tipo').value = reuAtual ? reuAtual.tipo : 'conselho';
+      g('reu-part').value = reuAtual ? (reuAtual.participantes || '') : '';
+      g('reu-pauta').value = reuAtual ? (reuAtual.pauta || '') : '';
+      g('reu-ata').value = reuAtual ? (reuAtual.ata || '') : '';
+      ['reu-titulo', 'reu-data', 'reu-tipo', 'reu-part', 'reu-pauta', 'reu-ata'].forEach(x => { g(x).disabled = !podeEditar; });
+      g('reu-save').style.display = podeEditar ? '' : 'none';
+      g('reu-del').style.display = ehAdmin && reuAtual ? '' : 'none';
+      g('reu-add-acao').style.display = podeEditar ? '' : 'none';
+      renderReuAcoes();
+      openModal('reu-modal');
+    }
+    function renderReuAcoes() {
+      g('reu-acoes-wrap').style.display = reuAtual ? '' : 'none';
+      if (!reuAtual) return;
+      const as = acoes.filter(a => a.reuniao_id === reuAtual.id);
+      g('reu-acoes').innerHTML = as.length ? as.map(a => '<div class="sub-item" data-acao="' + a.id + '"><span class="st st-' + a.status + '">' + ST_LABEL[a.status] + '</span><span class="t">' + esc(a.titulo) + '</span><span class="r">' + esc(a.responsavel_nome) + ' · ' + fmtD(a.prazo) + '</span></div>').join('') : '<div class="muted" style="font-size:12px">Nenhuma ação ainda.</div>';
+    }
+    g('reu-save').addEventListener('click', async () => {
+      const titulo = g('reu-titulo').value.trim(), data = g('reu-data').value;
+      if (!titulo) return showErr('reu-error', 'Informe o título da reunião.');
+      if (!data) return showErr('reu-error', 'Informe a data.');
+      const row = { titulo, data, tipo: g('reu-tipo').value, participantes: g('reu-part').value.trim() || null, pauta: g('reu-pauta').value.trim() || null, ata: g('reu-ata').value.trim() || null };
+      const btn = g('reu-save'); btn.disabled = true;
+      const q = reuAtual ? sb.from('reunioes').update(row).eq('id', reuAtual.id).select() : sb.from('reunioes').insert(row).select();
+      const { data: out, error } = await q;
+      btn.disabled = false;
+      if (error) return showErr('reu-error', 'Não foi possível salvar: ' + error.message);
+      showErr('reu-error', '');
+      const saved = out && out[0];
+      if (saved) { const i = reunioes.findIndex(r => r.id === saved.id); if (i >= 0) reunioes[i] = saved; else reunioes.unshift(saved); reunioes.sort((a, b) => b.data.localeCompare(a.data)); reuAtual = saved; g('reu-title').textContent = 'Reunião'; g('reu-del').style.display = ehAdmin ? '' : 'none'; }
+      renderTudo(); renderReuAcoes();
+      showToast('Reunião salva. Agora você pode adicionar as ações.', 'green');
+    });
+    g('reu-del').addEventListener('click', async () => {
+      if (!reuAtual || !confirm('Excluir esta reunião? As ações vinculadas continuam, só perdem o vínculo.')) return;
+      const { error } = await sb.from('reunioes').delete().eq('id', reuAtual.id);
+      if (error) return showErr('reu-error', 'Não foi possível excluir: ' + error.message);
+      reunioes = reunioes.filter(r => r.id !== reuAtual.id); acoes.forEach(a => { if (a.reuniao_id === reuAtual.id) a.reuniao_id = null; });
+      closeModal('reu-modal'); renderTudo(); showToast('Reunião excluída.', 'green');
+    });
+    g('reu-add-acao').addEventListener('click', () => { if (reuAtual) abrirAcao(null, reuAtual.id); });
+
+    // ── Modal: ação ────────────────────────────────────────────────────────
+    function montarSelectResp(selId, selNome) {
+      const opts = usuarios.map(u => '<option value="' + u.id + '">' + esc(u.nome) + (u.cargo ? ' — ' + esc(u.cargo) : '') + '</option>').join('');
+      g('aca-resp').innerHTML = '<option value="">Selecione…</option>' + opts + '<option value="__outro">Outra pessoa (digitar nome)</option>';
+      if (selId && usuarios.some(u => u.id === selId)) { g('aca-resp').value = selId; g('aca-outro').value = ''; }
+      else if (selNome) { g('aca-resp').value = '__outro'; g('aca-outro').value = selNome; }
+      else { g('aca-resp').value = ''; g('aca-outro').value = ''; }
+      g('aca-outro-wrap').style.display = g('aca-resp').value === '__outro' ? '' : 'none';
+    }
+    g('aca-resp').addEventListener('change', () => { g('aca-outro-wrap').style.display = g('aca-resp').value === '__outro' ? '' : 'none'; });
+
+    async function abrirAcao(id, reuId) {
+      acaoAtual = id ? acoes.find(a => a.id === id) : null;
+      showErr('aca-error', '');
+      const souResp = !!acaoAtual && acaoAtual.responsavel_id === me.id;
+      const pleno = podeEditar;                     // edita tudo
+      const soStatus = !pleno && souResp;           // só mexe na situação
+      g('aca-title').textContent = acaoAtual ? 'Ação' : 'Nova ação';
+      g('aca-titulo').value = acaoAtual ? acaoAtual.titulo : '';
+      g('aca-detalhe').value = acaoAtual ? (acaoAtual.detalhe || '') : '';
+      montarSelectResp(acaoAtual ? acaoAtual.responsavel_id : null, acaoAtual ? acaoAtual.responsavel_nome : null);
+      g('aca-prazo').value = acaoAtual ? (acaoAtual.prazo || '') : '';
+      g('aca-op').value = acaoAtual ? (acaoAtual.operacao || '') : '';
+      g('aca-reu').innerHTML = '<option value="">— nenhuma —</option>' + reunioes.map(r => '<option value="' + r.id + '">' + fmtD(r.data) + ' · ' + esc(r.titulo) + '</option>').join('');
+      g('aca-reu').value = acaoAtual ? (acaoAtual.reuniao_id || '') : (reuId || '');
+      g('aca-status').value = acaoAtual ? acaoAtual.status : 'aberta';
+      ['aca-titulo', 'aca-detalhe', 'aca-resp', 'aca-outro', 'aca-prazo', 'aca-op', 'aca-reu'].forEach(x => { g(x).disabled = !pleno; });
+      g('aca-status').disabled = !(pleno || soStatus);
+      g('aca-save').style.display = (pleno || soStatus) ? '' : 'none';
+      g('aca-del').style.display = ehAdmin && acaoAtual ? '' : 'none';
+      const sub = g('aca-sub');
+      sub.style.display = soStatus ? '' : 'none'; sub.textContent = soStatus ? 'Você é o responsável: pode atualizar a situação desta ação.' : '';
+      const h = g('aca-hist'); h.style.display = 'none';
+      openModal('aca-modal');
+      if (acaoAtual) {
+        const { data } = await sb.from('acoes_log').select('*').eq('acao_id', acaoAtual.id).order('created_at', { ascending: false });
+        if (data && data.length) { h.innerHTML = '<b>Histórico</b><br>' + data.map(l => fmtDT(l.created_at) + ' — <b>' + esc(l.user_nome || '—') + '</b>: ' + (EVENTO_LABEL[l.evento] || l.evento) + (l.detalhe ? ' (' + esc(l.detalhe) + ')' : '')).join('<br>'); h.style.display = ''; }
+      }
+    }
+
+    g('aca-save').addEventListener('click', async () => {
+      let row;
+      if (podeEditar) {
+        const titulo = g('aca-titulo').value.trim();
+        const rv = g('aca-resp').value;
+        const nome = rv === '__outro' ? g('aca-outro').value.trim() : ((usuarios.find(u => u.id === rv) || {}).nome || '');
+        if (!titulo) return showErr('aca-error', 'Descreva o que precisa ser feito.');
+        if (!nome) return showErr('aca-error', 'Escolha o responsável.');
+        row = { titulo, detalhe: g('aca-detalhe').value.trim() || null, responsavel_id: rv && rv !== '__outro' ? rv : null, responsavel_nome: nome,
+          prazo: g('aca-prazo').value || null, operacao: g('aca-op').value || null, reuniao_id: g('aca-reu').value || null, status: g('aca-status').value };
+      } else row = { status: g('aca-status').value };
+      const btn = g('aca-save'); btn.disabled = true;
+      const q = acaoAtual ? sb.from('acoes').update(row).eq('id', acaoAtual.id).select() : sb.from('acoes').insert(row).select();
+      const { data: out, error } = await q;
+      btn.disabled = false;
+      if (error) return showErr('aca-error', 'Não foi possível salvar: ' + error.message);
+      const saved = out && out[0];
+      if (!saved) return showErr('aca-error', 'Sem permissão para alterar esta ação.');
+      const i = acoes.findIndex(a => a.id === saved.id); if (i >= 0) acoes[i] = saved; else acoes.push(saved);
+      closeModal('aca-modal'); renderTudo(); if (g('reu-modal').classList.contains('open')) renderReuAcoes();
+      showToast('Ação salva.', 'green');
+    });
+    g('aca-del').addEventListener('click', async () => {
+      if (!acaoAtual || !confirm('Excluir esta ação definitivamente? Prefira marcar como Cancelada para manter o histórico.')) return;
+      const { error } = await sb.from('acoes').delete().eq('id', acaoAtual.id);
+      if (error) return showErr('aca-error', 'Não foi possível excluir: ' + error.message);
+      acoes = acoes.filter(a => a.id !== acaoAtual.id);
+      closeModal('aca-modal'); renderTudo(); if (g('reu-modal').classList.contains('open')) renderReuAcoes();
+      showToast('Ação excluída.', 'green');
+    });
+
+    // ── Eventos gerais ─────────────────────────────────────────────────────
+    function setTab(t) {
+      document.querySelectorAll('#tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+      g('tab-acoes').style.display = t === 'acoes' ? '' : 'none';
+      g('tab-reunioes').style.display = t === 'reunioes' ? '' : 'none';
+    }
+    document.addEventListener('click', e => {
+      const tab = e.target.closest('[data-tab]'); if (tab) return setTab(tab.dataset.tab);
+      const set = e.target.closest('[data-set]'); if (set) { g('f-status').value = set.dataset.set; return renderAcoes(); }
+      const a = e.target.closest('[data-acao]'); if (a) return abrirAcao(a.dataset.acao);
+      const r = e.target.closest('[data-reu]'); if (r) return abrirReuniao(r.dataset.reu);
+    });
+    ['f-status', 'f-resp', 'f-op'].forEach(id => g(id).addEventListener('change', renderAcoes));
+    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('mousedown', e => { if (e.target === m) m.classList.remove('open'); }));
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      me = (rows && rows[0]) || null;
+      if (!me || !(me.is_admin || me.can_reunioes === true || me.can_reunioes_editar === true)) return window.location.replace('/');
+      me.id = data.session.user.id;
+      ehAdmin = !!me.is_admin; podeEditar = ehAdmin || me.can_reunioes_editar === true;
+      SafiSidebar.apply('re', me, { email: data.session.user.email, sb });
+      try { await carregar(); } catch (err) { g('re-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
+      if (podeEditar) {
+        g('re-actions').innerHTML = '<button class="btn-primary" id="btn-nova-acao" type="button" style="flex:0 0 auto;padding:11px 18px">+ Nova ação</button><button class="btn-ghost" id="btn-nova-reu" type="button">+ Nova reunião</button>';
+        g('btn-nova-acao').addEventListener('click', () => abrirAcao(null));
+        g('btn-nova-reu').addEventListener('click', () => abrirReuniao(null));
+      }
+      g('re-loading').style.display = 'none';
+      g('re-main').style.display = 'block';
+      renderTudo();
+    }
+    init();
+  </script>
+</body>
+</html>

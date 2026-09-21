@@ -340,6 +340,19 @@
             </div>
           </a>
 
+
+          <a href="/reunioes" id="card-reunioes" class="dash-card theme-cyan" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg>
+            </div>
+            <div class="dash-card-title">Reuniões e Decisões</div>
+            <div class="dash-card-desc">Atas das reuniões e o que ficou decidido: responsável, prazo e andamento de cada ação.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
         </div>
       </div>
 
@@ -579,6 +592,8 @@
       if (showConciliacao) {
         const c=document.getElementById('card-conciliacao'); if(c) c.style.display='';
       }
+      const showReunioes = !!prof && (prof.is_admin || prof.can_reunioes === true || prof.can_reunioes_editar === true);
+      if (showReunioes) { const c=document.getElementById('card-reunioes'); if(c) c.style.display=''; }
       const showOrcamento = !!prof && (prof.is_admin || prof.can_orcamento === true);
       if (showOrcamento) { const c=document.getElementById('card-orcamento'); if(c) c.style.display=''; }
       if (showDre) { const c=document.getElementById('card-conselho'); if(c) c.style.display=''; }
@@ -607,7 +622,7 @@
       // Cada seção só aparece se tiver pelo menos um card liberado dentro dela — evita
       // um rótulo de setor flutuando sem nada embaixo (mesmos setores da barra lateral).
       [
-        ['section-conselho', ['card-conselho']],
+        ['section-conselho', ['card-conselho','card-reunioes']],
         ['section-financeiro', ['card-dre','card-lancamentos','card-orcamento','card-fluxocaixa','card-despfixas']],
         ['section-contabil', ['card-resumo','card-fechamento']],
         ['section-compras', ['card-pedidos','card-conciliacao','card-calcimport']],

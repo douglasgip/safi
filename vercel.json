@@ -17,7 +17,8 @@
     { "source": "/calculadora-importacao", "destination": "/calculadora-importacao.html" },
     { "source": "/fechamento", "destination": "/fechamento.html" },
     { "source": "/conselho", "destination": "/conselho.html" },
-    { "source": "/orcamento", "destination": "/orcamento.html" }
+    { "source": "/orcamento", "destination": "/orcamento.html" },
+    { "source": "/reunioes", "destination": "/reunioes.html" }
   ],
   "headers": [
     {
