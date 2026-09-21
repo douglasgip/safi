@@ -399,6 +399,9 @@
     // Resumo do GerônIA, se pedido, vem primeiro
     if (textoIA) {
       garante(70);
+      // A quebra de linhas precisa ser medida com a MESMA fonte e tamanho em que o texto será desenhado (9 pt);
+      // antes era medida com a fonte anterior (menor) e as linhas passavam da margem direita, saindo cortadas.
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
       var partes = doc.splitTextToSize(limpa(textoIA), CW - 24), alt = 26 + partes.length * 12 + 20;
       garante(Math.min(alt, H - TOPO - BASE));
       cor([238, 246, 255], 'fill'); cor([186, 214, 240], 'draw'); doc.setLineWidth(0.6); doc.roundedRect(M, y, CW, Math.min(alt, H - y - BASE), 6, 6, 'FD');
