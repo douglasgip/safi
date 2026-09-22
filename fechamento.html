@@ -141,6 +141,7 @@
     .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
     .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
     .modal-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .modal-warn.danger { background: rgba(239,68,68,0.12); border-color: rgba(239,68,68,0.35); color: #fca5a5; }
     .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
     .modal-error.visible { display: block; }
     .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
@@ -422,16 +423,21 @@
     };
     function abrirStatusModal(op, novo) {
       const atual = statusDe(op, sel.ano, sel.mes);
-      const [titulo, sub, motivoObrigatorio] = TEXTO[novo];
+      const nAl = alertasDa(op).length;
+      // Travar com conferências pendentes exige justificativa (fica registrada no log) — não é mais um clique só.
+      const travaComPendencia = novo === 'travado' && nAl > 0;
+      const [titulo, sub, motivoObrigatorioBase] = TEXTO[novo];
+      const motivoObrigatorio = motivoObrigatorioBase || travaComPendencia;
       pendente = { op, novo, motivoObrigatorio };
       g('sm-title').textContent = titulo + ' — ' + OP_NOME[op];
       g('sm-sub').textContent = `${MESES[sel.mes - 1]} / ${sel.ano} · de ${STATUS_LABEL[atual]} para ${STATUS_LABEL[novo]}. ${sub}`;
       g('sm-label').textContent = motivoObrigatorio ? 'Motivo (obrigatório)' : 'Observação (opcional)';
       g('sm-motivo').value = '';
       g('sm-error').className = 'modal-error';
-      const nAl = alertasDa(op).length;
       const w = g('sm-warn');
-      if (novo !== 'aberto' && nAl) { w.style.display = 'block'; w.textContent = `Atenção: há ${nAl} conferência(s) com alerta para esta operação neste mês. Você pode seguir, mas vale revisar antes.`; }
+      w.classList.toggle('danger', travaComPendencia);
+      if (travaComPendencia) { w.style.display = 'block'; w.textContent = `Há ${nAl} conferência(s) com alerta para esta operação neste mês. Para travar mesmo assim, explique o motivo abaixo — fica registrado no log.`; }
+      else if (novo !== 'aberto' && nAl) { w.style.display = 'block'; w.textContent = `Atenção: há ${nAl} conferência(s) com alerta para esta operação neste mês. Você pode seguir, mas vale revisar antes.`; }
       else w.style.display = 'none';
       g('status-modal').classList.add('open');
     }

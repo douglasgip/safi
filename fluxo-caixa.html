@@ -86,6 +86,11 @@
 
     #fc-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
 
+    .fc-tabs { display: flex; gap: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 380px; }
+    .fc-tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .fc-tab.active { background: rgba(52,211,153,0.15); color: #6ee7b7; }
+    .fc-tab:not(.active):hover { color: #94a3b8; }
+
     /* ── Contas a Pagar (alimentada pelos Pedidos que já chegaram) ── */
     .cap-section-title { font-size: 13px; font-weight: 800; color: #f1f5f9; margin-bottom: 2px; }
     .cap-section-desc { font-size: 12px; color: #64748b; margin-bottom: 14px; }
@@ -145,7 +150,12 @@
   <div id="fc-loading">Carregando…</div>
 
   <main class="main" id="fc-main" style="display:none">
-    <div>
+    <div class="fc-tabs" id="fc-tabs">
+      <button type="button" class="fc-tab active" data-tab="pagar">Contas a Pagar</button>
+      <button type="button" class="fc-tab" data-tab="receber">Contas a Receber</button>
+    </div>
+
+    <section id="tab-pagar">
       <div class="cap-section-title">Contas a Pagar</div>
       <div class="cap-section-desc">Parcelas de pedidos que já chegaram e ainda não foram pagas.</div>
       <div class="no-company-notice" id="cap-no-access" style="display:none">
@@ -170,19 +180,21 @@
           </table>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="placeholder-wrap">
-      <div class="placeholder-card">
-        <div class="placeholder-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
-        </div>
-        <div>
-          <div class="placeholder-title">O resto ainda está em construção</div>
-          <div class="placeholder-desc">A estrutura de ativos, passivos e movimentação completa do Fluxo de Caixa ainda está sendo definida com o Aldemar. Por enquanto, esta tela mostra as Contas a Pagar geradas pelos Pedidos.</div>
+    <section id="tab-receber" style="display:none">
+      <div class="placeholder-wrap" style="padding:0">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.12-2 2.5-2s2.5.9 2.5 2c0 2.5-5 1.5-5 4 0 1.1 1.12 2 2.5 2s2.5-.9 2.5-2"/></svg>
+          </div>
+          <div>
+            <div class="placeholder-title">Contas a Receber está em definição</div>
+            <div class="placeholder-desc">Vai representar as vendas do grupo. Ainda estamos formulando como isso entra no SAFI para fazer sentido — assim que estiver definido, esta aba passa a mostrar os dados.</div>
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   </main>
 
   <!-- Toast -->
@@ -268,6 +280,14 @@
         });
       });
     }
+
+    // ── Abas: Contas a Pagar / Contas a Receber ──
+    function setFcTab(name) {
+      document.querySelectorAll('.fc-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+      document.getElementById('tab-pagar').style.display = name === 'pagar' ? 'block' : 'none';
+      document.getElementById('tab-receber').style.display = name === 'receber' ? 'block' : 'none';
+    }
+    document.getElementById('fc-tabs').addEventListener('click', e => { const b = e.target.closest('.fc-tab'); if (b) setFcTab(b.dataset.tab); });
 
     // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
     SafiSidebar.mount('fc', { active: 'fluxocaixa', accent: { g1: '#34d399', g2: '#059669', text: '#052e1f' } });
