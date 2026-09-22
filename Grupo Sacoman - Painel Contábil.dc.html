@@ -1447,8 +1447,10 @@ class Component extends DCLogic {
   // Índice do "mês de referência" do DRE dentro de _months (0=Jan) — o mês ANTERIOR
   // ao calendário, nunca o corrente: o DRE fecha com defasagem de um mês, então nunca
   // existe (até hoje) um DRE do mês atual. Usado no atalho "Mês", no YTD (Jan até
-  // aqui, nunca até Dezembro), no "Trim." e no destaque de mês atual dos Lançamentos
-  // Detalhados — mudar aqui corrige todos eles de uma vez.
+  // aqui, nunca até Dezembro) e no destaque de mês atual dos Lançamentos Detalhados —
+  // mudar aqui corrige todos eles de uma vez. O "Trim." usa isto só pra achar QUAL
+  // trimestre é o corrente; o fim do intervalo é sempre o trimestre cheio (triFim),
+  // não este índice — ver comentário perto de "triIni=" mais abaixo.
   get _mesAtualIdx(){
     const i = new Date().getMonth() - 1;
     return Math.max(0, Math.min(i, this._months.length-1));
@@ -2497,7 +2499,10 @@ class Component extends DCLogic {
     // ══ Filtro de data — atalhos de período ═════════════════════════════════
     // YTD é Jan até o mês corrente (nunca até Dezembro); quem quer o ano fechado
     // usa o atalho "Ano". O atalho ativo fica destacado em âmbar.
-    const mAtual=this._mesAtualIdx, triIni=Math.floor(mAtual/3)*3;
+    // "Trim." é sempre o trimestre cheio (3 meses), igual o atalho "Ano" sempre é o ano cheio —
+    // não trava no mês de referência do DRE como o YTD faz. Antes ia só até mAtual, então quando
+    // mAtual caía no meio do trimestre (ex.: Ago, no trimestre Jul-Ago-Set) ficava faltando 1 mês.
+    const mAtual=this._mesAtualIdx, triIni=Math.floor(mAtual/3)*3, triFim=Math.min(triIni+2,this._months.length-1);
     const mkPreset=(id,label,title,s,e)=>{
       const on=ms===s&&me===e;
       return {id,label,title,
@@ -2508,7 +2513,7 @@ class Component extends DCLogic {
     };
     const periodPresets=[
       mkPreset('mes','Mês',`Somente ${this._months[mAtual]}`,mAtual,mAtual),
-      mkPreset('tri','Trim.',`Trimestre corrente — ${this._months[triIni]} a ${this._months[mAtual]}`,triIni,mAtual),
+      mkPreset('tri','Trim.',`Trimestre corrente — ${this._months[triIni]} a ${this._months[triFim]}`,triIni,triFim),
       mkPreset('ytd','YTD',`Acumulado do ano — Jan a ${this._months[mAtual]}`,0,mAtual),
       mkPreset('ano','Ano','Ano inteiro — Jan a Dez/2026',0,this._months.length-1),
     ];
@@ -2655,7 +2660,7 @@ class Component extends DCLogic {
     };
     const lancPresets=[
       lancMkPreset('Mês', `Somente ${this._months[mAtual]}`, mAtual, mAtual),
-      lancMkPreset('Trim.', `Trimestre corrente — ${this._months[triIni]} a ${this._months[mAtual]}`, triIni, mAtual),
+      lancMkPreset('Trim.', `Trimestre corrente — ${this._months[triIni]} a ${this._months[triFim]}`, triIni, triFim),
       lancMkPreset('YTD', `Acumulado do ano — Jan a ${this._months[mAtual]}`, 0, mAtual),
       lancMkPreset('Ano', 'Ano inteiro — Jan a Dez/2026', 0, this._months.length-1),
     ];
