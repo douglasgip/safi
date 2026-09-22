@@ -333,13 +333,15 @@
     }
 
     // ── KPIs ────────────────────────────────────────────────────────────────
+    // Ordem = ordem visual na grade 3x2: linha 1 (Faturamento, Receita Líquida, Margem de
+    // Contribuição) e linha 2 (Gastos Operacionais, EBITDA, Resultado Líquido).
     const KPIS = [
       { id: 'rb', l: 'Faturamento', v: s => s.rb, custo: false },
       { id: 'rl', l: 'Receita Líquida', v: s => s.rl, custo: false },
       { id: 'mc', l: 'Margem de Contribuição', v: s => s.mc, custo: false, pct: s => s.mcPct, pctK: 'mcPct' },
+      { id: 'opex', l: 'Gastos Operacionais', v: s => s.opex, custo: true },
       { id: 'ebitda', l: 'EBITDA', v: s => s.ebitda, custo: false, pct: s => s.ebitdaPct, pctK: 'ebitdaPct', hi: true },
       { id: 'res', l: 'Resultado Líquido', v: s => s.res, custo: false },
-      { id: 'opex', l: 'Gastos Operacionais', v: s => s.opex, custo: true },
     ];
     function deltaHtml(cur, base, custo, rot) {
       if (base == null) return '<span class="neutro">sem base de comparação</span>';
