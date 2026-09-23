@@ -341,17 +341,23 @@ function wireSidebarToggle(prefix) {
   // muda nada visível pras outras pessoas. Manda um sinal ao entrar e a cada 60s
   // enquanto a aba está em primeiro plano; parar de mandar (aba em segundo plano,
   // fechada ou notebook suspenso) já é suficiente pra não contar como tempo online.
+  // Blindado de propósito: isso roda dentro do apply() da sidebar e do carregamento
+  // do DRE — um erro aqui (síncrono ou de rede) nunca pode travar o resto da tela.
   var heartbeatStarted = false;
   function startHeartbeat(sbClient){
     if (heartbeatStarted || !sbClient) return;
     heartbeatStarted = true;
     function bater(){
-      if (document.visibilityState !== 'visible') return;
-      sbClient.rpc('presenca_heartbeat').catch(function(){});
+      try {
+        if (document.visibilityState !== 'visible') return;
+        Promise.resolve(sbClient.rpc('presenca_heartbeat')).catch(function(){});
+      } catch (e) { /* nunca deixa a presença derrubar a tela */ }
     }
-    bater();
-    setInterval(bater, 60000);
-    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') bater(); });
+    try {
+      bater();
+      setInterval(bater, 60000);
+      document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') bater(); });
+    } catch (e) {}
   }
 
   window.UserMenu = {
