@@ -242,6 +242,11 @@
       </div>
     </div>
 
+    <div class="panel" id="panel-pessoas">
+      <div class="panel-head">Pessoas — <span id="pessoas-periodo"></span></div>
+      <div class="kpi-grid" id="kpis-pessoas"></div>
+    </div>
+
     <div class="panel" id="panel-ops">
       <div class="panel-head">Por operação — <span id="ops-periodo"></span></div>
       <div class="table-scroll" style="max-height:none"><table class="tbl" id="tbl-ops"></table></div>
@@ -462,6 +467,32 @@
       renderPonte(cur, base);
       g('panel-ops').style.display = opSel === 'todas' && opsVisiveis.length > 1 ? '' : 'none';
       renderOps(ano, mes, modo);
+      renderPessoas(ops, ano, mes);
+    }
+
+    // ── Pessoas: Admissões, Desligamentos e Turnover do mês selecionado ──────
+    // Turnover = ((admissões + desligamentos) / 2) / quadro atual, em %. Usa o quadro ATUAL
+    // (não o de época) como referência — o SAFI não guarda o headcount histórico, só os eventos
+    // a partir de quando o rastreamento começou.
+    function renderPessoas(ops, ano, mes) {
+      g('pessoas-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
+      const box = g('kpis-pessoas');
+      if (ym(ano, mes) < TURNOVER_DESDE) {
+        box.innerHTML = '<div class="empty" style="grid-column:1/-1">O SAFI passou a registrar admissões e desligamentos em 23/09/2026 — não há como reconstruir meses anteriores a esse.</div>';
+        return;
+      }
+      let adm = 0, desl = 0, headcount = 0;
+      ops.forEach(op => {
+        const r = turnoverPorChave[op + '|' + ano + '|' + mes];
+        if (r) { adm += r.admissoes; desl += r.desligamentos; }
+        headcount += headcountPorOp[op] || 0;
+      });
+      const turnoverPct = headcount ? ((adm + desl) / 2) / headcount : null;
+      const card = (label, valor, sub, hi) => '<div class="kpi' + (hi ? ' hi' : '') + '"><div class="kpi-l">' + label + '</div><div class="kpi-v">' + valor + '</div>' + (sub ? '<div class="kpi-sub">' + sub + '</div>' : '') + '</div>';
+      box.innerHTML =
+        card('Admissões', adm) +
+        card('Desligamentos', desl) +
+        card('Turnover', turnoverPct == null ? '—' : pct(turnoverPct), 'quadro atual: ' + headcount + (headcount === 1 ? ' pessoa' : ' pessoas'), true);
     }
 
 
@@ -500,6 +531,16 @@
       const nomeOps = U.opSel === 'todas' ? 'Todas as operações' : OP_NOME[U.opSel];
       const itens = kpiItens(U);
       blocos.push({ tipo: 'kpis', opcao: 'kpis', titulo: 'Indicadores - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')', itens });
+      if (sel.opcoes.pessoas && ym(U.ano, U.mes) >= TURNOVER_DESDE) {
+        let adm = 0, desl = 0, headcount = 0;
+        U.ops.forEach(op => { const r = turnoverPorChave[op + '|' + U.ano + '|' + U.mes]; if (r) { adm += r.admissoes; desl += r.desligamentos; } headcount += headcountPorOp[op] || 0; });
+        const tv = headcount ? ((adm + desl) / 2) / headcount : null;
+        blocos.push({ tipo: 'kpis', opcao: 'pessoas', titulo: 'Pessoas - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')', itens: [
+          { l: 'Admissões', v: String(adm), linhas: [] },
+          { l: 'Desligamentos', v: String(desl), linhas: [] },
+          { l: 'Turnover', v: tv == null ? '—' : pct(tv), linhas: [{ t: 'quadro atual: ' + headcount + (headcount === 1 ? ' pessoa' : ' pessoas') }], barra: [2, 132, 199] },
+        ] });
+      }
       const imgs = [];
       if (sel.opcoes.graficos) {
         const a = SafiPdf.imgDeCanvas(g('ch-evol')); if (a) imgs.push({ t: 'Evolução - últimos 12 meses (faturamento e EBITDA)', url: a.url, ratio: a.ratio, png: a.png, dados: a.dados });
@@ -535,6 +576,22 @@
       return { blocos, subtitulo: MESES[U.mes - 1] + ' / ' + U.ano + '  -  ' + nomeOps, contextoIA: ctx };
     }
 
+    // Turnover/Desligamentos (Pessoas) — eventos só existem a partir de 23/09/2026, quando o
+    // rastreamento (trigger em Funcionários) entrou no ar. Antes disso não tem como saber.
+    const TURNOVER_DESDE = ym(2026, 9);
+    let turnoverPorChave = {}; // "op|ano|mes" -> {admissoes,desligamentos}
+    let headcountPorOp = {};   // op -> headcount atual
+    async function carregarPessoas() {
+      const [ev, hc] = await Promise.all([
+        sb.rpc('funcionarios_turnover_eventos'),
+        sb.rpc('funcionarios_headcount_atual'),
+      ]);
+      turnoverPorChave = {};
+      (ev.data || []).forEach(r => { turnoverPorChave[r.operacao + '|' + r.ano + '|' + r.mes] = r; });
+      headcountPorOp = {};
+      (hc.data || []).forEach(r => { headcountPorOp[r.operacao] = r.headcount; });
+    }
+
     async function carregar() {
       const hoje = new Date(); const y = hoje.getFullYear();
       const { data, error } = await sb.rpc('conselho_metricas', { p_de: ym(y - 2, 1), p_ate: ym(y + 1, 12) });
@@ -542,6 +599,7 @@
       dados = data || [];
       porChave = {}; dados.forEach(r => { porChave[r.operacao + '|' + r.ano + '|' + r.mes] = r; });
       opsVisiveis = ['GIP', 'Exposicao', 'ViaCloset'].filter(op => dados.some(r => r.operacao === op));
+      try { await carregarPessoas(); } catch (e) { /* painel de Pessoas é opcional — resto da tela segue normal */ }
     }
 
     function montarFiltros() {
@@ -576,6 +634,7 @@
       SafiPdf.iniciar({ chave: 'conselho', titulo: 'Painel do Conselho', sb, profile: prof, accent: '#38bdf8',
         opcoes: [
           { id: 'kpis', label: 'Indicadores (Faturamento, MC, EBITDA, resultado…)' },
+          { id: 'pessoas', label: 'Pessoas (admissões, desligamentos, turnover)', dica: 'Só existe a partir de Set/2026, quando o SAFI passou a registrar esses eventos.' },
           { id: 'graficos', label: 'Gráficos (evolução de 12 meses e ponte do EBITDA)' },
           { id: 'ops', label: 'Tabela por operação', dica: 'Só existe quando o filtro é "Todas as operações".' },
           { id: 'serie', label: 'Série mensal em tabela (12 meses)' },
