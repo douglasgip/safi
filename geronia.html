@@ -794,6 +794,7 @@
       state.uid = data.session.user.id;
       state.token = data.session.access_token;
       state.email = data.session.user.email;
+      if (window.UserMenu && window.UserMenu.startHeartbeat) window.UserMenu.startHeartbeat(sb);
 
       const [profRes, threadsRes] = await Promise.all([
         sb.from('user_profiles').select('*').eq('id', state.uid).single(),

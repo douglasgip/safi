@@ -336,6 +336,24 @@ function wireSidebarToggle(prefix) {
 
   window.AskGeron = { attachDelegation: attachAskGeronDelegation, popover: showAskGeronPopover };
 
+  // ── Presença online (heartbeat) ──────────────────────────────────────────
+  // "Sinal de vida" discreto, só pra alimentar "Usuários online" no Admin — não
+  // muda nada visível pras outras pessoas. Manda um sinal ao entrar e a cada 60s
+  // enquanto a aba está em primeiro plano; parar de mandar (aba em segundo plano,
+  // fechada ou notebook suspenso) já é suficiente pra não contar como tempo online.
+  var heartbeatStarted = false;
+  function startHeartbeat(sbClient){
+    if (heartbeatStarted || !sbClient) return;
+    heartbeatStarted = true;
+    function bater(){
+      if (document.visibilityState !== 'visible') return;
+      sbClient.rpc('presenca_heartbeat').catch(function(){});
+    }
+    bater();
+    setInterval(bater, 60000);
+    document.addEventListener('visibilitychange', function(){ if (document.visibilityState === 'visible') bater(); });
+  }
+
   window.UserMenu = {
     attach: function(el, sbClient){
       if (!el || el.dataset.usermenuBound) return;
@@ -346,6 +364,7 @@ function wireSidebarToggle(prefix) {
         toggle(el, sbClient);
       });
     },
-    freshToken: freshToken
+    freshToken: freshToken,
+    startHeartbeat: startHeartbeat
   };
 })();

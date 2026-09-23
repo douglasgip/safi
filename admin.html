@@ -102,6 +102,10 @@
     }
     .exp-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 7px; margin-left: 10px; border-radius: 11px; background: #f59e0b; color: #1a0a00; font-size: 12px; font-weight: 800; vertical-align: middle; }
     .exp-badge.zero { background: rgba(255,255,255,0.1); color: #94a3b8; }
+    .exp-badge.green { background: #34d399; color: #052e1f; }
+    .presenca-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #475569; margin-right: 7px; vertical-align: middle; }
+    .presenca-dot.online { background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,0.18); }
+    #presenca-tbl td { vertical-align: middle; font-size: 12.5px; }
     #exp-tbl tr.nova td { background: rgba(245,158,11,0.07); }
     #exp-tbl tr.nova td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
     #exp-tbl td { vertical-align: top; font-size: 12.5px; }
@@ -451,6 +455,16 @@
       <button class="btn-ghost-sm" id="exp-lidas" type="button" style="display:none">Marcar todas como lidas</button>
     </div>
     <div class="table-scroll" style="max-height:360px"><table class="user-table" id="exp-tbl"><tbody><tr><td style="padding:22px;color:#475569">Carregando…</td></tr></tbody></table></div>
+  </div>
+
+  <div class="panel" id="presenca-panel" style="margin-bottom:18px">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-header-label">Atividade</div>
+        <div class="panel-header-title">Usuários online <span class="exp-badge zero" id="presenca-badge">0</span></div>
+      </div>
+    </div>
+    <div class="table-scroll" style="max-height:360px"><table class="user-table" id="presenca-tbl"><tbody><tr><td style="padding:22px;color:#475569">Carregando…</td></tr></tbody></table></div>
   </div>
 
   <div class="panel">
@@ -936,6 +950,58 @@ async function carregarExportacoes() {
       '<td><div class="exp-fin">' + escH(r.finalidade) + '</div><div class="exp-sub">' + escH(det) + '</div></td></tr>';
   }).join('') + '</tbody>';
 }
+// ── Presença: quem está online, visto por último, tempo online nos últimos 7 dias.
+// "Online" = mandou heartbeat (ver user-menu.js) nos últimos 2 minutos — folga de 1 heartbeat perdido.
+const ONLINE_JANELA_MS = 2 * 60 * 1000;
+function fmtRelativo(iso) {
+  if (!iso) return 'nunca';
+  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (diffMin < 1) return 'agora';
+  if (diffMin < 60) return 'há ' + diffMin + ' min';
+  const h = Math.floor(diffMin / 60);
+  if (h < 24) return 'há ' + h + 'h';
+  const d = Math.floor(h / 24);
+  return 'há ' + d + (d === 1 ? ' dia' : ' dias');
+}
+function fmtDuracao(seg) {
+  if (!seg) return '—';
+  const h = Math.floor(seg / 3600), m = Math.round((seg % 3600) / 60);
+  if (h === 0) return m + ' min';
+  return h + 'h' + (m ? ' ' + m + 'min' : '');
+}
+async function carregarPresenca() {
+  const tb = document.getElementById('presenca-tbl');
+  const seteDias = new Date(); seteDias.setDate(seteDias.getDate() - 6);
+  const dataIni = seteDias.toISOString().slice(0, 10);
+  const [profRes, presRes] = await Promise.all([
+    sb.from('user_profiles').select('id,full_name,email,role,last_seen_at').order('full_name'),
+    sb.from('presenca_diaria').select('user_id,segundos_online').gte('data', dataIni)
+  ]);
+  if (profRes.error) { tb.innerHTML = '<tbody><tr><td style="padding:22px;color:#fca5a5">Não foi possível carregar: ' + escH(profRes.error.message) + '</td></tr></tbody>'; return; }
+  const somaSeg = {};
+  (presRes.data || []).forEach(r => { somaSeg[r.user_id] = (somaSeg[r.user_id] || 0) + (+r.segundos_online || 0); });
+  const agora = Date.now();
+  const linhas = (profRes.data || []).map(u => ({
+    ...u,
+    online: !!u.last_seen_at && (agora - new Date(u.last_seen_at).getTime()) < ONLINE_JANELA_MS,
+    seg7d: somaSeg[u.id] || 0,
+  })).sort((a, b) => {
+    if (a.online !== b.online) return a.online ? -1 : 1;
+    return (b.last_seen_at ? new Date(b.last_seen_at).getTime() : 0) - (a.last_seen_at ? new Date(a.last_seen_at).getTime() : 0);
+  });
+  const nOnline = linhas.filter(l => l.online).length;
+  const badge = document.getElementById('presenca-badge');
+  badge.textContent = nOnline; badge.className = 'exp-badge' + (nOnline ? ' green' : ' zero');
+  if (!linhas.length) { tb.innerHTML = '<tbody><tr><td style="padding:22px;color:#475569">Nenhum usuário.</td></tr></tbody>'; return; }
+  tb.innerHTML = '<thead><tr><th>Usuário</th><th>Status</th><th>Última vez online</th><th>Tempo online (7 dias)</th></tr></thead><tbody>' + linhas.map(u => {
+    const nome = u.full_name || (u.email || '').split('@')[0] || 'Usuário';
+    return '<tr><td><div style="font-weight:700;color:#f1f5f9">' + escH(nome) + '</div><div class="exp-sub">' + escH(u.role || u.email || '') + '</div></td>' +
+      '<td><span class="presenca-dot' + (u.online ? ' online' : '') + '"></span>' + (u.online ? 'Online' : 'Offline') + '</td>' +
+      '<td style="white-space:nowrap;color:#94a3b8">' + escH(fmtRelativo(u.last_seen_at)) + '</td>' +
+      '<td style="white-space:nowrap">' + fmtDuracao(u.seg7d) + '</td></tr>';
+  }).join('') + '</tbody>';
+}
+
 document.addEventListener('click', async e => {
   if (!e.target.closest('#exp-lidas')) return;
   const { error } = await sb.from('exportacoes_pdf').update({ lida: true, lida_em: new Date().toISOString() }).eq('lida', false);
@@ -948,9 +1014,12 @@ async function init() {
   if (!data.session) return redirect('/login');
   if (data.session.user.email !== ADMIN_EMAIL) return redirect('/');
   currentSession = data.session;
+  if (window.UserMenu && window.UserMenu.startHeartbeat) window.UserMenu.startHeartbeat(sb);
   loadUsers();
   carregarExportacoes();
+  carregarPresenca();
   setInterval(carregarExportacoes, 60000);
+  setInterval(carregarPresenca, 60000);
   if (window.SafiAjuda) SafiAjuda.sincronizarManual(sb);
   if (window.SafiAjuda) SafiAjuda.attach({ prefix: 'admin', key: 'admin', profile: { id: data.session.user.id }, accent: { g1: '#f59e0b' }, sb: sb });
 

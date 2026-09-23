@@ -206,6 +206,9 @@
     if (!root) return;
     // Perfil ausente (erro na busca) nunca libera acesso: só Home e GerônIA aparecem.
     if (!profile) profile = { is_admin: false, can_resumo: false, can_dre: false };
+    // Presença online — ver comentário em user-menu.js. Cobre as telas que passam por aqui;
+    // admin.html e geronia.html (que não usam a sidebar) chamam startHeartbeat direto.
+    if (profile.id && opts.sb && window.UserMenu && window.UserMenu.startHeartbeat) window.UserMenu.startHeartbeat(opts.sb);
     var show = function (id, display) { var el = document.getElementById(prefix + '-sidebar-' + id); if (el) el.style.display = display || 'flex'; };
 
     Object.keys(ITEMS).forEach(function (key) {

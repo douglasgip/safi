@@ -399,19 +399,20 @@ window.SAFI_AJUDA = { telas: {
   },
 
   admin: {
-    titulo: 'Gestão de Acessos', versao: 2,
-    resumo: 'Aqui o admin cria usuários e define <b>exatamente o que cada um pode ver e fazer</b> no SAFI — tela por tela e, em vários casos, empresa por empresa.',
+    titulo: 'Gestão de Acessos', versao: 3,
+    resumo: 'Aqui o admin cria usuários, define <b>exatamente o que cada um pode ver e fazer</b> no SAFI — tela por tela e, em vários casos, empresa por empresa — e acompanha quem está usando o sistema.',
     passos: [
       { t: 'Crie o usuário', d: '<b>Novo Usuário</b>: nome, cargo, e-mail e senha inicial.' },
       { t: 'Defina os acessos', d: 'Ligue ou desligue cada área (DRE, Lançamentos, Pedidos, Fechamento, Orçamento, Reuniões, Produtos…) e, quando houver, as empresas liberadas.' },
       { t: 'Acompanhe a lista', d: 'A barra de cada usuário mostra o percentual de áreas liberadas.' },
     ],
-    dicas: ['<b>Resumo Contábil e DRE</b> vêm liberados por padrão; as demais áreas começam desligadas.', 'A GerônIA respeita as mesmas permissões ao responder.'],
+    dicas: ['<b>Resumo Contábil e DRE</b> vêm liberados por padrão; as demais áreas começam desligadas.', 'A GerônIA respeita as mesmas permissões ao responder.', '"Usuários online" considera alguém online se o navegador mandou sinal nos últimos 2 minutos — só conta enquanto a aba está em primeiro plano.'],
     naoFaz: ['Só o admin do painel acessa esta tela.'],
     quemVe: 'Somente o administrador do SAFI.',
-    dados: 'Cadastro de usuários e permissões.',
+    dados: 'Cadastro de usuários e permissões. Presença (online agora, última vez online, tempo online) é calculada a partir de um sinal que cada tela manda enquanto está aberta.',
     tour: [
       { sel: '#exp-panel', t: 'Exportações de PDF', d: 'Aqui chega o aviso de cada PDF gerado no SAFI: <b>quem</b> exportou, de <b>qual tela</b>, <b>quando</b> e a <b>finalidade</b> que a pessoa informou. Use "Marcar todas como lidas" depois de conferir.' },
+      { sel: '#presenca-panel', t: 'Usuários online', d: 'Quem está online agora, quando cada um foi visto pela última vez e quanto tempo ficou online nos últimos 7 dias.' },
       { sel: '.btn-new', t: 'Novo usuário', d: 'Cadastre a pessoa e depois defina os acessos.' },
       { sel: '.user-table', t: 'Usuários', d: 'Veja quem tem acesso, o percentual de áreas liberadas e edite as permissões de cada um.' },
     ],
