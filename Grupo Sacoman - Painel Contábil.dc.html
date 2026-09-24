@@ -1217,14 +1217,27 @@
 
       <!-- Créditos Tributários atuais — meramente informativo, não entra em nenhum
            cálculo do DRE; não é por mês/ano, é sempre o valor atual. Por enquanto só
-           existe pra EP (some sozinho se essa empresa não tiver linha cadastrada). -->
+           existe pra EP (some sozinho se essa empresa não tiver linha cadastrada).
+           Mostra só o total por padrão; clique expande a quebra em ICMS/PIS/COFINS. -->
       <sc-if value="{{ creditosTributarios.show }}" hint-placeholder-val="{{ false }}">
-        <div style="margin-top:14px;padding:14px 18px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-          <div>
-            <div style="font-size:10px;font-weight:700;color:#c4b5fd;letter-spacing:1.2px;text-transform:uppercase">Créditos Tributários atuais (EP)</div>
-            <div style="font-size:10.5px;color:#64748b;margin-top:3px">Meramente informativo — não entra em nenhum cálculo do DRE{{ creditosTributarios.dataTxt }}.</div>
+        <div style="margin-top:14px;padding:14px 18px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:12px">
+          <div onClick="{{ creditosTributarios.toggle }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;cursor:pointer">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:10px;color:#8b7cb8">{{ creditosTributarios.chevron }}</span>
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#c4b5fd;letter-spacing:1.2px;text-transform:uppercase">Créditos Tributários atuais (EP)</div>
+                <div style="font-size:10.5px;color:#64748b;margin-top:3px">Meramente informativo — não entra em nenhum cálculo do DRE{{ creditosTributarios.dataTxt }}.</div>
+              </div>
+            </div>
+            <div style="font-size:19px;font-weight:800;color:#e2e8f0;font-variant-numeric:tabular-nums;letter-spacing:-0.3px">{{ creditosTributarios.totalFmt }}</div>
           </div>
-          <div style="font-size:19px;font-weight:800;color:#e2e8f0;font-variant-numeric:tabular-nums;letter-spacing:-0.3px">{{ creditosTributarios.valorFmt }}</div>
+          <sc-if value="{{ creditosTributarios.expanded }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:24px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(139,92,246,0.15);flex-wrap:wrap">
+              <div><div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">ICMS</div><div style="font-size:13.5px;font-weight:700;color:#e2e8f0;font-variant-numeric:tabular-nums">{{ creditosTributarios.icmsFmt }}</div></div>
+              <div><div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">PIS</div><div style="font-size:13.5px;font-weight:700;color:#e2e8f0;font-variant-numeric:tabular-nums">{{ creditosTributarios.pisFmt }}</div></div>
+              <div><div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px">COFINS</div><div style="font-size:13.5px;font-weight:700;color:#e2e8f0;font-variant-numeric:tabular-nums">{{ creditosTributarios.cofinsFmt }}</div></div>
+            </div>
+          </sc-if>
         </div>
       </sc-if>
 
@@ -1455,7 +1468,10 @@ class Component extends DCLogic {
     // Custos Variáveis, Gastos Operacionais...) — por rótulo da linha-pai, não por
     // índice (índice muda se o período/operações filtradas mudarem a lista de
     // linhas). Vazio por padrão = tudo aberto, como pedido.
-    lancCollapsedGroups: {} };
+    lancCollapsedGroups: {},
+    // Créditos Tributários atuais — mostra só o total por padrão; clique expande o
+    // detalhe (ICMS/PIS/COFINS). Puramente de UI, não afeta nenhum cálculo.
+    ctExpanded: false };
 
   // Índice do "mês de referência" do DRE dentro de _months (0=Jan) — o mês ANTERIOR
   // ao calendário, nunca o corrente: o DRE fecha com defasagem de um mês, então nunca
@@ -1585,7 +1601,7 @@ class Component extends DCLogic {
         fetch(`${B}/rest/v1/lancamentos_campos?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_subcampos?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026`, {headers:hU}),
-        fetch(`${B}/rest/v1/creditos_tributarios?select=empresa_id,valor,atualizado_em`, {headers:hU})
+        fetch(`${B}/rest/v1/creditos_tributarios?select=empresa_id,icms,pis,cofins,total,atualizado_em`, {headers:hU})
       ];
       const [r1,r2,r3,r4,r5,r6,r7,r8,r9,r10] = await Promise.all(requests);
       const [emps,resumo,dre,alertas,lancClasses,lancCampos,lancSubcampos,lancValores,creditosTrib] = await Promise.all([r1.json(),r2.json(),r3.json(),r4.json(),r6.json(),r7.json(),r8.json(),r9.json(),r10.json()]);
@@ -2473,13 +2489,19 @@ class Component extends DCLogic {
 
     // Créditos Tributários atuais — meramente informativo, não por período (não entra
     // em nenhum cálculo do DRE). Por enquanto só existe pra EP; some se não houver linha
-    // (ex: usuário sem acesso ao DRE da EP, já filtrado pela RLS).
+    // (ex: usuário sem acesso ao DRE da EP, já filtrado pela RLS). Total colapsado por
+    // padrão; clique expande a quebra em ICMS/PIS/COFINS.
     const ctEP=this._creditosTributarios['EP'];
+    const fmtR2=v=>'R$ '+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     const creditosTributarios=ctEP?{
       show:true,
-      valorFmt:'R$ '+(Number(ctEP.valor)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),
-      dataTxt:ctEP.atualizado_em?(' · atualizado em '+new Date(ctEP.atualizado_em).toLocaleDateString('pt-BR')):''
-    }:{show:false,valorFmt:'',dataTxt:''};
+      expanded:this.state.ctExpanded,
+      totalFmt:fmtR2(ctEP.total),
+      icmsFmt:fmtR2(ctEP.icms), pisFmt:fmtR2(ctEP.pis), cofinsFmt:fmtR2(ctEP.cofins),
+      dataTxt:ctEP.atualizado_em?(' · atualizado em '+new Date(ctEP.atualizado_em).toLocaleDateString('pt-BR')):'',
+      chevron:this.state.ctExpanded?'▾':'▸',
+      toggle:()=>this.setState({ctExpanded:!this.state.ctExpanded})
+    }:{show:false,expanded:false,totalFmt:'',icmsFmt:'',pisFmt:'',cofinsFmt:'',dataTxt:'',chevron:'▸',toggle:()=>{}};
     const companyKPIs=selectedCos.map((co,i)=>{
       const c=this._dreCalcRange([co],ms+1,me+1,true);
       const mcR=c.rb>0?c.mc/c.rb:0;

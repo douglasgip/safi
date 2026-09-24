@@ -72,7 +72,7 @@ window.SAFI_AJUDA = { telas: {
   },
 
   dre: {
-    titulo: 'DRE', versao: 3,
+    titulo: 'DRE', versao: 4,
     resumo: 'O <b>DRE</b> (Demonstrativo de Resultados) apresenta faturamento, deduções, custos, margem de contribuição e resultado do período — por operação ou consolidado — com comparativos e gráficos.',
     passos: [
       { t: 'Defina o período', d: 'Escolha o mês inicial e o final no topo. Tudo na tela segue esse intervalo.' },
@@ -81,13 +81,13 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Compare períodos', d: 'O botão <b>Comparar</b> abre o painel A × B para confrontar dois períodos ou operações, com as diferenças.' },
       { t: 'Abra o detalhe', d: 'Na tabela do DRE, <b>AV%</b> é a participação vertical e <b>AH%</b> a variação em relação ao mês anterior. <b>Lançamentos Detalhados</b> mostra a composição linha a linha.' },
     ],
-    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Os números vêm dos Lançamentos: se algo não bate, confira lá (e se o mês está travado).', 'Nos gráficos você pode arrastar para comparar períodos.', 'O EBITDA do grupo = Resultado Líquido + Despesas Financeiras + IR e CSLL — está no Painel do Conselho.', 'A linha <b>Créditos Tributários atuais</b>, quando aparece no fim da tabela (hoje só na EP), é só informativa — não entra em nenhuma conta do DRE.'],
+    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Os números vêm dos Lançamentos: se algo não bate, confira lá (e se o mês está travado).', 'Nos gráficos você pode arrastar para comparar períodos.', 'O EBITDA do grupo = Resultado Líquido + Despesas Financeiras + IR e CSLL — está no Painel do Conselho.', 'A linha <b>Créditos Tributários atuais</b>, quando aparece no fim da tabela (hoje só na EP), é só informativa — não entra em nenhuma conta do DRE. Mostra o total; clique nela para ver a quebra em ICMS, PIS e COFINS.'],
     naoFaz: ['Não é onde se lança — os valores entram em <b>Lançamentos</b>.', 'Não calcula depreciação (o DRE do grupo não tem essa linha).'],
     termos: [
       { t: 'Margem de Contribuição', d: 'Receita líquida menos custos variáveis: o que sobra para cobrir os gastos operacionais.' },
       { t: 'AV% / AH%', d: 'Análise vertical (peso de cada linha no faturamento) e horizontal (variação frente ao mês anterior).' },
       { t: 'Consolidado', d: 'Soma das operações selecionadas.' },
-      { t: 'Créditos Tributários atuais', d: 'Valor único, sempre o mais recente (não é por mês/ano). Editado em Lançamentos, na EP. Meramente informativo — não entra em nenhum cálculo do DRE.' },
+      { t: 'Créditos Tributários atuais', d: 'Soma de ICMS, PIS e COFINS, sempre o valor mais recente (não é por mês/ano). Clique na linha do DRE para expandir e ver os três separados. Editado em Lançamentos, na EP. Meramente informativo — não entra em nenhum cálculo do DRE.' },
     ],
     quemVe: 'Quem tem acesso ao DRE (liberado por padrão), limitado às operações permitidas para cada usuário.',
     dados: 'Lançamentos (DRE consolidado, atualizado automaticamente ao salvar).',
@@ -103,7 +103,7 @@ window.SAFI_AJUDA = { telas: {
   },
 
   lancamentos: {
-    titulo: 'Lançamentos', versao: 3,
+    titulo: 'Lançamentos', versao: 4,
     resumo: 'Em <b>Lançamentos</b> você alimenta o DRE numa <b>grade de contas × 12 meses</b> (o mesmo padrão da tela de Orçamento): escolhe a empresa e o ano e preenche mês a mês. Também mantém a estrutura de contas e o Resumo Contábil.',
     passos: [
       { t: 'Escolha empresa e ano', d: 'A grade mostra os <b>12 meses de uma vez</b>. Só aparecem as empresas que você pode lançar.' },
@@ -112,7 +112,7 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Confira os totais', d: 'Totais por campo, classe e mês — e as linhas de <b>Receita Líquida, Margem e Resultado</b> — atualizam enquanto você digita. A última coluna é o total do ano.' },
       { t: 'Salve', d: '<b>Salvar Lançamentos</b> grava <b>apenas as células que você mudou</b> (elas ficam com borda âmbar até salvar). O DRE é atualizado sozinho e a alteração fica na trilha de auditoria (<b>Fechamento do Mês → aba Histórico</b>, para quem tem acesso ao Fechamento).' },
     ],
-    dicas: ['Mês <b>Travado</b> no Fechamento aparece com 🔒 e a coluna fica bloqueada — peça a quem fecha para destravar (fica registrado).', 'Mês <b>Aprovado</b> ainda aceita edição; só o Travado bloqueia.', 'Célula em branco ao colar ou importar <b>não apaga</b> o que já existe. Para zerar um valor, digite 0 (ou apague a célula e salve).', 'Se trocar de empresa ou ano com alterações não salvas, o SAFI pergunta antes de descartar.', 'A aba <b>Gerenciar Estrutura</b> permite criar/ordenar classes, campos e subcampos; a aba <b>Resumo Contábil</b> guarda entrada, saída, despesa, estoque e alíquota do mês.', 'Ao escolher a empresa <b>EP</b>, aparece embaixo da grade o campo <b>Créditos Tributários atuais</b> — um valor único (não por mês/ano) que só serve de informação no DRE, sem entrar em nenhum cálculo.'],
+    dicas: ['Mês <b>Travado</b> no Fechamento aparece com 🔒 e a coluna fica bloqueada — peça a quem fecha para destravar (fica registrado).', 'Mês <b>Aprovado</b> ainda aceita edição; só o Travado bloqueia.', 'Célula em branco ao colar ou importar <b>não apaga</b> o que já existe. Para zerar um valor, digite 0 (ou apague a célula e salve).', 'Se trocar de empresa ou ano com alterações não salvas, o SAFI pergunta antes de descartar.', 'A aba <b>Gerenciar Estrutura</b> permite criar/ordenar classes, campos e subcampos; a aba <b>Resumo Contábil</b> guarda entrada, saída, despesa, estoque e alíquota do mês.', 'Ao escolher a empresa <b>EP</b>, aparece embaixo da grade o bloco <b>Créditos Tributários atuais</b> — ICMS, PIS e COFINS separados, com o total somado ao vivo. É informativo (não por mês/ano) e não entra em nenhum cálculo do DRE.'],
     naoFaz: ['Não substitui a contabilidade oficial.', 'Não aparece o que você não tem liberação para lançar.'],
     termos: [{ t: 'Classe / campo / subcampo', d: 'Hierarquia das contas do DRE (ex.: Custos Variáveis → Frete → Frete Pago).' }, { t: 'Travado', d: 'Mês fechado: bloqueado para edição no banco de dados.' }, { t: 'Célula alterada', d: 'Valor mudado na tela e ainda não salvo (borda âmbar).' }],
     quemVe: 'Quem tem a permissão Lançamentos, empresa por empresa.',

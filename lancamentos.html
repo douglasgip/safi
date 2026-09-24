@@ -310,19 +310,26 @@
       <div id="entry-tree"></div>
 
       <!-- Créditos Tributários atuais — só na EP por enquanto. Não é por mês/ano (valor sempre
-           atual) e é meramente informativo: não entra em nenhum cálculo do DRE. -->
+           atual) e é meramente informativo: não entra em nenhum cálculo do DRE. Quebrado em
+           ICMS/PIS/COFINS; o total é a soma dos três, ao vivo. -->
       <div class="classe-card" id="ct-card" style="display:none;margin-top:16px;padding:18px 22px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
           <div>
             <div style="font-size:13px;font-weight:800;color:#f1f5f9">Créditos Tributários atuais</div>
             <div style="font-size:11.5px;color:#64748b;margin-top:2px">Meramente informativo — não entra em nenhum cálculo do DRE. Não é por mês nem por ano: é sempre o valor atual.</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <input type="text" class="lc-in" id="ct-valor" placeholder="—" inputmode="decimal" style="width:140px;font-size:13px;padding:9px 10px">
-            <button class="btn-save" type="button" id="btn-save-ct" onclick="salvarCreditosTributarios()">Salvar</button>
+          <button class="btn-save" type="button" id="btn-save-ct" onclick="salvarCreditosTributarios()">Salvar</button>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+          <div class="field"><label style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">ICMS</label><input type="text" class="lc-in" id="ct-icms" placeholder="—" inputmode="decimal" style="width:130px;font-size:13px;padding:9px 10px"></div>
+          <div class="field"><label style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">PIS</label><input type="text" class="lc-in" id="ct-pis" placeholder="—" inputmode="decimal" style="width:130px;font-size:13px;padding:9px 10px"></div>
+          <div class="field"><label style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:5px">COFINS</label><input type="text" class="lc-in" id="ct-cofins" placeholder="—" inputmode="decimal" style="width:130px;font-size:13px;padding:9px 10px"></div>
+          <div style="padding:0 0 9px 4px;border-left:1px solid rgba(255,255,255,0.08);padding-left:18px">
+            <div style="font-size:10px;font-weight:700;color:#64748b;letter-spacing:1px;text-transform:uppercase;margin-bottom:5px">Total</div>
+            <div id="ct-total" style="font-size:15px;font-weight:800;color:#c4b5fd;font-variant-numeric:tabular-nums">R$ 0,00</div>
           </div>
         </div>
-        <div id="ct-meta" style="font-size:11px;color:#475569;margin-top:10px"></div>
+        <div id="ct-meta" style="font-size:11px;color:#475569;margin-top:12px"></div>
       </div>
     </div>
 
@@ -652,28 +659,36 @@
     // ── Créditos Tributários atuais — só na EP por enquanto. Não é por mês/ano
     // (um valor só, sempre o atual) e é meramente informativo: não entra em
     // nenhum cálculo do DRE, por isso vive numa tabela separada de lancamentos_valores.
+    // Quebrado em ICMS/PIS/COFINS; o total (coluna gerada no banco) é a soma dos três.
     const fmtDataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    const CT_CAMPOS = ['icms', 'pis', 'cofins'];
+    function atualizarTotalCT() {
+      const total = CT_CAMPOS.reduce((s, c) => s + (moneyToNumber(document.getElementById('ct-' + c).value) || 0), 0);
+      document.getElementById('ct-total').textContent = 'R$ ' + total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
     async function carregarCreditosTributarios(empresa) {
       const card = document.getElementById('ct-card');
       if (empresa !== 'EP') { card.style.display = 'none'; return; }
       card.style.display = 'block';
-      const { data, error } = await sb.from('creditos_tributarios').select('valor,atualizado_em,atualizado_por_nome').eq('empresa_id', 'EP').maybeSingle();
+      const { data, error } = await sb.from('creditos_tributarios').select('icms,pis,cofins,atualizado_em,atualizado_por_nome').eq('empresa_id', 'EP').maybeSingle();
       const meta = document.getElementById('ct-meta');
       if (error) { meta.textContent = 'Não foi possível carregar: ' + error.message; return; }
-      document.getElementById('ct-valor').value = data && Number(data.valor) ? numberToMoneyMasked(Number(data.valor)) : '';
+      CT_CAMPOS.forEach(c => { const v = data && Number(data[c]); document.getElementById('ct-' + c).value = v ? numberToMoneyMasked(v) : ''; });
+      atualizarTotalCT();
       meta.textContent = data && data.atualizado_em ? `Atualizado em ${fmtDataHora(data.atualizado_em)}${data.atualizado_por_nome ? ' por ' + data.atualizado_por_nome : ''}` : '';
     }
     async function salvarCreditosTributarios() {
       const btn = document.getElementById('btn-save-ct');
-      const valor = moneyToNumber(document.getElementById('ct-valor').value) || 0;
+      const payload = { empresa_id: 'EP' };
+      CT_CAMPOS.forEach(c => { payload[c] = moneyToNumber(document.getElementById('ct-' + c).value) || 0; });
       btn.disabled = true;
-      const { error } = await sb.from('creditos_tributarios').upsert({ empresa_id: 'EP', valor }, { onConflict: 'empresa_id' });
+      const { error } = await sb.from('creditos_tributarios').upsert(payload, { onConflict: 'empresa_id' });
       btn.disabled = false;
       if (error) return showToast(msgErroGravacao(error), 'red');
       showToast('Créditos Tributários atualizados', 'green');
       carregarCreditosTributarios('EP');
     }
-    attachMoneyMask(document.getElementById('ct-valor'));
+    CT_CAMPOS.forEach(c => { const el = document.getElementById('ct-' + c); attachMoneyMask(el); el.addEventListener('input', atualizarTotalCT); });
 
     function renderGrade() {
       const el = document.getElementById('entry-tree');
