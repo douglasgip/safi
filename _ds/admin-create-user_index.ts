@@ -13,7 +13,7 @@ Deno.serve(async (req: Request) => {
   if (caller?.email !== ADMIN_EMAIL)
     return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } })
 
-  const { email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_fluxo_caixa, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_pedidos, pedidos_epgip, pedidos_exposicao, pedidos_viacloset, pedidos_pode_lancar, pedidos_pode_conferir, pedidos_pode_conciliar, pedidos_pode_baixar, can_despesas_fixas, despesas_fixas_epgip, despesas_fixas_exposicao, despesas_fixas_viacloset, can_calc_importacao, can_fechar_mes, can_orcamento, can_reunioes, can_reunioes_editar, can_produtos } = await req.json()
+  const { email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_fluxo_caixa, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_pedidos, pedidos_epgip, pedidos_exposicao, pedidos_viacloset, pedidos_pode_lancar, pedidos_pode_conferir, pedidos_pode_conciliar, pedidos_pode_baixar, can_despesas_fixas, despesas_fixas_epgip, despesas_fixas_exposicao, despesas_fixas_viacloset, can_calc_importacao, can_fechar_mes, can_orcamento, can_reunioes, can_reunioes_editar, can_produtos, mfa_obrigatorio } = await req.json()
 
   const { data: authData, error: authErr } = await sb.auth.admin.createUser({ email, password, email_confirm: true })
   if (authErr)
@@ -44,6 +44,7 @@ Deno.serve(async (req: Request) => {
     can_reunioes: can_reunioes ?? false,
     can_reunioes_editar: can_reunioes_editar ?? false,
     can_produtos: can_produtos ?? false,
+    mfa_obrigatorio: mfa_obrigatorio ?? false,
     is_admin: false
   })
   if (profErr) {

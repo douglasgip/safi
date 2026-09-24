@@ -536,6 +536,21 @@
         </div>
       </div>
 
+      <!-- Segurança da conta -->
+      <div class="perm-section">
+        <div class="perm-section-label">Segurança</div>
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Exigir autenticação em duas etapas (MFA)</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">No próximo login, a pessoa é obrigada a configurar um app autenticador (Google Authenticator, Authy etc.) antes de entrar. Desligado por padrão.</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-mfa">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('mfa', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('mfa', false)">Não</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Permissões de visualização -->
       <div class="perm-section">
         <div class="perm-section-label">Visualização</div>
@@ -1165,6 +1180,7 @@ function openCreateModal() {
   document.getElementById('user-form').reset();
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
+  setToggle('mfa', false);
   ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-baixar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','fechamento','orcamento','reunioes','reunioes-editar','produtos'].forEach(k => setToggle(k, false));
   setToggle('ped-lancar', true);
   document.getElementById('modal-error').className   = 'modal-error';
@@ -1194,6 +1210,7 @@ function openEditModal(u) {
   setToggle('exposicao', u.dre_exposicao !== false);
   setToggle('viacloset', u.dre_viacloset !== false);
   setToggle('mapasoc',   !!u.can_mapa_societario);
+  setToggle('mfa',       !!u.mfa_obrigatorio);
   setToggle('funcionarios',    !!u.can_funcionarios);
   setToggle('func-epgip',      !!u.funcionarios_epgip);
   setToggle('func-exposicao',  !!u.funcionarios_exposicao);
@@ -1257,6 +1274,7 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     dre_exposicao: toggleState.exposicao,
     dre_viacloset: toggleState.viacloset,
     can_mapa_societario: toggleState.mapasoc,
+    mfa_obrigatorio: toggleState.mfa,
     can_funcionarios:       toggleState.funcionarios,
     funcionarios_epgip:     toggleState['func-epgip'],
     funcionarios_exposicao: toggleState['func-exposicao'],

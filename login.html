@@ -233,7 +233,7 @@
       <img src="/public/logo cheia.png" alt="SAFI" class="brand-logo-full">
     </div>
 
-    <div class="card">
+    <div class="card" id="loginCard">
       <div class="card-title">Bem-vindo de volta</div>
       <div class="card-desc">Entre com suas credenciais para acessar o painel</div>
 
@@ -262,6 +262,43 @@
       </form>
     </div>
 
+    <!-- Desafio de MFA — aparece no lugar do form quando a conta já tem um fator TOTP
+         verificado. Sem isso preenchido certo, a sessão não avança (fica só em aal1). -->
+    <div class="card" id="mfaChallengeCard" style="display:none">
+      <div class="card-title">Código de verificação</div>
+      <div class="card-desc">Abra seu app autenticador e digite o código de 6 dígitos.</div>
+      <div class="error-box" id="mfaChallengeErr"></div>
+      <form id="mfaChallengeForm" autocomplete="off">
+        <div class="field">
+          <label for="mfaChallengeCode">Código</label>
+          <input type="text" id="mfaChallengeCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" required style="letter-spacing:6px;font-size:20px;text-align:center">
+        </div>
+        <div class="btn-wrap">
+          <button type="submit" class="btn" id="mfaChallengeBtn">Verificar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Configuração obrigatória de MFA — só aparece quando o admin marcou a conta como
+         "Exigir autenticação em duas etapas" em Gestão de Acessos e ainda não há fator
+         verificado. Não dá pra pular: sem ativar, não entra no painel. -->
+    <div class="card" id="mfaEnrollCard" style="display:none">
+      <div class="card-title">Configure a autenticação em duas etapas</div>
+      <div class="card-desc">Sua conta exige um segundo fator de login. Escaneie o QR code com um app autenticador (Google Authenticator, Authy, 1Password etc.) e confirme com o código gerado.</div>
+      <div class="error-box" id="mfaEnrollErr"></div>
+      <div id="mfaEnrollQr" style="display:flex;justify-content:center;margin:18px 0;background:#fff;border-radius:12px;padding:14px"></div>
+      <div style="font-size:11px;color:#64748b;text-align:center;margin-bottom:16px">Não consegue escanear? Digite manualmente: <span id="mfaEnrollSecret" style="color:#cbd5e1;font-family:monospace;letter-spacing:1px"></span></div>
+      <form id="mfaEnrollForm" autocomplete="off">
+        <div class="field">
+          <label for="mfaEnrollCode">Código do app</label>
+          <input type="text" id="mfaEnrollCode" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="000000" autocomplete="one-time-code" required style="letter-spacing:6px;font-size:20px;text-align:center">
+        </div>
+        <div class="btn-wrap">
+          <button type="submit" class="btn" id="mfaEnrollBtn">Ativar e entrar</button>
+        </div>
+      </form>
+    </div>
+
     <div class="footer">© 2026 Grupo Sacoman · Acesso restrito</div>
 
   </div>
@@ -272,11 +309,6 @@
 
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
-
-    // Se já estiver logado, redireciona
-    sb.auth.getSession().then(({ data }) => {
-      if (data.session) window.location.replace('/');
-    });
 
     const form   = document.getElementById('loginForm');
     const btn    = document.getElementById('submitBtn');
@@ -295,6 +327,51 @@
         ? '<span class="spinner"></span>Entrando...'
         : 'Entrar';
     }
+
+    // ── MFA (autenticação em duas etapas) ──────────────────────────────
+    // Depois de senha+e-mail corretos, a sessão nasce em aal1. Se a conta já tem um
+    // fator TOTP verificado, precisa completar o desafio (código de 6 dígitos) pra
+    // subir pra aal2 antes de entrar. Se ainda não tem fator mas o admin marcou
+    // mfa_obrigatorio, a pessoa é obrigada a configurar um agora — não dá pra pular.
+    const cards = { login: document.getElementById('loginCard'), challenge: document.getElementById('mfaChallengeCard'), enroll: document.getElementById('mfaEnrollCard') };
+    function showCard(name) { Object.keys(cards).forEach(k => cards[k].style.display = k === name ? 'block' : 'none'); }
+
+    async function afterPasswordOk() {
+      const { data: factorsData, error: factorsErr } = await sb.auth.mfa.listFactors();
+      if (factorsErr) { setLoading(false); showError('Não foi possível verificar a autenticação em duas etapas: ' + factorsErr.message); return; }
+
+      const verified = (factorsData.totp || []).find(f => f.status === 'verified');
+      if (verified) {
+        currentFactorId = verified.id;
+        showCard('challenge');
+        setTimeout(() => document.getElementById('mfaChallengeCode').focus(), 50);
+        return;
+      }
+
+      const { data: { session } } = await sb.auth.getSession();
+      const { data: prof } = await sb.from('user_profiles').select('mfa_obrigatorio').eq('id', session.user.id).maybeSingle();
+
+      if (prof && prof.mfa_obrigatorio) {
+        const { data: enrollData, error: enrollErr } = await sb.auth.mfa.enroll({ factorType: 'totp' });
+        if (enrollErr) { setLoading(false); showError('Não foi possível iniciar a configuração de MFA: ' + enrollErr.message); return; }
+        currentFactorId = enrollData.id;
+        document.getElementById('mfaEnrollQr').innerHTML = enrollData.totp.qr_code;
+        document.getElementById('mfaEnrollSecret').textContent = enrollData.totp.secret;
+        showCard('enroll');
+        setTimeout(() => document.getElementById('mfaEnrollCode').focus(), 50);
+        return;
+      }
+
+      window.location.replace('/');
+    }
+
+    let currentFactorId = null;
+
+    // Se já tem sessão (reabriu a aba, por exemplo), passa pelo mesmo funil — não
+    // redireciona direto sem checar se falta desafio/configuração de MFA.
+    sb.auth.getSession().then(({ data }) => {
+      if (data.session) afterPasswordOk();
+    });
 
     document.getElementById('togglePwd').addEventListener('click', () => {
       const inp = document.getElementById('password');
@@ -326,8 +403,64 @@
         };
         showError(msgs[error.message] || 'Falha no login. Verifique suas credenciais.');
       } else {
-        window.location.replace('/');
+        await afterPasswordOk();
       }
+    });
+
+    // ── Desafio: conta já tem fator TOTP verificado ──
+    const mfaChallengeForm = document.getElementById('mfaChallengeForm');
+    const mfaChallengeBtn  = document.getElementById('mfaChallengeBtn');
+    const mfaChallengeErr  = document.getElementById('mfaChallengeErr');
+    mfaChallengeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      mfaChallengeErr.className = 'error-box';
+      mfaChallengeBtn.disabled = true;
+      mfaChallengeBtn.innerHTML = '<span class="spinner"></span>Verificando...';
+      const code = document.getElementById('mfaChallengeCode').value.trim();
+
+      const { data: challengeData, error: challengeErr } = await sb.auth.mfa.challenge({ factorId: currentFactorId });
+      if (challengeErr) {
+        mfaChallengeBtn.disabled = false; mfaChallengeBtn.textContent = 'Verificar';
+        mfaChallengeErr.textContent = challengeErr.message; mfaChallengeErr.className = 'error-box visible';
+        return;
+      }
+      const { error: verifyErr } = await sb.auth.mfa.verify({ factorId: currentFactorId, challengeId: challengeData.id, code });
+      mfaChallengeBtn.disabled = false; mfaChallengeBtn.textContent = 'Verificar';
+      if (verifyErr) {
+        mfaChallengeErr.textContent = 'Código inválido ou expirado. Tente novamente.'; mfaChallengeErr.className = 'error-box visible';
+        document.getElementById('mfaChallengeCode').value = '';
+        document.getElementById('mfaChallengeCode').focus();
+        return;
+      }
+      window.location.replace('/');
+    });
+
+    // ── Configuração obrigatória: conta ainda sem fator, admin exige MFA ──
+    const mfaEnrollForm = document.getElementById('mfaEnrollForm');
+    const mfaEnrollBtn  = document.getElementById('mfaEnrollBtn');
+    const mfaEnrollErr  = document.getElementById('mfaEnrollErr');
+    mfaEnrollForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      mfaEnrollErr.className = 'error-box';
+      mfaEnrollBtn.disabled = true;
+      mfaEnrollBtn.innerHTML = '<span class="spinner"></span>Ativando...';
+      const code = document.getElementById('mfaEnrollCode').value.trim();
+
+      const { data: challengeData, error: challengeErr } = await sb.auth.mfa.challenge({ factorId: currentFactorId });
+      if (challengeErr) {
+        mfaEnrollBtn.disabled = false; mfaEnrollBtn.textContent = 'Ativar e entrar';
+        mfaEnrollErr.textContent = challengeErr.message; mfaEnrollErr.className = 'error-box visible';
+        return;
+      }
+      const { error: verifyErr } = await sb.auth.mfa.verify({ factorId: currentFactorId, challengeId: challengeData.id, code });
+      mfaEnrollBtn.disabled = false; mfaEnrollBtn.textContent = 'Ativar e entrar';
+      if (verifyErr) {
+        mfaEnrollErr.textContent = 'Código inválido. Confira o horário do celular e tente de novo.'; mfaEnrollErr.className = 'error-box visible';
+        document.getElementById('mfaEnrollCode').value = '';
+        document.getElementById('mfaEnrollCode').focus();
+        return;
+      }
+      window.location.replace('/');
     });
   </script>
 

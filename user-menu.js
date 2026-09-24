@@ -224,6 +224,97 @@ function wireSidebarToggle(prefix) {
     pwd1.focus();
   }
 
+  var ICON_SHIELD = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9.5 12l2 2 4-4"/></svg>';
+
+  // Autenticação em duas etapas (TOTP) — o mesmo fluxo serve tanto pra quem ativa por
+  // conta própria (aqui, pelo menu) quanto é reaproveitado em espírito pelo login.html
+  // (que tem sua própria versão inline, pois roda antes de qualquer página carregar
+  // este arquivo). Aqui é sempre opcional: quem é obrigado pelo admin já é forçado a
+  // configurar no login; isto é só pra quem quer ativar por iniciativa própria, ou
+  // desativar/reconfigurar.
+  function openMfaModal(sbClient){
+    ensureStyles();
+    var overlay = document.createElement('div');
+    overlay.className = 'usermenu-overlay';
+    overlay.innerHTML = '<div class="usermenu-modal"><h3>Autenticação em duas etapas</h3><p>Carregando…</p></div>';
+    document.body.appendChild(overlay);
+    var modal = overlay.querySelector('.usermenu-modal');
+
+    function close(){ overlay.remove(); document.removeEventListener('keydown', escHandler, true); }
+    function escHandler(e){ if (e.key === 'Escape') close(); }
+    document.addEventListener('keydown', escHandler, true);
+    overlay.addEventListener('mousedown', function(e){ if (e.target === overlay) close(); });
+
+    function renderStatus(factor){
+      modal.innerHTML =
+        '<h3>Autenticação em duas etapas</h3>' +
+        '<p><span style="color:#6ee7b7;font-weight:700">● Ativada</span> — seu login pede o código do app autenticador.</p>' +
+        '<div class="usermenu-error" id="usermenu-err"></div>' +
+        '<div class="usermenu-actions">' +
+          '<button class="usermenu-btn usermenu-btn-ghost" id="usermenu-cancel">Fechar</button>' +
+          '<button class="usermenu-btn usermenu-btn-primary" id="usermenu-off" style="background:linear-gradient(135deg,#ef4444,#dc2626)">Desativar</button>' +
+        '</div>';
+      modal.querySelector('#usermenu-cancel').addEventListener('click', close);
+      modal.querySelector('#usermenu-off').addEventListener('click', function(){
+        var offBtn = modal.querySelector('#usermenu-off'), errEl = modal.querySelector('#usermenu-err');
+        offBtn.disabled = true; offBtn.textContent = 'Desativando…';
+        sbClient.auth.mfa.unenroll({ factorId: factor.id }).then(function(res){
+          if (res && res.error) { errEl.textContent = res.error.message; offBtn.disabled = false; offBtn.textContent = 'Desativar'; return; }
+          modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-success">Desativada.</div><div class="usermenu-actions"><button class="usermenu-btn usermenu-btn-primary" id="usermenu-done" style="flex:1">Fechar</button></div>';
+          modal.querySelector('#usermenu-done').addEventListener('click', close);
+        });
+      });
+    }
+
+    function renderEnroll(){
+      sbClient.auth.mfa.enroll({ factorType: 'totp' }).then(function(res){
+        if (res.error) { modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-error" style="display:block">' + res.error.message + '</div><div class="usermenu-actions"><button class="usermenu-btn usermenu-btn-ghost" id="usermenu-cancel" style="flex:1">Fechar</button></div>'; modal.querySelector('#usermenu-cancel').addEventListener('click', close); return; }
+        var factorId = res.data.id;
+        modal.innerHTML =
+          '<h3>Ativar autenticação em duas etapas</h3>' +
+          '<p>Escaneie com um app autenticador (Google Authenticator, Authy, 1Password etc.) e digite o código gerado.</p>' +
+          '<div style="display:flex;justify-content:center;margin:14px 0;background:#fff;border-radius:12px;padding:12px" id="usermenu-qr"></div>' +
+          '<p style="font-size:10.5px;color:#64748b;text-align:center;margin-top:-6px">Não consegue escanear? Digite manualmente: <span style="color:#cbd5e1;font-family:monospace">' + esc(res.data.totp.secret) + '</span></p>' +
+          '<div class="usermenu-field"><label>Código do app</label><input type="text" id="usermenu-code" inputmode="numeric" maxlength="6" placeholder="000000" style="letter-spacing:4px;text-align:center"></div>' +
+          '<div class="usermenu-error" id="usermenu-err"></div>' +
+          '<div class="usermenu-actions">' +
+            '<button class="usermenu-btn usermenu-btn-ghost" id="usermenu-cancel">Cancelar</button>' +
+            '<button class="usermenu-btn usermenu-btn-primary" id="usermenu-save">Ativar</button>' +
+          '</div>';
+        modal.querySelector('#usermenu-qr').innerHTML = res.data.totp.qr_code;
+        modal.querySelector('#usermenu-cancel').addEventListener('click', function(){
+          sbClient.auth.mfa.unenroll({ factorId: factorId }).catch(function(){});
+          close();
+        });
+        var codeInp = modal.querySelector('#usermenu-code'), errEl = modal.querySelector('#usermenu-err'), saveBtn = modal.querySelector('#usermenu-save');
+        function submit(){
+          errEl.textContent = '';
+          var code = codeInp.value.trim();
+          if (!code) { errEl.textContent = 'Digite o código do app.'; return; }
+          saveBtn.disabled = true; saveBtn.textContent = 'Verificando…';
+          sbClient.auth.mfa.challenge({ factorId: factorId }).then(function(chRes){
+            if (chRes.error) { errEl.textContent = chRes.error.message; saveBtn.disabled = false; saveBtn.textContent = 'Ativar'; return; }
+            sbClient.auth.mfa.verify({ factorId: factorId, challengeId: chRes.data.id, code: code }).then(function(vRes){
+              saveBtn.disabled = false; saveBtn.textContent = 'Ativar';
+              if (vRes.error) { errEl.textContent = 'Código inválido. Confira o horário do celular e tente de novo.'; codeInp.value = ''; codeInp.focus(); return; }
+              modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-success">Ativada com sucesso.</div><div class="usermenu-actions"><button class="usermenu-btn usermenu-btn-primary" id="usermenu-done" style="flex:1">Fechar</button></div>';
+              modal.querySelector('#usermenu-done').addEventListener('click', close);
+            });
+          });
+        }
+        saveBtn.addEventListener('click', submit);
+        codeInp.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); });
+        codeInp.focus();
+      });
+    }
+
+    sbClient.auth.mfa.listFactors().then(function(res){
+      if (res.error) { modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-error" style="display:block">' + res.error.message + '</div>'; return; }
+      var verified = (res.data.totp || []).filter(function(f){ return f.status === 'verified'; })[0];
+      if (verified) renderStatus(verified); else renderEnroll();
+    });
+  }
+
   function toggle(anchorEl, sbClient){
     if (openDropdown) { closeDropdown(); return; }
     ensureStyles();
@@ -231,6 +322,7 @@ function wireSidebarToggle(prefix) {
     menu.className = 'usermenu-dropdown';
     menu.innerHTML =
       '<button class="usermenu-item" data-act="pwd">' + ICON_KEY + 'Trocar senha</button>' +
+      '<button class="usermenu-item" data-act="mfa">' + ICON_SHIELD + 'Autenticação em duas etapas</button>' +
       '<button class="usermenu-item danger" data-act="logout">' + ICON_LOGOUT + 'Sair</button>';
     document.body.appendChild(menu);
     positionMenu(menu, anchorEl);
@@ -239,6 +331,10 @@ function wireSidebarToggle(prefix) {
     menu.querySelector('[data-act="pwd"]').addEventListener('click', function(){
       closeDropdown();
       openPasswordModal(sbClient);
+    });
+    menu.querySelector('[data-act="mfa"]').addEventListener('click', function(){
+      closeDropdown();
+      openMfaModal(sbClient);
     });
     menu.querySelector('[data-act="logout"]').addEventListener('click', function(){
       closeDropdown();
