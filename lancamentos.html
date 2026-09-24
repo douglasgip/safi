@@ -308,6 +308,22 @@
       </div>
       <div id="lock-banner" style="display:none;margin-bottom:14px;padding:12px 16px;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:12px;color:#6ee7b7;font-size:12.5px;line-height:1.5"></div>
       <div id="entry-tree"></div>
+
+      <!-- Créditos Tributários atuais — só na EP por enquanto. Não é por mês/ano (valor sempre
+           atual) e é meramente informativo: não entra em nenhum cálculo do DRE. -->
+      <div class="classe-card" id="ct-card" style="display:none;margin-top:16px;padding:18px 22px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#f1f5f9">Créditos Tributários atuais</div>
+            <div style="font-size:11.5px;color:#64748b;margin-top:2px">Meramente informativo — não entra em nenhum cálculo do DRE. Não é por mês nem por ano: é sempre o valor atual.</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="money-wrap-block"><input type="text" id="ct-valor" placeholder="0,00" inputmode="decimal" style="width:160px"></div>
+            <button class="btn-save" type="button" id="btn-save-ct" onclick="salvarCreditosTributarios()">Salvar</button>
+          </div>
+        </div>
+        <div id="ct-meta" style="font-size:11px;color:#475569;margin-top:10px"></div>
+      </div>
     </div>
 
     <!-- ══ MODO: GERENCIAR ESTRUTURA ══ -->
@@ -630,7 +646,34 @@
       mesesTravados = new Set(((fech && fech.data) || []).filter(f => f.status === 'travado').map(f => f.mes));
       ctxGrade = { empresa, ano };
       renderGrade();
+      carregarCreditosTributarios(empresa);
     }
+
+    // ── Créditos Tributários atuais — só na EP por enquanto. Não é por mês/ano
+    // (um valor só, sempre o atual) e é meramente informativo: não entra em
+    // nenhum cálculo do DRE, por isso vive numa tabela separada de lancamentos_valores.
+    const fmtDataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    async function carregarCreditosTributarios(empresa) {
+      const card = document.getElementById('ct-card');
+      if (empresa !== 'EP') { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      const { data, error } = await sb.from('creditos_tributarios').select('valor,atualizado_em,atualizado_por_nome').eq('empresa_id', 'EP').maybeSingle();
+      const meta = document.getElementById('ct-meta');
+      if (error) { meta.textContent = 'Não foi possível carregar: ' + error.message; return; }
+      document.getElementById('ct-valor').value = data && Number(data.valor) ? numberToMoneyMasked(Number(data.valor)) : '';
+      meta.textContent = data && data.atualizado_em ? `Atualizado em ${fmtDataHora(data.atualizado_em)}${data.atualizado_por_nome ? ' por ' + data.atualizado_por_nome : ''}` : '';
+    }
+    async function salvarCreditosTributarios() {
+      const btn = document.getElementById('btn-save-ct');
+      const valor = moneyToNumber(document.getElementById('ct-valor').value) || 0;
+      btn.disabled = true;
+      const { error } = await sb.from('creditos_tributarios').upsert({ empresa_id: 'EP', valor }, { onConflict: 'empresa_id' });
+      btn.disabled = false;
+      if (error) return showToast(msgErroGravacao(error), 'red');
+      showToast('Créditos Tributários atualizados', 'green');
+      carregarCreditosTributarios('EP');
+    }
+    attachMoneyMask(document.getElementById('ct-valor'));
 
     function renderGrade() {
       const el = document.getElementById('entry-tree');

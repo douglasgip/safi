@@ -1215,6 +1215,19 @@
       </div>
       </div>
 
+      <!-- Créditos Tributários atuais — meramente informativo, não entra em nenhum
+           cálculo do DRE; não é por mês/ano, é sempre o valor atual. Por enquanto só
+           existe pra EP (some sozinho se essa empresa não tiver linha cadastrada). -->
+      <sc-if value="{{ creditosTributarios.show }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:14px;padding:14px 18px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:#c4b5fd;letter-spacing:1.2px;text-transform:uppercase">Créditos Tributários atuais (EP)</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:3px">Meramente informativo — não entra em nenhum cálculo do DRE{{ creditosTributarios.dataTxt }}.</div>
+          </div>
+          <div style="font-size:19px;font-weight:800;color:#e2e8f0;font-variant-numeric:tabular-nums;letter-spacing:-0.3px">{{ creditosTributarios.valorFmt }}</div>
+        </div>
+      </sc-if>
+
     </div>
   </sc-if>
 
@@ -1494,6 +1507,10 @@ class Component extends DCLogic {
   _dreDataMap = {};
   _alertasArr = [];
   _empMap = {};
+  // Créditos Tributários atuais — valor único (não por mês/ano), meramente informativo,
+  // por empresa_id. RLS já limita a quem pode ver o DRE daquela empresa. Por enquanto
+  // só a EP tem linha cadastrada.
+  _creditosTributarios = {};
 
   _SUPA_URL = 'https://ujsoqyhkebasszwtexmp.supabase.co';
   _SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
@@ -1567,10 +1584,11 @@ class Component extends DCLogic {
         fetch(`${B}/rest/v1/lancamentos_classes?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_campos?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_subcampos?select=*&order=ordem`, {headers:hU}),
-        fetch(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026`, {headers:hU})
+        fetch(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026`, {headers:hU}),
+        fetch(`${B}/rest/v1/creditos_tributarios?select=empresa_id,valor,atualizado_em`, {headers:hU})
       ];
-      const [r1,r2,r3,r4,r5,r6,r7,r8,r9] = await Promise.all(requests);
-      const [emps,resumo,dre,alertas,lancClasses,lancCampos,lancSubcampos,lancValores] = await Promise.all([r1.json(),r2.json(),r3.json(),r4.json(),r6.json(),r7.json(),r8.json(),r9.json()]);
+      const [r1,r2,r3,r4,r5,r6,r7,r8,r9,r10] = await Promise.all(requests);
+      const [emps,resumo,dre,alertas,lancClasses,lancCampos,lancSubcampos,lancValores,creditosTrib] = await Promise.all([r1.json(),r2.json(),r3.json(),r4.json(),r6.json(),r7.json(),r8.json(),r9.json(),r10.json()]);
       const profArr = r5 ? await r5.json() : [];
       const prof = profArr[0] || null;
       this._userProfile = prof;
@@ -1584,6 +1602,8 @@ class Component extends DCLogic {
       });
       dre.forEach(d => { this._dreDataMap[`${d.empresa_id}-${d.mes}`] = d; });
       this._alertasArr = alertas;
+      this._creditosTributarios = {};
+      (creditosTrib||[]).forEach(c => { this._creditosTributarios[c.empresa_id] = c; });
       // Lançamentos (Classe > Campo > Subcampo > Valor) - alimenta as linhas detalhadas do DRE
       this._lancClasses = (lancClasses||[]).sort((a,b)=>a.ordem-b.ordem);
       this._lancCamposPorClasse = {};
@@ -2450,6 +2470,16 @@ class Component extends DCLogic {
       mcAsk:`Pode me explicar a Margem de ${(mcRatio*100).toFixed(1).replace('.',',')}% (${this._fmtShort(calc.mc)}) no período ${periodLabel} ${selLabel}? Está dentro da meta?`,
       resAsk:`Pode me explicar o Resultado de ${this._fmtShort(calc.res)} no período ${periodLabel} ${selLabel}? O que está impactando esse resultado?`
     };
+
+    // Créditos Tributários atuais — meramente informativo, não por período (não entra
+    // em nenhum cálculo do DRE). Por enquanto só existe pra EP; some se não houver linha
+    // (ex: usuário sem acesso ao DRE da EP, já filtrado pela RLS).
+    const ctEP=this._creditosTributarios['EP'];
+    const creditosTributarios=ctEP?{
+      show:true,
+      valorFmt:'R$ '+(Number(ctEP.valor)||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}),
+      dataTxt:ctEP.atualizado_em?(' · atualizado em '+new Date(ctEP.atualizado_em).toLocaleDateString('pt-BR')):''
+    }:{show:false,valorFmt:'',dataTxt:''};
     const companyKPIs=selectedCos.map((co,i)=>{
       const c=this._dreCalcRange([co],ms+1,me+1,true);
       const mcR=c.rb>0?c.mc/c.rb:0;
@@ -2792,7 +2822,7 @@ class Component extends DCLogic {
       companyKPIsMaxH:selectedCos.length>=2?'600px':'0px',
       companyKPIsOpacity:selectedCos.length>=2?1:0,
       companyKPIsMB:selectedCos.length>=2?'14px':'0px',
-      months,empresas,totals,alertas,coButtons,selLabel,metricBtns,dreRows,dreKPI,ahBaseLabel,companyKPIs,
+      months,empresas,totals,alertas,coButtons,selLabel,metricBtns,dreRows,dreKPI,ahBaseLabel,companyKPIs,creditosTributarios,
       barSeriesBtns,barCosBtns,dreChartLegend,drePieLegend:dreChartLegend,barLegend,modalIsCompanyChart,modalIsSeriesChart,
       modalOpen:!!this.state.expandedChart,
       modalTitle:{bar:'Entrada / Saída / Despesa por Empresa',line:'Evolução do Resultado — 2026','dre-evo':'Evolução Mensal — 2026','dre-pie':'Faturamento por Operação','dre-margem':'Margem por Operação'}[this.state.expandedChart]||'',
