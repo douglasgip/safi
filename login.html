@@ -333,6 +333,25 @@
     // fator TOTP verificado, precisa completar o desafio (código de 6 dígitos) pra
     // subir pra aal2 antes de entrar. Se ainda não tem fator mas o admin marcou
     // mfa_obrigatorio, a pessoa é obrigada a configurar um agora — não dá pra pular.
+    // O qr_code do Supabase vem como "data:image/svg+xml;utf-8,<svg ...>...</svg>" — o
+    // SVG cru colado depois da vírgula, sem escapar as aspas. Isso não é uma data URI
+    // válida pra usar direto em <img src>, e concatenar em innerHTML como string também
+    // quebra (as aspas do SVG fecham o atributo src no meio). A saída é extrair só o
+    // SVG (depois da vírgula, decodificando base64/percent-encoding se for o caso) e
+    // inserir ele direto — é conteúdo do próprio Supabase, não de usuário, então é seguro.
+    function renderQrImg(container, dataUri) {
+      const comma = dataUri.indexOf(',');
+      if (comma < 0) { container.textContent = ''; return; }
+      const meta = dataUri.slice(0, comma);
+      let body = dataUri.slice(comma + 1);
+      if (/;base64/i.test(meta)) {
+        try { body = atob(body); } catch (e) {}
+      } else {
+        try { body = decodeURIComponent(body); } catch (e) {}
+      }
+      container.innerHTML = body;
+    }
+
     const cards = { login: document.getElementById('loginCard'), challenge: document.getElementById('mfaChallengeCard'), enroll: document.getElementById('mfaEnrollCard') };
     function showCard(name) { Object.keys(cards).forEach(k => cards[k].style.display = k === name ? 'block' : 'none'); }
 
@@ -360,7 +379,7 @@
         const { data: enrollData, error: enrollErr } = await sb.auth.mfa.enroll({ factorType: 'totp' });
         if (enrollErr) { setLoading(false); showError('Não foi possível iniciar a configuração de MFA: ' + enrollErr.message); return; }
         currentFactorId = enrollData.id;
-        document.getElementById('mfaEnrollQr').innerHTML = '<img src="' + enrollData.totp.qr_code + '" alt="QR code" width="200" height="200">';
+        renderQrImg(document.getElementById('mfaEnrollQr'), enrollData.totp.qr_code);
         document.getElementById('mfaEnrollSecret').textContent = enrollData.totp.secret;
         showCard('enroll');
         setTimeout(() => document.getElementById('mfaEnrollCode').focus(), 50);

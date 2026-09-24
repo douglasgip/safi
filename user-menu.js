@@ -224,6 +224,23 @@ function wireSidebarToggle(prefix) {
     pwd1.focus();
   }
 
+  // O qr_code do Supabase vem como "data:image/svg+xml;utf-8,<svg ...>...</svg>" — SVG
+  // cru colado depois da vírgula, sem escapar aspas. Não dá pra usar direto em <img src>
+  // nem concatenar em innerHTML como string (as aspas do SVG quebram tudo); a saída é
+  // extrair só o SVG e inserir — é conteúdo do próprio Supabase, não de usuário.
+  function renderQrSvg(container, dataUri) {
+    var comma = dataUri.indexOf(',');
+    if (comma < 0) { container.textContent = ''; return; }
+    var meta = dataUri.slice(0, comma);
+    var body = dataUri.slice(comma + 1);
+    if (/;base64/i.test(meta)) {
+      try { body = atob(body); } catch (e) {}
+    } else {
+      try { body = decodeURIComponent(body); } catch (e) {}
+    }
+    container.innerHTML = body;
+  }
+
   var ICON_SHIELD = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9.5 12l2 2 4-4"/></svg>';
 
   // Autenticação em duas etapas (TOTP) — o mesmo fluxo serve tanto pra quem ativa por
@@ -286,7 +303,7 @@ function wireSidebarToggle(prefix) {
             '<button class="usermenu-btn usermenu-btn-ghost" id="usermenu-cancel">Cancelar</button>' +
             '<button class="usermenu-btn usermenu-btn-primary" id="usermenu-save">Ativar</button>' +
           '</div>';
-        modal.querySelector('#usermenu-qr').innerHTML = '<img src="' + res.data.totp.qr_code + '" alt="QR code" width="180" height="180">';
+        renderQrSvg(modal.querySelector('#usermenu-qr'), res.data.totp.qr_code);
         modal.querySelector('#usermenu-cancel').addEventListener('click', function(){
           sbClient.auth.mfa.unenroll({ factorId: factorId }).catch(function(){});
           close();
