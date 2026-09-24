@@ -24,9 +24,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      overflow-y: auto;
       background: #080b14;
     }
+    /* Com align-items:center, conteúdo mais alto que a tela fica com a borda de cima
+       inacessível ao rolar (o overflow por trás do centro não tem pra onde "crescer"
+       sem isso) — deixa o topo do wrap sempre alcançável rolando pra cima. */
+    .card-wrap { margin: auto; }
 
     /* ── Fundo com gradiente animado ── */
     .bg {
