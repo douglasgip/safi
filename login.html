@@ -352,6 +352,11 @@
       const { data: prof } = await sb.from('user_profiles').select('mfa_obrigatorio').eq('id', session.user.id).maybeSingle();
 
       if (prof && prof.mfa_obrigatorio) {
+        // Limpa fatores incompletos de tentativas anteriores — o Supabase não deixa
+        // criar um novo TOTP se já existe um "unverified" parado com o mesmo nome.
+        const unverified = (factorsData.totp || []).filter(f => f.status !== 'verified');
+        for (const f of unverified) { await sb.auth.mfa.unenroll({ factorId: f.id }).catch(() => {}); }
+
         const { data: enrollData, error: enrollErr } = await sb.auth.mfa.enroll({ factorType: 'totp' });
         if (enrollErr) { setLoading(false); showError('Não foi possível iniciar a configuração de MFA: ' + enrollErr.message); return; }
         currentFactorId = enrollData.id;

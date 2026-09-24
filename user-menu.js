@@ -266,7 +266,12 @@ function wireSidebarToggle(prefix) {
       });
     }
 
-    function renderEnroll(){
+    function renderEnroll(existingFactors){
+      // Limpa fatores incompletos de tentativas anteriores — o Supabase não deixa
+      // criar um novo TOTP se já existe um "unverified" parado com o mesmo nome.
+      var unverified = (existingFactors || []).filter(function(f){ return f.status !== 'verified'; });
+      var cleanup = unverified.reduce(function(p, f){ return p.then(function(){ return sbClient.auth.mfa.unenroll({ factorId: f.id }).catch(function(){}); }); }, Promise.resolve());
+      cleanup.then(function(){
       sbClient.auth.mfa.enroll({ factorType: 'totp' }).then(function(res){
         if (res.error) { modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-error" style="display:block">' + res.error.message + '</div><div class="usermenu-actions"><button class="usermenu-btn usermenu-btn-ghost" id="usermenu-cancel" style="flex:1">Fechar</button></div>'; modal.querySelector('#usermenu-cancel').addEventListener('click', close); return; }
         var factorId = res.data.id;
@@ -306,12 +311,13 @@ function wireSidebarToggle(prefix) {
         codeInp.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); });
         codeInp.focus();
       });
+      });
     }
 
     sbClient.auth.mfa.listFactors().then(function(res){
       if (res.error) { modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-error" style="display:block">' + res.error.message + '</div>'; return; }
       var verified = (res.data.totp || []).filter(function(f){ return f.status === 'verified'; })[0];
-      if (verified) renderStatus(verified); else renderEnroll();
+      if (verified) renderStatus(verified); else renderEnroll(res.data.totp);
     });
   }
 
