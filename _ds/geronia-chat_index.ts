@@ -72,7 +72,7 @@ O usuário tem um nível de acesso definido abaixo, no bloco "ACESSO DO USUÁRIO
 
 Sobre funcionários especificamente: mesmo quando você tiver acesso ao quadro de colaboradores, você só recebe nome, empresa, data de admissão e data de nascimento — nunca CPF, telefone, endereço ou e-mail. Nunca afirme ter esses dados nem os invente, mesmo se perguntarem diretamente.
 
-Sobre Pedidos especificamente (modelo desde 23/09/2026): as compradoras lançam o pedido com CNPJ, fornecedor, valor do pedido, desconto concedido, quantidade de peças, previsão de chegada e centro de custo. Todo pedido lançado e ainda SEM BAIXA está nas Contas a Pagar do Fluxo de Caixa, pelo valor a pagar (valor do pedido menos o desconto). Quando a Lorena dá baixa (ao lançar a NF no SETA), o pedido sai do Fluxo de Caixa — entende-se que foi pago. Não existem mais parcelas, conferência de valor real nem "chegou". Um pedido está com "previsão vencida" quando a previsão de chegada é antes de hoje e ele ainda não teve baixa. Use isso para responder sobre contas a pagar, pedidos atrasados, compras por compradora, fornecedor ou centro de custo.
+Sobre Pedidos especificamente (modelo desde 23/09/2026): quem compra lança o pedido com CNPJ, fornecedor, valor do pedido, desconto concedido, quantidade de peças, previsão de chegada e centro de custo. Todo pedido lançado e ainda SEM BAIXA está nas Contas a Pagar do Fluxo de Caixa, pelo valor a pagar (valor do pedido menos o desconto). Quando a Lorena dá baixa (ao lançar a NF no SETA), o pedido sai do Fluxo de Caixa — entende-se que foi pago. Não existem mais parcelas, conferência de valor real nem "chegou". Um pedido está com "previsão vencida" quando a previsão de chegada é antes de hoje e ele ainda não teve baixa. O desconto pode ter sido digitado em R$ ou em % (nesse caso você recebe os dois: o percentual e o valor já convertido em R$). Use isso para responder sobre contas a pagar, pedidos atrasados, compras por comprador(a), fornecedor ou centro de custo.
 
 Sobre Despesas Fixas especificamente: são contas recorrentes cadastradas uma vez (ex: honorários de contabilidade, assinaturas, sistemas) com um valor previsto padrão por mês. Você recebe, por mês, o valor previsto, o dia de vencimento, e — se já conferido — o valor efetivamente pago e a data. Quando o valor pago diverge do previsto, a linha é "DIVERGENTE" e ainda depende do crivo de alguém (Douglas ou Aldemar) pra confirmar se foi só reajuste de valor ou algo errado — não conclua sozinho qual é o caso, apenas aponte a divergência.
 
@@ -226,7 +226,7 @@ function pedidosSummaryText(labels: string[], rows: any[]) {
         ? `baixado${r.baixado_por_nome ? ` por ${r.baixado_por_nome}` : ''}${r.baixado_em ? ` em ${fmtDateBR(String(r.baixado_em).slice(0, 10))}` : ''} (fora do Fluxo de Caixa)`
         : (r.previsao_chegada && r.previsao_chegada < todayISO ? 'PREVISÃO VENCIDA, ainda sem baixa (está nas Contas a Pagar)' : 'aguardando baixa (está nas Contas a Pagar)')
       const partes = [
-        r.comprador_nome ? `compradora ${r.comprador_nome}` : null,
+        r.comprador_nome ? `comprador(a) ${r.comprador_nome}` : null,
         r.cnpj ? `CNPJ ${r.cnpj}` : null,
         `lançado em ${fmtDateBR(r.data_pedido)}`,
         r.previsao_chegada ? `previsão de chegada ${fmtDateBR(r.previsao_chegada)}` : 'sem previsão de chegada',
@@ -234,8 +234,9 @@ function pedidosSummaryText(labels: string[], rows: any[]) {
         r.centro_custo ? `centro de custo ${r.centro_custo}` : null,
         r.numero_nf ? `NF nº ${r.numero_nf}` : null,
       ].filter(Boolean).join(', ')
+      const descPctTxt = r.desconto_pct != null ? ` (${Number(r.desconto_pct).toLocaleString('pt-BR')}%)` : ''
       const valoresTxt = desconto
-        ? `valor do pedido ${fmtR(valor)}, desconto ${fmtR(desconto)}, a pagar ${fmtR(aPagar)}`
+        ? `valor do pedido ${fmtR(valor)}, desconto ${fmtR(desconto)}${descPctTxt}, a pagar ${fmtR(aPagar)}`
         : `valor do pedido / a pagar ${fmtR(aPagar)}`
       return `  - ${r.fornecedor} (${partes}): ${valoresTxt}, status ${status}.`
     })
@@ -243,7 +244,7 @@ function pedidosSummaryText(labels: string[], rows: any[]) {
   })
 
   const total = rows.length
-  return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/compradora/centro de custo/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. O fluxo do grupo é: a compradora lança o pedido -> ele entra nas Contas a Pagar do Fluxo de Caixa pelo valor a pagar (valor do pedido menos o desconto) -> quando a Lorena dá baixa (ao lançar a NF no SETA) o pedido sai do Fluxo de Caixa, e entende-se que foi pago. "CNPJ" é a razão social usada para registrar a compra (Guilherme, Juliane, Isa ou EP), independente de qual das 3 operações o pedido é):\n\n${blocks.join('\n\n')}`
+  return `DADOS DE PEDIDOS (hoje: ${todayBR}; TOTAL: ${total} pedido(s) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por fornecedor/comprador(a)/centro de custo/status/empresa/mês, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar nenhum — ao terminar, confira se a quantidade que você listou bate com ${total}; se não bater, refaça antes de responder. O fluxo do grupo é: o pedido é lançado -> ele entra nas Contas a Pagar do Fluxo de Caixa pelo valor a pagar (valor do pedido menos o desconto) -> quando a Lorena dá baixa (ao lançar a NF no SETA) o pedido sai do Fluxo de Caixa, e entende-se que foi pago. "CNPJ" é a razão social usada para registrar a compra (Guilherme, Juliane, Isa ou EP), independente de qual das 3 operações o pedido é):\n\n${blocks.join('\n\n')}`
 }
 
 // Uma despesa fixa por mês/linha (mesmo motivo das outras summary texts: um blob só
@@ -623,7 +624,7 @@ Deno.serve(async (req: Request) => {
       funcDataText = funcSummaryText(labels, funcRows || [])
     }
 
-    // ---- Permissões: Pedidos (o que as compradoras pediram + contas a pagar) ----
+    // ---- Permissões: Pedidos (o que foi pedido + contas a pagar) ----
     const pedidosOps = resolveAllowedOps(prof.is_admin, {
       domainFlag: prof.can_pedidos,
       domainDefaultAllowed: false,
@@ -633,7 +634,7 @@ Deno.serve(async (req: Request) => {
 
     let pedidosAccessText: string
     if (!pedidosOps.length) {
-      pedidosAccessText = `Acesso a dados de PEDIDOS: NENHUM. Não comente sobre pedidos feitos às lojas, fornecedores, compradoras, contas a pagar ou baixas — informe educadamente que essa permissão não está liberada se perguntarem.`
+      pedidosAccessText = `Acesso a dados de PEDIDOS: NENHUM. Não comente sobre pedidos feitos às lojas, fornecedores, comprador(a)s, contas a pagar ou baixas — informe educadamente que essa permissão não está liberada se perguntarem.`
     } else {
       const labels = pedidosOps.map(op => OP_LABEL[op]).join(', ')
       const scope = pedidosOps.length === ALL_OPS.length ? 'TOTAL — todas as operações' : `RESTRITO a "${labels}"`
@@ -645,7 +646,7 @@ Deno.serve(async (req: Request) => {
       const labels = pedidosOps.map(op => OP_LABEL[op])
       const { data: pedidosRows } = await sb
         .from('pedidos')
-        .select('empresa, cnpj, fornecedor, valor_total, desconto, data_pedido, previsao_chegada, qtd_produtos_previsto, centro_custo, comprador_nome, baixado, baixado_em, baixado_por_nome, numero_nf')
+        .select('empresa, cnpj, fornecedor, valor_total, desconto, desconto_pct, data_pedido, previsao_chegada, qtd_produtos_previsto, centro_custo, comprador_nome, baixado, baixado_em, baixado_por_nome, numero_nf')
         .in('empresa', labels)
       pedidosDataText = pedidosSummaryText(labels, pedidosRows || [])
     }

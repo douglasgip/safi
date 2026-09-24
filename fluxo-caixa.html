@@ -160,7 +160,7 @@
 
     <section id="tab-pagar">
       <div class="cap-section-title">Contas a Pagar</div>
-      <div class="cap-section-desc">Pedidos lançados pelas compradoras que ainda não tiveram baixa — o valor já vem com o desconto.</div>
+      <div class="cap-section-desc">Pedidos lançados pelos(as) comprador(a)s que ainda não tiveram baixa — o valor já vem com o desconto.</div>
       <div class="no-company-notice" id="cap-no-access" style="display:none">
         As Contas a Pagar vêm dos Pedidos, e você não tem acesso a nenhuma empresa em Pedidos — peça pro admin liberar em Gestão de Acessos pra ver algo aqui.
       </div>
@@ -172,7 +172,7 @@
               <tr>
                 <th>Empresa</th>
                 <th>Fornecedor</th>
-                <th>Compradora</th>
+                <th>Comprador(a)</th>
                 <th>A pagar</th>
                 <th>Previsão de chegada</th>
                 <th style="width:140px">Ação</th>
@@ -224,7 +224,7 @@
     let podeBaixar = false;
 
     // ── Contas a Pagar: todo pedido lançado e ainda sem baixa (valor já com desconto) ──
-    // O pedido entra aqui no instante em que a compradora lança e sai quando a Lorena dá
+    // O pedido entra aqui no instante em que é lançado e sai quando a Lorena dá
     // baixa (ver pedidos.html). Não existem mais parcelas nem "chegou".
     async function loadContasAPagar() {
       const tbody = document.getElementById('cap-tbody');

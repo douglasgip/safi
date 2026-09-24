@@ -128,10 +128,10 @@ window.SAFI_AJUDA = { telas: {
   },
 
   fluxocaixa: {
-    titulo: 'Fluxo de Caixa', versao: 4,
-    resumo: 'O <b>Fluxo de Caixa</b> tem duas abas: <b>Contas a Pagar</b> (todo pedido lançado pelas compradoras que ainda não teve baixa, já com o desconto) e <b>Contas a Receber</b> (as vendas do grupo — ainda em definição de como entram no SAFI).',
+    titulo: 'Fluxo de Caixa', versao: 5,
+    resumo: 'O <b>Fluxo de Caixa</b> tem duas abas: <b>Contas a Pagar</b> (todo pedido lançado que ainda não teve baixa, já com o desconto) e <b>Contas a Receber</b> (as vendas do grupo — ainda em definição de como entram no SAFI).',
     passos: [
-      { t: 'Contas a Pagar: veja o que falta pagar', d: 'Cada pedido aparece aqui assim que a compradora lança, com o valor a pagar (valor do pedido menos o desconto), ordenado pela previsão de chegada.' },
+      { t: 'Contas a Pagar: veja o que falta pagar', d: 'Cada pedido aparece aqui assim que é lançado em Pedidos, com o valor a pagar (valor do pedido menos o desconto), ordenado pela previsão de chegada.' },
       { t: 'Contas a Pagar: dê baixa', d: 'Quem tem a permissão <b>Dar baixa</b> usa o botão da coluna <b>Ação</b> — o pedido sai da lista (entende-se que foi pago). A baixa também pode ser dada na tela de Pedidos.' },
       { t: 'Contas a Receber: em definição', d: 'Vai representar as vendas do grupo. Por enquanto essa aba só mostra um aviso, até formularmos como isso entra no SAFI.' },
     ],
@@ -142,7 +142,7 @@ window.SAFI_AJUDA = { telas: {
     tour: [
       { sel: '#fc-tabs', t: 'Duas abas', d: '<b>Contas a Pagar</b> (funciona hoje) e <b>Contas a Receber</b> (em definição, ligada às vendas do grupo).' },
       { sel: '#cap-panel', t: 'Contas a Pagar', d: 'Os pedidos lançados que ainda não tiveram baixa, com o valor já descontado.' },
-      { sel: '#cap-tbody', t: 'Pedidos a pagar', d: 'Empresa, fornecedor, compradora, valor a pagar e previsão de chegada. A baixa tira o pedido daqui.' },
+      { sel: '#cap-tbody', t: 'Pedidos a pagar', d: 'Empresa, fornecedor, comprador(a), valor a pagar e previsão de chegada. A baixa tira o pedido daqui.' },
     ],
   },
 
@@ -168,23 +168,24 @@ window.SAFI_AJUDA = { telas: {
   },
 
   pedidos: {
-    titulo: 'Pedidos', versao: 2,
-    resumo: 'Em <b>Pedidos</b> as compradoras lançam o que foi comprado. O pedido entra na hora no <b>Fluxo de Caixa</b> como a pagar e sai de lá quando a Lorena dá <b>baixa</b> (quando lança a NF no SETA).',
+    titulo: 'Pedidos', versao: 3,
+    resumo: 'Em <b>Pedidos</b>, quem compra lança o que foi comprado. O pedido entra na hora no <b>Fluxo de Caixa</b> como a pagar e sai de lá quando a Lorena dá <b>baixa</b> (quando lança a NF no SETA).',
     passos: [
-      { t: 'Lance o pedido', d: '<b>Novo Pedido</b>: empresa, CNPJ, fornecedor, valor do pedido, desconto concedido, quantidade de peças, previsão de chegada e centro de custo. A compradora é registrada sozinha (quem está logado).' },
+      { t: 'Lance o pedido', d: '<b>Novo Pedido</b>: empresa, CNPJ, fornecedor, valor do pedido, desconto concedido, quantidade de peças, previsão de chegada e centro de custo. Quem lançou é registrado automaticamente (a pessoa logada).' },
       { t: 'Use o autocompletar', d: 'Fornecedor e centro de custo sugerem o que já foi usado — escreva uma vez e ele aparece nas próximas. Se digitar com outra grafia, o SAFI usa a que já existe.' },
-      { t: 'Acompanhe', d: 'Filtre por empresa, compradora, status e período da previsão de chegada. <b>Previsão vencida</b> fica em vermelho.' },
+      { t: 'Escolha como digitar o desconto', d: 'O botão <b>R$ / %</b> ao lado do campo troca a forma de digitar — em reais ou em percentual do valor do pedido. O SAFI sempre guarda o valor final em reais.' },
+      { t: 'Acompanhe', d: 'Filtre por empresa, comprador(a), status e período da previsão de chegada. <b>Previsão vencida</b> fica em vermelho.' },
       { t: 'Dê baixa', d: 'Quem tem a permissão (a Lorena) vê o botão <b>Dar baixa</b> e pode informar o nº da NF lançada no SETA. O pedido sai do Fluxo de Caixa.' },
     ],
-    dicas: ['O olho (👁) mostra tudo do pedido: compradora, valores, previsão, centro de custo, quando foi lançado e quem deu baixa.', 'Pedido baixado não pode mais ser editado nem removido — se precisar, desfaça a baixa antes.', 'Os campos são informativos: não existe mais conferência de valor real nem parcelas.'],
+    dicas: ['O olho (👁) mostra tudo do pedido: comprador(a), valores, previsão, centro de custo, quando foi lançado e quem deu baixa.', 'Pedido baixado não pode mais ser editado nem removido — se precisar, desfaça a baixa antes.', 'Os campos são informativos: não existe mais conferência de valor real nem parcelas.'],
     naoFaz: ['Não paga fornecedor — a baixa só registra que o pagamento aconteceu.', 'Não mostra empresas que não foram liberadas para você.'],
     termos: [{ t: 'CNPJ', d: 'Razão social usada na compra (Guilherme, Juliane, Isa ou EP).' }, { t: 'Valor a pagar', d: 'Valor do pedido menos o desconto concedido — é o que entra no Fluxo de Caixa.' }, { t: 'Baixa', d: 'Marca o pedido como resolvido (NF lançada no SETA / pago). Fica registrado quem deu e quando.' }],
     quemVe: 'Quem tem a permissão Pedidos, empresa por empresa. Lançar e dar baixa são permissões separadas — dar baixa vem desligado e o admin libera pra quem precisa.',
     dados: 'Cadastro próprio; alimenta o Fluxo de Caixa (Contas a Pagar), o alerta de previsão vencida no Fechamento do Mês e o GerônIA.',
     tour: [
       { sel: '#summary-row', t: 'Resumo', d: 'Quantos pedidos, quanto falta pagar, quantos aguardam baixa, quantos estão com a previsão vencida e quantos já foram baixados.' },
-      { sel: '#f-search', t: 'Filtros', d: 'Busque por fornecedor, compradora ou centro de custo; filtre por empresa, compradora, status e período da previsão de chegada.' },
-      { sel: '#btn-new-ped', t: 'Novo pedido', d: 'Lança o pedido — ele já entra no Fluxo de Caixa como a pagar.' },
+      { sel: '#f-search', t: 'Filtros', d: 'Busque por fornecedor, comprador(a) ou centro de custo; filtre por empresa, comprador(a), status e período da previsão de chegada.' },
+      { sel: '#btn-new-ped', t: 'Novo pedido', d: 'Lança o pedido — ele já entra no Fluxo de Caixa como a pagar. O desconto pode ser digitado em R$ ou em %.' },
       { sel: '#ped-tbody', t: 'Lista de pedidos', d: 'Veja tudo pelo olho, edite e — se tiver a permissão — dê baixa.' },
     ],
   },

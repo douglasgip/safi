@@ -165,11 +165,24 @@
     .modal-title { font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
     .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 22px; }
     .field { margin-bottom: 14px; }
-    .field label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; letter-spacing: .3px; }
+    .field label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; letter-spacing: .3px; }
     .field label .opt { font-weight: 500; color: #475569; }
     .field input, .field select { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; color-scheme: dark; }
     .field input:focus, .field select:focus { outline: none; border-color: #f59e0b; background: rgba(245,158,11,0.05); }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    /* ── Switch R$ / % (desconto) ── */
+    .unit-switch { display: inline-flex; flex-shrink: 0; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; padding: 2px; }
+    .unit-btn { padding: 3px 8px; background: transparent; border: none; border-radius: 5px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 800; cursor: pointer; letter-spacing: .2px; }
+    .unit-btn.active { background: rgba(245,158,11,0.18); color: #fcd34d; }
+
+    /* ── Autocompletar próprio (fornecedor / centro de custo) — datalist nativo não dá pra estilizar ── */
+    .ac-wrap { position: relative; }
+    .ac-box { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 60; max-height: 210px; overflow-y: auto; background: #12182b; border: 1px solid rgba(245,158,11,0.3); border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,0.55); padding: 5px; }
+    .ac-box.open { display: block; }
+    .ac-item { padding: 9px 11px; border-radius: 8px; font-size: 12.5px; color: #e2e8f0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-item:hover, .ac-item.active { background: rgba(245,158,11,0.16); color: #fcd34d; }
+    .ac-empty { padding: 9px 11px; font-size: 12px; color: #475569; }
     .liquido-box { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; margin-bottom: 14px; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; }
     .liquido-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .3px; }
     .liquido-valor { font-size: 16px; font-weight: 800; color: #fcd34d; font-variant-numeric: tabular-nums; }
@@ -283,13 +296,13 @@
     <div class="filters-bar">
       <div class="filter-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="f-search" placeholder="Buscar fornecedor, compradora, centro de custo...">
+        <input type="text" id="f-search" placeholder="Buscar fornecedor, comprador(a), centro de custo...">
       </div>
       <select class="filter-select" id="f-empresa">
         <option value="">Todas as empresas</option>
       </select>
       <select class="filter-select" id="f-compradora">
-        <option value="">Todas as compradoras</option>
+        <option value="">Todos os comprador(a)s</option>
       </select>
       <select class="filter-select" id="f-status">
         <option value="abertos">Sem baixa</option>
@@ -314,7 +327,7 @@
               <th>Empresa</th>
               <th>CNPJ</th>
               <th>Fornecedor</th>
-              <th>Compradora</th>
+              <th>Comprador(a)</th>
               <th class="r">Qtd. peças</th>
               <th class="r">Valor pedido</th>
               <th class="r">Desconto</th>
@@ -332,10 +345,6 @@
       </div>
     </div>
   </main>
-
-  <!-- Sugestões de autocompletar: montadas com os valores que já existem nos pedidos -->
-  <datalist id="dl-fornecedores"></datalist>
-  <datalist id="dl-centros"></datalist>
 
   <!-- Modal Criar/Editar -->
   <div class="modal-overlay" id="modal">
@@ -367,7 +376,7 @@
 
         <div class="field">
           <label>Fornecedor</label>
-          <input type="text" id="f-form-fornecedor" list="dl-fornecedores" placeholder="Comece a digitar — os já usados aparecem aqui" required>
+          <input type="text" id="f-form-fornecedor" placeholder="Comece a digitar — os já usados aparecem aqui" required autocomplete="off">
         </div>
 
         <div class="grid-2">
@@ -376,8 +385,15 @@
             <input type="text" inputmode="decimal" id="f-form-valor" placeholder="0,00" required>
           </div>
           <div class="field">
-            <label>Desconto concedido <span class="opt">(opcional)</span></label>
-            <input type="text" inputmode="decimal" id="f-form-desconto" placeholder="0,00">
+            <label>
+              <span>Desconto <span class="opt">(opcional)</span></span>
+              <span class="unit-switch">
+                <button type="button" class="unit-btn active" data-mode="reais" onclick="setDescontoMode('reais')">R$</button>
+                <button type="button" class="unit-btn" data-mode="pct" onclick="setDescontoMode('pct')">%</button>
+              </span>
+            </label>
+            <input type="text" inputmode="decimal" id="f-form-desconto-reais" placeholder="0,00">
+            <input type="text" inputmode="decimal" id="f-form-desconto-pct" placeholder="0,0" style="display:none">
           </div>
         </div>
 
@@ -399,7 +415,7 @@
 
         <div class="field">
           <label>Centro de custo <span class="opt">(opcional)</span></label>
-          <input type="text" id="f-form-centro" list="dl-centros" placeholder="Ex.: Loja Física, Ecommerce, Administrativo">
+          <input type="text" id="f-form-centro" placeholder="Ex.: Loja Física, Ecommerce, Administrativo" autocomplete="off">
         </div>
 
         <div class="modal-actions">
@@ -447,7 +463,7 @@
     const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
     const STATUS_LABEL = { pendente: 'Aguardando baixa', atrasado: 'Previsão vencida', baixado: 'Baixado' };
 
-    // Fluxo (reunião Angélica, 23/09/2026): compradora lança → entra no Fluxo de Caixa na
+    // Fluxo (reunião Angélica, 23/09/2026): compra é lançada → entra no Fluxo de Caixa na
     // hora → Lorena dá baixa (quando lança a NF no SETA) → sai do Fluxo. Sem parcelas e sem
     // conferência: os campos do pedido são só informativos.
     let allowedCompanies = [];
@@ -458,6 +474,7 @@
     // esc/fmtDate/todayLocal/showToast/máscara de dinheiro vêm de user-menu.js.
     function redirect(path) { window.location.replace(path); }
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+    function pctFmt(v) { return (+v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '%'; }
     const liquido = r => (Number(r.valor_total) || 0) - (Number(r.desconto) || 0);
     function pedidoStatus(r) {
       if (r.baixado) return 'baixado';
@@ -469,14 +486,87 @@
     SafiSidebar.mount('ped', { active: 'pedidos', accent: { g1: '#fbbf24', g2: '#d97706', text: '#1a0a00' } });
     wireSidebarToggle('ped');
     attachMoneyMask(document.getElementById('f-form-valor'));
-    attachMoneyMask(document.getElementById('f-form-desconto'));
+    attachMoneyMask(document.getElementById('f-form-desconto-reais'));
+    attachMoneyMask(document.getElementById('f-form-desconto-pct'));
+
+    // ── Autocompletar próprio (fornecedor / centro de custo) ──────────────────
+    // O <datalist> nativo não dá pra estilizar (feio, some do tema escuro) — isso aqui é
+    // um dropdown próprio, com destaque por teclado (↑↓ Enter) e clique.
+    function attachAutocomplete(input, getItems) {
+      const wrap = document.createElement('div');
+      wrap.className = 'ac-wrap';
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+      const box = document.createElement('div');
+      box.className = 'ac-box';
+      wrap.appendChild(box);
+      let items = [], activeIdx = -1;
+
+      function render() {
+        const q = input.value.trim().toLowerCase();
+        items = getItems().filter(v => !q || v.toLowerCase().includes(q));
+        if (!items.length) { box.classList.remove('open'); return; }
+        box.innerHTML = items.map((v, i) => `<div class="ac-item${i === activeIdx ? ' active' : ''}" data-i="${i}">${esc(v)}</div>`).join('');
+        box.classList.add('open');
+      }
+      function close() { box.classList.remove('open'); activeIdx = -1; }
+      function escolher(i) { input.value = items[i]; close(); }
+      input.addEventListener('focus', () => { activeIdx = -1; render(); });
+      input.addEventListener('input', () => { activeIdx = -1; render(); });
+      input.addEventListener('keydown', e => {
+        if (!box.classList.contains('open')) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); render(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); render(); }
+        else if (e.key === 'Enter') { if (activeIdx >= 0) { e.preventDefault(); escolher(activeIdx); } }
+        else if (e.key === 'Escape') close();
+      });
+      box.addEventListener('mousedown', e => {
+        const item = e.target.closest('.ac-item'); if (!item) return;
+        e.preventDefault();
+        escolher(+item.dataset.i);
+      });
+      document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+    }
+    attachAutocomplete(document.getElementById('f-form-fornecedor'), () => distintos('fornecedor'));
+    attachAutocomplete(document.getElementById('f-form-centro'), () => distintos('centro_custo'));
+
+    // ── Desconto: R$ ou % — a % é só uma forma de digitar, sempre vira R$ ao salvar ──
+    let descontoMode = 'reais';
+    function aplicarDescontoModeUI(mode) {
+      descontoMode = mode;
+      document.querySelectorAll('.unit-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+      document.getElementById('f-form-desconto-reais').style.display = mode === 'reais' ? '' : 'none';
+      document.getElementById('f-form-desconto-pct').style.display = mode === 'pct' ? '' : 'none';
+    }
+    function setDescontoMode(mode) {
+      if (mode === descontoMode) return;
+      // Converte o valor já digitado pro novo modo, em vez de simplesmente zerar.
+      const valor = moneyToNumber(document.getElementById('f-form-valor').value) || 0;
+      if (mode === 'pct') {
+        const reais = moneyToNumber(document.getElementById('f-form-desconto-reais').value) || 0;
+        const pct = valor > 0 ? Math.min(100, reais / valor * 100) : 0;
+        document.getElementById('f-form-desconto-pct').value = pct ? numberToMoneyMasked(pct) : '';
+      } else {
+        const pct = moneyToNumber(document.getElementById('f-form-desconto-pct').value) || 0;
+        const reais = valor * pct / 100;
+        document.getElementById('f-form-desconto-reais').value = reais ? numberToMoneyMasked(reais) : '';
+      }
+      aplicarDescontoModeUI(mode);
+      atualizarLiquido();
+    }
+    function descontoAtualReais() {
+      if (descontoMode === 'reais') return moneyToNumber(document.getElementById('f-form-desconto-reais').value) || 0;
+      const valor = moneyToNumber(document.getElementById('f-form-valor').value) || 0;
+      const pct = moneyToNumber(document.getElementById('f-form-desconto-pct').value) || 0;
+      return valor * pct / 100;
+    }
 
     function populateEmpresaFilters() {
       document.getElementById('f-empresa').innerHTML = '<option value="">Todas as empresas</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
       document.getElementById('f-form-empresa').innerHTML = allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
     }
 
-    // Compradoras e sugestões de autocompletar saem dos próprios pedidos — o que alguém
+    // Comprador(a)s e sugestões de autocompletar saem dos próprios pedidos — o que alguém
     // digitou uma vez já vira sugestão pra próxima (é o "salvar no banco" do fornecedor).
     function distintos(campo) {
       const mapa = new Map();
@@ -484,10 +574,8 @@
       return [...mapa.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
     }
     function populateSugestoes() {
-      document.getElementById('dl-fornecedores').innerHTML = distintos('fornecedor').map(v => `<option value="${esc(v)}">`).join('');
-      document.getElementById('dl-centros').innerHTML = distintos('centro_custo').map(v => `<option value="${esc(v)}">`).join('');
       const sel = document.getElementById('f-compradora'), atual = sel.value;
-      sel.innerHTML = '<option value="">Todas as compradoras</option>' + distintos('comprador_nome').map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+      sel.innerHTML = '<option value="">Todos os comprador(a)s</option>' + distintos('comprador_nome').map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
       sel.value = atual;
     }
     // Se digitou um nome que já existe com outra grafia (maiúscula/espaço), usa a grafia
@@ -527,7 +615,7 @@
       if (!allowedCompanies.length) { allRows = []; renderTable(); return; }
       const { data, error } = await sb
         .from('pedidos')
-        .select('id, empresa, cnpj, fornecedor, valor_total, desconto, qtd_produtos_previsto, previsao_chegada, centro_custo, comprador_nome, data_pedido, created_at, baixado, baixado_em, baixado_por_nome, numero_nf')
+        .select('id, empresa, cnpj, fornecedor, valor_total, desconto, desconto_pct, qtd_produtos_previsto, previsao_chegada, centro_custo, comprador_nome, data_pedido, created_at, baixado, baixado_em, baixado_por_nome, numero_nf')
         .in('empresa', allowedCompanies)
         .order('previsao_chegada', { ascending: true, nullsFirst: false });
       if (error) {
@@ -591,7 +679,7 @@
           <td>${r.comprador_nome ? esc(r.comprador_nome) : dash}</td>
           <td class="r td-valor">${r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto.toLocaleString('pt-BR') : dash}</td>
           <td class="r td-valor">${fmtBRL(r.valor_total)}</td>
-          <td class="r ${desc ? 'td-desc-neg' : 'td-muted'}">${desc ? '−' + fmtBRL(desc) : '—'}</td>
+          <td class="r ${desc ? 'td-desc-neg' : 'td-muted'}">${desc ? '−' + fmtBRL(desc) + (r.desconto_pct != null ? '<div class="td-sub" style="text-align:right">' + pctFmt(r.desconto_pct) + '</div>' : '') : '—'}</td>
           <td class="r td-liquido">${fmtBRL(liquido(r))}</td>
           <td class="td-data ${st === 'atrasado' ? 'atrasado' : ''}">${r.previsao_chegada ? fmtDate(r.previsao_chegada) : dash}</td>
           <td class="td-muted">${r.centro_custo ? esc(r.centro_custo) : dash}</td>
@@ -614,10 +702,10 @@
       document.getElementById('det-title').textContent = r.fornecedor;
       document.getElementById('det-sub').textContent = r.empresa + ' · ' + STATUS_LABEL[st];
       document.getElementById('det-list').innerHTML = [
-        item('Compradora', esc(r.comprador_nome || '—')),
+        item('Comprador(a)', esc(r.comprador_nome || '—')),
         item('CNPJ', esc(r.cnpj || '—')),
         item('Valor do pedido', fmtBRL(r.valor_total)),
-        item('Desconto concedido', (Number(r.desconto) || 0) ? '−' + fmtBRL(r.desconto) : '—'),
+        item('Desconto concedido', (Number(r.desconto) || 0) ? '−' + fmtBRL(r.desconto) + (r.desconto_pct != null ? ' (' + pctFmt(r.desconto_pct) + ')' : '') : '—'),
         item('A pagar', fmtBRL(liquido(r)), 'big'),
         item('Qtd. de peças', r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto.toLocaleString('pt-BR') : '—'),
         item('Previsão de chegada', r.previsao_chegada ? fmtDate(r.previsao_chegada) : '—'),
@@ -685,12 +773,12 @@
     // ── Criar / Editar ──
     function atualizarLiquido() {
       const v = moneyToNumber(document.getElementById('f-form-valor').value) || 0;
-      const d = moneyToNumber(document.getElementById('f-form-desconto').value) || 0;
+      const d = descontoAtualReais();
       const el = document.getElementById('f-form-liquido');
       el.textContent = fmtBRL(v - d);
       el.style.color = d > v ? '#f87171' : '';
     }
-    ['f-form-valor', 'f-form-desconto'].forEach(id => document.getElementById(id).addEventListener('input', atualizarLiquido));
+    ['f-form-valor', 'f-form-desconto-reais', 'f-form-desconto-pct'].forEach(id => document.getElementById(id).addEventListener('input', atualizarLiquido));
 
     function openCreateModal() {
       if (!allowedCompanies.length) return;
@@ -699,6 +787,7 @@
       document.getElementById('edit-id').value = '';
       document.getElementById('ped-form').reset();
       document.getElementById('f-form-empresa').value = allowedCompanies[0];
+      aplicarDescontoModeUI('reais');
       atualizarLiquido();
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
@@ -712,7 +801,16 @@
       document.getElementById('f-form-cnpj').value = r.cnpj || '';
       document.getElementById('f-form-fornecedor').value = r.fornecedor || '';
       document.getElementById('f-form-valor').value = numberToMoneyMasked(r.valor_total);
-      document.getElementById('f-form-desconto').value = Number(r.desconto) ? numberToMoneyMasked(r.desconto) : '';
+      // Reabre no mesmo modo em que o desconto foi digitado da última vez.
+      if (r.desconto_pct != null) {
+        document.getElementById('f-form-desconto-pct').value = numberToMoneyMasked(r.desconto_pct);
+        document.getElementById('f-form-desconto-reais').value = '';
+        aplicarDescontoModeUI('pct');
+      } else {
+        document.getElementById('f-form-desconto-reais').value = Number(r.desconto) ? numberToMoneyMasked(r.desconto) : '';
+        document.getElementById('f-form-desconto-pct').value = '';
+        aplicarDescontoModeUI('reais');
+      }
       document.getElementById('f-form-qtd').value = r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto : '';
       document.getElementById('f-form-previsao').value = r.previsao_chegada || '';
       document.getElementById('f-form-centro').value = r.centro_custo || '';
@@ -732,12 +830,14 @@
       const fornecedor = document.getElementById('f-form-fornecedor').value;
       const cnpj = document.getElementById('f-form-cnpj').value;
       const valor = moneyToNumber(document.getElementById('f-form-valor').value) || 0;
-      const desconto = moneyToNumber(document.getElementById('f-form-desconto').value) || 0;
+      const descontoPct = descontoMode === 'pct' ? (moneyToNumber(document.getElementById('f-form-desconto-pct').value) || 0) : null;
+      const desconto = descontoAtualReais();
       const qtdRaw = document.getElementById('f-form-qtd').value;
       const previsao = document.getElementById('f-form-previsao').value;
       if (!cnpj) return showModalError('Selecione o CNPJ.');
       if (!fornecedor) return showModalError('Informe o fornecedor.');
       if (valor <= 0) return showModalError('Informe o valor do pedido.');
+      if (descontoPct != null && descontoPct > 100) return showModalError('O desconto não pode passar de 100%.');
       if (desconto > valor) return showModalError('O desconto não pode ser maior que o valor do pedido.');
       if (qtdRaw === '') return showModalError('Informe a quantidade de peças.');
       if (!previsao) return showModalError('Informe a previsão de chegada.');
@@ -747,6 +847,7 @@
         cnpj, fornecedor,
         valor_total: valor,
         desconto,
+        desconto_pct: descontoPct,
         qtd_produtos_previsto: +qtdRaw,
         previsao_chegada: previsao,
         centro_custo: document.getElementById('f-form-centro').value || null,
