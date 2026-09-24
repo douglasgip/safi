@@ -296,7 +296,7 @@
     <div class="filters-bar">
       <div class="filter-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="f-search" placeholder="Buscar fornecedor, comprador(a), centro de custo...">
+        <input type="text" id="f-search" placeholder="Buscar fornecedor, comprador(a)...">
       </div>
       <select class="filter-select" id="f-empresa">
         <option value="">Todas as empresas</option>
@@ -333,7 +333,6 @@
               <th class="r">Desconto</th>
               <th class="r">A pagar</th>
               <th>Previsão de chegada</th>
-              <th>Centro de custo</th>
               <th>Status</th>
               <th style="width:170px">Ações</th>
             </tr>
@@ -411,11 +410,6 @@
             <label>Previsão de chegada</label>
             <input type="date" id="f-form-previsao" required>
           </div>
-        </div>
-
-        <div class="field">
-          <label>Centro de custo <span class="opt">(opcional)</span></label>
-          <input type="text" id="f-form-centro" placeholder="Ex.: Loja Física, Ecommerce, Administrativo" autocomplete="off">
         </div>
 
         <div class="modal-actions">
@@ -528,7 +522,6 @@
       document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
     }
     attachAutocomplete(document.getElementById('f-form-fornecedor'), () => distintos('fornecedor'));
-    attachAutocomplete(document.getElementById('f-form-centro'), () => distintos('centro_custo'));
 
     // ── Desconto: R$ ou % — a % é só uma forma de digitar, sempre vira R$ ao salvar ──
     let descontoMode = 'reais';
@@ -586,7 +579,6 @@
       input.value = achado || v;
     }
     document.getElementById('f-form-fornecedor').addEventListener('blur', e => normalizarContra(e.target, 'fornecedor'));
-    document.getElementById('f-form-centro').addEventListener('blur', e => normalizarContra(e.target, 'centro_custo'));
 
     // ignorarStatus: os cartões de resumo contam todos os status (senão "Baixados" viraria
     // sempre 0 com o filtro padrão "Sem baixa").
@@ -682,7 +674,6 @@
           <td class="r ${desc ? 'td-desc-neg' : 'td-muted'}">${desc ? '−' + fmtBRL(desc) + (r.desconto_pct != null ? '<div class="td-sub" style="text-align:right">' + pctFmt(r.desconto_pct) + '</div>' : '') : '—'}</td>
           <td class="r td-liquido">${fmtBRL(liquido(r))}</td>
           <td class="td-data ${st === 'atrasado' ? 'atrasado' : ''}">${r.previsao_chegada ? fmtDate(r.previsao_chegada) : dash}</td>
-          <td class="td-muted">${r.centro_custo ? esc(r.centro_custo) : dash}</td>
           <td><span class="status-badge status-${st}"><span class="dot"></span>${STATUS_LABEL[st]}</span>${baixaInfo}</td>
           <td><div class="td-actions">${acoesHtml(r)}</div></td>
         </tr>`;
@@ -709,7 +700,7 @@
         item('A pagar', fmtBRL(liquido(r)), 'big'),
         item('Qtd. de peças', r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto.toLocaleString('pt-BR') : '—'),
         item('Previsão de chegada', r.previsao_chegada ? fmtDate(r.previsao_chegada) : '—'),
-        item('Centro de custo', esc(r.centro_custo || '—')),
+        r.centro_custo ? item('Centro de custo', esc(r.centro_custo)) : '',
         item('Lançado em', fmtDataHora(r.created_at)),
         item('Baixa', r.baixado ? `${esc(r.baixado_por_nome || '—')} · ${fmtDataHora(r.baixado_em)}` : 'Ainda sem baixa'),
         r.numero_nf ? item('Nº da NF', esc(r.numero_nf)) : '',
@@ -813,7 +804,6 @@
       }
       document.getElementById('f-form-qtd').value = r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto : '';
       document.getElementById('f-form-previsao').value = r.previsao_chegada || '';
-      document.getElementById('f-form-centro').value = r.centro_custo || '';
       atualizarLiquido();
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
@@ -825,7 +815,6 @@
     document.getElementById('ped-form').addEventListener('submit', async e => {
       e.preventDefault();
       normalizarContra(document.getElementById('f-form-fornecedor'), 'fornecedor');
-      normalizarContra(document.getElementById('f-form-centro'), 'centro_custo');
       const editId = document.getElementById('edit-id').value;
       const fornecedor = document.getElementById('f-form-fornecedor').value;
       const cnpj = document.getElementById('f-form-cnpj').value;
@@ -850,7 +839,6 @@
         desconto_pct: descontoPct,
         qtd_produtos_previsto: +qtdRaw,
         previsao_chegada: previsao,
-        centro_custo: document.getElementById('f-form-centro').value || null,
       };
 
       const btn = document.getElementById('btn-submit');
