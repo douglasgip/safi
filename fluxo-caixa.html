@@ -94,6 +94,9 @@
     /* ── Contas a Pagar (alimentada pelos Pedidos que já chegaram) ── */
     .cap-section-title { font-size: 13px; font-weight: 800; color: #f1f5f9; margin-bottom: 2px; }
     .cap-section-desc { font-size: 12px; color: #64748b; margin-bottom: 14px; }
+    .cap-totais { display: none; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-bottom: 12px; font-size: 12.5px; color: #94a3b8; }
+    .cap-totais b { color: #fcd34d; font-variant-numeric: tabular-nums; }
+    .cap-tot-atras { color: #f87171; font-weight: 700; }
     .cap-panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
     .cap-table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: calc(100vh - 420px); min-height: 120px; }
     .cap-table { width: 100%; border-collapse: collapse; min-width: 760px; }
@@ -157,10 +160,11 @@
 
     <section id="tab-pagar">
       <div class="cap-section-title">Contas a Pagar</div>
-      <div class="cap-section-desc">Parcelas de pedidos que já chegaram e ainda não foram pagas.</div>
+      <div class="cap-section-desc">Pedidos lançados pelas compradoras que ainda não tiveram baixa — o valor já vem com o desconto.</div>
       <div class="no-company-notice" id="cap-no-access" style="display:none">
         As Contas a Pagar vêm dos Pedidos, e você não tem acesso a nenhuma empresa em Pedidos — peça pro admin liberar em Gestão de Acessos pra ver algo aqui.
       </div>
+      <div class="cap-totais" id="cap-totais"></div>
       <div class="cap-panel" id="cap-panel">
         <div class="cap-table-scroll">
           <table class="cap-table">
@@ -168,9 +172,9 @@
               <tr>
                 <th>Empresa</th>
                 <th>Fornecedor</th>
-                <th>Parcela</th>
-                <th>Valor</th>
-                <th>Vencimento</th>
+                <th>Compradora</th>
+                <th>A pagar</th>
+                <th>Previsão de chegada</th>
                 <th style="width:140px">Ação</th>
               </tr>
             </thead>
@@ -213,69 +217,73 @@
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
     // Contas a Pagar vem de Pedidos — usa o mesmo mapeamento empresa->flag de pedidos.html,
-    // já que é essa permissão (não can_fluxo_caixa) que rege o RLS de pedidos/pedidos_parcelas.
+    // já que é essa permissão (não can_fluxo_caixa) que rege o RLS de pedidos.
     const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
     const PEDIDOS_COMPANY_FLAG = { 'GIP Ecommerce': 'pedidos_epgip', 'Exposição Paulista': 'pedidos_exposicao', 'Via Closet': 'pedidos_viacloset' };
     let pedidosAllowedCompanies = [];
+    let podeBaixar = false;
 
-    // ── Contas a Pagar (parcelas de pedidos já chegados, ainda não pagas) ──
+    // ── Contas a Pagar: todo pedido lançado e ainda sem baixa (valor já com desconto) ──
+    // O pedido entra aqui no instante em que a compradora lança e sai quando a Lorena dá
+    // baixa (ver pedidos.html). Não existem mais parcelas nem "chegou".
     async function loadContasAPagar() {
       const tbody = document.getElementById('cap-tbody');
       const noAccessEl = document.getElementById('cap-no-access');
       const panelEl = document.getElementById('cap-panel');
+      const totaisEl = document.getElementById('cap-totais');
       if (!pedidosAllowedCompanies.length) {
         noAccessEl.style.display = 'block';
         panelEl.style.display = 'none';
+        totaisEl.style.display = 'none';
         return;
       }
       noAccessEl.style.display = 'none';
       panelEl.style.display = 'block';
       const { data, error } = await sb
         .from('pedidos')
-        .select('id, empresa, fornecedor, chegou, pedidos_parcelas(id, numero, valor, vencimento, pago)')
+        .select('id, empresa, fornecedor, comprador_nome, valor_total, desconto, previsao_chegada')
         .in('empresa', pedidosAllowedCompanies)
-        .eq('chegou', true);
+        .eq('baixado', false)
+        .order('previsao_chegada', { ascending: true, nullsFirst: false });
       if (error) {
         tbody.innerHTML = `<tr><td colspan="6" class="cap-empty">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       const hoje = todayLocal();
-      const linhas = [];
-      (data || []).forEach(p => {
-        (p.pedidos_parcelas || []).filter(pc => !pc.pago).forEach(pc => {
-          linhas.push({ pedido: p, parcela: pc });
-        });
-      });
-      linhas.sort((a, b) => (a.parcela.vencimento || '').localeCompare(b.parcela.vencimento || ''));
+      const linhas = (data || []).map(p => ({ ...p, aPagar: (Number(p.valor_total) || 0) - (Number(p.desconto) || 0), atrasado: !!p.previsao_chegada && p.previsao_chegada < hoje }));
+
+      const total = linhas.reduce((s, l) => s + l.aPagar, 0);
+      const nAtras = linhas.filter(l => l.atrasado).length;
+      totaisEl.style.display = linhas.length ? 'flex' : 'none';
+      totaisEl.innerHTML = `<span>Total a pagar: <b>${fmtBRL(total)}</b></span><span>${linhas.length} pedido(s)</span>` + (nAtras ? `<span class="cap-tot-atras">${nAtras} com previsão de chegada vencida</span>` : '');
 
       if (!linhas.length) {
         tbody.innerHTML = `<tr><td colspan="6" class="cap-empty">Nenhuma conta a pagar no momento.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = linhas.map(({ pedido: p, parcela: pc }) => {
-        const overdue = pc.vencimento && pc.vencimento < hoje;
-        return `<tr>
-          <td><img class="cap-empresa-logo" src="${MARCA_LOGOS[p.empresa] || ''}" alt="${esc(p.empresa)}" title="${esc(p.empresa)}"></td>
-          <td class="cap-fornecedor">${esc(p.fornecedor)}</td>
-          <td>${pc.numero}ª parcela</td>
-          <td class="cap-valor">${fmtBRL(pc.valor)}</td>
-          <td class="cap-venc${overdue ? ' overdue' : ''}">${fmtDate(pc.vencimento)}${overdue ? ' · atrasada' : ''}</td>
-          <td>
-            <button type="button" class="cap-btn-pay" data-id="${esc(pc.id)}">
+      tbody.innerHTML = linhas.map(l => `<tr>
+          <td><img class="cap-empresa-logo" src="${MARCA_LOGOS[l.empresa] || ''}" alt="${esc(l.empresa)}" title="${esc(l.empresa)}"></td>
+          <td class="cap-fornecedor">${esc(l.fornecedor)}</td>
+          <td>${l.comprador_nome ? esc(l.comprador_nome) : '—'}</td>
+          <td class="cap-valor">${fmtBRL(l.aPagar)}</td>
+          <td class="cap-venc${l.atrasado ? ' overdue' : ''}">${l.previsao_chegada ? fmtDate(l.previsao_chegada) : '—'}${l.atrasado ? ' · vencida' : ''}</td>
+          <td>${podeBaixar ? `
+            <button type="button" class="cap-btn-pay" data-id="${esc(l.id)}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Marcar pago
-            </button>
+              Dar baixa
+            </button>` : '<span style="color:#475569">—</span>'}
           </td>
-        </tr>`;
-      }).join('');
+        </tr>`).join('');
 
       tbody.querySelectorAll('.cap-btn-pay').forEach(btn => {
         btn.addEventListener('click', async () => {
+          const l = linhas.find(x => x.id === btn.dataset.id);
+          if (!l || !confirm(`Dar baixa em ${l.fornecedor} (${fmtBRL(l.aPagar)})? O pedido sai das Contas a Pagar.`)) return;
           btn.disabled = true;
-          const { error } = await sb.from('pedidos_parcelas').update({ pago: true, pago_em: todayLocal() }).eq('id', btn.dataset.id);
+          const { error } = await sb.from('pedidos').update({ baixado: true }).eq('id', btn.dataset.id);
           if (error) { showToast(error.message, 'red'); btn.disabled = false; return; }
-          showToast('Parcela marcada como paga', 'green');
+          showToast('Baixa registrada', 'green');
           loadContasAPagar();
         });
       });
@@ -306,6 +314,7 @@
       // não só do can_fluxo_caixa que só controla a tela em si.
       const canPedidos = prof.is_admin || prof.can_pedidos === true;
       pedidosAllowedCompanies = canPedidos ? (prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[PEDIDOS_COMPANY_FLAG[c]] === true)) : [];
+      podeBaixar = prof.is_admin || prof.pedidos_pode_baixar === true;
 
       SafiSidebar.apply('fc', prof, { email: data.session.user.email, sb });
 

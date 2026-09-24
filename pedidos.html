@@ -77,12 +77,13 @@
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
 
-    /* ── Dashboard ── */
+    /* ── Resumo ── */
     .summary-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
     .summary-card { flex: 1; min-width: 150px; background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 16px; backdrop-filter: blur(16px); }
     .summary-label { font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
     .summary-value { font-size: 19px; font-weight: 800; color: #f1f5f9; font-variant-numeric: tabular-nums; }
     .summary-value.warn { color: #fbbf24; }
+    .summary-value.bad { color: #f87171; }
     .summary-value.ok { color: #34d399; }
 
     /* ── Filtros ── */
@@ -106,12 +107,16 @@
     /* ── Tabela ── */
     .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
     .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: calc((100vh - 320px) * 1.25); }
-    .ped-table { width: 100%; border-collapse: collapse; min-width: 1040px; }
-    .ped-table thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 14px 16px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+    .ped-table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+    .ped-table thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 14px 11px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+    .ped-table thead th.r { text-align: right; }
     .ped-table thead th:last-child { z-index: 3; }
-    .ped-table td { padding: 13px 16px; font-size: 13px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .ped-table td { padding: 12px 11px; font-size: 13px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .ped-table td.r { text-align: right; }
     .ped-table tbody tr:last-child td { border-bottom: none; }
     .ped-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .ped-table tbody tr.baixado td { opacity: .62; }
+    .ped-table tbody tr.baixado td:last-child { opacity: 1; }
     .ped-table th:nth-child(1), .ped-table td:nth-child(1) { width: 48px; }
     .ped-table th:last-child, .ped-table td:last-child {
       position: sticky; right: 0;
@@ -121,32 +126,35 @@
     .ped-table tbody tr:hover td:last-child { background: #141d33; }
     .td-empresa-logo { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: block; }
     .td-fornecedor { font-weight: 700; color: #f1f5f9; }
-    .td-desc { color: #94a3b8; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .td-muted { color: #64748b; }
-    .td-valor { font-variant-numeric: tabular-nums; font-weight: 700; color: #fcd34d; white-space: nowrap; }
-    .td-parcelas { font-size: 12px; color: #94a3b8; white-space: nowrap; }
+    .td-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    .td-valor { font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .td-liquido { font-variant-numeric: tabular-nums; font-weight: 700; color: #fcd34d; white-space: nowrap; }
+    .td-desc-neg { font-variant-numeric: tabular-nums; color: #6ee7b7; white-space: nowrap; }
+    .td-data { white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .td-data.atrasado { color: #f87171; font-weight: 700; }
 
     .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
     .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .status-aguardando_chegada { background: rgba(148,163,184,0.12); color: #cbd5e1; }
-    .status-aguardando_chegada .dot { background: #94a3b8; }
-    .status-aguardando_pagamento { background: rgba(245,158,11,0.12); color: #fcd34d; }
-    .status-aguardando_pagamento .dot { background: #f59e0b; }
-    .status-pago { background: rgba(52,211,153,0.12); color: #6ee7b7; }
-    .status-pago .dot { background: #34d399; }
+    .status-pendente { background: rgba(245,158,11,0.12); color: #fcd34d; }
+    .status-pendente .dot { background: #f59e0b; }
+    .status-atrasado { background: rgba(239,68,68,0.12); color: #fca5a5; }
+    .status-atrasado .dot { background: #f87171; }
+    .status-baixado { background: rgba(52,211,153,0.12); color: #6ee7b7; }
+    .status-baixado .dot { background: #34d399; }
 
-    .chegou-toggle { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; user-select: none; font-size: 12px; color: #94a3b8; }
-    .chegou-toggle input { width: 16px; height: 16px; accent-color: #f59e0b; cursor: pointer; }
-    .conf-pendente-tag { margin-top: 4px; font-size: 10px; font-weight: 700; color: #fb923c; white-space: nowrap; }
-
-    .td-actions { display: flex; gap: 6px; }
+    .td-actions { display: flex; gap: 6px; align-items: center; }
     .btn-action { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+    .btn-ver { background: rgba(148,163,184,0.1); border-color: rgba(148,163,184,0.22); color: #cbd5e1; }
+    .btn-ver:hover { background: rgba(148,163,184,0.18); }
     .btn-edit { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25); color: #fcd34d; }
     .btn-edit:hover { background: rgba(245,158,11,0.18); }
-    .btn-conf { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.25); color: #7dd3fc; }
-    .btn-conf:hover { background: rgba(56,189,248,0.18); }
     .btn-delete { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
     .btn-delete:hover { background: rgba(239,68,68,0.18); }
+    .btn-baixa { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 8px; color: #6ee7b7; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .btn-baixa:hover { background: rgba(52,211,153,0.18); }
+    .btn-desfazer { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #94a3b8; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .btn-desfazer:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
     .loading-row td, .empty-row td { padding: 50px 20px; text-align: center; color: #334155; font-size: 13px; }
 
     /* ── Modal ── */
@@ -158,54 +166,44 @@
     .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 22px; }
     .field { margin-bottom: 14px; }
     .field label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; letter-spacing: .3px; }
-    .field input, .field select, .field textarea { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; color-scheme: dark; }
-    .field textarea { resize: vertical; min-height: 60px; }
-    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .field label .opt { font-weight: 500; color: #475569; }
+    .field input, .field select { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; color-scheme: dark; }
+    .field input:focus, .field select:focus { outline: none; border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .liquido-box { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; margin-bottom: 14px; background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; }
+    .liquido-label { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .3px; }
+    .liquido-valor { font-size: 16px; font-weight: 800; color: #fcd34d; font-variant-numeric: tabular-nums; }
     .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; font-weight: 500; margin-bottom: 16px; line-height: 1.4; }
     .modal-error.visible { display: block; animation: shake 0.35s ease; }
     @keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-4px)} 40%,80%{transform:translateX(4px)} }
     .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
     .btn-submit { flex: 1; padding: 13px; background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 60%, #d97706 100%); border: none; border-radius: 12px; color: #1a0a00; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #92400e; }
+    .btn-submit.green { background: linear-gradient(135deg, #6ee7b7 0%, #34d399 60%, #059669 100%); color: #052e1f; box-shadow: 0 4px 0 #065f46; }
     .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
     .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
     .btn-cancel:hover { background: rgba(255,255,255,0.08); color: #94a3b8; }
     .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(0,0,0,0.25); border-top-color: #1a0a00; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Parcelas (dentro do modal) ── */
-    .parcelas-box { border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 14px; margin-bottom: 14px; }
-    .conf-parcela-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .conf-parcela-row:last-child { border-bottom: none; }
-    .conf-parcela-label { font-size: 12.5px; color: #cbd5e1; }
-    .conf-valor-real { width: 130px; flex-shrink: 0; padding: 8px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 12.5px; color-scheme: dark; }
-    .conf-valor-real:focus { outline: none; border-color: #f59e0b; background: rgba(245,158,11,0.05); }
-    .parcelas-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-    .parcelas-title { font-size: 11px; font-weight: 700; color: #94a3b8; letter-spacing: .3px; }
-    .parcelas-total { font-size: 13px; font-weight: 800; color: #fcd34d; font-variant-numeric: tabular-nums; }
-    .parcelas-mode-switch { display: flex; gap: 6px; margin-bottom: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 3px; }
-    .mode-btn { flex: 1; padding: 7px 10px; background: transparent; border: none; border-radius: 7px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; }
-    .mode-btn.active { background: rgba(245,158,11,0.15); color: #fcd34d; }
-    .auto-fields-hint { font-size: 10.5px; color: #64748b; margin: -2px 0 10px; line-height: 1.4; }
-    .parcela-row { display: grid; grid-template-columns: 28px 1fr 1fr 32px; gap: 8px; align-items: center; margin-bottom: 8px; }
-    .parcela-num { font-size: 11px; font-weight: 700; color: #64748b; text-align: center; }
-    .parcela-row input { width: 100%; padding: 9px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 12.5px; color-scheme: dark; }
-    .parcela-row input:focus { outline: none; border-color: #f59e0b; background: rgba(245,158,11,0.05); }
-    .btn-rm-parcela { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #f87171; cursor: pointer; }
-    .btn-rm-parcela:hover { background: rgba(239,68,68,0.18); }
-    .btn-add-parcela { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); border-radius: 8px; color: #fcd34d; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; margin-top: 4px; }
-    .btn-add-parcela:hover { background: rgba(245,158,11,0.18); }
+    /* ── Detalhes (tudo o que tem no pedido, só leitura) ── */
+    .det-list { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; margin-bottom: 6px; }
+    .det-item.full { grid-column: 1 / -1; }
+    .det-k { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #64748b; margin-bottom: 3px; }
+    .det-v { font-size: 13.5px; color: #f1f5f9; font-weight: 600; }
+    .det-v.big { font-size: 17px; font-weight: 800; color: #fcd34d; font-variant-numeric: tabular-nums; }
 
     .confirm-overlay { display: none; position: fixed; inset: 0; z-index: 210; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
     .confirm-overlay.open { display: flex; }
-    .confirm-card { background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px 28px; max-width: 380px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.7); animation: modalIn 0.2s cubic-bezier(.16,1,.3,1); }
+    .confirm-card { background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 32px 28px; max-width: 400px; width: 100%; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,0.7); animation: modalIn 0.2s cubic-bezier(.16,1,.3,1); }
     .confirm-icon { font-size: 32px; margin-bottom: 12px; }
     .confirm-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 6px; }
-    .confirm-text { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.5; }
+    .confirm-text { font-size: 13px; color: #64748b; margin-bottom: 18px; line-height: 1.5; }
+    .confirm-card .field { text-align: left; margin-bottom: 18px; }
     .confirm-actions { display: flex; gap: 10px; }
     .btn-confirm-delete { flex: 1; padding: 12px; background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); border-radius: 11px; color: #f87171; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
     .btn-confirm-delete:hover { background: rgba(239,68,68,0.25); }
-    .btn-confirm-ok { flex: 1; padding: 12px; background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); border-radius: 11px; color: #fcd34d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
-    .btn-confirm-ok:hover { background: rgba(245,158,11,0.25); }
+    .btn-confirm-ok { flex: 1; padding: 12px; background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.3); border-radius: 11px; color: #6ee7b7; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+    .btn-confirm-ok:hover { background: rgba(52,211,153,0.25); }
     .btn-confirm-cancel { flex: 1; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 11px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
     .btn-confirm-cancel:hover { background: rgba(255,255,255,0.08); }
 
@@ -225,6 +223,7 @@
       .filters-bar { flex-direction: column; align-items: stretch; }
       .filter-search { max-width: none; }
       .modal-card { padding: 22px 18px; }
+      .grid-2, .det-list { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -260,43 +259,46 @@
 
     <div class="summary-row" id="summary-row">
       <div class="summary-card">
-        <div class="summary-label">Pedidos no filtro</div>
+        <div class="summary-label">Pedidos</div>
         <div class="summary-value" id="sum-count">—</div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Valor total previsto</div>
-        <div class="summary-value" id="sum-valor">—</div>
+        <div class="summary-label">A pagar (sem baixa)</div>
+        <div class="summary-value warn" id="sum-apagar">—</div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Aguardando chegada</div>
-        <div class="summary-value" id="sum-aguardando-chegada">—</div>
+        <div class="summary-label">Aguardando baixa</div>
+        <div class="summary-value" id="sum-pendentes">—</div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Aguardando pagamento</div>
-        <div class="summary-value warn" id="sum-aguardando-pagamento">—</div>
+        <div class="summary-label">Previsão vencida</div>
+        <div class="summary-value bad" id="sum-atrasados">—</div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Pago</div>
-        <div class="summary-value ok" id="sum-pago">—</div>
+        <div class="summary-label">Baixados</div>
+        <div class="summary-value ok" id="sum-baixados">—</div>
       </div>
     </div>
 
     <div class="filters-bar">
       <div class="filter-search">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="f-search" placeholder="Buscar por fornecedor ou descrição...">
+        <input type="text" id="f-search" placeholder="Buscar fornecedor, compradora, centro de custo...">
       </div>
       <select class="filter-select" id="f-empresa">
         <option value="">Todas as empresas</option>
       </select>
-      <select class="filter-select" id="f-status">
-        <option value="">Status (todos)</option>
-        <option value="aguardando_chegada">Aguardando chegada</option>
-        <option value="aguardando_pagamento">Aguardando pagamento</option>
-        <option value="pago">Pago</option>
+      <select class="filter-select" id="f-compradora">
+        <option value="">Todas as compradoras</option>
       </select>
-      <label class="periodo-label">De <input type="date" class="filter-select" id="f-periodo-de"></label>
-      <label class="periodo-label">Até <input type="date" class="filter-select" id="f-periodo-ate"></label>
+      <select class="filter-select" id="f-status">
+        <option value="abertos">Sem baixa</option>
+        <option value="atrasado">Previsão vencida</option>
+        <option value="baixado">Baixados</option>
+        <option value="">Todos</option>
+      </select>
+      <label class="periodo-label">Chegada de <input type="date" class="filter-select" id="f-periodo-de"></label>
+      <label class="periodo-label">até <input type="date" class="filter-select" id="f-periodo-ate"></label>
       <div class="filters-spacer"></div>
       <button class="btn-new" id="btn-new-ped" onclick="openCreateModal()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -312,25 +314,28 @@
               <th>Empresa</th>
               <th>CNPJ</th>
               <th>Fornecedor</th>
-              <th>Descrição</th>
-              <th>Pedido ERP</th>
-              <th>Valor Previsto</th>
-              <th>Parcelas</th>
-              <th>Data do Pedido</th>
-              <th>Produtos (prev./real)</th>
-              <th>Nº NF</th>
+              <th>Compradora</th>
+              <th class="r">Qtd. peças</th>
+              <th class="r">Valor pedido</th>
+              <th class="r">Desconto</th>
+              <th class="r">A pagar</th>
+              <th>Previsão de chegada</th>
+              <th>Centro de custo</th>
               <th>Status</th>
-              <th>Chegou</th>
-              <th style="width:130px">Ações</th>
+              <th style="width:170px">Ações</th>
             </tr>
           </thead>
           <tbody id="ped-tbody">
-            <tr class="loading-row"><td colspan="13">Carregando pedidos...</td></tr>
+            <tr class="loading-row"><td colspan="12">Carregando pedidos...</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </main>
+
+  <!-- Sugestões de autocompletar: montadas com os valores que já existem nos pedidos -->
+  <datalist id="dl-fornecedores"></datalist>
+  <datalist id="dl-centros"></datalist>
 
   <!-- Modal Criar/Editar -->
   <div class="modal-overlay" id="modal">
@@ -343,7 +348,7 @@
       <form id="ped-form" autocomplete="off">
         <input type="hidden" id="edit-id">
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="grid-2">
           <div class="field">
             <label>Empresa (Operação)</label>
             <select id="f-form-empresa" required></select>
@@ -361,75 +366,40 @@
         </div>
 
         <div class="field">
-          <label>Fornecedor / Loja</label>
-          <input type="text" id="f-form-fornecedor" placeholder="Nome do fornecedor" required>
+          <label>Fornecedor</label>
+          <input type="text" id="f-form-fornecedor" list="dl-fornecedores" placeholder="Comece a digitar — os já usados aparecem aqui" required>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label>Valor do pedido</label>
+            <input type="text" inputmode="decimal" id="f-form-valor" placeholder="0,00" required>
+          </div>
+          <div class="field">
+            <label>Desconto concedido <span class="opt">(opcional)</span></label>
+            <input type="text" inputmode="decimal" id="f-form-desconto" placeholder="0,00">
+          </div>
+        </div>
+
+        <div class="liquido-box">
+          <div class="liquido-label">VALOR A PAGAR (entra no Fluxo de Caixa)</div>
+          <div class="liquido-valor" id="f-form-liquido">R$ 0,00</div>
+        </div>
+
+        <div class="grid-2">
+          <div class="field">
+            <label>Qtd. de peças</label>
+            <input type="number" min="0" step="1" id="f-form-qtd" placeholder="0" required>
+          </div>
+          <div class="field">
+            <label>Previsão de chegada</label>
+            <input type="date" id="f-form-previsao" required>
+          </div>
         </div>
 
         <div class="field">
-          <label>Nº Pedido ERP</label>
-          <input type="text" id="f-form-pedido-erp" placeholder="Nº do pedido no IdWorks/Olist">
-        </div>
-
-        <div class="field">
-          <label>Descrição</label>
-          <textarea id="f-form-descricao" placeholder="O que está sendo pedido"></textarea>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="field">
-            <label>Data do Pedido</label>
-            <input type="date" id="f-form-data-pedido" required>
-          </div>
-          <div class="field">
-            <label>Qtd. de Produtos (previsto)</label>
-            <input type="number" min="0" step="1" id="f-form-qtd-previsto" placeholder="Quantidade prevista">
-          </div>
-        </div>
-
-        <div class="parcelas-box">
-          <div class="parcelas-head">
-            <div class="parcelas-title">CONDIÇÕES DE PAGAMENTO</div>
-            <div class="parcelas-total" id="parcelas-total">R$ 0</div>
-          </div>
-
-          <div class="parcelas-mode-switch">
-            <button type="button" class="mode-btn active" data-mode="auto" onclick="setParcelaMode('auto')">Automático</button>
-            <button type="button" class="mode-btn" data-mode="custom" onclick="setParcelaMode('custom')">Personalizado</button>
-          </div>
-
-          <div id="auto-fields" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div class="field" style="margin-bottom:0">
-              <label>Valor Previsto</label>
-              <input type="text" inputmode="decimal" id="auto-valor-total" placeholder="0,00">
-            </div>
-            <div class="field" style="margin-bottom:0">
-              <label>Nº de Parcelas</label>
-              <input type="number" min="1" step="1" id="auto-num-parcelas" value="1">
-            </div>
-            <div class="field" style="margin-bottom:0">
-              <label>Frequência</label>
-              <select id="auto-frequencia">
-                <option value="diaria">Diária</option>
-                <option value="semanal">Semanal</option>
-                <option value="quinzenal">Quinzenal</option>
-                <option value="mensal" selected>Mensal</option>
-                <option value="d45">A cada 45 dias</option>
-              </select>
-            </div>
-            <div class="field" style="margin-bottom:2px">
-              <label>Data do 1º Vencimento</label>
-              <input type="date" id="auto-primeiro-vencimento">
-            </div>
-            <div class="auto-fields-hint" style="grid-column:1/-1" id="auto-fields-hint">As parcelas seguintes vencem no intervalo escolhido, a partir da primeira. Pra vencimentos ou valores diferentes entre parcelas, use "Personalizado".</div>
-          </div>
-
-          <div id="custom-fields" style="display:none">
-            <div id="parcelas-list"></div>
-            <button type="button" class="btn-add-parcela" onclick="addParcelaRow()">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Adicionar parcela
-            </button>
-          </div>
+          <label>Centro de custo <span class="opt">(opcional)</span></label>
+          <input type="text" id="f-form-centro" list="dl-centros" placeholder="Ex.: Loja Física, Ecommerce, Administrativo">
         </div>
 
         <div class="modal-actions">
@@ -440,50 +410,24 @@
     </div>
   </div>
 
-  <!-- Modal Confirmar Exclusão -->
-  <div class="confirm-overlay" id="confirm-modal">
-    <div class="confirm-card">
-      <div class="confirm-icon" id="confirm-icon">⚠️</div>
-      <div class="confirm-title" id="confirm-title">Remover pedido?</div>
-      <div class="confirm-text" id="confirm-text">Este pedido será removido permanentemente.</div>
-      <div class="confirm-actions" id="confirm-actions">
-        <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
-        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
-      </div>
+  <!-- Modal Detalhes (só leitura) -->
+  <div class="modal-overlay" id="det-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="det-title">Pedido</div>
+      <div class="modal-sub" id="det-sub"></div>
+      <div class="det-list" id="det-list"></div>
+      <div class="modal-actions" id="det-actions"></div>
     </div>
   </div>
 
-  <!-- Modal Conferência (Luciana lança o valor real, sem ver o previsto) -->
-  <div class="modal-overlay" id="conferencia-modal">
-    <div class="modal-card">
-      <div class="modal-title">Conferência do pedido</div>
-      <div class="modal-sub" id="conf-fornecedor-label">Fornecedor</div>
-
-      <div class="modal-error" id="conf-modal-error"></div>
-
-      <form id="conf-form">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="field">
-            <label>Nº da NF</label>
-            <input type="text" id="conf-numero-nf" placeholder="Número da nota fiscal">
-          </div>
-          <div class="field">
-            <label>Qtd. de Produtos (real)</label>
-            <input type="number" min="0" step="1" id="conf-num-produtos" placeholder="Quantidade real na NF">
-          </div>
-        </div>
-
-        <div class="parcelas-box">
-          <div class="parcelas-title" style="margin-bottom:2px">VALOR REAL POR PARCELA</div>
-          <div class="auto-fields-hint">Pode deixar em branco a parcela que ainda não souber — dá pra voltar aqui depois e completar.</div>
-          <div id="conf-parcelas-list"></div>
-        </div>
-
-        <div class="modal-actions">
-          <button type="submit" class="btn-submit" id="conf-btn-submit">Confirmar conferência</button>
-          <button type="button" class="btn-cancel" onclick="closeConferencia()">Cancelar</button>
-        </div>
-      </form>
+  <!-- Modal Confirmar (baixa / desfazer / remover) -->
+  <div class="confirm-overlay" id="confirm-modal">
+    <div class="confirm-card">
+      <div class="confirm-icon" id="confirm-icon">⚠️</div>
+      <div class="confirm-title" id="confirm-title">Confirmar?</div>
+      <div class="confirm-text" id="confirm-text"></div>
+      <div id="confirm-extra"></div>
+      <div class="confirm-actions" id="confirm-actions"></div>
     </div>
   </div>
 
@@ -501,640 +445,345 @@
     const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
     const COMPANY_FLAG = { 'GIP Ecommerce': 'pedidos_epgip', 'Exposição Paulista': 'pedidos_exposicao', 'Via Closet': 'pedidos_viacloset' };
     const MARCA_LOGOS = { 'Via Closet': '/public/viacloset_logo.png', 'Exposição Paulista': '/public/exposicaopaulista_logo.png', 'GIP Ecommerce': '/public/gipecommerce_logo.png' };
-    const STATUS_LABEL = { aguardando_chegada: 'Aguardando chegada', aguardando_pagamento: 'Aguardando pagamento', pago: 'Pago' };
+    const STATUS_LABEL = { pendente: 'Aguardando baixa', atrasado: 'Previsão vencida', baixado: 'Baixado' };
 
-    let currentProfile = null;
+    // Fluxo (reunião Angélica, 23/09/2026): compradora lança → entra no Fluxo de Caixa na
+    // hora → Lorena dá baixa (quando lança a NF no SETA) → sai do Fluxo. Sem parcelas e sem
+    // conferência: os campos do pedido são só informativos.
     let allowedCompanies = [];
-    // Papéis da conciliação: lançar/conferir são opt-out (quem já usa Pedidos sem esses
-    // campos definidos continua com acesso total, como antes). Conciliar é opt-in (tela nova).
-    let podeLancar = true;
-    let podeConferir = true;
-    let podeConciliar = false;
+    let podeLancar = true;   // opt-out: quem já usa Pedidos continua lançando
+    let podeBaixar = false;  // opt-in: só quem o admin liberou (a Lorena)
     let allRows = [];
-    let deleteTarget = null;
-    // Ação a rodar se o modal de confirmação for fechado sem confirmar (Cancelar OU
-    // clique no fundo escuro) — usada pra reverter o checkbox "Chegou" nos dois casos.
-    let confirmDismissAction = null;
-    let parcelaSeq = 0;
 
-    // esc/fmtDate/todayLocal/showToast e a sidebar mobile/colapso do DRE vêm de user-menu.js
-    // (compartilhado entre todas as telas do painel).
+    // esc/fmtDate/todayLocal/showToast/máscara de dinheiro vêm de user-menu.js.
     function redirect(path) { window.location.replace(path); }
     function fmtBRL(v) { return 'R$ ' + (+v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-
-    // Soma N meses a uma data (YYYY-MM-DD), mantendo o dia — se o mês de destino
-    // não tiver esse dia (ex: 31 de fevereiro), cai pro último dia daquele mês.
-    function addMonths(dateStr, months) {
-      if (!dateStr) return '';
-      const [y, m, d] = dateStr.split('-').map(Number);
-      const date = new Date(Date.UTC(y, m - 1 + months, d));
-      if (date.getUTCDate() !== d) date.setUTCDate(0);
-      return date.toISOString().slice(0, 10);
+    const liquido = r => (Number(r.valor_total) || 0) - (Number(r.desconto) || 0);
+    function pedidoStatus(r) {
+      if (r.baixado) return 'baixado';
+      if (r.previsao_chegada && r.previsao_chegada < todayLocal()) return 'atrasado';
+      return 'pendente';
     }
+    const fmtDataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
 
-    // Soma N dias corridos a uma data (YYYY-MM-DD).
-    function addDays(dateStr, days) {
-      if (!dateStr) return '';
-      const [y, m, d] = dateStr.split('-').map(Number);
-      return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
-    }
-
-    // Frequências disponíveis no modo Automático — "mensal" usa addMonths (mantém o
-    // dia do mês, com ajuste em meses mais curtos); as demais somam dias corridos.
-    const FREQUENCIAS = {
-      diaria: { label: 'Diária', dias: 1 },
-      semanal: { label: 'Semanal', dias: 7 },
-      quinzenal: { label: 'Quinzenal', dias: 15 },
-      mensal: { label: 'Mensal', dias: null },
-      d45: { label: 'a cada 45 dias', dias: 45 },
-    };
-    function vencimentoDaParcela(primeiraData, freq, indice) {
-      if (!primeiraData || indice === 0) return primeiraData;
-      const f = FREQUENCIAS[freq] || FREQUENCIAS.mensal;
-      return f.dias == null ? addMonths(primeiraData, indice) : addDays(primeiraData, f.dias * indice);
-    }
-
-    function pedidoStatus(p) {
-      if (!p.chegou) return 'aguardando_chegada';
-      const parcelas = p._parcelas || [];
-      if (parcelas.length && parcelas.every(pc => pc.pago)) return 'pago';
-      return 'aguardando_pagamento';
-    }
-
-    // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
     SafiSidebar.mount('ped', { active: 'pedidos', accent: { g1: '#fbbf24', g2: '#d97706', text: '#1a0a00' } });
     wireSidebarToggle('ped');
-    attachMoneyMask(document.getElementById('auto-valor-total'));
+    attachMoneyMask(document.getElementById('f-form-valor'));
+    attachMoneyMask(document.getElementById('f-form-desconto'));
 
     function populateEmpresaFilters() {
-      const filterSel = document.getElementById('f-empresa');
-      const formSel = document.getElementById('f-form-empresa');
-      filterSel.innerHTML = '<option value="">Todas as empresas</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      formSel.innerHTML = allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      document.getElementById('f-empresa').innerHTML = '<option value="">Todas as empresas</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      document.getElementById('f-form-empresa').innerHTML = allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
     }
 
-    function passesFilters(row) {
+    // Compradoras e sugestões de autocompletar saem dos próprios pedidos — o que alguém
+    // digitou uma vez já vira sugestão pra próxima (é o "salvar no banco" do fornecedor).
+    function distintos(campo) {
+      const mapa = new Map();
+      allRows.forEach(r => { const v = (r[campo] || '').trim(); if (v && !mapa.has(v.toLowerCase())) mapa.set(v.toLowerCase(), v); });
+      return [...mapa.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    }
+    function populateSugestoes() {
+      document.getElementById('dl-fornecedores').innerHTML = distintos('fornecedor').map(v => `<option value="${esc(v)}">`).join('');
+      document.getElementById('dl-centros').innerHTML = distintos('centro_custo').map(v => `<option value="${esc(v)}">`).join('');
+      const sel = document.getElementById('f-compradora'), atual = sel.value;
+      sel.innerHTML = '<option value="">Todas as compradoras</option>' + distintos('comprador_nome').map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+      sel.value = atual;
+    }
+    // Se digitou um nome que já existe com outra grafia (maiúscula/espaço), usa a grafia
+    // que já está no banco — evita "Fornecedor X" e "fornecedor x" como se fossem dois.
+    function normalizarContra(input, campo) {
+      const v = input.value.trim().replace(/\s+/g, ' ');
+      const achado = distintos(campo).find(x => x.toLowerCase() === v.toLowerCase());
+      input.value = achado || v;
+    }
+    document.getElementById('f-form-fornecedor').addEventListener('blur', e => normalizarContra(e.target, 'fornecedor'));
+    document.getElementById('f-form-centro').addEventListener('blur', e => normalizarContra(e.target, 'centro_custo'));
+
+    // ignorarStatus: os cartões de resumo contam todos os status (senão "Baixados" viraria
+    // sempre 0 com o filtro padrão "Sem baixa").
+    function passesFilters(r, ignorarStatus) {
       const search = document.getElementById('f-search').value.trim().toLowerCase();
       const empresa = document.getElementById('f-empresa').value;
-      const status = document.getElementById('f-status').value;
-      const periodoDe = document.getElementById('f-periodo-de').value;
-      const periodoAte = document.getElementById('f-periodo-ate').value;
-      if (empresa && row.empresa !== empresa) return false;
-      if (status && pedidoStatus(row) !== status) return false;
-      if (periodoDe && row.data_pedido < periodoDe) return false;
-      if (periodoAte && row.data_pedido > periodoAte) return false;
+      const compradora = document.getElementById('f-compradora').value;
+      const status = ignorarStatus ? '' : document.getElementById('f-status').value;
+      const de = document.getElementById('f-periodo-de').value;
+      const ate = document.getElementById('f-periodo-ate').value;
+      const st = pedidoStatus(r);
+      if (empresa && r.empresa !== empresa) return false;
+      if (compradora && r.comprador_nome !== compradora) return false;
+      if (status === 'abertos' && st === 'baixado') return false;
+      if (status && status !== 'abertos' && st !== status) return false;
+      if (de && (!r.previsao_chegada || r.previsao_chegada < de)) return false;
+      if (ate && (!r.previsao_chegada || r.previsao_chegada > ate)) return false;
       if (search) {
-        const haystack = [row.fornecedor, row.descricao, row.empresa, row.pedido_erp, row.numero_nf, row.cnpj].filter(Boolean).join(' ').toLowerCase();
-        if (!haystack.includes(search)) return false;
+        const alvo = [r.fornecedor, r.comprador_nome, r.centro_custo, r.empresa, r.cnpj, r.numero_nf].filter(Boolean).join(' ').toLowerCase();
+        if (!alvo.includes(search)) return false;
       }
       return true;
     }
 
     async function loadPedidos() {
-      if (!allowedCompanies.length) {
-        allRows = [];
-        renderTable();
-        return;
-      }
+      if (!allowedCompanies.length) { allRows = []; renderTable(); return; }
       const { data, error } = await sb
         .from('pedidos')
-        .select('*, pedidos_parcelas(id, numero, valor, vencimento, pago, pago_em, valor_real)')
+        .select('id, empresa, cnpj, fornecedor, valor_total, desconto, qtd_produtos_previsto, previsao_chegada, centro_custo, comprador_nome, data_pedido, created_at, baixado, baixado_em, baixado_por_nome, numero_nf')
         .in('empresa', allowedCompanies)
-        .order('data_pedido', { ascending: false });
+        .order('previsao_chegada', { ascending: true, nullsFirst: false });
       if (error) {
-        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="13">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        document.getElementById('ped-tbody').innerHTML = `<tr class="empty-row"><td colspan="12">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
-      allRows = (data || []).map(r => ({ ...r, _parcelas: (r.pedidos_parcelas || []).slice().sort((a,b) => a.numero - b.numero) }));
+      allRows = data || [];
+      populateSugestoes();
       renderTable();
     }
 
-    ['f-search','f-empresa','f-status','f-periodo-de','f-periodo-ate'].forEach(id => {
+    ['f-search','f-empresa','f-compradora','f-status','f-periodo-de','f-periodo-ate'].forEach(id => {
       document.getElementById(id).addEventListener('input', renderTable);
       document.getElementById(id).addEventListener('change', renderTable);
     });
 
     function updateSummary(rows) {
-      const count = rows.length;
-      const valorTotal = rows.reduce((s, r) => s + (Number(r.valor_total) || 0), 0);
-      const porStatus = { aguardando_chegada: 0, aguardando_pagamento: 0, pago: 0 };
-      rows.forEach(r => { porStatus[pedidoStatus(r)]++; });
-      document.getElementById('sum-count').textContent = count;
-      document.getElementById('sum-valor').textContent = fmtBRL(valorTotal);
-      document.getElementById('sum-aguardando-chegada').textContent = porStatus.aguardando_chegada;
-      document.getElementById('sum-aguardando-pagamento').textContent = porStatus.aguardando_pagamento;
-      document.getElementById('sum-pago').textContent = porStatus.pago;
+      const abertos = rows.filter(r => !r.baixado);
+      document.getElementById('sum-count').textContent = rows.length;
+      document.getElementById('sum-apagar').textContent = fmtBRL(abertos.reduce((s, r) => s + liquido(r), 0));
+      document.getElementById('sum-pendentes').textContent = abertos.length;
+      document.getElementById('sum-atrasados').textContent = rows.filter(r => pedidoStatus(r) === 'atrasado').length;
+      document.getElementById('sum-baixados').textContent = rows.length - abertos.length;
+    }
+
+    const ICON_VER = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>';
+    const ICON_EDIT = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+    const ICON_DEL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>';
+    const ICON_OK = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+
+    function acoesHtml(r) {
+      const b = [`<button class="btn-action btn-ver" data-act="ver" data-id="${esc(r.id)}" title="Ver tudo do pedido" aria-label="Ver tudo do pedido">${ICON_VER}</button>`];
+      if (podeBaixar && !r.baixado) b.push(`<button class="btn-baixa" data-act="baixa" data-id="${esc(r.id)}">${ICON_OK} Dar baixa</button>`);
+      if (podeBaixar && r.baixado) b.push(`<button class="btn-desfazer" data-act="desfazer" data-id="${esc(r.id)}">Desfazer baixa</button>`);
+      // Pedido baixado já saiu do Fluxo de Caixa — não deixa editar/remover por baixo.
+      if (podeLancar && !r.baixado) {
+        b.push(`<button class="btn-action btn-edit" data-act="editar" data-id="${esc(r.id)}" title="Editar" aria-label="Editar">${ICON_EDIT}</button>`);
+        b.push(`<button class="btn-action btn-delete" data-act="remover" data-id="${esc(r.id)}" title="Remover" aria-label="Remover">${ICON_DEL}</button>`);
+      }
+      return b.join('');
     }
 
     function renderTable() {
       const tbody = document.getElementById('ped-tbody');
-      const rows = allRows.filter(passesFilters);
-      if (!allowedCompanies.length) {
-        tbody.innerHTML = '';
-        updateSummary([]);
-        return;
-      }
-      updateSummary(rows);
+      if (!allowedCompanies.length) { tbody.innerHTML = ''; updateSummary([]); return; }
+      const rows = allRows.filter(r => passesFilters(r));
+      updateSummary(allRows.filter(r => passesFilters(r, true)));
       if (!rows.length) {
-        tbody.innerHTML = `<tr class="empty-row"><td colspan="13">Nenhum pedido encontrado.</td></tr>`;
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="12">Nenhum pedido encontrado.</td></tr>`;
         return;
       }
       const dash = '<span class="td-muted">—</span>';
       tbody.innerHTML = rows.map(r => {
-        const status = pedidoStatus(r);
-        const parcelas = r._parcelas || [];
-        const pendentes = parcelas.filter(pc => !pc.pago);
-        const proxima = pendentes.slice().sort((a,b) => (a.vencimento||'').localeCompare(b.vencimento||''))[0];
-        let parcelasTxt = dash;
-        if (parcelas.length) {
-          const pagas = parcelas.length - pendentes.length;
-          parcelasTxt = `${parcelas.length}x` + (r.chegou ? ` — ${pagas}/${parcelas.length} pagas` : '') + (proxima ? `<br>próx. venc. ${fmtDate(proxima.vencimento)}` : '');
-        }
-        const chegouDisabled = !podeConferir ? 'disabled title="Você não tem permissão para conferir pedidos."' : '';
-        const confPendente = r.chegou && parcelas.some(pc => pc.valor_real == null);
-        const qtdPrevisto = r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto : dash;
-        const qtdReal = r.num_produtos_nf != null ? r.num_produtos_nf : dash;
-        return `<tr>
+        const st = pedidoStatus(r);
+        const desc = Number(r.desconto) || 0;
+        const baixaInfo = r.baixado ? `<div class="td-sub">por ${esc(r.baixado_por_nome || '—')}${r.baixado_em ? ' em ' + new Date(r.baixado_em).toLocaleDateString('pt-BR') : ''}</div>` : '';
+        return `<tr class="${r.baixado ? 'baixado' : ''}">
           <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
           <td class="td-muted">${r.cnpj ? esc(r.cnpj) : dash}</td>
           <td class="td-fornecedor">${esc(r.fornecedor)}</td>
-          <td class="td-desc" title="${esc(r.descricao || '')}">${r.descricao ? esc(r.descricao) : dash}</td>
-          <td class="td-muted">${r.pedido_erp ? esc(r.pedido_erp) : dash}</td>
-          <td class="td-valor">${fmtBRL(r.valor_total)}</td>
-          <td class="td-parcelas">${parcelasTxt}</td>
-          <td>${fmtDate(r.data_pedido)}</td>
-          <td>${r.qtd_produtos_previsto == null && r.num_produtos_nf == null ? dash : `${qtdPrevisto} / ${qtdReal}`}</td>
-          <td class="td-muted">${r.numero_nf ? esc(r.numero_nf) : dash}</td>
-          <td><span class="status-badge status-${status}"><span class="dot"></span>${STATUS_LABEL[status]}</span></td>
-          <td>
-            <label class="chegou-toggle">
-              <input type="checkbox" data-id="${esc(r.id)}" class="chk-chegou" ${r.chegou ? 'checked' : ''} ${chegouDisabled}>
-              ${r.chegou ? 'Sim' : 'Não'}
-            </label>
-            ${confPendente ? '<div class="conf-pendente-tag">conferência incompleta</div>' : ''}
-          </td>
-          <td>
-            <div class="td-actions">
-              ${r.chegou ? `<button class="btn-action btn-conf" data-id="${esc(r.id)}" title="Completar/editar conferência" aria-label="Completar/editar conferência" style="${podeConferir ? '' : 'display:none'}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              </button>` : ''}
-              <button class="btn-action btn-edit" data-id="${esc(r.id)}" title="Editar" aria-label="Editar" style="${podeLancar ? '' : 'display:none'}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-              </button>
-              <button class="btn-action btn-delete" data-id="${esc(r.id)}" title="Remover" aria-label="Remover" style="${podeLancar ? '' : 'display:none'}">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-              </button>
-              ${podeLancar || (r.chegou && podeConferir) ? '' : dash}
-            </div>
-          </td>
+          <td>${r.comprador_nome ? esc(r.comprador_nome) : dash}</td>
+          <td class="r td-valor">${r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto.toLocaleString('pt-BR') : dash}</td>
+          <td class="r td-valor">${fmtBRL(r.valor_total)}</td>
+          <td class="r ${desc ? 'td-desc-neg' : 'td-muted'}">${desc ? '−' + fmtBRL(desc) : '—'}</td>
+          <td class="r td-liquido">${fmtBRL(liquido(r))}</td>
+          <td class="td-data ${st === 'atrasado' ? 'atrasado' : ''}">${r.previsao_chegada ? fmtDate(r.previsao_chegada) : dash}</td>
+          <td class="td-muted">${r.centro_custo ? esc(r.centro_custo) : dash}</td>
+          <td><span class="status-badge status-${st}"><span class="dot"></span>${STATUS_LABEL[st]}</span>${baixaInfo}</td>
+          <td><div class="td-actions">${acoesHtml(r)}</div></td>
         </tr>`;
       }).join('');
-
-      tbody.querySelectorAll('.btn-edit').forEach(btn => {
-        btn.addEventListener('click', () => openEditModal(allRows.find(r => r.id === btn.dataset.id)));
-      });
-      tbody.querySelectorAll('.btn-delete').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const row = allRows.find(r => r.id === btn.dataset.id);
-          confirmDelete(row);
-        });
-      });
-      tbody.querySelectorAll('.btn-conf').forEach(btn => {
-        btn.addEventListener('click', () => openConferenciaModal(allRows.find(r => r.id === btn.dataset.id), null));
-      });
-      tbody.querySelectorAll('.chk-chegou').forEach(chk => {
-        chk.addEventListener('change', () => {
-          const row = allRows.find(r => r.id === chk.dataset.id);
-          if (!row.chegou) {
-            openConferenciaModal(row, chk);
-          } else {
-            confirmChegada(row, chk);
-          }
-        });
-      });
     }
 
-    // ── Desmarcar chegada (marcar chegada agora passa pela Conferência) ──
-    function confirmChegada(row, chkEl) {
-      document.getElementById('confirm-icon').textContent = '↩️';
-      document.getElementById('confirm-title').textContent = 'Desmarcar chegada?';
-      document.getElementById('confirm-text').textContent = `O pedido de "${row.fornecedor}" volta a ficar como aguardando chegada. O valor real e o nº de produtos já conferidos continuam salvos.`;
-      document.getElementById('confirm-actions').innerHTML = `
-        <button class="btn-confirm-ok" id="btn-confirm-ok">Confirmar</button>
-        <button class="btn-confirm-cancel" id="btn-confirm-cancel-chegada">Cancelar</button>
-      `;
+    document.getElementById('ped-tbody').addEventListener('click', e => {
+      const btn = e.target.closest('[data-act]'); if (!btn) return;
+      const r = allRows.find(x => x.id === btn.dataset.id); if (!r) return;
+      ({ ver: openDetalhes, baixa: confirmBaixa, desfazer: confirmDesfazer, editar: openEditModal, remover: confirmDelete })[btn.dataset.act](r);
+    });
+
+    // ── Detalhes: tudo o que existe no pedido (é o que a Lorena consulta antes da baixa) ──
+    function openDetalhes(r) {
+      const st = pedidoStatus(r);
+      const item = (k, v, cls) => `<div class="det-item ${cls || ''}"><div class="det-k">${k}</div><div class="det-v ${cls === 'big' ? 'big' : ''}">${v}</div></div>`;
+      document.getElementById('det-title').textContent = r.fornecedor;
+      document.getElementById('det-sub').textContent = r.empresa + ' · ' + STATUS_LABEL[st];
+      document.getElementById('det-list').innerHTML = [
+        item('Compradora', esc(r.comprador_nome || '—')),
+        item('CNPJ', esc(r.cnpj || '—')),
+        item('Valor do pedido', fmtBRL(r.valor_total)),
+        item('Desconto concedido', (Number(r.desconto) || 0) ? '−' + fmtBRL(r.desconto) : '—'),
+        item('A pagar', fmtBRL(liquido(r)), 'big'),
+        item('Qtd. de peças', r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto.toLocaleString('pt-BR') : '—'),
+        item('Previsão de chegada', r.previsao_chegada ? fmtDate(r.previsao_chegada) : '—'),
+        item('Centro de custo', esc(r.centro_custo || '—')),
+        item('Lançado em', fmtDataHora(r.created_at)),
+        item('Baixa', r.baixado ? `${esc(r.baixado_por_nome || '—')} · ${fmtDataHora(r.baixado_em)}` : 'Ainda sem baixa'),
+        r.numero_nf ? item('Nº da NF', esc(r.numero_nf)) : '',
+      ].join('');
+      const acoes = [];
+      if (podeBaixar && !r.baixado) acoes.push(`<button class="btn-submit green" id="det-baixa">Dar baixa</button>`);
+      acoes.push(`<button class="btn-cancel" id="det-fechar" style="${acoes.length ? '' : 'flex:1'}">Fechar</button>`);
+      document.getElementById('det-actions').innerHTML = acoes.join('');
+      document.getElementById('det-fechar').onclick = closeDetalhes;
+      const bb = document.getElementById('det-baixa'); if (bb) bb.onclick = () => { closeDetalhes(); confirmBaixa(r); };
+      document.getElementById('det-modal').classList.add('open');
+    }
+    function closeDetalhes() { document.getElementById('det-modal').classList.remove('open'); }
+    document.getElementById('det-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeDetalhes(); });
+
+    // ── Confirmação genérica ──
+    function abrirConfirm({ icon, title, text, extra, okLabel, okClass, onOk }) {
+      document.getElementById('confirm-icon').textContent = icon;
+      document.getElementById('confirm-title').textContent = title;
+      document.getElementById('confirm-text').textContent = text;
+      document.getElementById('confirm-extra').innerHTML = extra || '';
+      document.getElementById('confirm-actions').innerHTML = `<button class="${okClass}" id="confirm-ok">${okLabel}</button><button class="btn-confirm-cancel" id="confirm-cancel">Cancelar</button>`;
+      document.getElementById('confirm-cancel').onclick = closeConfirm;
+      document.getElementById('confirm-ok').onclick = onOk;
       document.getElementById('confirm-modal').classList.add('open');
-      // O checkbox nativo já vira antes desse modal existir (evento "change") — se o
-      // usuário desistir por aqui, pelo Cancelar OU clicando no fundo, tem que voltar.
-      confirmDismissAction = () => { chkEl.checked = row.chegou; };
-      document.getElementById('btn-confirm-cancel-chegada').onclick = closeConfirm;
-      document.getElementById('btn-confirm-ok').onclick = async () => {
-        confirmDismissAction = null;
-        closeConfirm();
-        const payload = { chegou: false, data_chegada: null };
-        const { error } = await sb.from('pedidos').update(payload).eq('id', row.id);
-        if (error) { showToast(error.message, 'red'); chkEl.checked = row.chegou; return; }
-        showToast('Chegada desmarcada', 'green');
-        // Atualiza só essa linha localmente em vez de recarregar tudo de novo.
-        Object.assign(row, payload);
-        renderTable();
-      };
     }
-    document.getElementById('confirm-modal').addEventListener('click', e => {
-      if (e.target === e.currentTarget) closeConfirm();
-    });
+    function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); }
+    document.getElementById('confirm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeConfirm(); });
 
-    // ── Conferência (Luciana): marca chegada + valor real por parcela + nº de
-    // produtos da NF, tudo numa ação só, sem ela ver o valor previsto de cada parcela. ──
-    let confPedido = null;
-    let confChk = null;
-
-    function openConferenciaModal(row, chkEl) {
-      confPedido = row;
-      confChk = chkEl;
-      document.getElementById('conf-fornecedor-label').textContent = row.fornecedor;
-      document.getElementById('conf-numero-nf').value = row.numero_nf || '';
-      document.getElementById('conf-num-produtos').value = row.num_produtos_nf != null ? row.num_produtos_nf : '';
-      const parcelas = (row._parcelas || []).slice().sort((a, b) => a.numero - b.numero);
-      document.getElementById('conf-parcelas-list').innerHTML = parcelas.map(pc => `
-        <div class="conf-parcela-row" data-parcela-id="${esc(pc.id)}">
-          <div class="conf-parcela-label">${pc.numero}ª parcela — vence ${fmtDate(pc.vencimento)}</div>
-          <input type="text" inputmode="decimal" class="conf-valor-real" placeholder="Valor real" value="${pc.valor_real != null ? numberToMoneyMasked(pc.valor_real) : ''}">
-        </div>
-      `).join('');
-      document.querySelectorAll('#conf-parcelas-list .conf-valor-real').forEach(attachMoneyMask);
-      document.getElementById('conf-modal-error').className = 'modal-error';
-      document.getElementById('conferencia-modal').classList.add('open');
-    }
-
-    function closeConferencia() {
-      document.getElementById('conferencia-modal').classList.remove('open');
-      if (confChk) confChk.checked = false;
-      confChk = null;
-      confPedido = null;
-    }
-    document.getElementById('conferencia-modal').addEventListener('click', e => {
-      if (e.target === e.currentTarget) closeConferencia();
-    });
-
-    document.getElementById('conf-form').addEventListener('submit', async e => {
-      e.preventDefault();
-      if (!confPedido) return;
-      const btn = document.getElementById('conf-btn-submit');
-      document.getElementById('conf-modal-error').className = 'modal-error';
-
-      const numeroNfRaw = document.getElementById('conf-numero-nf').value.trim();
-      const numProdutosRaw = document.getElementById('conf-num-produtos').value;
-      const parcelaRows = Array.from(document.querySelectorAll('#conf-parcelas-list .conf-parcela-row'));
-      // Não exige mais preencher todas de uma vez — quem confere pode salvar só as
-      // parcelas que já sabe e voltar depois (pelo ícone de conferência) pra completar.
-      const entries = parcelaRows.map(row => {
-        const raw = row.querySelector('.conf-valor-real').value;
-        return { id: row.dataset.parcelaId, valor_real: raw === '' ? null : moneyToNumber(raw) };
-      });
-
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Salvando...';
-
-      const { data: sessData } = await sb.auth.getSession();
-      const userId = sessData?.session?.user?.id || null;
-      const pedidoId = confPedido.id;
-      const jaTinhaChegado = confPedido.chegou;
-
-      const pedidoPayload = {
-        chegou: true,
-        data_chegada: jaTinhaChegado ? confPedido.data_chegada : todayLocal(),
-        numero_nf: numeroNfRaw || null,
-        num_produtos_nf: numProdutosRaw === '' ? null : +numProdutosRaw,
-        conferido_por: userId,
-        conferido_em: new Date().toISOString(),
-      };
-      const { error: pedErr } = await sb.from('pedidos').update(pedidoPayload).eq('id', pedidoId);
-
-      let error = pedErr;
-      if (!error) {
-        // Cada parcela é uma linha diferente — atualiza todas em paralelo em vez de uma a uma.
-        const results = await Promise.all(entries.map(en => sb.from('pedidos_parcelas').update({ valor_real: en.valor_real }).eq('id', en.id)));
-        const failed = results.find(r => r.error);
-        if (failed) error = failed.error;
-      }
-
-      btn.disabled = false;
-      btn.innerHTML = 'Confirmar conferência';
-
-      if (error) {
-        document.getElementById('conf-modal-error').textContent = error.message;
-        document.getElementById('conf-modal-error').className = 'modal-error visible';
-        return;
-      }
-
-      // Atualiza local pra refletir na hora, sem precisar recarregar tudo do banco.
-      Object.assign(confPedido, pedidoPayload);
-      entries.forEach(en => {
-        const pc = (confPedido._parcelas || []).find(p => p.id === en.id);
-        if (pc) pc.valor_real = en.valor_real;
-      });
-
-      const faltam = entries.filter(en => en.valor_real == null).length;
-
-      confChk = null; // já ficou marcado certinho, não precisa reverter
-      closeConferencia();
-      showToast(faltam ? `Conferência salva — falta o valor real de ${faltam} parcela(s)` : 'Pedido conferido', faltam ? 'red' : 'green');
+    async function atualizarPedido(r, payload, msgOk) {
+      const { data, error } = await sb.from('pedidos').update(payload).eq('id', r.id).select('baixado, baixado_em, baixado_por_nome, numero_nf').single();
+      if (error) { showToast(error.message, 'red'); return; }
+      Object.assign(r, data);
+      showToast(msgOk, 'green');
       renderTable();
-    });
-
-    // ── Parcelas (form) ──
-    function updateParcelasTotal() {
-      let total = 0;
-      document.querySelectorAll('.parcela-valor').forEach(inp => { total += (moneyToNumber(inp.value) || 0); });
-      document.getElementById('parcelas-total').textContent = fmtBRL(total);
     }
 
-    function addParcelaRow(valor, vencimento) {
-      parcelaSeq++;
-      const id = 'pr-' + parcelaSeq;
-      const list = document.getElementById('parcelas-list');
-      const div = document.createElement('div');
-      div.className = 'parcela-row';
-      div.id = id;
-      const num = list.children.length + 1;
-      div.innerHTML = `
-        <div class="parcela-num">${num}ª</div>
-        <input type="text" inputmode="decimal" class="parcela-valor" placeholder="Valor" value="${valor != null ? numberToMoneyMasked(valor) : ''}">
-        <input type="date" class="parcela-vencimento" value="${vencimento || ''}">
-        <button type="button" class="btn-rm-parcela" title="Remover parcela" aria-label="Remover parcela">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      `;
-      list.appendChild(div);
-      attachMoneyMask(div.querySelector('.parcela-valor'));
-      div.querySelector('.parcela-valor').addEventListener('input', updateParcelasTotal);
-      div.querySelector('.btn-rm-parcela').addEventListener('click', () => {
-        div.remove();
-        renumberParcelas();
-        updateParcelasTotal();
+    // ── Baixa (quem/quando é carimbado pelo banco, não pelo navegador) ──
+    function confirmBaixa(r) {
+      abrirConfirm({
+        icon: '✅', title: 'Dar baixa no pedido?',
+        text: `${r.fornecedor} · ${fmtBRL(liquido(r))}. O pedido sai do Fluxo de Caixa (entende-se que foi pago).`,
+        extra: `<div class="field"><label>Nº da NF lançada no SETA <span class="opt">(opcional)</span></label><input type="text" id="confirm-nf" placeholder="Número da nota" value="${esc(r.numero_nf || '')}"></div>`,
+        okLabel: 'Dar baixa', okClass: 'btn-confirm-ok',
+        onOk: async () => {
+          const nf = document.getElementById('confirm-nf').value.trim();
+          closeConfirm();
+          await atualizarPedido(r, { baixado: true, numero_nf: nf || null }, 'Baixa registrada — saiu do Fluxo de Caixa');
+        },
       });
-      updateParcelasTotal();
     }
-
-    function renumberParcelas() {
-      document.querySelectorAll('#parcelas-list .parcela-row').forEach((row, i) => {
-        row.querySelector('.parcela-num').textContent = (i + 1) + 'ª';
+    function confirmDesfazer(r) {
+      abrirConfirm({
+        icon: '↩️', title: 'Desfazer a baixa?',
+        text: `O pedido de "${r.fornecedor}" volta a aparecer no Fluxo de Caixa como a pagar.`,
+        okLabel: 'Desfazer', okClass: 'btn-confirm-delete',
+        onOk: async () => { closeConfirm(); await atualizarPedido(r, { baixado: false }, 'Baixa desfeita — voltou pro Fluxo de Caixa'); },
       });
     }
 
-    function clearParcelas() {
-      document.getElementById('parcelas-list').innerHTML = '';
-      updateParcelasTotal();
+    // ── Criar / Editar ──
+    function atualizarLiquido() {
+      const v = moneyToNumber(document.getElementById('f-form-valor').value) || 0;
+      const d = moneyToNumber(document.getElementById('f-form-desconto').value) || 0;
+      const el = document.getElementById('f-form-liquido');
+      el.textContent = fmtBRL(v - d);
+      el.style.color = d > v ? '#f87171' : '';
     }
+    ['f-form-valor', 'f-form-desconto'].forEach(id => document.getElementById(id).addEventListener('input', atualizarLiquido));
 
-    // ── Modo Automático x Personalizado ──
-    // Automático: informa valor total + nº de parcelas + 1º vencimento, e o resto é
-    // gerado sozinho (parcelas iguais, uma por mês). Personalizado: edita parcela por
-    // parcela (é o que já existia antes). As duas geram a mesma lista #parcelas-list
-    // por baixo dos panos — é ela que o submit lê, então nada mais muda ao trocar de modo.
-    let parcelaMode = 'auto';
-
-    function applyParcelaModeUI(mode) {
-      parcelaMode = mode;
-      document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-      document.getElementById('auto-fields').style.display = mode === 'auto' ? 'grid' : 'none';
-      document.getElementById('custom-fields').style.display = mode === 'custom' ? 'block' : 'none';
-    }
-
-    function setParcelaMode(mode) {
-      if (mode === parcelaMode) return;
-      if (mode === 'auto') {
-        // Traz o que já estava em Personalizado como ponto de partida do Automático —
-        // tenta detectar a frequência batendo com os vencimentos já digitados; se não
-        // bater com nenhuma, mantém a frequência que já estava selecionada.
-        const rows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
-        const parcelasAtuais = rows.map((r, i) => ({ numero: i + 1, valor: moneyToNumber(r.querySelector('.parcela-valor').value) || 0, vencimento: r.querySelector('.parcela-vencimento').value }));
-        const total = parcelasAtuais.reduce((s, p) => s + p.valor, 0);
-        const firstVenc = parcelasAtuais.map(p => p.vencimento).filter(Boolean).sort()[0] || '';
-        const freqDetectada = detectAutoFrequency(parcelasAtuais);
-        document.getElementById('auto-valor-total').value = total ? numberToMoneyMasked(total) : '';
-        document.getElementById('auto-num-parcelas').value = rows.length || 1;
-        document.getElementById('auto-primeiro-vencimento').value = firstVenc;
-        if (freqDetectada) document.getElementById('auto-frequencia').value = freqDetectada;
-        applyParcelaModeUI('auto');
-        regenerateAutoParcelas();
-      } else {
-        applyParcelaModeUI('custom');
-      }
-    }
-
-    function regenerateAutoParcelas() {
-      const total = moneyToNumber(document.getElementById('auto-valor-total').value) || 0;
-      const n = Math.max(1, parseInt(document.getElementById('auto-num-parcelas').value, 10) || 1);
-      const firstDate = document.getElementById('auto-primeiro-vencimento').value;
-      const freq = document.getElementById('auto-frequencia').value;
-      clearParcelas();
-      const base = Math.floor((total / n) * 100) / 100;
-      for (let i = 0; i < n; i++) {
-        const isLast = i === n - 1;
-        const valor = total ? +(isLast ? total - base * (n - 1) : base).toFixed(2) : '';
-        const venc = firstDate ? vencimentoDaParcela(firstDate, freq, i) : '';
-        addParcelaRow(valor, venc);
-      }
-    }
-
-    ['auto-valor-total', 'auto-num-parcelas', 'auto-primeiro-vencimento', 'auto-frequencia'].forEach(id => {
-      const el = document.getElementById(id);
-      el.addEventListener('input', () => { if (parcelaMode === 'auto') regenerateAutoParcelas(); });
-      el.addEventListener('change', () => { if (parcelaMode === 'auto') regenerateAutoParcelas(); });
-    });
-
-    // Detecta se uma lista de parcelas já salva "cabe" no modo Automático (todas iguais,
-    // exceto a última por causa de arredondamento, vencendo num intervalo regular a
-    // partir da primeira) e, se sim, com qual frequência — usado ao editar um pedido
-    // existente, pra abrir no modo certo em vez de sempre cair em Personalizado.
-    function detectAutoFrequency(parcelas) {
-      if (!parcelas.length || !parcelas[0].vencimento) return null;
-      const first = +parcelas[0].valor;
-      for (let i = 0; i < parcelas.length; i++) {
-        const isLast = i === parcelas.length - 1;
-        if (!isLast && Math.abs(+parcelas[i].valor - first) > 0.01) return null;
-      }
-      if (parcelas.length === 1) return 'mensal';
-      for (const freq of Object.keys(FREQUENCIAS)) {
-        const bate = parcelas.every((p, i) => i === 0 || p.vencimento === vencimentoDaParcela(parcelas[0].vencimento, freq, i));
-        if (bate) return freq;
-      }
-      return null;
-    }
-
-    // ── Modal Criar/Editar ──
     function openCreateModal() {
       if (!allowedCompanies.length) return;
       document.getElementById('modal-title').textContent = 'Novo Pedido';
-      document.getElementById('modal-sub').textContent = 'Preencha os dados do pedido';
+      document.getElementById('modal-sub').textContent = 'Assim que salvar, o pedido entra no Fluxo de Caixa como a pagar.';
       document.getElementById('edit-id').value = '';
       document.getElementById('ped-form').reset();
       document.getElementById('f-form-empresa').value = allowedCompanies[0];
-      document.getElementById('f-form-data-pedido').value = todayLocal();
-      document.getElementById('auto-valor-total').value = '';
-      document.getElementById('auto-num-parcelas').value = 1;
-      document.getElementById('auto-primeiro-vencimento').value = '';
-      document.getElementById('auto-frequencia').value = 'mensal';
-      applyParcelaModeUI('auto');
-      regenerateAutoParcelas();
+      atualizarLiquido();
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
     }
 
     function openEditModal(r) {
-      if (!r) return;
       document.getElementById('modal-title').textContent = 'Editar Pedido';
-      document.getElementById('modal-sub').textContent = r.fornecedor;
+      document.getElementById('modal-sub').textContent = r.fornecedor + (r.comprador_nome ? ' · lançado por ' + r.comprador_nome : '');
       document.getElementById('edit-id').value = r.id;
       document.getElementById('f-form-empresa').value = r.empresa;
       document.getElementById('f-form-cnpj').value = r.cnpj || '';
       document.getElementById('f-form-fornecedor').value = r.fornecedor || '';
-      document.getElementById('f-form-pedido-erp').value = r.pedido_erp || '';
-      document.getElementById('f-form-descricao').value = r.descricao || '';
-      document.getElementById('f-form-data-pedido').value = r.data_pedido || '';
-      document.getElementById('f-form-qtd-previsto').value = r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto : '';
-      clearParcelas();
-      const parcelas = (r._parcelas || []).slice().sort((a,b) => a.numero - b.numero);
-      const freqDetectada = parcelas.length ? detectAutoFrequency(parcelas) : null;
-      if (parcelas.length && freqDetectada) {
-        document.getElementById('auto-valor-total').value = numberToMoneyMasked(r.valor_total);
-        document.getElementById('auto-num-parcelas').value = parcelas.length;
-        document.getElementById('auto-primeiro-vencimento').value = parcelas[0].vencimento;
-        document.getElementById('auto-frequencia').value = freqDetectada;
-        applyParcelaModeUI('auto');
-        regenerateAutoParcelas();
-      } else if (parcelas.length) {
-        parcelas.forEach(pc => addParcelaRow(pc.valor, pc.vencimento));
-        applyParcelaModeUI('custom');
-      } else {
-        document.getElementById('auto-valor-total').value = '';
-        document.getElementById('auto-num-parcelas').value = 1;
-        document.getElementById('auto-primeiro-vencimento').value = '';
-        document.getElementById('auto-frequencia').value = 'mensal';
-        applyParcelaModeUI('auto');
-        regenerateAutoParcelas();
-      }
+      document.getElementById('f-form-valor').value = numberToMoneyMasked(r.valor_total);
+      document.getElementById('f-form-desconto').value = Number(r.desconto) ? numberToMoneyMasked(r.desconto) : '';
+      document.getElementById('f-form-qtd').value = r.qtd_produtos_previsto != null ? r.qtd_produtos_previsto : '';
+      document.getElementById('f-form-previsao').value = r.previsao_chegada || '';
+      document.getElementById('f-form-centro').value = r.centro_custo || '';
+      atualizarLiquido();
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
     }
 
     function closeModal() { document.getElementById('modal').classList.remove('open'); }
-
-    function showModalError(msg) {
-      const el = document.getElementById('modal-error');
-      el.textContent = msg;
-      el.className = 'modal-error visible';
-    }
+    function showModalError(msg) { const el = document.getElementById('modal-error'); el.textContent = msg; el.className = 'modal-error visible'; }
 
     document.getElementById('ped-form').addEventListener('submit', async e => {
       e.preventDefault();
-      const btn = document.getElementById('btn-submit');
-      document.getElementById('modal-error').className = 'modal-error';
-
+      normalizarContra(document.getElementById('f-form-fornecedor'), 'fornecedor');
+      normalizarContra(document.getElementById('f-form-centro'), 'centro_custo');
       const editId = document.getElementById('edit-id').value;
-      const fornecedor = document.getElementById('f-form-fornecedor').value.trim();
-      const dataPedido = document.getElementById('f-form-data-pedido').value;
+      const fornecedor = document.getElementById('f-form-fornecedor').value;
       const cnpj = document.getElementById('f-form-cnpj').value;
-      if (!fornecedor) { showModalError('Informe o fornecedor/loja.'); return; }
-      if (!dataPedido) { showModalError('Informe a data do pedido.'); return; }
-      if (!cnpj) { showModalError('Selecione o CNPJ.'); return; }
+      const valor = moneyToNumber(document.getElementById('f-form-valor').value) || 0;
+      const desconto = moneyToNumber(document.getElementById('f-form-desconto').value) || 0;
+      const qtdRaw = document.getElementById('f-form-qtd').value;
+      const previsao = document.getElementById('f-form-previsao').value;
+      if (!cnpj) return showModalError('Selecione o CNPJ.');
+      if (!fornecedor) return showModalError('Informe o fornecedor.');
+      if (valor <= 0) return showModalError('Informe o valor do pedido.');
+      if (desconto > valor) return showModalError('O desconto não pode ser maior que o valor do pedido.');
+      if (qtdRaw === '') return showModalError('Informe a quantidade de peças.');
+      if (!previsao) return showModalError('Informe a previsão de chegada.');
 
-      const parcelaRows = Array.from(document.querySelectorAll('#parcelas-list .parcela-row'));
-      const parcelas = parcelaRows.map((row, i) => ({
-        numero: i + 1,
-        valor: moneyToNumber(row.querySelector('.parcela-valor').value) || 0,
-        vencimento: row.querySelector('.parcela-vencimento').value || null,
-      }));
-      if (!parcelas.length) { showModalError('Adicione ao menos uma parcela.'); return; }
-      if (parcelas.some(p => !p.vencimento)) { showModalError('Informe o vencimento de todas as parcelas.'); return; }
-      const valorTotal = parcelas.reduce((s, p) => s + p.valor, 0);
-      if (valorTotal <= 0) { showModalError('Informe o valor de ao menos uma parcela.'); return; }
-
-      const qtdPrevistoRaw = document.getElementById('f-form-qtd-previsto').value;
       const payload = {
         empresa: document.getElementById('f-form-empresa').value,
-        cnpj,
-        fornecedor,
-        pedido_erp: document.getElementById('f-form-pedido-erp').value.trim() || null,
-        descricao: document.getElementById('f-form-descricao').value.trim() || null,
-        data_pedido: dataPedido,
-        valor_total: valorTotal,
-        qtd_produtos_previsto: qtdPrevistoRaw === '' ? null : +qtdPrevistoRaw,
+        cnpj, fornecedor,
+        valor_total: valor,
+        desconto,
+        qtd_produtos_previsto: +qtdRaw,
+        previsao_chegada: previsao,
+        centro_custo: document.getElementById('f-form-centro').value || null,
       };
 
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>Salvando...';
-
-      let pedidoId = editId;
-      let error;
-      if (editId) {
-        ({ error } = await sb.from('pedidos').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editId));
-      } else {
-        const { data, error: insErr } = await sb.from('pedidos').insert(payload).select('id').single();
-        error = insErr;
-        pedidoId = data && data.id;
-      }
-
-      if (!error && pedidoId) {
-        // Substitui as parcelas: remove as antigas e recria (mais simples e evita
-        // reconciliação de diffs — pedido ainda não chegou na maioria das edições).
-        const { error: delErr } = await sb.from('pedidos_parcelas').delete().eq('pedido_id', pedidoId);
-        if (delErr) {
-          // Não insere por cima se a limpeza falhou — senão fica parcela antiga + nova duplicada.
-          error = delErr;
-        } else {
-          const { error: parcErr } = await sb.from('pedidos_parcelas').insert(
-            parcelas.map(p => ({ pedido_id: pedidoId, numero: p.numero, valor: p.valor, vencimento: p.vencimento }))
-          );
-          if (parcErr) error = parcErr;
-        }
-      }
-
-      btn.disabled = false;
-      btn.innerHTML = 'Salvar';
-
-      if (error) { showModalError(error.message); return; }
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Salvando...';
+      const { error } = editId
+        ? await sb.from('pedidos').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editId)
+        : await sb.from('pedidos').insert(payload);
+      btn.disabled = false; btn.innerHTML = 'Salvar';
+      if (error) return showModalError(error.message);
 
       closeModal();
-      showToast(editId ? 'Pedido atualizado' : 'Pedido cadastrado', 'green');
+      showToast(editId ? 'Pedido atualizado' : 'Pedido lançado — já está no Fluxo de Caixa', 'green');
       loadPedidos();
     });
-
-    // ── Exclusão ──
-    function confirmDelete(row) {
-      deleteTarget = row.id;
-      confirmDismissAction = null;
-      document.getElementById('confirm-icon').textContent = '⚠️';
-      document.getElementById('confirm-title').textContent = 'Remover pedido?';
-      document.getElementById('confirm-text').textContent = `O pedido de "${row.fornecedor}" será removido permanentemente, junto com suas parcelas.`;
-      document.getElementById('confirm-actions').innerHTML = `
-        <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
-        <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancelar</button>
-      `;
-      document.getElementById('confirm-modal').classList.add('open');
-      document.getElementById('btn-confirm-delete').onclick = async () => {
-        const id = deleteTarget;
-        closeConfirm();
-        const { data, error } = await sb.from('pedidos').delete().eq('id', id).select('id');
-        if (error) { showToast(error.message, 'red'); return; }
-        if (!data || !data.length) { showToast('Não foi possível remover — verifique sua permissão para essa empresa.', 'red'); return; }
-        showToast('Pedido removido', 'red');
-        // Remove só essa linha localmente em vez de recarregar tudo de novo.
-        allRows = allRows.filter(r => r.id !== id);
-        renderTable();
-      };
-    }
-    function closeConfirm() {
-      document.getElementById('confirm-modal').classList.remove('open');
-      deleteTarget = null;
-      if (confirmDismissAction) { confirmDismissAction(); confirmDismissAction = null; }
-    }
-
-    // showToast vem de user-menu.js.
-
     document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+    // ── Remover ──
+    function confirmDelete(r) {
+      abrirConfirm({
+        icon: '⚠️', title: 'Remover pedido?',
+        text: `O pedido de "${r.fornecedor}" (${fmtBRL(liquido(r))}) será removido permanentemente e sai do Fluxo de Caixa.`,
+        okLabel: 'Remover', okClass: 'btn-confirm-delete',
+        onOk: async () => {
+          closeConfirm();
+          const { data, error } = await sb.from('pedidos').delete().eq('id', r.id).select('id');
+          if (error) return showToast(error.message, 'red');
+          if (!data || !data.length) return showToast('Não foi possível remover — verifique sua permissão para essa empresa.', 'red');
+          showToast('Pedido removido', 'red');
+          allRows = allRows.filter(x => x.id !== r.id);
+          populateSugestoes();
+          renderTable();
+        },
+      });
+    }
 
     async function init() {
       const { data } = await sb.auth.getSession();
@@ -1142,14 +791,11 @@
 
       const { data: profRows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
       const prof = (profRows && profRows[0]) || null;
-      const allowed = !!prof && (prof.is_admin || prof.can_pedidos === true);
-      if (!allowed) return redirect('/');
-      currentProfile = prof;
+      if (!prof || !(prof.is_admin || prof.can_pedidos === true)) return redirect('/');
 
       allowedCompanies = prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[COMPANY_FLAG[c]] === true);
       podeLancar = prof.is_admin || prof.pedidos_pode_lancar !== false;
-      podeConferir = prof.is_admin || prof.pedidos_pode_conferir !== false;
-      podeConciliar = prof.is_admin || prof.pedidos_pode_conciliar === true || prof.can_despesas_fixas === true;
+      podeBaixar = prof.is_admin || prof.pedidos_pode_baixar === true;
       populateEmpresaFilters();
       document.getElementById('no-company-notice').style.display = allowedCompanies.length ? 'none' : 'block';
       document.getElementById('btn-new-ped').style.display = (allowedCompanies.length && podeLancar) ? 'inline-flex' : 'none';

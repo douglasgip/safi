@@ -51,7 +51,7 @@
     fluxocaixa: { label: 'Fluxo de Caixa', href: '/fluxo-caixa', can: function (p) { return p.is_admin || p.can_fluxo_caixa === true; } },
     despfixas: { label: 'Despesas Fixas', href: '/despesas-fixas', can: function (p) { return p.is_admin || p.can_despesas_fixas === true; } },
     pedidos: { label: 'Pedidos', href: '/pedidos', can: function (p) { return p.is_admin || p.can_pedidos === true; } },
-    conciliacao: { label: 'Conciliação', href: '/conciliacao', can: function (p) { return p.is_admin || p.pedidos_pode_conciliar === true || p.can_despesas_fixas === true; } },
+    conciliacao: { label: 'Conciliação', href: '/conciliacao', can: function (p) { return p.is_admin || p.can_despesas_fixas === true; } },
     calcimport: { label: 'Calculadora de Importação', href: '/calculadora-importacao', can: function (p) { return p.is_admin || p.can_calc_importacao === true; } },
     funcionarios: { label: 'Funcionários', href: '/funcionarios', can: function (p) { return p.is_admin || p.can_funcionarios === true; } },
     mapasoc: { label: 'Mapa Societário', href: '/mapa-societario', can: function (p) { return p.is_admin || p.can_mapa_societario === true; } }
