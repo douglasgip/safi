@@ -355,7 +355,7 @@
         const { data: enrollData, error: enrollErr } = await sb.auth.mfa.enroll({ factorType: 'totp' });
         if (enrollErr) { setLoading(false); showError('Não foi possível iniciar a configuração de MFA: ' + enrollErr.message); return; }
         currentFactorId = enrollData.id;
-        document.getElementById('mfaEnrollQr').innerHTML = enrollData.totp.qr_code;
+        document.getElementById('mfaEnrollQr').innerHTML = '<img src="' + enrollData.totp.qr_code + '" alt="QR code" width="200" height="200">';
         document.getElementById('mfaEnrollSecret').textContent = enrollData.totp.secret;
         showCard('enroll');
         setTimeout(() => document.getElementById('mfaEnrollCode').focus(), 50);

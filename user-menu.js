@@ -281,7 +281,7 @@ function wireSidebarToggle(prefix) {
             '<button class="usermenu-btn usermenu-btn-ghost" id="usermenu-cancel">Cancelar</button>' +
             '<button class="usermenu-btn usermenu-btn-primary" id="usermenu-save">Ativar</button>' +
           '</div>';
-        modal.querySelector('#usermenu-qr').innerHTML = res.data.totp.qr_code;
+        modal.querySelector('#usermenu-qr').innerHTML = '<img src="' + res.data.totp.qr_code + '" alt="QR code" width="180" height="180">';
         modal.querySelector('#usermenu-cancel').addEventListener('click', function(){
           sbClient.auth.mfa.unenroll({ factorId: factorId }).catch(function(){});
           close();
