@@ -229,7 +229,8 @@
 
     .gr-typing-row { display: flex; align-items: center; gap: 9px; align-self: flex-start; padding: 4px 2px; }
     .gr-typing-avatar { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-    .gr-shimmer { background: linear-gradient(90deg, rgba(148,163,184,0.5) 0%, rgba(148,163,184,0.5) 38%, #ffffff 50%, rgba(148,163,184,0.5) 62%, rgba(148,163,184,0.5) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gr-shimmer-move 1.7s linear infinite; font-weight: 600; font-size: 13.5px; letter-spacing: .15px; }
+    .gr-shimmer { background: linear-gradient(90deg, rgba(148,163,184,0.5) 0%, rgba(148,163,184,0.5) 38%, #ffffff 50%, rgba(148,163,184,0.5) 62%, rgba(148,163,184,0.5) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: gr-shimmer-move 1.7s linear infinite; font-weight: 600; font-size: 13.5px; letter-spacing: .15px; transition: opacity .22s ease; }
+    .gr-shimmer.gr-fade { opacity: 0; }
     @keyframes gr-shimmer-move { 0% { background-position: 200% center; } 100% { background-position: -60% center; } }
 
     /* Welcome hero (empty state) */
@@ -372,7 +373,7 @@
       'Quais pontos de atenção você vê nos meus números?'
     ];
 
-    var state = { messages: [], profile: null, uid: null, token: null, email: null, loading: false, firstLoad: true, pendingAnimate: null, threadId: null, threads: [], threadGen: 0, model: (localStorage.getItem('geronia-model') === 'enhanced' ? 'enhanced' : 'standard') };
+    var state = { messages: [], profile: null, uid: null, token: null, email: null, loading: false, firstLoad: true, pendingAnimate: null, threadId: null, threads: [], threadGen: 0, model: (localStorage.getItem('geronia-model') === 'enhanced' ? 'enhanced' : 'standard'), thinkingTimers: [], thinkingFirstStep: null };
 
     function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 
@@ -678,7 +679,7 @@
         }
       });
       if (state.loading) {
-        html += '<div id="gr-typing" class="gr-typing-row"><img src="/public/GerônIA.png" class="gr-typing-avatar" alt=""><span class="gr-shimmer">Gerôn está pensando...</span></div>';
+        html += '<div id="gr-typing" class="gr-typing-row"><img src="/public/GerônIA.png" class="gr-typing-avatar" alt=""><span class="gr-shimmer">' + esc(state.thinkingFirstStep || 'Entendendo sua pergunta...') + '</span></div>';
       }
       msgsEl.innerHTML = html;
       Array.prototype.forEach.call(msgsEl.querySelectorAll('.gr-suggest-btn'), function(btn){
@@ -731,6 +732,56 @@
       }
     }
 
+    // ── Indicador de "pensando" com fases contextuais, só de fachada (não reflete
+    // literalmente o que a edge function tá fazendo — é uma única chamada, sem
+    // streaming) — mas o texto muda de acordo com o tipo da pergunta, pra parecer
+    // menos uma barra de carregamento genérica. ──
+    function dominioDaPergunta(t){
+      t = (t || '').toLowerCase();
+      if (/funcion[aá]ri|colaborador|admiss|desligamento|anivers[aá]ri/.test(t)) return 'os dados de funcionários';
+      if (/pedido|fornecedor|comprador|centro de custo/.test(t)) return 'os pedidos';
+      if (/despesa|conta.?a.?pagar|fluxo de caixa/.test(t)) return 'as despesas e o fluxo de caixa';
+      if (/reuni[aã]o|a[cç][aã]o|decis[aã]o|ata\b/.test(t)) return 'reuniões e decisões';
+      if (/produto|estoque|sku|giro|ruptura|cobertura/.test(t)) return 'produtos e estoque';
+      if (/fechamento|travad|aprovad/.test(t)) return 'o fechamento do mês';
+      if (/dre|faturamento|receita|margem|resultado|ebitda|lucro|or[cç]ament/.test(t)) return 'o financeiro';
+      return 'os dados do painel';
+    }
+    function buildThinkingSteps(text, model){
+      var t = (text || '').toLowerCase();
+      var dominio = dominioDaPergunta(t);
+      var precisaCalcular = /quanto|total|m[eé]dia|percentual|%|calcul|soma|compar|evolu[cç][aã]o|crescimento|varia[cç][aã]o|diferen[cç]a/.test(t);
+      var steps = [
+        { delay: 1200, text: 'Consultando ' + dominio + '...' },
+      ];
+      if (precisaCalcular) steps.push({ delay: 3000, text: 'Calculando...' });
+      steps.push({ delay: precisaCalcular ? 4800 : 3400, text: model === 'enhanced' ? 'Pensando com calma...' : 'Pensando...' });
+      return steps;
+    }
+    function clearThinkingTimers(){
+      (state.thinkingTimers || []).forEach(function(id){ clearTimeout(id); });
+      state.thinkingTimers = [];
+    }
+    function setThinkingText(text){
+      var el = document.querySelector('#gr-typing .gr-shimmer');
+      if (!el) return;
+      el.classList.add('gr-fade');
+      setTimeout(function(){
+        if (!el.isConnected) return;
+        el.textContent = text;
+        el.classList.remove('gr-fade');
+      }, 220);
+    }
+    function scheduleThinkingSteps(text, model, myGen){
+      clearThinkingTimers();
+      state.thinkingTimers = buildThinkingSteps(text, model).map(function(step){
+        return setTimeout(function(){
+          if (state.threadGen !== myGen || !state.loading) return;
+          setThinkingText(step.text);
+        }, step.delay);
+      });
+    }
+
     function sendMessage(text){
       text = (text || '').trim();
       if (!text || state.loading) return;
@@ -740,7 +791,9 @@
       state.messages.push({ role:'user', content:text });
       state.firstLoad = false;
       state.loading = true;
+      state.thinkingFirstStep = 'Entendendo sua pergunta...';
       render();
+      scheduleThinkingSteps(text, state.model, myGen);
 
       (window.UserMenu ? window.UserMenu.freshToken(sb, state.token) : Promise.resolve(state.token)).then(function(token){
         state.token = token;
@@ -750,6 +803,7 @@
           body: JSON.stringify({ message:text, thread_id: state.threadId, model: state.model })
         });
       }).then(function(r){ return r.json(); }).then(function(data){
+        clearThinkingTimers();
         if (state.threadGen !== myGen) { state.loading = false; return; } // usuário trocou de conversa enquanto isso, ignora
         state.loading = false;
         var reply = { role:'assistant', content: data && data.reply ? data.reply : (data && data.error ? data.error : 'Desculpe, não consegui processar sua pergunta agora. Tente novamente em instantes.') };
@@ -770,6 +824,7 @@
         }
         render();
       }).catch(function(){
+        clearThinkingTimers();
         if (state.threadGen !== myGen) { state.loading = false; return; }
         state.loading = false;
         var reply = { role:'assistant', content:'Erro de conexão com o GerônIA. Tente novamente em instantes.' };
