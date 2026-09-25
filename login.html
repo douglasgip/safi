@@ -356,6 +356,24 @@
       container.innerHTML = body;
     }
 
+    // Cria um fator TOTP com nome sempre único — o Supabase rejeita um enroll() se já
+    // existir um fator (mesmo não verificado) com o mesmo friendly_name, e o padrão sem
+    // nome é sempre "" pra todo mundo. Sem nome único, duas tentativas próximas (reload
+    // duplo, duas abas) colidem com "friendly name already exists". Mesmo assim, se
+    // colidir por algum outro motivo, limpa o que sobrou de não-verificado e tenta de novo.
+    async function enrollFreshTotp() {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const friendlyName = 'totp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+        const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName });
+        if (!error) return { data, error: null };
+        if (!/already exists/i.test(error.message || '')) return { data: null, error };
+        const { data: fList } = await sb.auth.mfa.listFactors();
+        const stale = ((fList && fList.totp) || []).filter(f => f.status !== 'verified');
+        for (const f of stale) { await sb.auth.mfa.unenroll({ factorId: f.id }).catch(() => {}); }
+      }
+      return { data: null, error: { message: 'Não foi possível configurar o MFA após várias tentativas. Recarregue a página e tente de novo.' } };
+    }
+
     const cards = { login: document.getElementById('loginCard'), challenge: document.getElementById('mfaChallengeCard'), enroll: document.getElementById('mfaEnrollCard') };
     function showCard(name) { Object.keys(cards).forEach(k => cards[k].style.display = k === name ? 'block' : 'none'); }
 
@@ -375,12 +393,7 @@
       const { data: prof } = await sb.from('user_profiles').select('mfa_obrigatorio').eq('id', session.user.id).maybeSingle();
 
       if (prof && prof.mfa_obrigatorio) {
-        // Limpa fatores incompletos de tentativas anteriores — o Supabase não deixa
-        // criar um novo TOTP se já existe um "unverified" parado com o mesmo nome.
-        const unverified = (factorsData.totp || []).filter(f => f.status !== 'verified');
-        for (const f of unverified) { await sb.auth.mfa.unenroll({ factorId: f.id }).catch(() => {}); }
-
-        const { data: enrollData, error: enrollErr } = await sb.auth.mfa.enroll({ factorType: 'totp' });
+        const { data: enrollData, error: enrollErr } = await enrollFreshTotp();
         if (enrollErr) { setLoading(false); showError('Não foi possível iniciar a configuração de MFA: ' + enrollErr.message); return; }
         currentFactorId = enrollData.id;
         renderQrImg(document.getElementById('mfaEnrollQr'), enrollData.totp.qr_code);

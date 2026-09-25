@@ -241,6 +241,26 @@ function wireSidebarToggle(prefix) {
     container.innerHTML = body;
   }
 
+  // Cria um fator TOTP com nome sempre único — o Supabase rejeita o enroll() se já
+  // existir um fator (mesmo não verificado) com o mesmo friendly_name, e o padrão sem
+  // nome é sempre "" pra todo mundo. Sem nome único, duas tentativas próximas (reload
+  // duplo, duas abas) colidem com "friendly name already exists". Se mesmo assim colidir
+  // por outro motivo, limpa o que sobrou de não-verificado e tenta de novo.
+  function enrollFreshTotp(sbClient, attempt) {
+    attempt = attempt || 0;
+    if (attempt >= 3) return Promise.resolve({ data: null, error: { message: 'Não foi possível configurar o MFA após várias tentativas. Tente novamente em instantes.' } });
+    var friendlyName = 'totp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+    return sbClient.auth.mfa.enroll({ factorType: 'totp', friendlyName: friendlyName }).then(function(res){
+      if (!res.error) return res;
+      if (!/already exists/i.test((res.error && res.error.message) || '')) return res;
+      return sbClient.auth.mfa.listFactors().then(function(fRes){
+        var stale = ((fRes.data && fRes.data.totp) || []).filter(function(f){ return f.status !== 'verified'; });
+        var cleanup = stale.reduce(function(p, f){ return p.then(function(){ return sbClient.auth.mfa.unenroll({ factorId: f.id }).catch(function(){}); }); }, Promise.resolve());
+        return cleanup.then(function(){ return enrollFreshTotp(sbClient, attempt + 1); });
+      });
+    });
+  }
+
   var ICON_SHIELD = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6z"/><path d="M9.5 12l2 2 4-4"/></svg>';
 
   // Autenticação em duas etapas (TOTP) — o mesmo fluxo serve tanto pra quem ativa por
@@ -283,13 +303,8 @@ function wireSidebarToggle(prefix) {
       });
     }
 
-    function renderEnroll(existingFactors){
-      // Limpa fatores incompletos de tentativas anteriores — o Supabase não deixa
-      // criar um novo TOTP se já existe um "unverified" parado com o mesmo nome.
-      var unverified = (existingFactors || []).filter(function(f){ return f.status !== 'verified'; });
-      var cleanup = unverified.reduce(function(p, f){ return p.then(function(){ return sbClient.auth.mfa.unenroll({ factorId: f.id }).catch(function(){}); }); }, Promise.resolve());
-      cleanup.then(function(){
-      sbClient.auth.mfa.enroll({ factorType: 'totp' }).then(function(res){
+    function renderEnroll(){
+      enrollFreshTotp(sbClient).then(function(res){
         if (res.error) { modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-error" style="display:block">' + res.error.message + '</div><div class="usermenu-actions"><button class="usermenu-btn usermenu-btn-ghost" id="usermenu-cancel" style="flex:1">Fechar</button></div>'; modal.querySelector('#usermenu-cancel').addEventListener('click', close); return; }
         var factorId = res.data.id;
         modal.innerHTML =
@@ -328,13 +343,12 @@ function wireSidebarToggle(prefix) {
         codeInp.addEventListener('keydown', function(e){ if (e.key === 'Enter') submit(); });
         codeInp.focus();
       });
-      });
     }
 
     sbClient.auth.mfa.listFactors().then(function(res){
       if (res.error) { modal.innerHTML = '<h3>Autenticação em duas etapas</h3><div class="usermenu-error" style="display:block">' + res.error.message + '</div>'; return; }
       var verified = (res.data.totp || []).filter(function(f){ return f.status === 'verified'; })[0];
-      if (verified) renderStatus(verified); else renderEnroll(res.data.totp);
+      if (verified) renderStatus(verified); else renderEnroll();
     });
   }
 
