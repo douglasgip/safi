@@ -574,7 +574,10 @@
         tbody.innerHTML = `<tr class="empty-row"><td colspan="9">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
-      lancamentos = (data || []).filter(l => l.despesas_fixas && allowedCompanies.includes(l.despesas_fixas.empresa));
+      // Se a despesa fixa foi desativada e esse lançamento nunca foi conferido (valor_pago
+      // null), é lixo de geração preguiçosa, não histórico — não deveria nem aparecer aqui.
+      // Filtro defensivo: cobre tanto exclusões novas quanto órfãos que já existiam antes.
+      lancamentos = (data || []).filter(l => l.despesas_fixas && allowedCompanies.includes(l.despesas_fixas.empresa) && (l.despesas_fixas.ativo || l.valor_pago != null));
       renderConferirTable();
     }
 
@@ -880,6 +883,10 @@
         if (!target) return;
         const { error } = await sb.from('despesas_fixas').update({ ativo: false }).eq('id', target.id);
         if (error) { showToast(error.message, 'red'); return; }
+        // Lançamento nunca conferido (valor_pago null) não é "histórico" — é só a
+        // linha que a geração preguiçosa criou pro mês corrente. Sem isso, some da
+        // lista de despesas fixas mas continua fantasma em "Conferir Mês" pra sempre.
+        await sb.from('despesas_fixas_lancamentos').delete().eq('despesa_fixa_id', target.id).is('valor_pago', null);
         templates = templates.filter(x => x.id !== target.id);
         renderManageTable();
         showUndoToast(`"${target.nome}" removida`, async () => {
