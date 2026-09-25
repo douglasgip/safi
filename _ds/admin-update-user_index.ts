@@ -44,6 +44,11 @@ Deno.serve(async (req: Request) => {
   if (!user_id)
     return new Response(JSON.stringify({ error: 'user_id obrigatorio' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
 
+  // Snapshot de antes, pra logar só o que realmente mudou (não só o que foi enviado —
+  // o admin.html sempre manda o formulário inteiro, mesmo campos sem alteração).
+  const { data: beforeRows } = await sb.from('user_profiles').select('*').eq('id', user_id).limit(1)
+  const before = beforeRows?.[0] || null
+
   const authUpdate: Record<string, string> = {}
   if (email) authUpdate.email = email
   if (password) authUpdate.password = password
@@ -97,6 +102,25 @@ Deno.serve(async (req: Request) => {
     const { error } = await sb.from('user_profiles').update(up).eq('id', user_id)
     if (error)
       return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
+  }
+
+  // Log de auditoria — só os campos que de fato mudaram de valor (não só os enviados),
+  // com o antes/depois de cada um. Best-effort, nunca bloqueia a resposta se falhar.
+  const diff: Record<string, { de: unknown; para: unknown }> = {}
+  if (before) {
+    for (const key of Object.keys(up)) {
+      const antes = (before as Record<string, unknown>)[key]
+      const depois = up[key]
+      if (antes !== depois) diff[key] = { de: antes ?? null, para: depois ?? null }
+    }
+  }
+  if (Object.keys(diff).length > 0) {
+    const { error: logErr } = await sb.from('admin_actions_log').insert({
+      actor_id: caller!.id, actor_email: caller!.email,
+      action: 'update_user', target_user_id: user_id, target_email: (up.email as string) ?? before?.email ?? null,
+      detalhes: diff,
+    })
+    if (logErr) console.error('admin_actions_log insert falhou:', logErr)
   }
 
   return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } })

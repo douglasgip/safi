@@ -48,8 +48,21 @@ Deno.serve(async (req: Request) => {
   const { user_id } = await req.json()
   if (!user_id) return new Response(JSON.stringify({ error: 'user_id obrigatório' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
+  // Snapshot de antes de apagar — depois que o auth.users some, o perfil (FK em cascata)
+  // some junto, então é agora ou nunca pra saber quem era.
+  const { data: beforeRows } = await supabaseAdmin.from('user_profiles').select('email, full_name, role').eq('id', user_id).limit(1)
+  const before = beforeRows?.[0] || null
+
   const { error } = await supabaseAdmin.auth.admin.deleteUser(user_id)
   if (error) return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+
+  // Log de auditoria — best-effort, nunca bloqueia a resposta se falhar.
+  const { error: logErr } = await supabaseAdmin.from('admin_actions_log').insert({
+    actor_id: caller!.id, actor_email: caller!.email,
+    action: 'delete_user', target_user_id: user_id, target_email: before?.email ?? null,
+    detalhes: before ? { full_name: before.full_name, role: before.role } : null,
+  })
+  if (logErr) console.error('admin_actions_log insert falhou:', logErr)
 
   return new Response(JSON.stringify({ success: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 })

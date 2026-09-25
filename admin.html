@@ -467,6 +467,16 @@
     <div class="table-scroll" style="max-height:360px"><table class="user-table" id="presenca-tbl"><tbody><tr><td style="padding:22px;color:#475569">Carregando…</td></tr></tbody></table></div>
   </div>
 
+  <div class="panel" id="audit-panel" style="margin-bottom:18px">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-header-label">Segurança</div>
+        <div class="panel-header-title">Log de Auditoria — Gestão de Acessos</div>
+      </div>
+    </div>
+    <div class="table-scroll" style="max-height:360px"><table class="user-table" id="audit-tbl"><tbody><tr><td style="padding:22px;color:#475569">Carregando…</td></tr></tbody></table></div>
+  </div>
+
   <div class="panel">
     <div class="panel-header">
       <div class="panel-header-left">
@@ -1006,6 +1016,44 @@ async function carregarPresenca() {
   }).join('') + '</tbody>';
 }
 
+// ── Log de auditoria: quem criou/editou/apagou um usuário, quando e o que mudou.
+// Escrito pelas edge functions admin-create-user/admin-update-user/admin-delete-user
+// (service role, ignora RLS); a leitura aqui é protegida por RLS (só is_admin vê).
+const AUDIT_ACAO_LABEL = { create_user: 'Criou usuário', update_user: 'Editou usuário', delete_user: 'Removeu usuário' };
+function campoLegivel(k) { return String(k).replace(/_/g, ' '); }
+function valorLegivel(v) { if (v === null || v === undefined) return '—'; if (v === true) return 'sim'; if (v === false) return 'não'; return String(v); }
+function auditDetalhesResumo(row) {
+  const d = row.detalhes;
+  if (!d) return '—';
+  if (row.action === 'update_user') {
+    const partes = Object.keys(d).map(k => campoLegivel(k) + ': ' + valorLegivel(d[k].de) + ' → ' + valorLegivel(d[k].para));
+    return partes.join('; ');
+  }
+  if (row.action === 'create_user') {
+    const ativas = Object.keys(d).filter(k => k.startsWith('can_') && d[k] === true).map(campoLegivel);
+    return (d.full_name ? 'Nome: ' + d.full_name + '. ' : '') + (ativas.length ? 'Permissões iniciais: ' + ativas.join(', ') : 'Sem permissões extras além do padrão');
+  }
+  if (row.action === 'delete_user') {
+    return (d.full_name ? 'Nome: ' + d.full_name : '') + (d.role ? (d.full_name ? ', ' : '') + 'Cargo: ' + d.role : '') || '—';
+  }
+  return '—';
+}
+async function carregarAuditLog() {
+  const tb = document.getElementById('audit-tbl');
+  const { data, error } = await sb.from('admin_actions_log').select('*').order('created_at', { ascending: false }).limit(200);
+  if (error) { tb.innerHTML = '<tbody><tr><td style="padding:22px;color:#fca5a5">Não foi possível carregar: ' + escH(error.message) + '</td></tr></tbody>'; return; }
+  if (!data || !data.length) { tb.innerHTML = '<tbody><tr><td style="padding:22px;color:#475569">Nenhuma ação registrada ainda.</td></tr></tbody>'; return; }
+  tb.innerHTML = '<thead><tr><th>Quando</th><th>Quem fez</th><th>Ação</th><th>Alvo</th><th>Detalhes</th></tr></thead><tbody>' + data.map(r => {
+    const quando = new Date(r.created_at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+    const resumo = auditDetalhesResumo(r);
+    return '<tr><td style="white-space:nowrap">' + quando + '</td>' +
+      '<td>' + escH(r.actor_email || '—') + '</td>' +
+      '<td>' + escH(AUDIT_ACAO_LABEL[r.action] || r.action) + '</td>' +
+      '<td>' + escH(r.target_email || '—') + '</td>' +
+      '<td class="exp-sub" style="max-width:420px;white-space:normal" title="' + escH(resumo) + '">' + escH(resumo) + '</td></tr>';
+  }).join('') + '</tbody>';
+}
+
 document.addEventListener('click', async e => {
   if (!e.target.closest('#exp-lidas')) return;
   const { error } = await sb.from('exportacoes_pdf').update({ lida: true, lida_em: new Date().toISOString() }).eq('lida', false);
@@ -1022,6 +1070,7 @@ async function init() {
   loadUsers();
   carregarExportacoes();
   carregarPresenca();
+  carregarAuditLog();
   setInterval(carregarExportacoes, 60000);
   setInterval(carregarPresenca, 60000);
   if (window.SafiAjuda) SafiAjuda.sincronizarManual(sb);
@@ -1329,6 +1378,7 @@ document.getElementById('user-form').addEventListener('submit', async e => {
       closeModal();
       showToast(editId ? 'Usuário atualizado' : 'Usuário criado com sucesso', 'green');
       loadUsers();
+      carregarAuditLog();
     }
   } catch (err) {
     showModalError('Falha de conexão. Tente novamente.');
@@ -1365,7 +1415,7 @@ function confirmDelete(id, email) {
       });
       const json = await res.json();
       if (json.error) showToast(json.error, 'red');
-      else { showToast('Usuário removido', 'red'); loadUsers(); }
+      else { showToast('Usuário removido', 'red'); loadUsers(); carregarAuditLog(); }
     } catch { showToast('Falha ao remover.', 'red'); }
   };
 }

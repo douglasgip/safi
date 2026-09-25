@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
   if (authErr)
     return new Response(JSON.stringify({ error: authErr.message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
 
-  const { error: profErr } = await sb.from('user_profiles').insert({
+  const profilePayload = {
     id: authData.user!.id, email,
     full_name: full_name || '', role: role || '',
     can_resumo: can_resumo ?? true, can_dre: can_dre ?? true,
@@ -72,11 +72,21 @@ Deno.serve(async (req: Request) => {
     can_produtos: can_produtos ?? false,
     mfa_obrigatorio: mfa_obrigatorio ?? false,
     is_admin: false
-  })
+  }
+  const { error: profErr } = await sb.from('user_profiles').insert(profilePayload)
   if (profErr) {
     await sb.auth.admin.deleteUser(authData.user!.id)
     return new Response(JSON.stringify({ error: profErr.message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
   }
+
+  // Log de auditoria — best-effort, nunca bloqueia a resposta se falhar.
+  const { id: _id, ...detalhes } = profilePayload
+  const { error: logErr } = await sb.from('admin_actions_log').insert({
+    actor_id: caller!.id, actor_email: caller!.email,
+    action: 'create_user', target_user_id: authData.user!.id, target_email: email,
+    detalhes,
+  })
+  if (logErr) console.error('admin_actions_log insert falhou:', logErr)
 
   return new Response(JSON.stringify({ success: true, id: authData.user!.id }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } })
 })
