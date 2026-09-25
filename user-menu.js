@@ -476,6 +476,9 @@ function wireSidebarToggle(prefix) {
   // fechada ou notebook suspenso) já é suficiente pra não contar como tempo online.
   // Blindado de propósito: isso roda dentro do apply() da sidebar e do carregamento
   // do DRE — um erro aqui (síncrono ou de rede) nunca pode travar o resto da tela.
+  // Aproveita o mesmo pulso pra checar session_fresh(): sessão com mais de 7 dias
+  // (auth.sessions.created_at no banco, não dá pra falsificar mexendo no relógio
+  // do navegador) força logout e manda de volta pro login.
   var heartbeatStarted = false;
   function startHeartbeat(sbClient){
     if (heartbeatStarted || !sbClient) return;
@@ -484,6 +487,13 @@ function wireSidebarToggle(prefix) {
       try {
         if (document.visibilityState !== 'visible') return;
         Promise.resolve(sbClient.rpc('presenca_heartbeat')).catch(function(){});
+        Promise.resolve(sbClient.rpc('session_fresh')).then(function(res){
+          if (res && !res.error && res.data === false) {
+            sbClient.auth.signOut().catch(function(){}).then(function(){
+              window.location.href = '/login.html';
+            });
+          }
+        }).catch(function(){});
       } catch (e) { /* nunca deixa a presença derrubar a tela */ }
     }
     try {
