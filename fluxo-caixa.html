@@ -118,7 +118,9 @@
     .cap-btn-pay:hover { background: rgba(52,211,153,0.18); }
     .cap-empty { padding: 40px 20px; text-align: center; color: #334155; font-size: 13px; }
     .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
-    .cap-tipo-badge { display: inline-block; padding: 3px 9px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); border-radius: 999px; color: #7dd3fc; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+    .cap-tipo-badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+    .cap-tipo-despesa { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #7dd3fc; }
+    .cap-tipo-pedido { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; }
 
     /* ── Modal "Conferir pagamento" (despesa fixa, dar baixa a partir daqui) ── */
     .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
@@ -199,7 +201,7 @@
               <tr>
                 <th>Empresa</th>
                 <th>Fornecedor</th>
-                <th>Comprador(a) / Tipo</th>
+                <th>Tipo</th>
                 <th>A pagar</th>
                 <th>Previsão de chegada</th>
                 <th style="width:140px">Ação</th>
@@ -431,7 +433,7 @@
       tbody.innerHTML = linhas.map(l => `<tr>
           <td><img class="cap-empresa-logo" src="${MARCA_LOGOS[l.empresa] || ''}" alt="${esc(l.empresa)}" title="${esc(l.empresa)}"></td>
           <td class="cap-fornecedor">${esc(l.fornecedor)}</td>
-          <td>${l.tipo === 'despesa_fixa' ? '<span class="cap-tipo-badge">Despesa Fixa</span>' : (l.comprador_nome ? esc(l.comprador_nome) : '—')}</td>
+          <td>${l.tipo === 'despesa_fixa' ? '<span class="cap-tipo-badge cap-tipo-despesa">Despesa Fixa</span>' : '<span class="cap-tipo-badge cap-tipo-pedido">Pedido</span>'}</td>
           <td class="cap-valor">${fmtBRL(l.aPagar)}</td>
           <td class="cap-venc${l.atrasado ? ' overdue' : ''}">${l.previsao_chegada ? fmtDate(l.previsao_chegada) : '—'}${l.atrasado ? ' · vencida' : ''}</td>
           <td>${(l.tipo === 'pedido' ? podeBaixar : true) ? `
