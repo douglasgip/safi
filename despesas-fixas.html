@@ -106,6 +106,23 @@
     .btn-new:hover { transform: translateY(-1px); }
     .btn-new:active { transform: translateY(2px); box-shadow: 0 2px 0 #9f1239; }
 
+    /* ── Tendência Previsto × Pago (duas séries → cores fixas categóricas, sempre com
+       legenda; Previsto é referência neutra, Pago é o accent da própria tela). ── */
+    .trend-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 16px 20px 4px; }
+    .trend-title { font-size: 14.5px; font-weight: 800; color: #f1f5f9; margin-top: 2px; }
+    .trend-legend { display: flex; gap: 16px; }
+    .trend-leg-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #94a3b8; }
+    .trend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+    .trend-dot-previsto { background: #64748b; }
+    .trend-dot-pago { background: #fb7185; }
+    .trend-chart { display: flex; align-items: flex-end; gap: 10px; padding: 18px 20px 16px; min-height: 160px; overflow-x: auto; }
+    .trend-col { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 46px; flex: 1; }
+    .trend-bars { display: flex; align-items: flex-end; gap: 3px; height: 120px; width: 100%; justify-content: center; }
+    .trend-bar { width: 12px; border-radius: 3px 3px 0 0; min-height: 2px; transition: height .25s ease; }
+    .trend-bar-previsto { background: #64748b; }
+    .trend-bar-pago { background: linear-gradient(180deg,#fda4af,#fb7185); }
+    .trend-col-label { font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .3px; }
+
     /* ── Tabela ── */
     .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); overflow: hidden; }
     .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: calc((100vh - 320px) * 1.25); }
@@ -263,6 +280,20 @@
           <div class="summary-label">Divergentes</div>
           <div class="summary-value bad" id="sum-divergentes">—</div>
         </div>
+      </div>
+
+      <div class="panel" id="trend-panel" style="margin-bottom:18px">
+        <div class="trend-header">
+          <div>
+            <div class="summary-label">Tendência</div>
+            <div class="trend-title">Previsto × Pago (12 meses)</div>
+          </div>
+          <div class="trend-legend">
+            <span class="trend-leg-item"><span class="trend-dot trend-dot-previsto"></span>Previsto</span>
+            <span class="trend-leg-item"><span class="trend-dot trend-dot-pago"></span>Pago</span>
+          </div>
+        </div>
+        <div id="trend-chart" class="trend-chart"><div style="padding:20px;color:#475569;font-size:12.5px">Carregando…</div></div>
       </div>
 
       <div class="filters-bar">
@@ -579,6 +610,55 @@
       // Filtro defensivo: cobre tanto exclusões novas quanto órfãos que já existiam antes.
       lancamentos = (data || []).filter(l => l.despesas_fixas && allowedCompanies.includes(l.despesas_fixas.empresa) && (l.despesas_fixas.ativo || l.valor_pago != null));
       renderConferirTable();
+    }
+
+    // ── Tendência Previsto × Pago, últimos 12 meses ──
+    // Independe do mês selecionado em "Conferir Mês": soma previsto/pago de todas as
+    // despesas fixas visíveis, mês a mês, pra mostrar se o pago vem acompanhando o
+    // previsto ao longo do tempo (não só num mês isolado).
+    const MES_ABREV_DF = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    function ultimosNMeses(n) {
+      const hoje = new Date();
+      const lista = [];
+      for (let i = n - 1; i >= 0; i--) {
+        const d = new Date(hoje.getFullYear(), hoje.getMonth() - i, 1);
+        lista.push({ ano: d.getFullYear(), mes: d.getMonth() + 1 });
+      }
+      return lista;
+    }
+    async function carregarTendenciaPrevistoPago() {
+      const el = document.getElementById('trend-chart');
+      if (!allowedCompanies.length) { el.innerHTML = '<div style="padding:20px;color:#475569;font-size:12.5px">Sem empresas liberadas.</div>'; return; }
+      const periodo = ultimosNMeses(12);
+      const anoMin = periodo[0].ano;
+      const { data, error } = await sb
+        .from('despesas_fixas_lancamentos')
+        .select('ano, mes, valor_previsto, valor_pago, despesas_fixas(empresa)')
+        .gte('ano', anoMin);
+      if (error) { el.innerHTML = `<div style="padding:20px;color:#fca5a5;font-size:12.5px">Não foi possível carregar: ${esc(error.message)}</div>`; return; }
+      const porMes = {};
+      periodo.forEach(p => { porMes[p.ano + '-' + p.mes] = { previsto: 0, pago: 0 }; });
+      (data || []).forEach(l => {
+        if (!l.despesas_fixas || !allowedCompanies.includes(l.despesas_fixas.empresa)) return;
+        const chave = l.ano + '-' + l.mes;
+        if (!porMes[chave]) return;
+        porMes[chave].previsto += (+l.valor_previsto || 0);
+        if (l.valor_pago != null) porMes[chave].pago += (+l.valor_pago || 0);
+      });
+      const max = Math.max(1, ...periodo.map(p => { const v = porMes[p.ano + '-' + p.mes]; return Math.max(v.previsto, v.pago); }));
+      el.innerHTML = periodo.map(p => {
+        const v = porMes[p.ano + '-' + p.mes];
+        const hPrev = Math.max(v.previsto > 0 ? 3 : 0, Math.round(v.previsto / max * 120));
+        const hPago = Math.max(v.pago > 0 ? 3 : 0, Math.round(v.pago / max * 120));
+        const titulo = `${MES_ABREV_DF[p.mes - 1]}/${String(p.ano).slice(2)} — Previsto: ${fmtBRL(v.previsto)} · Pago: ${fmtBRL(v.pago)}`;
+        return `<div class="trend-col" title="${esc(titulo)}">
+            <div class="trend-bars">
+              <div class="trend-bar trend-bar-previsto" style="height:${hPrev}px"></div>
+              <div class="trend-bar trend-bar-pago" style="height:${hPago}px"></div>
+            </div>
+            <div class="trend-col-label">${MES_ABREV_DF[p.mes - 1]}/${String(p.ano).slice(2)}</div>
+          </div>`;
+      }).join('');
     }
 
     function passesConferirFilters(l) {
@@ -937,6 +1017,7 @@
       document.getElementById('df-main').style.display = 'block';
 
       loadConferirMes();
+      carregarTendenciaPrevistoPago();
     }
 
     init();

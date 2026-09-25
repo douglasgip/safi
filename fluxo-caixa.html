@@ -117,6 +117,25 @@
     .cap-btn-pay { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); border-radius: 8px; color: #6ee7b7; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; }
     .cap-btn-pay:hover { background: rgba(52,211,153,0.18); }
     .cap-empty { padding: 40px 20px; text-align: center; color: #334155; font-size: 13px; }
+
+    /* ── Total a pagar por mês: uma métrica só (magnitude), então uma cor só (accent
+       verde da tela) — o vermelho aqui não é "outra série", é o mesmo estado "vencida"
+       que a tabela já usa (cap-venc.overdue), por isso entra como cor de status, com
+       legenda, não como categórico. ── */
+    .cap-trend-panel { background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 16px 20px; margin-bottom: 14px; }
+    .cap-trend-header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .cap-trend-title { font-size: 12.5px; font-weight: 800; color: #f1f5f9; }
+    .cap-trend-legend { display: flex; gap: 14px; }
+    .cap-trend-leg-item { display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 600; color: #94a3b8; }
+    .cap-trend-dot { width: 8px; height: 8px; border-radius: 2px; display: inline-block; }
+    .cap-trend-dot-ok { background: #34d399; }
+    .cap-trend-dot-atraso { background: #f87171; }
+    .cap-trend-chart { display: flex; align-items: flex-end; gap: 12px; min-height: 130px; overflow-x: auto; padding-bottom: 2px; }
+    .cap-trend-col { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 58px; flex: 1; }
+    .cap-trend-bar { width: 22px; border-radius: 4px 4px 0 0; min-height: 3px; background: linear-gradient(180deg,#6ee7b7,#059669); }
+    .cap-trend-bar.atraso { background: linear-gradient(180deg,#fca5a5,#dc2626); }
+    .cap-trend-col-label { font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+    .cap-trend-col-valor { font-size: 10px; font-weight: 700; color: #cbd5e1; font-variant-numeric: tabular-nums; }
     .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
     .cap-tipo-badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
     .cap-tipo-despesa { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); color: #7dd3fc; }
@@ -194,6 +213,16 @@
         <div class="f"><label for="cap-mes">Mês da previsão de chegada</label><select id="cap-mes"></select></div>
       </div>
       <div class="cap-totais" id="cap-totais"></div>
+      <div class="cap-trend-panel" id="cap-trend-panel" style="display:none">
+        <div class="cap-trend-header">
+          <div class="cap-trend-title">Total a pagar por mês</div>
+          <div class="cap-trend-legend">
+            <span class="cap-trend-leg-item"><span class="cap-trend-dot cap-trend-dot-ok"></span>Em dia</span>
+            <span class="cap-trend-leg-item"><span class="cap-trend-dot cap-trend-dot-atraso"></span>Com atraso</span>
+          </div>
+        </div>
+        <div id="cap-trend-chart" class="cap-trend-chart"></div>
+      </div>
       <div class="cap-panel" id="cap-panel">
         <div class="cap-table-scroll">
           <table class="cap-table">
@@ -394,6 +423,38 @@
       popularFiltroMesCap();
       filtersEl.style.display = 'flex';
       renderContasPagar();
+      renderTrendPorMes();
+    }
+
+    // ── Total a pagar por mês: reaproveita capTodasLinhas (já carregado acima, sem
+    // consulta nova) agrupado por mês da previsão de chegada. Barra fica vermelha se
+    // esse mês tiver alguma linha vencida (mesmo critério "atrasado" já usado na tabela).
+    function renderTrendPorMes() {
+      const panel = document.getElementById('cap-trend-panel');
+      const chart = document.getElementById('cap-trend-chart');
+      const comData = capTodasLinhas.filter(l => l.previsao_chegada);
+      if (!comData.length) { panel.style.display = 'none'; return; }
+      const porMes = {};
+      comData.forEach(l => {
+        const chave = l.previsao_chegada.slice(0, 7);
+        if (!porMes[chave]) porMes[chave] = { total: 0, atrasado: false };
+        porMes[chave].total += l.aPagar;
+        if (l.atrasado) porMes[chave].atrasado = true;
+      });
+      const chaves = Object.keys(porMes).sort();
+      if (chaves.length < 2) { panel.style.display = 'none'; return; }
+      const max = Math.max(1, ...chaves.map(k => porMes[k].total));
+      panel.style.display = 'block';
+      chart.innerHTML = chaves.map(k => {
+        const v = porMes[k];
+        const [ano, mes] = k.split('-').map(Number);
+        const h = Math.max(3, Math.round(v.total / max * 100));
+        return `<div class="cap-trend-col" title="${esc(MES_CURTO[mes - 1])}/${ano}: ${fmtBRL(v.total)}${v.atrasado ? ' (com atraso)' : ''}">
+            <div class="cap-trend-col-valor">${fmtBRL(v.total).replace('R$', '').trim()}</div>
+            <div class="cap-trend-bar${v.atrasado ? ' atraso' : ''}" style="height:${h}px"></div>
+            <div class="cap-trend-col-label">${MES_CURTO[mes - 1]}/${String(ano).slice(2)}</div>
+          </div>`;
+      }).join('');
     }
 
     // Monta as opções de mês a partir dos meses de previsão de chegada realmente
