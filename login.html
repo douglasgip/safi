@@ -364,7 +364,7 @@
     async function enrollFreshTotp() {
       for (let attempt = 0; attempt < 3; attempt++) {
         const friendlyName = 'totp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-        const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName });
+        const { data, error } = await sb.auth.mfa.enroll({ factorType: 'totp', friendlyName, issuer: 'SAFI' });
         if (!error) return { data, error: null };
         if (!/already exists/i.test(error.message || '')) return { data: null, error };
         const { data: fList } = await sb.auth.mfa.listFactors();

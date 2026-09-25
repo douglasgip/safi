@@ -250,7 +250,7 @@ function wireSidebarToggle(prefix) {
     attempt = attempt || 0;
     if (attempt >= 3) return Promise.resolve({ data: null, error: { message: 'Não foi possível configurar o MFA após várias tentativas. Tente novamente em instantes.' } });
     var friendlyName = 'totp-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
-    return sbClient.auth.mfa.enroll({ factorType: 'totp', friendlyName: friendlyName }).then(function(res){
+    return sbClient.auth.mfa.enroll({ factorType: 'totp', friendlyName: friendlyName, issuer: 'SAFI' }).then(function(res){
       if (!res.error) return res;
       if (!/already exists/i.test((res.error && res.error.message) || '')) return res;
       return sbClient.auth.mfa.listFactors().then(function(fRes){
