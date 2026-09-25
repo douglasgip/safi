@@ -43,6 +43,25 @@ function extractBlock(text: string, tag: string): string {
   return m ? m[1].trim() : ''
 }
 
+// Termos fixos do jargão do Grupo Sacoman — reconhecimento de voz erra sigla e nome próprio,
+// isso ajuda o Gerôn a corrigir na hora de editar a transcrição (ex.: "gip" -> "GIP", "sáfi" -> "SAFI").
+const JARGAO_FIXO = ['SAFI', 'GerônIA', 'DRE', 'EBITDA', 'GIP', 'GIP Ecommerce', 'Exposição Paulista', 'Via Closet', 'Grupo Sacoman', 'CNPJ', 'CPF', 'RP']
+
+async function montarDicionarioTermos(sb: ReturnType<typeof createClient>): Promise<string> {
+  const [empresas, funcionarios, perfis, mapa] = await Promise.all([
+    sb.from('empresas').select('nome'),
+    sb.from('funcionarios').select('nome'),
+    sb.from('user_profiles').select('full_name'),
+    sb.from('mapa_societario_empresas').select('nome_fantasia, marca'),
+  ])
+  const termos = new Set<string>(JARGAO_FIXO)
+  for (const r of empresas.data || []) if (r.nome) termos.add(r.nome)
+  for (const r of funcionarios.data || []) if (r.nome) termos.add(r.nome)
+  for (const r of perfis.data || []) if (r.full_name) termos.add(r.full_name)
+  for (const r of mapa.data || []) { if (r.nome_fantasia) termos.add(r.nome_fantasia); if (r.marca) termos.add(r.marca) }
+  return [...termos].join(', ')
+}
+
 function parseAcoesSugeridas(block: string) {
   if (!block) return []
   return block.split('\n')
@@ -105,10 +124,11 @@ Deno.serve(async (req: Request) => {
     if (mode === 'finalizar') {
       if (transcricao.length < 40) return json({ error: 'Transcrição muito curta pra processar.' }, 400)
       const titulo = typeof body?.titulo === 'string' ? body.titulo.trim() : ''
+      const dicionario = await montarDicionarioTermos(sb)
       const instrucoes = `Aqui está a transcrição bruta (reconhecimento de voz, sem separação de quem falou, pode ter erros de reconhecimento) de uma reunião do Grupo Sacoman${titulo ? ` — "${titulo}"` : ''}. Produza EXATAMENTE os 4 blocos abaixo, nesse formato, sem nenhum texto antes, depois ou entre eles:
 
 <<<EDITADA>>>
-A transcrição limpa e organizada em parágrafos/tópicos — corrija erros óbvios de reconhecimento de voz, remova hesitações e repetições, mas NUNCA invente conteúdo que não foi dito. Se der pra perceber (pela forma de falar, por alguém se identificar) que a fala mudou de pessoa, indique isso da melhor forma possível; se não der, não invente quem falou.
+A transcrição limpa e organizada em parágrafos/tópicos — corrija erros óbvios de reconhecimento de voz, remova hesitações e repetições, mas NUNCA invente conteúdo que não foi dito. Se der pra perceber (pela forma de falar, por alguém se identificar) que a fala mudou de pessoa, indique isso da melhor forma possível; se não der, não invente quem falou. Preste atenção especial a nomes próprios, empresas e siglas do Grupo Sacoman que o reconhecimento de voz costuma errar foneticamente — use a lista de termos conhecidos abaixo pra corrigir quando a palavra reconhecida soar parecida com um deles, mas NUNCA force um termo da lista onde ele claramente não se encaixa.
 <<<FIM_EDITADA>>>
 <<<RESUMO>>>
 Resumo objetivo da reunião em 3 a 6 frases.
@@ -120,6 +140,9 @@ Sua opinião e observações sobre a reunião como conselheiro — pontos de ate
 Uma linha por ação/decisão identificada na conversa, começando com "-", neste formato: - Título curto da ação | Nome do responsável (ou "não identificado") | Prazo em AAAA-MM-DD (ou "sem prazo")
 Se nenhuma ação clara foi mencionada, deixe este bloco vazio.
 <<<FIM_ACOES>>>
+
+TERMOS CONHECIDOS DO GRUPO SACOMAN (nomes de funcionários, empresas, siglas — use só como referência de correção fonética, não force nada que não se encaixe):
+${dicionario}
 
 TRANSCRIÇÃO BRUTA:
 ${transcricao}`
