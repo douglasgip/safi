@@ -165,6 +165,21 @@
     .summary-value.accent { color: #5eead4; }
     .summary-value.warn { color: #fbbf24; }
 
+    /* ── Composição do custo: barra única 100% empilhada, 4 categorias fixas.
+       Cores validadas p/ separação em daltonismo (script da skill de dataviz);
+       sempre com legenda + rótulo direto em cada fatia (secondary encoding). ── */
+    .ci-breakdown-panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 16px 18px; margin-top: 14px; backdrop-filter: blur(16px); }
+    .ci-bd-title { font-size: 12px; font-weight: 800; color: #f1f5f9; margin-bottom: 12px; }
+    .ci-bd-bar { display: flex; width: 100%; height: 26px; border-radius: 7px; overflow: hidden; background: rgba(255,255,255,0.04); }
+    .ci-bd-seg { height: 100%; border-right: 2px solid #080b14; transition: width .25s ease; }
+    .ci-bd-seg:last-child { border-right: none; }
+    .ci-bd-legend { display: flex; flex-wrap: wrap; gap: 10px 22px; margin-top: 14px; }
+    .ci-bd-leg-item { display: flex; align-items: center; gap: 7px; font-size: 11.5px; }
+    .ci-bd-dot { width: 9px; height: 9px; border-radius: 2.5px; flex-shrink: 0; }
+    .ci-bd-leg-label { color: #94a3b8; font-weight: 600; }
+    .ci-bd-leg-value { color: #f1f5f9; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .ci-bd-leg-pct { color: #64748b; font-weight: 600; }
+
     /* ── Modais (salvar / histórico) ── */
     .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
     .modal-overlay.open { display: flex; }
@@ -417,6 +432,13 @@
         <div class="summary-label">Custo total da importação</div>
         <div class="summary-value accent" id="sum-total">R$ 0,00</div>
       </div>
+    </div>
+
+    <!-- ── Composição do custo: onde o preço final está pesando ── -->
+    <div class="ci-breakdown-panel" id="ci-breakdown-panel" style="display:none">
+      <div class="ci-bd-title">Composição do custo total</div>
+      <div class="ci-bd-bar" id="ci-breakdown-bar"></div>
+      <div class="ci-bd-legend" id="ci-breakdown-legend"></div>
     </div>
 
   </main>
@@ -757,6 +779,56 @@
       g('sum-impostos').textContent = fmtBRL(totais.impostos);
       g('sum-despesas').textContent = fmtBRL(totais.despesas);
       g('sum-total').textContent = fmtBRL(totais.total);
+
+      renderBreakdown(linhas, totais);
+    }
+
+    // ── Composição do custo total: produto (mercadoria) × frete/seguro × impostos ×
+    // despesas, numa barra única 100% empilhada. "VMLD total" no card já soma
+    // produto+frete+seguro junto — aqui quebra isso em produto e frete/seguro
+    // separados, que é justamente a pergunta "o frete tá pesando muito?" que motivou
+    // o gráfico. 4 cores fixas (mesmas famílias já usadas no resto do SAFI, validadas
+    // pra separação em daltonismo com o script da skill de dataviz), sempre com
+    // legenda + rótulo direto em cada fatia (só 4 categorias).
+    // fmtPct (já existente) põe "+" na frente — feito pra delta de margem, não serve
+    // aqui (isto é proporção do total, não ganho/perda).
+    function fmtPctPlano(v) { return v.toFixed(1).replace('.', ',') + '%'; }
+    const CI_BREAKDOWN_CATS = [
+      { key: 'produto',  label: 'Produto (mercadoria)', color: '#2563eb' },
+      { key: 'frete',    label: 'Frete e seguro',       color: '#0d9488' },
+      { key: 'impostos', label: 'Impostos',             color: '#d97706' },
+      { key: 'despesas', label: 'Despesas e processo',  color: '#e11d48' },
+    ];
+    function renderBreakdown(linhas, totais) {
+      const bar = document.getElementById('ci-breakdown-bar');
+      const legend = document.getElementById('ci-breakdown-legend');
+      const panel = document.getElementById('ci-breakdown-panel');
+      if (!bar || !legend || !panel) return;
+
+      const produto = linhas.reduce((s, l) => s + l.vmleBRL, 0);
+      const freteSeguro = linhas.reduce((s, l) => s + l.freteRat + l.seguroRat, 0);
+      const valores = { produto, frete: freteSeguro, impostos: totais.impostos, despesas: totais.despesas };
+      const total = produto + freteSeguro + totais.impostos + totais.despesas;
+
+      if (total <= 0) { panel.style.display = 'none'; return; }
+      panel.style.display = 'block';
+
+      bar.innerHTML = CI_BREAKDOWN_CATS.map(c => {
+        const v = valores[c.key];
+        const pct = v / total * 100;
+        if (pct <= 0) return '';
+        return `<div class="ci-bd-seg" style="width:${pct}%;background:${c.color}" title="${esc(c.label)}: ${fmtBRL(v)} (${fmtPctPlano(pct)})"></div>`;
+      }).join('');
+
+      legend.innerHTML = CI_BREAKDOWN_CATS.map(c => {
+        const v = valores[c.key];
+        const pct = v / total * 100;
+        return `<div class="ci-bd-leg-item">
+            <span class="ci-bd-dot" style="background:${c.color}"></span>
+            <span class="ci-bd-leg-label">${esc(c.label)}</span>
+            <span class="ci-bd-leg-value">${fmtBRL(v)} <span class="ci-bd-leg-pct">(${fmtPctPlano(pct)})</span></span>
+          </div>`;
+      }).join('');
     }
 
     // ── Linhas de produto ──
