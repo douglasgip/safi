@@ -199,6 +199,40 @@
     .btn-danger { padding: 11px 14px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: #fca5a5; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
     #re-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
     @media (max-width: 900px) { .chips { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ── Gerôn Transcript ── */
+    .modal-card.xwide { max-width: 860px; }
+    .tr-rec-row { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .tr-rec-dot { width: 10px; height: 10px; border-radius: 50%; background: #475569; flex-shrink: 0; }
+    .tr-rec-dot.on { background: #ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,0.18); animation: tr-pulse 1.4s ease-in-out infinite; }
+    @keyframes tr-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+    .tr-rec-label { font-size: 12.5px; font-weight: 700; color: #94a3b8; }
+    .tr-rec-label.on { color: #fca5a5; }
+    .tr-timer { font-size: 12.5px; font-weight: 700; color: #64748b; font-variant-numeric: tabular-nums; margin-left: auto; }
+    .tr-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 16px; min-height: 160px; max-height: 260px; overflow-y: auto; font-size: 13px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; margin-bottom: 12px; }
+    .tr-box .interim { color: #64748b; }
+    .tr-empty { color: #475569; font-size: 12.5px; }
+    .tr-considera-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+    .tr-considera-item { background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.22); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; color: #e0f2fe; line-height: 1.5; }
+    .tr-considera-item b { color: #7dd3fc; display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 3px; }
+    .tr-actions-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .tr-actions-row .btn-ghost, .tr-actions-row .btn-danger { flex: 1; min-width: 150px; }
+    .tr-unsupported { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); border-radius: 10px; padding: 12px 14px; color: #fbbf24; font-size: 12.5px; line-height: 1.5; }
+    .tr-processing { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 30px 10px; }
+    .tr-shimmer { background: linear-gradient(90deg, rgba(148,163,184,0.5) 0%, rgba(148,163,184,0.5) 38%, #ffffff 50%, rgba(148,163,184,0.5) 62%, rgba(148,163,184,0.5) 100%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: tr-shimmer-move 1.7s linear infinite; font-weight: 700; font-size: 13.5px; }
+    @keyframes tr-shimmer-move { 0% { background-position: 200% center; } 100% { background-position: -60% center; } }
+    .tr-review-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .tr-review-tab { padding: 7px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #64748b; font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 700; cursor: pointer; }
+    .tr-review-tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; border-color: rgba(56,189,248,0.3); }
+    .tr-review-block { margin-bottom: 16px; }
+    .tr-review-label { font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .tr-review-text { font-size: 12.5px; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap; }
+    .tr-acao-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; margin-bottom: 6px; }
+    .tr-acao-item input[type="checkbox"] { margin-top: 3px; accent-color: #38bdf8; }
+    .tr-acao-fields { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .tr-acao-fields input { padding: 6px 9px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; color-scheme: dark; }
+    .tr-acao-fields .row2 { display: flex; gap: 6px; }
+    .tr-acao-fields .row2 input { flex: 1; }
     @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .grid2 { grid-template-columns: 1fr; } }
 
   </style>
@@ -314,6 +348,83 @@
         <button class="btn-primary" id="aca-save" type="button">Salvar</button>
         <button class="btn-danger" id="aca-del" type="button" style="display:none">Excluir</button>
         <button class="btn-cancel" type="button" onclick="closeModal('aca-modal')">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Gerôn Transcript -->
+  <div class="modal-overlay" id="tr-modal">
+    <div class="modal-card xwide">
+      <div class="modal-title">Gerôn Transcript</div>
+      <div class="modal-sub" style="font-size:12px;color:#64748b;margin-bottom:14px">Transcrição ao vivo da reunião, com apoio do GerônIA</div>
+      <div class="modal-error" id="tr-error"></div>
+
+      <!-- Navegador sem suporte -->
+      <div class="tr-unsupported" id="tr-unsupported" style="display:none">
+        Esse recurso usa o reconhecimento de voz do navegador, que hoje só funciona no <b>Google Chrome</b> (ou outro navegador baseado em Chromium). Abra essa tela no Chrome pra usar o Gerôn Transcript.
+      </div>
+
+      <!-- View: ao vivo -->
+      <div id="tr-view-live">
+        <div class="field"><label for="tr-titulo">Título da reunião (opcional agora, dá pra ajustar depois)</label><input id="tr-titulo" maxlength="140" placeholder="Ex.: Conselho — resultado de agosto"></div>
+
+        <div class="tr-rec-row">
+          <span class="tr-rec-dot" id="tr-rec-dot"></span>
+          <span class="tr-rec-label" id="tr-rec-label">Pronto pra começar</span>
+          <span class="tr-timer" id="tr-timer" style="display:none">00:00</span>
+        </div>
+
+        <div class="tr-box" id="tr-box"><span class="tr-empty">A transcrição aparece aqui conforme as pessoas forem falando…</span></div>
+
+        <div class="tr-considera-list" id="tr-considera-list"></div>
+
+        <div class="tr-actions-row">
+          <button class="btn-primary" id="tr-btn-start" type="button" style="flex:1 1 100%">🎙 Iniciar transcrição ao vivo</button>
+        </div>
+        <div class="tr-actions-row" id="tr-actions-gravando" style="display:none">
+          <button class="btn-ghost" id="tr-btn-consideracao" type="button">💬 Ouvir consideração do Gerôn</button>
+          <button class="btn-danger" id="tr-btn-parar" type="button">⏹ Finalizar transcrição</button>
+        </div>
+      </div>
+
+      <!-- View: processando -->
+      <div id="tr-view-processing" style="display:none">
+        <div class="tr-processing">
+          <img src="/public/GerônIA.png" alt="" style="width:40px;height:40px;border-radius:50%">
+          <span class="tr-shimmer" id="tr-processing-label">Gerôn está lendo a transcrição...</span>
+        </div>
+      </div>
+
+      <!-- View: revisão -->
+      <div id="tr-view-review" style="display:none">
+        <div class="tr-review-tabs">
+          <button class="tr-review-tab active" data-rtab="editada" type="button">Versão editada</button>
+          <button class="tr-review-tab" data-rtab="bruta" type="button">Versão bruta</button>
+        </div>
+        <div class="tr-box" id="tr-review-texto" style="max-height:220px"></div>
+
+        <div class="tr-review-block">
+          <div class="tr-review-label">Resumo</div>
+          <div class="tr-review-text" id="tr-review-resumo"></div>
+        </div>
+        <div class="tr-review-block">
+          <div class="tr-review-label">Observações do Gerôn</div>
+          <div class="tr-review-text" id="tr-review-observacoes"></div>
+        </div>
+        <div class="tr-review-block" id="tr-review-acoes-wrap">
+          <div class="tr-review-label">Ações identificadas — marque as que quer criar</div>
+          <div id="tr-review-acoes"></div>
+        </div>
+
+        <div class="tr-actions-row">
+          <button class="btn-primary" id="tr-btn-salvar" type="button">Salvar reunião</button>
+          <button class="btn-ghost" id="tr-btn-pdf" type="button">Baixar PDF</button>
+          <button class="btn-danger" id="tr-btn-descartar" type="button">Descartar</button>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:14px">
+        <button class="btn-cancel" type="button" id="tr-btn-fechar">Fechar</button>
       </div>
     </div>
   </div>
@@ -552,7 +663,317 @@
       const r = e.target.closest('[data-reu]'); if (r) return abrirReuniao(r.dataset.reu);
     });
     ['f-status', 'f-resp', 'f-op'].forEach(id => g(id).addEventListener('change', renderAcoes));
-    document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('mousedown', e => { if (e.target === m) m.classList.remove('open'); }));
+    // ── Gerôn Transcript ──────────────────────────────────────────────────
+    // Transcrição ao vivo roda 100% no navegador (Web Speech API — reconhecimento
+    // nativo do Chrome, sem custo, sem separar quem fala). O GerônIA só entra em
+    // dois momentos, via edge function geronia-transcricao: uma consideração
+    // pontual durante a reunião, e o processamento final (editar/resumir/opinar/
+    // sugerir ações) — nunca fica sabendo da reunião em tempo real, só quando
+    // chamado explicitamente.
+    const TRANSCRICAO_EDGE_URL = SUPABASE_URL + '/functions/v1/geronia-transcricao';
+    const TR_LS_KEY = 'safi-geronia-transcript-emcurso';
+
+    let tr = { recognition: null, ativo: false, finalText: '', interimText: '', inicioMs: 0, timerInt: null, considerations: [], pedindoConsideracao: false, resultado: null, reviewTab: 'editada' };
+
+    function trSuportado() { return !!(window.SpeechRecognition || window.webkitSpeechRecognition); }
+    function trReset() { tr = { recognition: null, ativo: false, finalText: '', interimText: '', inicioMs: 0, timerInt: null, considerations: [], pedindoConsideracao: false, resultado: null, reviewTab: 'editada' }; }
+
+    function abrirTranscricao() {
+      trReset();
+      showErr('tr-error', '');
+      g('tr-titulo').value = '';
+      g('tr-view-live').style.display = '';
+      g('tr-view-processing').style.display = 'none';
+      g('tr-view-review').style.display = 'none';
+      const suportado = trSuportado();
+      g('tr-unsupported').style.display = suportado ? 'none' : 'block';
+      g('tr-btn-start').style.display = suportado ? '' : 'none';
+      g('tr-actions-gravando').style.display = 'none';
+      g('tr-rec-dot').classList.remove('on');
+      g('tr-rec-label').textContent = 'Pronto pra começar';
+      g('tr-rec-label').classList.remove('on');
+      g('tr-timer').style.display = 'none';
+      trRenderBox();
+      trRenderConsideracoes();
+      openModal('tr-modal');
+    }
+
+    function trFmtTimer(ms) {
+      const s = Math.max(0, Math.floor(ms / 1000));
+      return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+    }
+
+    function trRenderBox() {
+      const box = g('tr-box');
+      if (!tr.finalText.trim() && !tr.interimText.trim()) { box.innerHTML = '<span class="tr-empty">A transcrição aparece aqui conforme as pessoas forem falando…</span>'; return; }
+      box.innerHTML = esc(tr.finalText) + (tr.interimText ? '<span class="interim">' + (tr.finalText ? ' ' : '') + esc(tr.interimText) + '</span>' : '');
+      box.scrollTop = box.scrollHeight;
+    }
+    function trRenderConsideracoes() {
+      g('tr-considera-list').innerHTML = tr.considerations.map(c => '<div class="tr-considera-item"><b>Gerôn — ' + trFmtTimer(c.ms) + '</b>' + esc(c.texto) + '</div>').join('');
+    }
+
+    function trIniciar() {
+      const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const rec = new Rec();
+      rec.lang = 'pt-BR';
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.onresult = function (ev) {
+        let interim = '';
+        for (let i = ev.resultIndex; i < ev.results.length; i++) {
+          const res = ev.results[i];
+          if (res.isFinal) { tr.finalText = (tr.finalText ? tr.finalText + ' ' : '') + res[0].transcript.trim(); trPersistirRascunho(); }
+          else interim += res[0].transcript;
+        }
+        tr.interimText = interim;
+        trRenderBox();
+      };
+      rec.onerror = function (ev) {
+        if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+          showErr('tr-error', 'Permissão de microfone negada. Habilite o microfone pro SAFI nas configurações do navegador e tente de novo.');
+          trParar(false);
+        }
+        // outros erros (ex.: "no-speech") são normais em silêncio — o onend cuida de reiniciar.
+      };
+      rec.onend = function () { if (tr.ativo) { try { rec.start(); } catch (e) {} } };
+      tr.recognition = rec;
+      tr.ativo = true;
+      tr.inicioMs = Date.now();
+      try { rec.start(); } catch (e) { showErr('tr-error', 'Não foi possível acessar o microfone.'); trReset(); return; }
+
+      g('tr-rec-dot').classList.add('on');
+      g('tr-rec-label').textContent = 'Gravando';
+      g('tr-rec-label').classList.add('on');
+      g('tr-timer').style.display = '';
+      g('tr-btn-start').style.display = 'none';
+      g('tr-actions-gravando').style.display = 'flex';
+      tr.timerInt = setInterval(() => { g('tr-timer').textContent = trFmtTimer(Date.now() - tr.inicioMs); }, 1000);
+    }
+
+    function trPersistirRascunho() { try { localStorage.setItem(TR_LS_KEY, JSON.stringify({ titulo: g('tr-titulo').value, texto: tr.finalText, ts: Date.now() })); } catch (e) {} }
+    function trLimparRascunho() { try { localStorage.removeItem(TR_LS_KEY); } catch (e) {} }
+
+    function trParar(finalizar) {
+      tr.ativo = false;
+      if (tr.recognition) { try { tr.recognition.stop(); } catch (e) {} }
+      if (tr.timerInt) { clearInterval(tr.timerInt); tr.timerInt = null; }
+      g('tr-rec-dot').classList.remove('on');
+      g('tr-rec-label').textContent = 'Parado';
+      g('tr-rec-label').classList.remove('on');
+      g('tr-actions-gravando').style.display = 'none';
+      if (finalizar) trFinalizar();
+    }
+
+    async function trToken() {
+      const { data } = await sb.auth.getSession();
+      return data && data.session ? data.session.access_token : null;
+    }
+
+    async function trPedirConsideracao() {
+      if (tr.pedindoConsideracao) return;
+      const texto = tr.finalText.trim();
+      if (!texto) { showToast('Ainda não tem transcrição suficiente.', 'red'); return; }
+      tr.pedindoConsideracao = true;
+      const btn = g('tr-btn-consideracao'); const original = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Gerôn está pensando...';
+      try {
+        const token = await trToken();
+        const res = await fetch(TRANSCRICAO_EDGE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ mode: 'consideracao', transcricao: texto }) });
+        const data = await res.json();
+        if (data && data.sugestao) { tr.considerations.push({ ms: Date.now() - tr.inicioMs, texto: data.sugestao }); trRenderConsideracoes(); }
+        else showToast((data && data.error) || 'Não foi possível gerar uma consideração agora.', 'red');
+      } catch (e) { showToast('Falha de conexão com o Gerôn.', 'red'); }
+      tr.pedindoConsideracao = false;
+      btn.disabled = false; btn.textContent = original;
+    }
+
+    const TR_PROCESSING_STEPS = ['Gerôn está lendo a transcrição...', 'Organizando o que foi dito...', 'Resumindo os pontos principais...', 'Preparando as observações...'];
+    async function trFinalizar() {
+      const texto = tr.finalText.trim();
+      if (texto.length < 40) {
+        showErr('tr-error', 'Transcrição muito curta pra processar — grave um pouco mais antes de finalizar.');
+        return;
+      }
+      g('tr-view-live').style.display = 'none';
+      g('tr-view-processing').style.display = 'block';
+      let stepI = 0;
+      g('tr-processing-label').textContent = TR_PROCESSING_STEPS[0];
+      const stepTimer = setInterval(() => { stepI = Math.min(stepI + 1, TR_PROCESSING_STEPS.length - 1); g('tr-processing-label').textContent = TR_PROCESSING_STEPS[stepI]; }, 2500);
+      try {
+        const token = await trToken();
+        const res = await fetch(TRANSCRICAO_EDGE_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, body: JSON.stringify({ mode: 'finalizar', transcricao: texto, titulo: g('tr-titulo').value.trim() }) });
+        const data = await res.json();
+        clearInterval(stepTimer);
+        if (!res.ok || data.error) {
+          showErr('tr-error', (data && data.error) || 'Não foi possível processar a transcrição.');
+          g('tr-view-processing').style.display = 'none';
+          g('tr-view-live').style.display = '';
+          return;
+        }
+        tr.resultado = data;
+        trAbrirRevisao();
+      } catch (e) {
+        clearInterval(stepTimer);
+        showErr('tr-error', 'Falha de conexão ao processar a transcrição. A transcrição bruta não foi perdida — pode tentar de novo.');
+        g('tr-view-processing').style.display = 'none';
+        g('tr-view-live').style.display = '';
+      }
+    }
+
+    function trAbrirRevisao() {
+      g('tr-view-processing').style.display = 'none';
+      g('tr-view-review').style.display = 'block';
+      tr.reviewTab = 'editada';
+      document.querySelectorAll('.tr-review-tab').forEach(b => b.classList.toggle('active', b.dataset.rtab === 'editada'));
+      trRenderRevisaoTexto();
+      g('tr-review-resumo').textContent = tr.resultado.resumo || '—';
+      g('tr-review-observacoes').textContent = tr.resultado.observacoes || '—';
+      const acoesSug = tr.resultado.acoes_sugeridas || [];
+      g('tr-review-acoes-wrap').style.display = acoesSug.length ? '' : 'none';
+      g('tr-review-acoes').innerHTML = acoesSug.map((a, i) =>
+        '<div class="tr-acao-item">' +
+          '<input type="checkbox" id="tr-acao-chk-' + i + '" checked>' +
+          '<div class="tr-acao-fields">' +
+            '<input type="text" id="tr-acao-titulo-' + i + '" value="' + esc(a.titulo) + '" placeholder="Título da ação">' +
+            '<div class="row2">' +
+              '<input type="text" id="tr-acao-resp-' + i + '" value="' + esc(a.responsavel_nome || '') + '" placeholder="Responsável">' +
+              '<input type="date" id="tr-acao-prazo-' + i + '" value="' + (a.prazo || '') + '">' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      ).join('');
+    }
+    function trRenderRevisaoTexto() { g('tr-review-texto').textContent = tr.reviewTab === 'editada' ? (tr.resultado.editada || tr.finalText) : tr.finalText; }
+
+    async function trSalvar() {
+      const titulo = g('tr-titulo').value.trim() || ('Transcrição — ' + new Date().toLocaleDateString('pt-BR'));
+      const btn = g('tr-btn-salvar'); btn.disabled = true;
+      try {
+        const rowReu = { titulo, data: hoje(), tipo: 'outra', participantes: null, pauta: null, ata: (tr.resultado.resumo || '') + (tr.resultado.observacoes ? '\n\nObservações do Gerôn:\n' + tr.resultado.observacoes : '') };
+        const { data: reuOut, error: reuErr } = await sb.from('reunioes').insert(rowReu).select();
+        if (reuErr) { showErr('tr-error', 'Não foi possível salvar a reunião: ' + reuErr.message); btn.disabled = false; return; }
+        const reuniaoSalva = reuOut[0];
+
+        const { error: trErr } = await sb.from('reunioes_transcricoes').insert({
+          reuniao_id: reuniaoSalva.id, titulo,
+          transcricao_bruta: tr.finalText, transcricao_editada: tr.resultado.editada || null,
+          resumo: tr.resultado.resumo || null, observacoes: tr.resultado.observacoes || null,
+          acoes_sugeridas: tr.resultado.acoes_sugeridas || [], duracao_seg: Math.round((Date.now() - tr.inicioMs) / 1000),
+        });
+        if (trErr) showToast('Reunião salva, mas não foi possível guardar a transcrição: ' + trErr.message, 'red');
+
+        const acoesParaCriar = [];
+        (tr.resultado.acoes_sugeridas || []).forEach((a, i) => {
+          const chk = g('tr-acao-chk-' + i);
+          if (!chk || !chk.checked) return;
+          const titAcao = (g('tr-acao-titulo-' + i).value || '').trim();
+          if (!titAcao) return;
+          const respNome = (g('tr-acao-resp-' + i).value || '').trim() || 'não identificado';
+          const usuarioMatch = usuarios.find(u => u.nome.toLowerCase() === respNome.toLowerCase());
+          acoesParaCriar.push({ titulo: titAcao, reuniao_id: reuniaoSalva.id, responsavel_id: usuarioMatch ? usuarioMatch.id : null, responsavel_nome: usuarioMatch ? usuarioMatch.nome : respNome, prazo: g('tr-acao-prazo-' + i).value || null, status: 'aberta' });
+        });
+        if (acoesParaCriar.length) {
+          const { error: acaoErr } = await sb.from('acoes').insert(acoesParaCriar);
+          if (acaoErr) showToast('Reunião salva, mas houve erro ao criar as ações: ' + acaoErr.message, 'red');
+        }
+
+        trLimparRascunho();
+        closeModal('tr-modal');
+        await carregar();
+        renderTudo();
+        showToast('Reunião e transcrição salvas' + (acoesParaCriar.length ? ' com ' + acoesParaCriar.length + ' ação(ões)' : '') + '.', 'green');
+      } catch (e) { showErr('tr-error', 'Erro inesperado ao salvar.'); }
+      btn.disabled = false;
+    }
+
+    function trDescartar() {
+      if (!confirm('Descartar essa transcrição? Ela não será salva.')) return;
+      trLimparRascunho();
+      closeModal('tr-modal');
+    }
+
+    // PDF simples direto com jsPDF — não usa SafiPdf.iniciar, que é pensado pra um
+    // botão fixo de página com opções, não pra um conteúdo avulso que só existe
+    // depois de finalizar a transcrição aqui dentro do modal.
+    function trCarregarJsPdf() {
+      if (window.jspdf) return Promise.resolve();
+      return new Promise((ok, erro) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
+        s.onload = ok; s.onerror = () => erro(new Error('Não foi possível carregar a biblioteca de PDF.'));
+        document.head.appendChild(s);
+      });
+    }
+    async function trBaixarPdf() {
+      const finalidade = (window.prompt('Finalidade da exportação (obrigatório, mínimo 8 caracteres) — fica registrado pro admin:') || '').trim();
+      if (finalidade.length < 8) { showToast('Informe a finalidade (mínimo 8 caracteres) pra gerar o PDF.', 'red'); return; }
+      const btn = g('tr-btn-pdf'); btn.disabled = true;
+      try {
+        await trCarregarJsPdf();
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+        const M = 44, W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), CW = W - M * 2;
+        let y = 56;
+        function linha(texto, opts) {
+          opts = opts || {};
+          doc.setFont('helvetica', opts.bold ? 'bold' : 'normal');
+          doc.setFontSize(opts.size || 10);
+          const cor = opts.cor || [30, 41, 59];
+          doc.setTextColor(cor[0], cor[1], cor[2]);
+          String(texto || '—').split('\n').forEach(par => {
+            doc.splitTextToSize(par, CW).forEach(l => {
+              if (y > H - 60) { doc.addPage(); y = 56; }
+              doc.text(l, M, y); y += (opts.size || 10) * 1.4;
+            });
+          });
+          y += opts.gap || 10;
+        }
+        const titulo = g('tr-titulo').value.trim() || 'Transcrição de reunião';
+        linha(titulo, { bold: true, size: 16, gap: 4 });
+        linha(new Date().toLocaleDateString('pt-BR') + ' · Gerado pelo Gerôn Transcript', { size: 8.5, cor: [100, 116, 139], gap: 18 });
+        linha('RESUMO', { bold: true, size: 10.5, cor: [2, 132, 199], gap: 4 });
+        linha(tr.resultado.resumo, { gap: 16 });
+        linha('OBSERVAÇÕES DO GERÔN', { bold: true, size: 10.5, cor: [2, 132, 199], gap: 4 });
+        linha(tr.resultado.observacoes, { gap: 16 });
+        if ((tr.resultado.acoes_sugeridas || []).length) {
+          linha('AÇÕES IDENTIFICADAS', { bold: true, size: 10.5, cor: [2, 132, 199], gap: 4 });
+          tr.resultado.acoes_sugeridas.forEach(a => linha('• ' + a.titulo + ' — ' + (a.responsavel_nome || 'não identificado') + (a.prazo ? ' — até ' + fmtD(a.prazo) : ''), { size: 9.5, gap: 4 }));
+          y += 12;
+        }
+        linha('TRANSCRIÇÃO EDITADA', { bold: true, size: 10.5, cor: [2, 132, 199], gap: 4 });
+        linha(tr.resultado.editada || tr.finalText, { size: 9 });
+        const nomeArquivo = 'SAFI-Transcricao-' + titulo.replace(/[^\wÀ-ÿ]+/g, '-').slice(0, 60) + '.pdf';
+        doc.save(nomeArquivo);
+        await sb.from('exportacoes_pdf').insert({ tela: 'reunioes', tela_titulo: 'Gerôn Transcript', filtros: '', orientacao: 'vertical', secoes: ['Resumo', 'Observações', 'Ações identificadas', 'Transcrição editada'], com_ia: true, finalidade, arquivo: nomeArquivo }).catch(() => {});
+      } catch (e) { showToast('Não foi possível gerar o PDF: ' + e.message, 'red'); }
+      btn.disabled = false;
+    }
+
+    g('tr-btn-start').addEventListener('click', () => { if (trSuportado()) trIniciar(); });
+    g('tr-btn-parar').addEventListener('click', () => trParar(true));
+    g('tr-btn-consideracao').addEventListener('click', trPedirConsideracao);
+    g('tr-btn-salvar').addEventListener('click', trSalvar);
+    g('tr-btn-pdf').addEventListener('click', trBaixarPdf);
+    g('tr-btn-descartar').addEventListener('click', trDescartar);
+    g('tr-btn-fechar').addEventListener('click', () => {
+      if (tr.ativo) { if (!confirm('A transcrição ainda está gravando. Fechar mesmo assim? (o texto gravado até agora fica salvo num rascunho local do navegador)')) return; trParar(false); }
+      closeModal('tr-modal');
+    });
+    g('tr-modal').addEventListener('mousedown', e => {
+      if (e.target !== g('tr-modal')) return;
+      if (tr.ativo) { if (!confirm('A transcrição ainda está gravando. Fechar mesmo assim?')) return; trParar(false); }
+      closeModal('tr-modal');
+    });
+    document.querySelectorAll('.tr-review-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        tr.reviewTab = btn.dataset.rtab;
+        document.querySelectorAll('.tr-review-tab').forEach(b => b.classList.toggle('active', b === btn));
+        trRenderRevisaoTexto();
+      });
+    });
+
+    document.querySelectorAll('.modal-overlay').forEach(m => { if (m.id !== 'tr-modal') m.addEventListener('mousedown', e => { if (e.target === m) m.classList.remove('open'); }); });
 
     async function init() {
       const { data } = await sb.auth.getSession();
@@ -565,9 +986,10 @@
       SafiSidebar.apply('re', me, { email: data.session.user.email, sb });
       try { await carregar(); } catch (err) { g('re-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
       if (podeEditar) {
-        g('re-actions').innerHTML = '<button class="btn-primary" id="btn-nova-acao" type="button" style="flex:0 0 auto;padding:11px 18px">+ Nova ação</button><button class="btn-ghost" id="btn-nova-reu" type="button">+ Nova reunião</button>';
+        g('re-actions').innerHTML = '<button class="btn-primary" id="btn-nova-acao" type="button" style="flex:0 0 auto;padding:11px 18px">+ Nova ação</button><button class="btn-ghost" id="btn-nova-reu" type="button">+ Nova reunião</button><button class="btn-ghost" id="btn-transcricao" type="button">🎙 Gerôn Transcript</button>';
         g('btn-nova-acao').addEventListener('click', () => abrirAcao(null));
         g('btn-nova-reu').addEventListener('click', () => abrirReuniao(null));
+        g('btn-transcricao').addEventListener('click', () => abrirTranscricao());
       }
       g('re-loading').style.display = 'none';
       g('re-main').style.display = 'block';
