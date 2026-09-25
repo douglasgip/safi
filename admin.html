@@ -114,6 +114,19 @@
     #exp-tbl .tag-nova { display: inline-block; padding: 2px 8px; border-radius: 8px; background: rgba(245,158,11,0.18); color: #fbbf24; font-size: 10px; font-weight: 800; }
     .btn-ghost-sm { padding: 8px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
     .btn-ghost-sm:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+    .filter-select-sm { padding: 8px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #e2e8f0; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .filter-select-sm:focus { outline: none; border-color: rgba(245,158,11,0.45); }
+    /* ── Ranking de atividade: barra horizontal, cor única (amber) por design —
+       a cor identifica "tempo online", não a posição no ranking. ── */
+    .rank-row { display: grid; grid-template-columns: 22px 34px 1fr 84px; align-items: center; gap: 12px; padding: 9px 0; }
+    .rank-row + .rank-row { border-top: 1px solid rgba(255,255,255,0.05); }
+    .rank-pos { font-size: 12px; font-weight: 800; color: #64748b; text-align: right; font-variant-numeric: tabular-nums; }
+    .rank-avatar { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg,#f59e0b,#d97706); display: flex; align-items: center; justify-content: center; font-size: 10.5px; font-weight: 800; color: #1a0a00; flex-shrink: 0; }
+    .rank-mid { min-width: 0; }
+    .rank-name { font-size: 12.5px; font-weight: 700; color: #f1f5f9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rank-bar-track { height: 7px; border-radius: 4px; background: rgba(255,255,255,0.05); margin-top: 5px; overflow: hidden; }
+    .rank-bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,#d97706,#fbbf24); transition: width .3s ease; }
+    .rank-value { font-size: 12px; font-weight: 700; color: #fbbf24; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .panel-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 22px 28px;
@@ -465,6 +478,22 @@
       </div>
     </div>
     <div class="table-scroll" style="max-height:360px"><table class="user-table" id="presenca-tbl"><tbody><tr><td style="padding:22px;color:#475569">Carregando…</td></tr></tbody></table></div>
+  </div>
+
+  <div class="panel" id="ranking-panel" style="margin-bottom:18px">
+    <div class="panel-header">
+      <div class="panel-header-left">
+        <div class="panel-header-label">Atividade</div>
+        <div class="panel-header-title">Ranking de Atividade</div>
+      </div>
+      <select class="filter-select-sm" id="ranking-periodo">
+        <option value="7">Últimos 7 dias</option>
+        <option value="30" selected>Últimos 30 dias</option>
+      </select>
+    </div>
+    <div id="ranking-body" style="padding:18px 22px">
+      <div style="padding:22px 0;color:#475569;text-align:center">Carregando…</div>
+    </div>
   </div>
 
   <div class="panel" id="audit-panel" style="margin-bottom:18px">
@@ -1016,6 +1045,45 @@ async function carregarPresenca() {
   }).join('') + '</tbody>';
 }
 
+// ── Ranking de atividade: mesmo dado de presenca_diaria (heartbeat, ver user-menu.js),
+// só que somado no período escolhido e ordenado — top 10 por tempo online. Uma cor só
+// (amber, identidade da métrica "tempo online"), nunca uma cor por posição no ranking.
+async function carregarRanking() {
+  const body = document.getElementById('ranking-body');
+  const dias = +document.getElementById('ranking-periodo').value || 30;
+  const desde = new Date(); desde.setDate(desde.getDate() - (dias - 1));
+  const dataIni = desde.toISOString().slice(0, 10);
+  const [profRes, presRes] = await Promise.all([
+    sb.from('user_profiles').select('id,full_name,email,role'),
+    sb.from('presenca_diaria').select('user_id,segundos_online').gte('data', dataIni)
+  ]);
+  if (profRes.error) { body.innerHTML = '<div style="padding:22px 0;color:#fca5a5;text-align:center">Não foi possível carregar: ' + escH(profRes.error.message) + '</div>'; return; }
+  const somaSeg = {};
+  (presRes.data || []).forEach(r => { somaSeg[r.user_id] = (somaSeg[r.user_id] || 0) + (+r.segundos_online || 0); });
+  const linhas = (profRes.data || [])
+    .map(u => ({ ...u, seg: somaSeg[u.id] || 0 }))
+    .filter(u => u.seg > 0)
+    .sort((a, b) => b.seg - a.seg)
+    .slice(0, 10);
+  if (!linhas.length) { body.innerHTML = '<div style="padding:22px 0;color:#475569;text-align:center">Sem atividade registrada no período.</div>'; return; }
+  const max = linhas[0].seg;
+  body.innerHTML = linhas.map((u, i) => {
+    const nome = u.full_name || (u.email || '').split('@')[0] || 'Usuário';
+    const iniciais = nome.trim().split(/\s+/).slice(0, 2).map(s => s[0] || '').join('').toUpperCase();
+    const pct = max ? Math.max(4, Math.round(u.seg / max * 100)) : 0;
+    return '<div class="rank-row">' +
+      '<div class="rank-pos">' + (i + 1) + 'º</div>' +
+      '<div class="rank-avatar">' + escH(iniciais) + '</div>' +
+      '<div class="rank-mid">' +
+        '<div class="rank-name" title="' + escH(u.role || u.email || '') + '">' + escH(nome) + '</div>' +
+        '<div class="rank-bar-track"><div class="rank-bar-fill" style="width:' + pct + '%"></div></div>' +
+      '</div>' +
+      '<div class="rank-value">' + fmtDuracao(u.seg) + '</div>' +
+    '</div>';
+  }).join('');
+}
+document.getElementById('ranking-periodo').addEventListener('change', carregarRanking);
+
 // ── Log de auditoria: quem criou/editou/apagou um usuário, quando e o que mudou.
 // Escrito pelas edge functions admin-create-user/admin-update-user/admin-delete-user
 // (service role, ignora RLS); a leitura aqui é protegida por RLS (só is_admin vê).
@@ -1070,6 +1138,7 @@ async function init() {
   loadUsers();
   carregarExportacoes();
   carregarPresenca();
+  carregarRanking();
   carregarAuditLog();
   setInterval(carregarExportacoes, 60000);
   setInterval(carregarPresenca, 60000);
