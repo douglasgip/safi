@@ -118,6 +118,25 @@
     .cap-btn-pay:hover { background: rgba(52,211,153,0.18); }
     .cap-empty { padding: 40px 20px; text-align: center; color: #334155; font-size: 13px; }
     .no-company-notice { margin: 0 0 18px; padding: 12px 16px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; font-size: 12px; color: #fbbf24; }
+    .cap-tipo-badge { display: inline-block; padding: 3px 9px; background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.3); border-radius: 999px; color: #7dd3fc; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+
+    /* ── Modal "Conferir pagamento" (despesa fixa, dar baixa a partir daqui) ── */
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 28px 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 18px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 22px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; letter-spacing: .3px; }
+    .field input { width: 100%; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: 'Inter', sans-serif; font-size: 13px; color-scheme: dark; }
+    .field input:focus { outline: none; border-color: #34d399; background: rgba(52,211,153,0.05); }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; font-weight: 500; margin-bottom: 16px; line-height: 1.4; }
+    .modal-error.visible { display: block; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+    .btn-submit { flex: 1; padding: 13px; background: linear-gradient(135deg, #6ee7b7 0%, #34d399 60%, #059669 100%); border: none; border-radius: 12px; color: #052e1f; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #047857; }
+    .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-cancel:hover { background: rgba(255,255,255,0.08); color: #94a3b8; }
 
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; }
     .toast.visible { opacity: 1; }
@@ -165,9 +184,9 @@
 
     <section id="tab-pagar">
       <div class="cap-section-title">Contas a Pagar</div>
-      <div class="cap-section-desc">Pedidos lançados pelos(as) comprador(a)s que ainda não tiveram baixa — o valor já vem com o desconto.</div>
+      <div class="cap-section-desc">Pedidos ainda sem baixa (valor já com desconto) e despesas fixas do mês corrente ainda não conferidas.</div>
       <div class="no-company-notice" id="cap-no-access" style="display:none">
-        As Contas a Pagar vêm dos Pedidos, e você não tem acesso a nenhuma empresa em Pedidos — peça pro admin liberar em Gestão de Acessos pra ver algo aqui.
+        As Contas a Pagar vêm de Pedidos e Despesas Fixas, e você não tem acesso a nenhuma empresa em nenhum dos dois — peça pro admin liberar em Gestão de Acessos pra ver algo aqui.
       </div>
       <div class="cap-filters" id="cap-filters" style="display:none">
         <div class="f"><label for="cap-mes">Mês da previsão de chegada</label><select id="cap-mes"></select></div>
@@ -180,7 +199,7 @@
               <tr>
                 <th>Empresa</th>
                 <th>Fornecedor</th>
-                <th>Comprador(a)</th>
+                <th>Comprador(a) / Tipo</th>
                 <th>A pagar</th>
                 <th>Previsão de chegada</th>
                 <th style="width:140px">Ação</th>
@@ -215,6 +234,42 @@
     <span id="toast-msg"></span>
   </div>
 
+  <!-- Modal Conferir pagamento (dar baixa numa despesa fixa a partir do Contas a Pagar) -->
+  <div class="modal-overlay" id="cap-conf-modal">
+    <div class="modal-card">
+      <div class="modal-title">Conferir pagamento</div>
+      <div class="modal-sub" id="cap-conf-sub">Despesa</div>
+      <div class="modal-error" id="cap-conf-error"></div>
+      <form id="cap-conf-form">
+        <input type="hidden" id="cap-conf-id">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Valor Previsto</label>
+            <input type="text" inputmode="decimal" id="cap-conf-valor-previsto" required>
+          </div>
+          <div class="field">
+            <label>Dia Vencimento</label>
+            <input type="number" min="1" max="31" step="1" id="cap-conf-dia-previsto">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="field">
+            <label>Valor Pago</label>
+            <input type="text" inputmode="decimal" id="cap-conf-valor-pago" placeholder="Deixe em branco se ainda não pagou">
+          </div>
+          <div class="field">
+            <label>Data do Pagamento</label>
+            <input type="date" id="cap-conf-data-pagamento">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="cap-conf-btn-submit">Salvar</button>
+          <button type="button" class="btn-cancel" onclick="closeCapConfModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
@@ -228,8 +283,12 @@
     // já que é essa permissão (não can_fluxo_caixa) que rege o RLS de pedidos.
     const ALL_COMPANIES = ['GIP Ecommerce', 'Exposição Paulista', 'Via Closet'];
     const PEDIDOS_COMPANY_FLAG = { 'GIP Ecommerce': 'pedidos_epgip', 'Exposição Paulista': 'pedidos_exposicao', 'Via Closet': 'pedidos_viacloset' };
+    const DESPESAS_FIXAS_COMPANY_FLAG = { 'GIP Ecommerce': 'despesas_fixas_epgip', 'Exposição Paulista': 'despesas_fixas_exposicao', 'Via Closet': 'despesas_fixas_viacloset' };
+    const MESES_FULL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     let pedidosAllowedCompanies = [];
+    let despesasFixasAllowedCompanies = [];
     let podeBaixar = false;
+    ['cap-conf-valor-previsto', 'cap-conf-valor-pago'].forEach(id => attachMoneyMask(document.getElementById(id)));
 
     // ── Contas a Pagar: todo pedido lançado e ainda sem baixa (valor já com desconto) ──
     // O pedido entra aqui no instante em que é lançado e sai quando a Lorena dá
@@ -239,13 +298,68 @@
     const MES_CURTO = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     let capTodasLinhas = [];
 
+    // ── Despesas Fixas pendentes do mês corrente (Douglas pediu pra elas entrarem
+    // aqui junto com os Pedidos) — só o mês atual, não as atrasadas de meses
+    // anteriores. Mesma geração preguiçosa de despesas-fixas.html: garante que toda
+    // despesa fixa ativa já tenha uma linha em despesas_fixas_lancamentos pro mês. ──
+    const HOJE_REF = new Date();
+    const CAP_DF_ANO = HOJE_REF.getFullYear();
+    const CAP_DF_MES = HOJE_REF.getMonth() + 1;
+
+    function diaVencimentoParaData(ano, mes, dia) {
+      const ultimoDia = new Date(ano, mes, 0).getDate();
+      const diaFinal = Math.min(Math.max(1, dia || 1), ultimoDia);
+      return `${ano}-${String(mes).padStart(2, '0')}-${String(diaFinal).padStart(2, '0')}`;
+    }
+
+    async function ensureLancamentosDespesasFixas() {
+      if (!despesasFixasAllowedCompanies.length) return;
+      const { data: ativas } = await sb.from('despesas_fixas').select('id, valor_previsto_padrao, dia_vencimento').eq('ativo', true).in('empresa', despesasFixasAllowedCompanies);
+      if (!ativas || !ativas.length) return;
+      const { data: existentes } = await sb.from('despesas_fixas_lancamentos').select('despesa_fixa_id').eq('ano', CAP_DF_ANO).eq('mes', CAP_DF_MES).in('despesa_fixa_id', ativas.map(t => t.id));
+      const existingIds = new Set((existentes || []).map(e => e.despesa_fixa_id));
+      const faltantes = ativas.filter(t => !existingIds.has(t.id));
+      if (!faltantes.length) return;
+      await sb.from('despesas_fixas_lancamentos').insert(faltantes.map(t => ({
+        despesa_fixa_id: t.id, ano: CAP_DF_ANO, mes: CAP_DF_MES,
+        valor_previsto: t.valor_previsto_padrao,
+        dia_vencimento_previsto: t.dia_vencimento,
+      })));
+    }
+
+    async function loadDespesasFixasPendentes() {
+      if (!despesasFixasAllowedCompanies.length) return [];
+      await ensureLancamentosDespesasFixas();
+      const { data, error } = await sb
+        .from('despesas_fixas_lancamentos')
+        .select('*, despesas_fixas(*)')
+        .eq('ano', CAP_DF_ANO).eq('mes', CAP_DF_MES)
+        .is('valor_pago', null);
+      if (error) { showToast(error.message, 'red'); return []; }
+      return (data || [])
+        .filter(l => l.despesas_fixas && l.despesas_fixas.ativo && despesasFixasAllowedCompanies.includes(l.despesas_fixas.empresa))
+        .map(l => {
+          const venc = diaVencimentoParaData(CAP_DF_ANO, CAP_DF_MES, l.dia_vencimento_previsto);
+          return {
+            tipo: 'despesa_fixa',
+            id: l.id,
+            empresa: l.despesas_fixas.empresa,
+            fornecedor: l.despesas_fixas.nome,
+            aPagar: Number(l.valor_previsto) || 0,
+            previsao_chegada: venc,
+            atrasado: venc < todayLocal(),
+            _raw: l,
+          };
+        });
+    }
+
     async function loadContasAPagar() {
       const tbody = document.getElementById('cap-tbody');
       const noAccessEl = document.getElementById('cap-no-access');
       const panelEl = document.getElementById('cap-panel');
       const filtersEl = document.getElementById('cap-filters');
       const totaisEl = document.getElementById('cap-totais');
-      if (!pedidosAllowedCompanies.length) {
+      if (!pedidosAllowedCompanies.length && !despesasFixasAllowedCompanies.length) {
         noAccessEl.style.display = 'block';
         panelEl.style.display = 'none';
         filtersEl.style.display = 'none';
@@ -254,19 +368,26 @@
       }
       noAccessEl.style.display = 'none';
       panelEl.style.display = 'block';
-      const { data, error } = await sb
-        .from('pedidos')
-        .select('id, empresa, fornecedor, comprador_nome, valor_total, desconto, previsao_chegada')
-        .in('empresa', pedidosAllowedCompanies)
-        .eq('baixado', false)
-        .order('previsao_chegada', { ascending: true, nullsFirst: false });
-      if (error) {
-        filtersEl.style.display = 'none';
-        tbody.innerHTML = `<tr><td colspan="6" class="cap-empty">Erro ao carregar: ${esc(error.message)}</td></tr>`;
-        return;
+
+      let pedidosLinhas = [];
+      if (pedidosAllowedCompanies.length) {
+        const { data, error } = await sb
+          .from('pedidos')
+          .select('id, empresa, fornecedor, comprador_nome, valor_total, desconto, previsao_chegada')
+          .in('empresa', pedidosAllowedCompanies)
+          .eq('baixado', false)
+          .order('previsao_chegada', { ascending: true, nullsFirst: false });
+        if (error) {
+          showToast('Erro ao carregar Pedidos: ' + error.message, 'red');
+        } else {
+          const hoje = todayLocal();
+          pedidosLinhas = (data || []).map(p => ({ tipo: 'pedido', ...p, aPagar: (Number(p.valor_total) || 0) - (Number(p.desconto) || 0), atrasado: !!p.previsao_chegada && p.previsao_chegada < hoje }));
+        }
       }
-      const hoje = todayLocal();
-      capTodasLinhas = (data || []).map(p => ({ ...p, aPagar: (Number(p.valor_total) || 0) - (Number(p.desconto) || 0), atrasado: !!p.previsao_chegada && p.previsao_chegada < hoje }));
+
+      const despesasLinhas = await loadDespesasFixasPendentes();
+
+      capTodasLinhas = [...pedidosLinhas, ...despesasLinhas].sort((a, b) => (a.previsao_chegada || '9999-99') < (b.previsao_chegada || '9999-99') ? -1 : 1);
 
       popularFiltroMesCap();
       filtersEl.style.display = 'flex';
@@ -300,7 +421,7 @@
       const total = linhas.reduce((s, l) => s + l.aPagar, 0);
       const nAtras = linhas.filter(l => l.atrasado).length;
       totaisEl.style.display = linhas.length ? 'flex' : 'none';
-      totaisEl.innerHTML = `<span>Total a pagar: <b>${fmtBRL(total)}</b></span><span>${linhas.length} pedido(s)</span>` + (nAtras ? `<span class="cap-tot-atras">${nAtras} com previsão de chegada vencida</span>` : '');
+      totaisEl.innerHTML = `<span>Total a pagar: <b>${fmtBRL(total)}</b></span><span>${linhas.length} conta(s)</span>` + (nAtras ? `<span class="cap-tot-atras">${nAtras} vencida(s)</span>` : '');
 
       if (!linhas.length) {
         tbody.innerHTML = `<tr><td colspan="6" class="cap-empty">${mesSel ? 'Nenhuma conta a pagar nesse mês.' : 'Nenhuma conta a pagar no momento.'}</td></tr>`;
@@ -310,11 +431,11 @@
       tbody.innerHTML = linhas.map(l => `<tr>
           <td><img class="cap-empresa-logo" src="${MARCA_LOGOS[l.empresa] || ''}" alt="${esc(l.empresa)}" title="${esc(l.empresa)}"></td>
           <td class="cap-fornecedor">${esc(l.fornecedor)}</td>
-          <td>${l.comprador_nome ? esc(l.comprador_nome) : '—'}</td>
+          <td>${l.tipo === 'despesa_fixa' ? '<span class="cap-tipo-badge">Despesa Fixa</span>' : (l.comprador_nome ? esc(l.comprador_nome) : '—')}</td>
           <td class="cap-valor">${fmtBRL(l.aPagar)}</td>
           <td class="cap-venc${l.atrasado ? ' overdue' : ''}">${l.previsao_chegada ? fmtDate(l.previsao_chegada) : '—'}${l.atrasado ? ' · vencida' : ''}</td>
-          <td>${podeBaixar ? `
-            <button type="button" class="cap-btn-pay" data-id="${esc(l.id)}">
+          <td>${(l.tipo === 'pedido' ? podeBaixar : true) ? `
+            <button type="button" class="cap-btn-pay" data-id="${esc(l.id)}" data-tipo="${l.tipo}">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               Dar baixa
             </button>` : '<span style="color:#475569">—</span>'}
@@ -323,10 +444,12 @@
 
       tbody.querySelectorAll('.cap-btn-pay').forEach(btn => {
         btn.addEventListener('click', async () => {
-          const l = linhas.find(x => x.id === btn.dataset.id);
-          if (!l || !confirm(`Dar baixa em ${l.fornecedor} (${fmtBRL(l.aPagar)})? O pedido sai das Contas a Pagar.`)) return;
+          const l = linhas.find(x => x.id === btn.dataset.id && x.tipo === btn.dataset.tipo);
+          if (!l) return;
+          if (l.tipo === 'despesa_fixa') { openCapConfModal(l); return; }
+          if (!confirm(`Dar baixa em ${l.fornecedor} (${fmtBRL(l.aPagar)})? O pedido sai das Contas a Pagar.`)) return;
           btn.disabled = true;
-          const { error } = await sb.from('pedidos').update({ baixado: true }).eq('id', btn.dataset.id);
+          const { error } = await sb.from('pedidos').update({ baixado: true }).eq('id', l.id);
           if (error) { showToast(error.message, 'red'); btn.disabled = false; return; }
           showToast('Baixa registrada', 'green');
           loadContasAPagar();
@@ -334,6 +457,74 @@
       });
     }
     document.getElementById('cap-mes').addEventListener('change', renderContasPagar);
+
+    // ── Modal "Conferir pagamento" — dar baixa numa despesa fixa direto daqui.
+    // Pré-preenche valor pago = previsto e data = hoje (é um "dar baixa", não uma
+    // edição avulsa como em despesas-fixas.html), mas continua editável — pode
+    // divergir do previsto, diferente de marcar como pago num clique só. ──
+    function openCapConfModal(l) {
+      const raw = l._raw;
+      document.getElementById('cap-conf-sub').textContent = `${l.fornecedor} — ${MESES_FULL[CAP_DF_MES - 1]}/${CAP_DF_ANO}`;
+      document.getElementById('cap-conf-id').value = raw.id;
+      document.getElementById('cap-conf-valor-previsto').value = raw.valor_previsto != null ? numberToMoneyMasked(raw.valor_previsto) : '';
+      document.getElementById('cap-conf-dia-previsto').value = raw.dia_vencimento_previsto != null ? raw.dia_vencimento_previsto : '';
+      document.getElementById('cap-conf-valor-pago').value = raw.valor_previsto != null ? numberToMoneyMasked(raw.valor_previsto) : '';
+      document.getElementById('cap-conf-data-pagamento').value = todayLocal();
+      document.getElementById('cap-conf-error').className = 'modal-error';
+      document.getElementById('cap-conf-modal').classList.add('open');
+    }
+    function closeCapConfModal() { document.getElementById('cap-conf-modal').classList.remove('open'); }
+    document.getElementById('cap-conf-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeCapConfModal(); });
+
+    document.getElementById('cap-conf-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const id = document.getElementById('cap-conf-id').value;
+      if (!id) return;
+      const btn = document.getElementById('cap-conf-btn-submit');
+      document.getElementById('cap-conf-error').className = 'modal-error';
+
+      const valorPrevistoRaw = document.getElementById('cap-conf-valor-previsto').value;
+      const diaPrevistoRaw = document.getElementById('cap-conf-dia-previsto').value;
+      const valorPagoRaw = document.getElementById('cap-conf-valor-pago').value;
+      const dataPagamento = document.getElementById('cap-conf-data-pagamento').value;
+
+      if (valorPagoRaw !== '' && !dataPagamento) {
+        const el = document.getElementById('cap-conf-error');
+        el.textContent = 'Informe a data do pagamento.'; el.className = 'modal-error visible';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = 'Salvando...';
+
+      const { data: sessData } = await sb.auth.getSession();
+      const userId = sessData?.session?.user?.id || null;
+      const jaConferido = valorPagoRaw !== '';
+
+      const payload = {
+        valor_previsto: valorPrevistoRaw === '' ? 0 : (moneyToNumber(valorPrevistoRaw) || 0),
+        dia_vencimento_previsto: diaPrevistoRaw === '' ? null : +diaPrevistoRaw,
+        valor_pago: valorPagoRaw === '' ? null : moneyToNumber(valorPagoRaw),
+        data_pagamento: valorPagoRaw === '' ? null : (dataPagamento || null),
+        updated_at: new Date().toISOString(),
+      };
+      if (jaConferido) { payload.conferido_por = userId; payload.conferido_em = new Date().toISOString(); }
+
+      const { error } = await sb.from('despesas_fixas_lancamentos').update(payload).eq('id', id);
+
+      btn.disabled = false;
+      btn.textContent = 'Salvar';
+
+      if (error) {
+        const el = document.getElementById('cap-conf-error');
+        el.textContent = error.message; el.className = 'modal-error visible';
+        return;
+      }
+
+      closeCapConfModal();
+      showToast('Baixa registrada', 'green');
+      loadContasAPagar();
+    });
 
     // ── Abas: Contas a Pagar / Contas a Receber ──
     function setFcTab(name) {
@@ -361,6 +552,11 @@
       const canPedidos = prof.is_admin || prof.can_pedidos === true;
       pedidosAllowedCompanies = canPedidos ? (prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[PEDIDOS_COMPANY_FLAG[c]] === true)) : [];
       podeBaixar = prof.is_admin || prof.pedidos_pode_baixar === true;
+
+      // E as Despesas Fixas pendentes usam a permissão de Despesas Fixas, não a de
+      // Pedidos — mesma regra de RLS de despesas-fixas.html.
+      const canDespesasFixas = prof.is_admin || prof.can_despesas_fixas === true;
+      despesasFixasAllowedCompanies = canDespesasFixas ? (prof.is_admin ? [...ALL_COMPANIES] : ALL_COMPANIES.filter(c => prof[DESPESAS_FIXAS_COMPANY_FLAG[c]] === true)) : [];
 
       SafiSidebar.apply('fc', prof, { email: data.session.user.email, sb });
 
