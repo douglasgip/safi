@@ -772,12 +772,15 @@ Deno.serve(async (req: Request) => {
       threadTitle = newT!.title
     }
 
-    // Memoria (ultimas 5 trocas = ate 10 mensagens, SOMENTE desta thread)
+    // Memoria (ultimas 5 trocas = ate 10 mensagens, SOMENTE desta thread). Pergunta e
+    // resposta de uma mesma troca saem com created_at identico (mesmo INSERT abaixo) —
+    // "id" desempata mantendo a ordem real de insercao.
     const { data: history } = await sb
       .from('geronia_conversations')
       .select('role, content, created_at')
       .eq('thread_id', threadId)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: false })
       .limit(10)
     const historyAsc = (history || []).slice().reverse()
     const lastAssistantMsg = [...historyAsc].reverse().find((h: any) => h.role === 'assistant')

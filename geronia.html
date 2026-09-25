@@ -589,7 +589,11 @@
     function openThread(id){
       if (id === state.threadId) { closeSidebarMobile(); return Promise.resolve(); }
       state.threadGen++; // invalida qualquer sendMessage() da conversa anterior ainda em voo
-      return sb.from('geronia_conversations').select('role,content,created_at').eq('thread_id', id).order('created_at', { ascending: true }).then(function(res){
+      // Pergunta e resposta de uma mesma troca são gravadas no mesmo INSERT (ver
+      // geronia-chat_index.ts), então saem com created_at idêntico — sem um segundo
+      // critério de desempate, a ordem entre elas pode inverter ao recarregar. "id"
+      // é bigint sempre crescente, reflete a ordem real de inserção.
+      return sb.from('geronia_conversations').select('role,content,created_at').eq('thread_id', id).order('created_at', { ascending: true }).order('id', { ascending: true }).then(function(res){
         var rows = (res && res.data) || [];
         state.threadId = id;
         state.messages = rows.map(function(r){ return { role: r.role, content: r.content }; });
