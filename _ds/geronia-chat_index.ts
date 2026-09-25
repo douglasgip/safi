@@ -5,9 +5,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.4'
 import Anthropic from 'npm:@anthropic-ai/sdk@0.120.0'
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Só os domínios reais do SAFI — sem motivo pra aceitar qualquer origem como o '*' anterior.
+const ALLOWED_ORIGINS = ['https://painel.topfinds.com.br', 'https://topfinds.com.br', 'https://gruposacomanpainelgerencial.vercel.app']
+function corsFor(req: Request) {
+  const origin = req.headers.get('Origin') || ''
+  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return { 'Access-Control-Allow-Origin': allow, 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Vary': 'Origin' }
 }
 
 // ============ BLOCO 1 + 2 — CONTEXTO FIXO DO GERÔNIA (cacheado) ============
@@ -515,6 +518,8 @@ function stripRecap(replyText: string, prevAssistantContent?: string): string {
 }
 
 Deno.serve(async (req: Request) => {
+  const cors = corsFor(req)
+  const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
@@ -875,7 +880,3 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'Erro interno ao processar a mensagem' }, 500)
   }
 })
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
-}

@@ -1,9 +1,32 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.4'
 
 const ADMIN_EMAIL = 'douglasgip24@gmail.com'
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+
+// Só os domínios reais do SAFI — endpoint privilegiado (edita conta/permissões), sem
+// motivo pra aceitar qualquer origem como o '*' anterior.
+const ALLOWED_ORIGINS = ['https://painel.topfinds.com.br', 'https://topfinds.com.br', 'https://gruposacomanpainelgerencial.vercel.app']
+function corsFor(req: Request) {
+  const origin = req.headers.get('Origin') || ''
+  const allow = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+  return { 'Access-Control-Allow-Origin': allow, 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type', 'Vary': 'Origin' }
+}
+
+// Rate limit em memória por chamador — protege contra um bug de frontend em loop
+// editando contas em massa. Reseta a cada cold start, é best-effort de propósito
+// (só o Douglas tem o JWT admin, não é uma defesa contra atacante externo).
+const RATE_LIMIT_WINDOW_MS = 10 * 60_000
+const RATE_LIMIT_MAX = 30
+const callLog = new Map<string, number[]>()
+function rateLimited(key: string): boolean {
+  const now = Date.now()
+  const calls = (callLog.get(key) || []).filter(t => now - t < RATE_LIMIT_WINDOW_MS)
+  calls.push(now)
+  callLog.set(key, calls)
+  return calls.length > RATE_LIMIT_MAX
+}
 
 Deno.serve(async (req: Request) => {
+  const cors = corsFor(req)
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { autoRefreshToken: false, persistSession: false } })
@@ -12,6 +35,9 @@ Deno.serve(async (req: Request) => {
   const { data: { user: caller } } = await sb.auth.getUser(token!)
   if (caller?.email !== ADMIN_EMAIL)
     return new Response(JSON.stringify({ error: 'Acesso negado' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } })
+
+  if (rateLimited(caller!.id))
+    return new Response(JSON.stringify({ error: 'Muitas edições em pouco tempo. Aguarde alguns minutos.' }), { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } })
 
   const body = await req.json()
   const { user_id, email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_fluxo_caixa, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_pedidos, pedidos_epgip, pedidos_exposicao, pedidos_viacloset, pedidos_pode_lancar, pedidos_pode_conferir, pedidos_pode_conciliar, pedidos_pode_baixar, can_despesas_fixas, despesas_fixas_epgip, despesas_fixas_exposicao, despesas_fixas_viacloset, can_calc_importacao, can_fechar_mes, can_orcamento, can_reunioes, can_reunioes_editar, can_produtos, mfa_obrigatorio } = body
