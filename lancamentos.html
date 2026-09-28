@@ -82,6 +82,18 @@
     .mode-tab:not(.active):hover { color: #cbd5e1; }
 
     .entry-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+    .rs-ctx { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .rs-ctx b { font-size: 16px; font-weight: 800; color: #f8fafc; }
+    .rs-ctx span { font-size: 12px; color: #94a3b8; }
+    #rs-card { transition: opacity .15s ease; }
+    #rs-card.rs-loading { opacity: .3; }
+    @keyframes rsInRight { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+    @keyframes rsInLeft { from { opacity: 0; transform: translateX(-32px); } to { opacity: 1; transform: none; } }
+    @keyframes rsInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    #rs-card.rs-anim-right { animation: rsInRight .34s cubic-bezier(.16,1,.3,1); }
+    #rs-card.rs-anim-left { animation: rsInLeft .34s cubic-bezier(.16,1,.3,1); }
+    #rs-card.rs-anim-up { animation: rsInUp .34s cubic-bezier(.16,1,.3,1); }
+    @media (prefers-reduced-motion: reduce) { #rs-card.rs-anim-right, #rs-card.rs-anim-left, #rs-card.rs-anim-up { animation: none; } }
     .mes-nav { width: 38px; height: 38px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer; }
     .mes-nav:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
     .mes-nav:disabled { opacity: .35; cursor: default; }
@@ -360,7 +372,8 @@
         <div style="flex:1"></div>
         <button class="btn-save" id="btn-save-resumo" onclick="saveResumo()">Salvar Resumo</button>
       </div>
-      <div class="classe-card" style="padding:22px 22px 18px">
+      <div class="classe-card" id="rs-card" style="padding:22px 22px 18px">
+        <div class="rs-ctx"><b id="rs-ctx-titulo"></b><span id="rs-ctx-sub"></span></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
           <div class="field">
             <label>Entrada</label>
@@ -565,15 +578,38 @@
       loadResumoValues();
     }
 
+    // Troca de mês/empresa: o cartão esmaece enquanto carrega e o novo conteúdo entra deslizando
+    // (da direita se o mês avançou, da esquerda se voltou, de baixo se só mudou a empresa) —
+    // assim dá pra ver que trocou mesmo quando os dois meses estão zerados.
+    const MESES_NOME = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    let rsUltimoIdx = null;
+    let rsReq = 0;
+    function animarTrocaResumo(dir) {
+      const card = document.getElementById('rs-card');
+      card.classList.remove('rs-anim-right', 'rs-anim-left', 'rs-anim-up');
+      void card.offsetWidth;
+      card.classList.add('rs-anim-' + dir);
+    }
     async function loadResumoValues() {
       atualizarSetasResumo();
       const empresa = document.getElementById('rs-empresa').value;
       const mes = parseInt(document.getElementById('rs-mes').value);
       const ano = parseInt(document.getElementById('rs-ano').value);
       if (!empresa) return;
+      const card = document.getElementById('rs-card');
+      const meuReq = ++rsReq;
+      card.classList.add('rs-loading');
       const { data, error } = await sb.from('resumo_mensal').select('*').eq('empresa_id', empresa).eq('ano', ano).eq('mes', mes).limit(1);
+      if (meuReq !== rsReq) return;
+      card.classList.remove('rs-loading');
       if (error) { showToast(error.message, 'red'); return; }
       const row = (data && data[0]) || {};
+      const empSel = document.getElementById('rs-empresa');
+      document.getElementById('rs-ctx-titulo').textContent = empSel.options[empSel.selectedIndex].text;
+      document.getElementById('rs-ctx-sub').textContent = MESES_NOME[mes - 1] + ' de ' + ano + (data && data[0] ? '' : ' · sem lançamento');
+      const idx = ano * 12 + mes;
+      animarTrocaResumo(rsUltimoIdx == null || idx === rsUltimoIdx ? 'up' : idx > rsUltimoIdx ? 'right' : 'left');
+      rsUltimoIdx = idx;
       document.getElementById('rs-entrada').value = row.entrada != null ? numberToMoneyMasked(row.entrada) : '';
       document.getElementById('rs-saida').value = row.saida != null ? numberToMoneyMasked(row.saida) : '';
       document.getElementById('rs-despesa').value = row.despesa != null ? numberToMoneyMasked(row.despesa) : '';
