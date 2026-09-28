@@ -49,8 +49,8 @@ window.SAFI_AJUDA = { telas: {
   },
 
   resumo: {
-    titulo: 'Resumo Contábil', versao: 2,
-    resumo: 'O <b>Resumo Contábil</b> mostra, por empresa e por competência, o que entrou, o que saiu e o que sobrou — com estoque contábil e alíquota — e soma tudo num consolidado do grupo.',
+    titulo: 'Resumo Contábil', versao: 3,
+    resumo: 'O <b>Resumo Contábil</b> mostra, por empresa e por competência, o que entrou, o que saiu e o que sobrou — com estoque contábil, alíquota e RBT12 — e soma tudo num consolidado do grupo.',
     passos: [
       { t: 'Escolha a competência', d: 'No topo, selecione o mês de referência (ou o período, conforme a tela).' },
       { t: 'Veja cada empresa', d: 'Os cartões mostram <b>Entrada, Saída, Despesa e Resultado</b> de cada empresa no mês.' },
@@ -59,7 +59,7 @@ window.SAFI_AJUDA = { telas: {
     ],
     dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'O Resumo Contábil é lançado por empresa na aba <b>Resumo Contábil</b> da tela de Lançamentos.', 'A alíquota é a do mês (pode mudar mês a mês, ex.: Simples Nacional pela receita acumulada).'],
     naoFaz: ['Não substitui a contabilidade oficial — é a visão gerencial dos números lançados.', 'Não edita valores; para corrigir, use Lançamentos.'],
-    termos: [{ t: 'Resultado', d: 'Saída − (Despesa + Entrada), calculado automaticamente.' }, { t: 'Estoque contábil', d: 'Valor do estoque informado no lançamento do mês.' }],
+    termos: [{ t: 'Resultado', d: 'Saída − (Despesa + Entrada), calculado automaticamente.' }, { t: 'Estoque contábil', d: 'Valor do estoque informado no lançamento do mês.' }, { t: 'RBT12', d: 'Receita bruta total dos últimos 12 meses (base da alíquota do Simples Nacional), informada mês a mês em Lançamentos.' }],
     quemVe: 'Quem tem acesso ao Resumo Contábil (liberado por padrão; o admin pode desativar).',
     dados: 'Lançamentos → aba Resumo Contábil.',
     tour: [
@@ -103,7 +103,7 @@ window.SAFI_AJUDA = { telas: {
   },
 
   lancamentos: {
-    titulo: 'Lançamentos', versao: 4,
+    titulo: 'Lançamentos', versao: 5,
     resumo: 'Em <b>Lançamentos</b> você alimenta o DRE numa <b>grade de contas × 12 meses</b> (o mesmo padrão da tela de Orçamento): escolhe a empresa e o ano e preenche mês a mês. Também mantém a estrutura de contas e o Resumo Contábil.',
     passos: [
       { t: 'Escolha empresa e ano', d: 'A grade mostra os <b>12 meses de uma vez</b>. Só aparecem as empresas que você pode lançar.' },
@@ -124,7 +124,7 @@ window.SAFI_AJUDA = { telas: {
       { sel: '.lc-in:not(:disabled)', t: 'Cada célula', d: 'Digite o valor do mês. <b>Enter</b> desce, <b>Tab</b> avança, e você pode <b>colar um bloco</b> copiado do Excel. Células alteradas ficam com borda âmbar.' },
       { sel: '#btn-save-valores', t: 'Salvar', d: 'Grava só o que você alterou (o número aparece no botão), atualiza o DRE e registra quem mudou o quê. Para consultar esse registro, quem tem acesso ao Fechamento do Mês vai em <b>Fechamento do Mês → Histórico</b>.' },
       { sel: '#manage-tree', clicar: '#tab-gerenciar', voltar: '#tab-lancar', t: 'Gerenciar Estrutura', d: 'Crie, renomeie, exclua e <b>arraste para reordenar</b> classes, campos e subcampos do DRE. A lista segue o mesmo formato da grade de lançamento, e a ordem definida aqui vale para a grade e para o modelo de planilha.' },
-      { sel: '#view-resumo', clicar: '#tab-resumo', t: 'Resumo Contábil', d: 'Informe entrada, saída, despesa, estoque e alíquota do mês — alimenta a tela de Resumo Contábil.' },
+      { sel: '#view-resumo', clicar: '#tab-resumo', t: 'Resumo Contábil', d: 'Informe entrada, saída, despesa, estoque, alíquota e RBT12 do mês — alimenta a tela de Resumo Contábil.' },
     ],
   },
 

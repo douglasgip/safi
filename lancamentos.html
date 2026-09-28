@@ -383,6 +383,11 @@
             <input type="text" id="rs-aliquota" placeholder="Ex: 8,0%">
             <div class="field-hint">Referente a este mês (pode mudar mês a mês, ex: Simples Nacional pela receita acumulada) — usada no card de Resumo Contábil.</div>
           </div>
+          <div class="field">
+            <label>RBT12</label>
+            <div class="money-wrap-block"><input type="text" inputmode="decimal" id="rs-rbt12" placeholder="0,00"></div>
+            <div class="field-hint">Receita bruta total dos últimos 12 meses (base da alíquota do Simples Nacional), como informada pelo contador. Aparece no card de Resumo Contábil.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -547,6 +552,7 @@
       document.getElementById('rs-despesa').value = row.despesa != null ? numberToMoneyMasked(row.despesa) : '';
       document.getElementById('rs-estoque').value = row.estoque != null ? numberToMoneyMasked(row.estoque) : '';
       document.getElementById('rs-aliquota').value = row.aliquota || '';
+      document.getElementById('rs-rbt12').value = row.rbt12 != null ? numberToMoneyMasked(row.rbt12) : '';
       recomputeResumoResultado();
     }
 
@@ -574,6 +580,7 @@
         // Alíquota também é mensal (ex: Simples Nacional muda pela receita acumulada
         // dos últimos 12 meses) — igual aos demais campos, não é fixa por empresa.
         aliquota: document.getElementById('rs-aliquota').value.trim() || null,
+        rbt12: val('rs-rbt12'),
       };
       const { error } = await sb.from('resumo_mensal').upsert(payload, { onConflict: 'empresa_id,ano,mes' });
       btn.disabled = false; btn.textContent = 'Salvar Resumo';
@@ -1201,7 +1208,7 @@
     // ── Sidebar mobile + colapso do DRE (compartilhado, ver user-menu.js) ──
     SafiSidebar.mount('lc', { active: 'lancamentos', accent: { g1: '#8b5cf6', g2: '#6d28d9', text: '#fff' } });
     wireSidebarToggle('lc');
-    ['rs-entrada', 'rs-saida', 'rs-despesa', 'rs-estoque'].forEach(id => attachMoneyMask(document.getElementById(id)));
+    ['rs-entrada', 'rs-saida', 'rs-despesa', 'rs-estoque', 'rs-rbt12'].forEach(id => attachMoneyMask(document.getElementById(id)));
     ['rs-entrada', 'rs-saida', 'rs-despesa'].forEach(id => document.getElementById(id).addEventListener('input', recomputeResumoResultado));
 
     async function loadTaxonomy() {

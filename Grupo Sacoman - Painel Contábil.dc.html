@@ -802,6 +802,10 @@
               <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px">Estoque Contábil</div>
               <div style="font-size:11px;font-weight:500;color:#94a3b8;font-variant-numeric:tabular-nums">{{ emp.estoqueFmt }}</div>
             </div>
+            <div style="margin-top:8px">
+              <div style="font-size:8px;color:#64748b;font-weight:600;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:2px">RBT12</div>
+              <div style="font-size:11px;font-weight:500;color:#94a3b8;font-variant-numeric:tabular-nums">{{ emp.rbt12Fmt }}</div>
+            </div>
           </div>
         </sc-for>
       </div>
@@ -1512,7 +1516,7 @@ class Component extends DCLogic {
   _getEData(mes) {
     return ['EP','GIP','Exposicao','ViaCloset','RP'].map(id => {
       const r=(this._resumoMap[id]||{})[mes]||{}, e=this._empMap[id]||{};
-      return {id,nome:e.nome||id,regimeShort:e.regime_short||'—',regimeBg:e.regime_bg||'#f9fafb',regimeColor:e.regime_color||'#374151',despesa:+r.despesa||0,entrada:+r.entrada||0,saida:+r.saida||0,resultado:+r.resultado||0,aliquota:r.aliquota||'—',estoque:+r.estoque||0};
+      return {id,nome:e.nome||id,regimeShort:e.regime_short||'—',regimeBg:e.regime_bg||'#f9fafb',regimeColor:e.regime_color||'#374151',despesa:+r.despesa||0,entrada:+r.entrada||0,saida:+r.saida||0,resultado:+r.resultado||0,aliquota:r.aliquota||'—',estoque:+r.estoque||0,rbt12:r.rbt12!=null?+r.rbt12:null};
     });
   }
   _fmt(n) { return 'R$ ' + Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -2359,6 +2363,7 @@ class Component extends DCLogic {
       return {...e,
         nome:this._coLabels[e.id]||e.nome||e.id,
         aliquotaFmt:e.id==='EP'?'—':(e.aliquota||'—'),
+        rbt12Fmt:e.id==='EP'||!e.rbt12?'—':F(e.rbt12),
         despesaFmt:F(e.despesa),entradaFmt:F(e.entrada),saidaFmt:F(e.saida),resultadoFmt:F(e.resultado),estoqueFmt:F(e.estoque),
         resultadoColor:e.resultado>=0?'#4ade80':'#f87171',
         momFmt:momR.f, momColor:momR.c, momHasPrev:momR.f!==null,
