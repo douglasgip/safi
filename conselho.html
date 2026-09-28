@@ -182,6 +182,17 @@
     .co-foot { font-size: 11px; color: #64748b; line-height: 1.7; margin-top: 4px; }
     .tbl th.r, .tbl td.r { text-align: right; }
     .tbl tr.total td { font-weight: 800; background: rgba(255,255,255,0.03); }
+    .tbl td.up-good, .tbl td.dn-good { color: #6ee7b7; }
+    .tbl td.up-bad, .tbl td.dn-bad { color: #fca5a5; }
+    .tbl td.neutro { color: #94a3b8; }
+    #tbl-rentab { min-width: 560px; }
+    #tbl-rentab tr.sub td { font-weight: 800; color: #f8fafc; background: rgba(56,189,248,0.06); }
+    #tbl-rentab tr.ind td:first-child { padding-left: 28px; color: #94a3b8; }
+    #tbl-rentab tr.memo td { color: #94a3b8; font-size: 12px; }
+    #tbl-rentab tr.memo-first td { border-top: 1px solid rgba(255,255,255,0.12); }
+    #tbl-rentab tr td.up-good, #tbl-rentab tr td.dn-good { color: #6ee7b7; }
+    #tbl-rentab tr td.up-bad, #tbl-rentab tr td.dn-bad { color: #fca5a5; }
+    #tbl-rentab tr td.neutro { color: #94a3b8; }
     #co-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
     @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .co-row { grid-template-columns: 1fr; } }
     @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .kpi-grid { grid-template-columns: 1fr; } .kpi-v { font-size: 22px; } }
@@ -242,8 +253,13 @@
       </div>
     </div>
 
+    <div class="panel" id="panel-rentab">
+      <div class="panel-head">Rentabilidade e custos — <span id="rentab-periodo"></span></div>
+      <div class="table-scroll" style="max-height:none"><table class="tbl" id="tbl-rentab"></table></div>
+    </div>
+
     <div class="panel" id="panel-pessoas">
-      <div class="panel-head">Pessoas — <span id="pessoas-periodo"></span></div>
+      <div class="panel-head">Pessoas e produtividade — <span id="pessoas-periodo"></span></div>
       <div class="kpi-grid" id="kpis-pessoas"></div>
     </div>
 
@@ -256,6 +272,8 @@
       Receita Líquida = Faturamento − Deduções · Margem de Contribuição = Receita Líquida − Custos Variáveis · Resultado Líquido = Margem − Gastos Operacionais ·
       <b>EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL</b> (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento.
       "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Orçado" aparece quando há orçamento lançado para o mês e a operação.
+      <br><b>Rentabilidade e custos:</b> Margem Bruta = Receita Líquida − CMV · Despesas variáveis = custos variáveis (CMV + demais) · Despesas fixas = gastos operacionais · Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros · variação em pontos percentuais (p.p.) do % sobre o faturamento.
+      <b>Produtividade:</b> valor do mês ÷ quadro atual de funcionários (o SAFI não guarda o quadro de meses passados, então em meses antigos é uma aproximação).
     </div>
   </main>
 
@@ -286,6 +304,7 @@
 
     let dados = [];               // linhas do RPC conselho_metricas (já filtradas pela RLS de quem consulta)
     let porChave = {};            // "op|ano|mes" -> linha
+    let detalhePorChave = {};     // "op|ano|mes" -> { cmv, pessoal } (RPC conselho_metricas_detalhe)
     let opsVisiveis = [];
     let charts = { evol: null, ponte: null };
     let ULTIMO = null;            // estado da última renderização (usado pelo PDF)
@@ -294,16 +313,18 @@
     function snap(raw) {
       const rb = raw.rb, ded = raw.ded, cv = raw.cv, opex = raw.go - raw.df - raw.ir;
       const rl = rb - ded, mc = rl - cv, ebitda = mc - opex, res = ebitda - raw.df - raw.ir;
-      return { rb, ded, cv, opex, df: raw.df, ir: raw.ir, rl, mc, res, ebitda, mcPct: rb ? mc / rb : null, ebitdaPct: rb ? ebitda / rb : null };
+      const cmv = raw.cmv || 0, pessoal = raw.pessoal || 0;
+      return { rb, ded, cv, opex, df: raw.df, ir: raw.ir, rl, mc, res, ebitda, cmv, pessoal, mb: rl - cmv, mcPct: rb ? mc / rb : null, ebitdaPct: rb ? ebitda / rb : null };
     }
-    const zero = () => ({ rb: 0, ded: 0, cv: 0, go: 0, df: 0, ir: 0 });
-    function somar(a, b) { Object.keys(a).forEach(x => { a[x] += b[x]; }); return a; }
+    const zero = () => ({ rb: 0, ded: 0, cv: 0, go: 0, df: 0, ir: 0, cmv: 0, pessoal: 0 });
+    function somar(a, b) { Object.keys(a).forEach(x => { a[x] += (b[x] || 0); }); return a; }
 
     function realizado(ops, ano, mes) {
       const acc = zero(); let tem = false;
       ops.forEach(op => {
         const r = porChave[op + '|' + ano + '|' + mes]; if (!r) return;
-        somar(acc, { rb: +r.receita_bruta, ded: +r.deducoes, cv: +r.custos_variaveis, go: +r.gastos_operacionais, df: +r.desp_financeiras, ir: +r.ir_csll });
+        const d = detalhePorChave[op + '|' + ano + '|' + mes] || {};
+        somar(acc, { rb: +r.receita_bruta, ded: +r.deducoes, cv: +r.custos_variaveis, go: +r.gastos_operacionais, df: +r.desp_financeiras, ir: +r.ir_csll, cmv: +d.cmv || 0, pessoal: +d.pessoal || 0 });
         if (+r.receita_bruta || +r.custos_variaveis || +r.gastos_operacionais) tem = true;
       });
       return tem ? snap(acc) : null;
@@ -329,7 +350,7 @@
       if (modo === 'ano') { const s = realizado(ops, ano - 1, mes); return s ? { s, rot: MES_CURTO[mes - 1] + '/' + (ano - 1) } : null; }
       const h = ultimos12(ops, ano, mes); if (!h.length) return null;
       if (modo === 'media12') {
-        const acc = zero(); h.forEach(x => somar(acc, { rb: x.s.rb, ded: x.s.ded, cv: x.s.cv, go: x.s.opex + x.s.df + x.s.ir, df: x.s.df, ir: x.s.ir }));
+        const acc = zero(); h.forEach(x => somar(acc, { rb: x.s.rb, ded: x.s.ded, cv: x.s.cv, go: x.s.opex + x.s.df + x.s.ir, df: x.s.df, ir: x.s.ir, cmv: x.s.cmv, pessoal: x.s.pessoal }));
         Object.keys(acc).forEach(x => { acc[x] /= h.length; });
         return { s: snap(acc), rot: 'média de ' + h.length + ' meses' };
       }
@@ -443,6 +464,46 @@
         linhas.map(x => linha(OP_NOME[x.op] || x.op, x)).join('') + (linhas.length > 1 && tot.cur ? linha('Total', tot, 'total') : '') + '</tbody>';
     }
 
+    // ── Rentabilidade e custos: cascata do resultado com R$ e % do faturamento ─
+    // Cada linha: v = valor do mês; custo = subir é ruim (afeta a cor da variação); k = tipo de linha.
+    const RENT = [
+      { l: 'Faturamento', v: s => s.rb, k: 'sub', semVar: true },
+      { l: '(−) Deduções (impostos, taxas e devoluções)', v: s => s.ded, custo: true, k: 'ind' },
+      { l: 'Receita Líquida', v: s => s.rl, k: 'sub' },
+      { l: '(−) CMV', v: s => s.cmv, custo: true, k: 'ind' },
+      { l: 'Margem Bruta', v: s => s.mb, k: 'sub' },
+      { l: '(−) Demais custos variáveis', v: s => s.cv - s.cmv, custo: true, k: 'ind' },
+      { l: 'Margem de Contribuição', v: s => s.mc, k: 'sub' },
+      { l: '(−) Despesas de pessoal (folha e encargos)', v: s => s.pessoal, custo: true, k: 'ind' },
+      { l: '(−) Demais gastos operacionais', v: s => s.opex - s.pessoal, custo: true, k: 'ind' },
+      { l: 'EBITDA', v: s => s.ebitda, k: 'sub' },
+      { l: '(−) Despesas financeiras', v: s => s.df, custo: true, k: 'ind' },
+      { l: '(−) IR e CSLL', v: s => s.ir, custo: true, k: 'ind' },
+      { l: 'Resultado Líquido (margem líquida)', v: s => s.res, k: 'sub' },
+      { l: 'Despesas variáveis (CMV + demais custos variáveis)', v: s => s.cv, custo: true, k: 'memo', primeira: true },
+      { l: 'Despesas fixas (gastos operacionais)', v: s => s.opex, custo: true, k: 'memo' },
+    ];
+    // Variação em pontos percentuais do % do faturamento contra a base; nas linhas de custo, subir é ruim.
+    function rentVar(row, cur, base) {
+      if (row.semVar || !base || !cur.rb || !base.s.rb) return null;
+      const pp = (row.v(cur) / cur.rb - row.v(base.s) / base.s.rb) * 100;
+      if (Math.abs(pp) < 0.05) return { txt: '=', cor: 'neutro', pp };
+      const bom = row.custo ? pp < 0 : pp > 0;
+      return { txt: (pp > 0 ? '▲ ' : '▼ ') + Math.abs(pp).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.', cor: bom ? 'up-good' : 'dn-bad', pp };
+    }
+    function renderRentab(cur, base, ano, mes) {
+      g('rentab-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
+      const semDetalhe = !cur.cmv && !cur.pessoal;
+      g('tbl-rentab').innerHTML = '<thead><tr><th>Indicador</th><th class="r">R$</th><th class="r">% do faturamento</th><th class="r">' + (base ? 'vs ' + esc(base.rot) : 'Variação') + '</th></tr></thead><tbody>' +
+        RENT.map(row => {
+          const v = row.v(cur), p = cur.rb ? v / cur.rb : null, vr = rentVar(row, cur, base);
+          const cls = row.k + (row.primeira ? ' memo-first' : '');
+          const mudo = semDetalhe && (row.l.indexOf('CMV') >= 0 || row.l.indexOf('pessoal') >= 0);
+          return '<tr class="' + cls + '"><td>' + esc(row.l) + '</td><td class="num' + (mudo ? ' muted' : '') + '">' + (mudo ? '—' : brl(v)) + '</td><td class="num' + (mudo ? ' muted' : '') + '">' + (mudo ? '—' : pct(p)) + '</td>' +
+            '<td class="num ' + (vr ? vr.cor : 'muted') + '">' + (vr ? vr.txt : '—') + '</td></tr>';
+        }).join('') + '</tbody>';
+    }
+
     function render() {
       const mesSel = g('sel-mes').value; if (!mesSel) return;
       const [ano, mes] = mesSel.split('-').map(Number);
@@ -467,32 +528,35 @@
       renderPonte(cur, base);
       g('panel-ops').style.display = opSel === 'todas' && opsVisiveis.length > 1 ? '' : 'none';
       renderOps(ano, mes, modo);
-      renderPessoas(ops, ano, mes);
+      renderRentab(cur, base, ano, mes);
+      renderPessoas(ops, ano, mes, cur);
     }
 
-    // ── Pessoas: Admissões, Desligamentos e Turnover do mês selecionado ──────
+    // ── Pessoas e produtividade do mês selecionado ───────────────────────────
     // Turnover = ((admissões + desligamentos) / 2) / quadro atual, em %. Usa o quadro ATUAL
     // (não o de época) como referência — o SAFI não guarda o headcount histórico, só os eventos
-    // a partir de quando o rastreamento começou.
-    function renderPessoas(ops, ano, mes) {
-      g('pessoas-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
-      const box = g('kpis-pessoas');
-      if (ym(ano, mes) < TURNOVER_DESDE) {
-        box.innerHTML = '<div class="empty" style="grid-column:1/-1">O SAFI passou a registrar admissões e desligamentos em 23/09/2026 — não há como reconstruir meses anteriores a esse.</div>';
-        return;
-      }
+    // a partir de quando o rastreamento começou. Pelo mesmo motivo, a produtividade por
+    // funcionário divide o valor do mês pelo quadro atual (em meses antigos é uma aproximação).
+    function pessoasItens(ops, ano, mes, cur) {
       let adm = 0, desl = 0, headcount = 0;
       ops.forEach(op => {
         const r = turnoverPorChave[op + '|' + ano + '|' + mes];
         if (r) { adm += r.admissoes; desl += r.desligamentos; }
         headcount += headcountPorOp[op] || 0;
       });
-      const turnoverPct = headcount ? ((adm + desl) / 2) / headcount : null;
-      const card = (label, valor, sub, hi) => '<div class="kpi' + (hi ? ' hi' : '') + '"><div class="kpi-l">' + label + '</div><div class="kpi-v">' + valor + '</div>' + (sub ? '<div class="kpi-sub">' + sub + '</div>' : '') + '</div>';
-      box.innerHTML =
-        card('Admissões', adm) +
-        card('Desligamentos', desl) +
-        card('Turnover', turnoverPct == null ? '—' : pct(turnoverPct), 'quadro atual: ' + headcount + (headcount === 1 ? ' pessoa' : ' pessoas'), true);
+      const q = 'quadro atual: ' + headcount + (headcount === 1 ? ' pessoa' : ' pessoas');
+      const temTurn = ym(ano, mes) >= TURNOVER_DESDE;
+      const itens = [];
+      if (temTurn) itens.push({ l: 'Admissões', v: String(adm) }, { l: 'Desligamentos', v: String(desl) }, { l: 'Turnover', v: headcount ? pct(((adm + desl) / 2) / headcount) : '—', sub: q, hi: true });
+      if (headcount && cur) itens.push({ l: 'Faturamento por funcionário', v: brl(cur.rb / headcount), sub: q }, { l: 'Margem de contribuição por funcionário', v: brl(cur.mc / headcount), sub: q });
+      return { itens, temTurn };
+    }
+    function renderPessoas(ops, ano, mes, cur) {
+      g('pessoas-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
+      const { itens, temTurn } = pessoasItens(ops, ano, mes, cur);
+      const card = it => '<div class="kpi' + (it.hi ? ' hi' : '') + '"><div class="kpi-l">' + it.l + '</div><div class="kpi-v">' + it.v + '</div>' + (it.sub ? '<div class="kpi-sub">' + it.sub + '</div>' : '') + '</div>';
+      g('kpis-pessoas').innerHTML = itens.map(card).join('') +
+        (temTurn ? '' : '<div class="empty" style="grid-column:1/-1;padding:10px 16px">O SAFI passou a registrar admissões e desligamentos em 23/09/2026 — não há como reconstruir meses anteriores a esse.</div>');
     }
 
 
@@ -531,15 +595,19 @@
       const nomeOps = U.opSel === 'todas' ? 'Todas as operações' : OP_NOME[U.opSel];
       const itens = kpiItens(U);
       blocos.push({ tipo: 'kpis', opcao: 'kpis', titulo: 'Indicadores - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')', itens });
-      if (sel.opcoes.pessoas && ym(U.ano, U.mes) >= TURNOVER_DESDE) {
-        let adm = 0, desl = 0, headcount = 0;
-        U.ops.forEach(op => { const r = turnoverPorChave[op + '|' + U.ano + '|' + U.mes]; if (r) { adm += r.admissoes; desl += r.desligamentos; } headcount += headcountPorOp[op] || 0; });
-        const tv = headcount ? ((adm + desl) / 2) / headcount : null;
-        blocos.push({ tipo: 'kpis', opcao: 'pessoas', titulo: 'Pessoas - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')', itens: [
-          { l: 'Admissões', v: String(adm), linhas: [] },
-          { l: 'Desligamentos', v: String(desl), linhas: [] },
-          { l: 'Turnover', v: tv == null ? '—' : pct(tv), linhas: [{ t: 'quadro atual: ' + headcount + (headcount === 1 ? ' pessoa' : ' pessoas') }], barra: [2, 132, 199] },
-        ] });
+      if (sel.opcoes.rentab) {
+        const linhasR = RENT.map(row => {
+          const v = row.v(U.cur), p = U.cur.rb ? v / U.cur.rb : null, vr = rentVar(row, U.cur, U.base);
+          const cor = {}; if (vr && Math.abs(vr.pp) >= 0.05) cor[3] = vr.cor === 'up-good' ? OK : RUIM; if (row.k === 'sub' && v < 0) cor[1] = RUIM;
+          return { k: row.k === 'sub' ? 'T' : '', cor, c: [row.l.replace(/−/g, '-'), brlS(v), pct(p), vr ? vr.txt.replace('▲', '+').replace('▼', '-') : '-'] };
+        });
+        blocos.push({ tipo: 'tabela', opcao: 'rentab', titulo: 'Rentabilidade e custos - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')',
+          colunas: [{ h: 'Indicador', larg: 3 }, { h: 'R$', al: 'right', larg: 1.3 }, { h: '% do faturamento', al: 'right', larg: 1.2 }, { h: U.base ? 'vs ' + U.base.rot : 'Variação', al: 'right', larg: 1.2 }], linhas: linhasR });
+      }
+      if (sel.opcoes.pessoas) {
+        const pp = pessoasItens(U.ops, U.ano, U.mes, U.cur);
+        if (pp.itens.length) blocos.push({ tipo: 'kpis', opcao: 'pessoas', titulo: 'Pessoas e produtividade - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')',
+          itens: pp.itens.map(it => ({ l: it.l, v: it.v, linhas: it.sub ? [{ t: it.sub }] : [], barra: it.hi ? [2, 132, 199] : null })) });
       }
       const imgs = [];
       if (sel.opcoes.graficos) {
@@ -571,7 +639,7 @@
         colunas: [{ h: 'Mês', larg: 1 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem de contribuição', al: 'right', larg: 1.4 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'EBITDA orçado', al: 'right', larg: 1.2 }], linhas: serie });
       const notas = (U.msgs || []).join(' ');
       blocos.push({ tipo: 'nota', opcao: 'notas', texto: (notas ? 'Avisos da tela: ' + notas + ' ' : '') +
-        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Orçado" aparece quando há orçamento lançado para o mês e a operação.' });
+        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Orçado" aparece quando há orçamento lançado para o mês e a operação. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
       const ctx = itens.map(it => '- ' + it.l + ': ' + it.v + ' | ' + it.linhas.map(l => l.t).join(' | ')).join('\n');
       return { blocos, subtitulo: MESES[U.mes - 1] + ' / ' + U.ano + '  -  ' + nomeOps, contextoIA: ctx };
     }
@@ -598,6 +666,11 @@
       if (error) throw error;
       dados = data || [];
       porChave = {}; dados.forEach(r => { porChave[r.operacao + '|' + r.ano + '|' + r.mes] = r; });
+      detalhePorChave = {};
+      try {
+        const det = await sb.rpc('conselho_metricas_detalhe', { p_de: ym(y - 2, 1), p_ate: ym(y + 1, 12) });
+        (det.data || []).forEach(r => { detalhePorChave[r.operacao + '|' + r.ano + '|' + r.mes] = r; });
+      } catch (e) { /* CMV e pessoal são complemento — o resto do painel segue sem eles */ }
       opsVisiveis = ['GIP', 'Exposicao', 'ViaCloset'].filter(op => dados.some(r => r.operacao === op));
       try { await carregarPessoas(); } catch (e) { /* painel de Pessoas é opcional — resto da tela segue normal */ }
     }
@@ -634,7 +707,8 @@
       SafiPdf.iniciar({ chave: 'conselho', titulo: 'Painel do Conselho', sb, profile: prof, accent: '#38bdf8',
         opcoes: [
           { id: 'kpis', label: 'Indicadores (Faturamento, MC, EBITDA, resultado…)' },
-          { id: 'pessoas', label: 'Pessoas (admissões, desligamentos, turnover)', dica: 'Só existe a partir de Set/2026, quando o SAFI passou a registrar esses eventos.' },
+          { id: 'rentab', label: 'Rentabilidade e custos (R$ e % do faturamento)' },
+          { id: 'pessoas', label: 'Pessoas e produtividade (turnover, faturamento por funcionário)', dica: 'Admissões, desligamentos e turnover só existem a partir de Set/2026, quando o SAFI passou a registrar esses eventos.' },
           { id: 'graficos', label: 'Gráficos (evolução de 12 meses e ponte do EBITDA)' },
           { id: 'ops', label: 'Tabela por operação', dica: 'Só existe quando o filtro é "Todas as operações".' },
           { id: 'serie', label: 'Série mensal em tabela (12 meses)' },
