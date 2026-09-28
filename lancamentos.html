@@ -82,6 +82,9 @@
     .mode-tab:not(.active):hover { color: #cbd5e1; }
 
     .entry-filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+    .mes-nav { width: 38px; height: 38px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer; }
+    .mes-nav:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .mes-nav:disabled { opacity: .35; cursor: default; }
     .entry-filters select, .entry-filters input { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; }
     select option { background: #0f172a; color: #f1f5f9; }
     .btn-save { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 60%, #7c3aed 100%); border: none; border-radius: 10px; color: #1a0a3d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #5b21b6; transition: transform 0.1s; }
@@ -343,6 +346,7 @@
     <div id="view-resumo" style="display:none">
       <div class="entry-filters">
         <select id="rs-empresa" onchange="loadResumoValues()"></select>
+        <button class="mes-nav" id="rs-prev" type="button" title="Mês anterior" aria-label="Mês anterior" onclick="navResumoMes(-1)">&lsaquo;</button>
         <select id="rs-mes" onchange="loadResumoValues()">
           <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
           <option value="4">Abril</option><option value="5">Maio</option><option value="6">Junho</option>
@@ -352,6 +356,7 @@
         <select id="rs-ano" onchange="loadResumoValues()">
           <option value="2026">2026</option>
         </select>
+        <button class="mes-nav" id="rs-next" type="button" title="Próximo mês" aria-label="Próximo mês" onclick="navResumoMes(1)">&rsaquo;</button>
         <div style="flex:1"></div>
         <button class="btn-save" id="btn-save-resumo" onclick="saveResumo()">Salvar Resumo</button>
       </div>
@@ -504,6 +509,7 @@
       if (mode==='gerenciar') renderManageTree();
       if (mode==='resumo') {
         if (!document.getElementById('rs-empresa').children.length) populateResumoEmpresaSelect();
+        if (document.getElementById('rs-ano').options.length < 2) populateResumoAnoSelect();
         loadResumoValues();
       }
     }
@@ -539,7 +545,28 @@
       document.getElementById('rs-resultado').value = numberToMoneyMasked(resultado);
     }
 
+    // Setas ‹ › ao lado do mês: andam um mês (virando o ano quando preciso) e recarregam.
+    function populateResumoAnoSelect() {
+      const y = new Date().getFullYear(), sel = document.getElementById('rs-ano');
+      sel.innerHTML = [y - 1, y, y + 1].map(a => `<option value="${a}"${a === y ? ' selected' : ''}>${a}</option>`).join('');
+    }
+    function atualizarSetasResumo() {
+      const mes = parseInt(document.getElementById('rs-mes').value), ano = parseInt(document.getElementById('rs-ano').value);
+      const anos = [...document.getElementById('rs-ano').options].map(o => parseInt(o.value));
+      document.getElementById('rs-prev').disabled = mes === 1 && !anos.includes(ano - 1);
+      document.getElementById('rs-next').disabled = mes === 12 && !anos.includes(ano + 1);
+    }
+    function navResumoMes(delta) {
+      let mes = parseInt(document.getElementById('rs-mes').value) + delta, ano = parseInt(document.getElementById('rs-ano').value);
+      if (mes < 1) { mes = 12; ano--; } else if (mes > 12) { mes = 1; ano++; }
+      const selAno = document.getElementById('rs-ano');
+      if (![...selAno.options].some(o => parseInt(o.value) === ano)) return;
+      document.getElementById('rs-mes').value = String(mes); selAno.value = String(ano);
+      loadResumoValues();
+    }
+
     async function loadResumoValues() {
+      atualizarSetasResumo();
       const empresa = document.getElementById('rs-empresa').value;
       const mes = parseInt(document.getElementById('rs-mes').value);
       const ano = parseInt(document.getElementById('rs-ano').value);
