@@ -859,28 +859,7 @@
         </div>
       </div>
 
-      <!-- § Alertas -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-        <div style="width:2px;height:14px;background:#f59e0b;border-radius:2px"></div>
-        <span style="font-size:9px;font-weight:700;color:#475569;letter-spacing:2px;text-transform:uppercase">Seção 3</span>
-        <span style="font-size:13px;font-weight:500;color:#94a3b8">Destaques e Alertas</span>
-      </div>
-
-      <div style="display:flex;flex-direction:column;gap:8px;padding-bottom:32px">
-        <sc-for list="{{ alertas }}" as="al" hint-placeholder-count="5">
-          <div style="background:rgba(15,23,42,0.65);border:1px solid rgba(255,255,255,0.07);border-left:3px solid {{ al.cor }};border-radius:10px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px;backdrop-filter:blur(8px)">
-            <span style="font-size:20px;flex-shrink:0;margin-top:1px">{{ al.icon }}</span>
-            <div style="flex:1;min-width:0">
-              <div style="font-size:12px;font-weight:700;color:{{ al.cor }};margin-bottom:6px">{{ al.label }}</div>
-              <div style="font-size:12px;color:#94a3b8;line-height:1.65">{{ al.text }}</div>
-              <button onClick="{{ al.askFn }}" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:6px 12px;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:16px;color:#c4b5fd;font-family:'Inter',sans-serif;font-size:10.5px;font-weight:700;cursor:pointer;transition:background .15s ease,border-color .15s ease" onmouseover="this.style.background='rgba(139,92,246,0.18)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.background='rgba(139,92,246,0.1)';this.style.borderColor='rgba(139,92,246,0.3)'">
-                <img src="/public/GerônIA.png" alt="" style="width:13px;height:13px;border-radius:50%;object-fit:cover">
-                Perguntar ao Gerôn
-              </button>
-            </div>
-          </div>
-        </sc-for>
-      </div>
+      <div style="padding-bottom:32px"></div>
 
     </div>
   </sc-if>
@@ -1521,7 +1500,6 @@ class Component extends DCLogic {
   _eData = [];
   _resumoMap = {};
   _dreDataMap = {};
-  _alertasArr = [];
   _empMap = {};
   // Créditos Tributários atuais — valor único (não por mês/ano), meramente informativo,
   // por empresa_id. RLS já limita a quem pode ver o DRE daquela empresa. Por enquanto
@@ -1595,7 +1573,6 @@ class Component extends DCLogic {
         fetch(`${B}/rest/v1/empresas?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/resumo_mensal?select=*&ano=eq.2026&order=empresa_id`, {headers:hU}),
         fetch(`${B}/rest/v1/dre_consolidado?select=*&ano=eq.2026&order=mes`, {headers:hU}),
-        fetch(`${B}/rest/v1/alertas?select=*&ativo=eq.true&order=ordem`, {headers:hU}),
         userId ? fetch(`${B}/rest/v1/user_profiles?select=*&id=eq.${userId}`, {headers:hU}) : Promise.resolve(null),
         fetch(`${B}/rest/v1/lancamentos_classes?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_campos?select=*&order=ordem`, {headers:hU}),
@@ -1603,9 +1580,9 @@ class Component extends DCLogic {
         fetch(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026`, {headers:hU}),
         fetch(`${B}/rest/v1/creditos_tributarios?select=empresa_id,icms,pis,cofins,total,atualizado_em`, {headers:hU})
       ];
-      const [r1,r2,r3,r4,r5,r6,r7,r8,r9,r10] = await Promise.all(requests);
-      const [emps,resumo,dre,alertas,lancClasses,lancCampos,lancSubcampos,lancValores,creditosTrib] = await Promise.all([r1.json(),r2.json(),r3.json(),r4.json(),r6.json(),r7.json(),r8.json(),r9.json(),r10.json()]);
-      const profArr = r5 ? await r5.json() : [];
+      const [r1,r2,r3,r4,r5,r6,r7,r8,r9] = await Promise.all(requests);
+      const [emps,resumo,dre,lancClasses,lancCampos,lancSubcampos,lancValores,creditosTrib] = await Promise.all([r1.json(),r2.json(),r3.json(),r5.json(),r6.json(),r7.json(),r8.json(),r9.json()]);
+      const profArr = r4 ? await r4.json() : [];
       const prof = profArr[0] || null;
       this._userProfile = prof;
       window._userProfile = prof;
@@ -1617,7 +1594,6 @@ class Component extends DCLogic {
         this._resumoMap[r.empresa_id][r.mes] = r;
       });
       dre.forEach(d => { this._dreDataMap[`${d.empresa_id}-${d.mes}`] = d; });
-      this._alertasArr = alertas;
       this._creditosTributarios = {};
       (creditosTrib||[]).forEach(c => { this._creditosTributarios[c.empresa_id] = c; });
       // Lançamentos (Classe > Campo > Subcampo > Valor) - alimenta as linhas detalhadas do DRE
@@ -2400,10 +2376,6 @@ class Component extends DCLogic {
     const totals={despesaFmt:F(tots.d),entradaFmt:F(tots.en),saidaFmt:F(tots.s),resultadoFmt:F(tots.r),estoqueFmt:F(tots.est),resultadoColor:tots.r>=0?'#4ade80':'#f87171',
       selCount:selE.length, selLabel:selE.length===eData.length?'todas as empresas':`${selE.length} de ${eData.length} empresas`};
     const months=this._months.map((label,i)=>({label,idx:i}));
-    const alertas=this._alertasArr.length
-      ? this._alertasArr.map(a=>({icon:a.icone,cor:a.cor,label:a.label,text:a.texto,
-          askFn:()=>{ if(window.askGeron) window.askGeron(`Pode me explicar melhor este alerta do painel — "${a.label}": ${a.texto}? O que você recomenda que eu faça a respeito?`); }}))
-      : [{icon:'⏳',cor:'#6b7280',label:'Carregando...',text:'Buscando dados do Supabase.',askFn:()=>{}}];
 
     const dreIndiv=this._dreList.filter(x=>x!=='Consolidado');
     const coButtons=dreIndiv.map(c=>{
@@ -2844,7 +2816,7 @@ class Component extends DCLogic {
       companyKPIsMaxH:selectedCos.length>=2?'600px':'0px',
       companyKPIsOpacity:selectedCos.length>=2?1:0,
       companyKPIsMB:selectedCos.length>=2?'14px':'0px',
-      months,empresas,totals,alertas,coButtons,selLabel,metricBtns,dreRows,dreKPI,ahBaseLabel,companyKPIs,creditosTributarios,
+      months,empresas,totals,coButtons,selLabel,metricBtns,dreRows,dreKPI,ahBaseLabel,companyKPIs,creditosTributarios,
       barSeriesBtns,barCosBtns,dreChartLegend,drePieLegend:dreChartLegend,barLegend,modalIsCompanyChart,modalIsSeriesChart,
       modalOpen:!!this.state.expandedChart,
       modalTitle:{bar:'Entrada / Saída / Despesa por Empresa',line:'Evolução do Resultado — 2026','dre-evo':'Evolução Mensal — 2026','dre-pie':'Faturamento por Operação','dre-margem':'Margem por Operação'}[this.state.expandedChart]||'',

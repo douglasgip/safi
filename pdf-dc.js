@@ -39,7 +39,6 @@
         { id: 'kpis', label: 'Totais do consolidado (entrada, saída, despesa, resultado, estoque)' },
         { id: 'empresas', label: 'Resumo por empresa (tabela completa)' },
         { id: 'graficos', label: 'Gráficos' },
-        { id: 'alertas', label: 'Destaques e alertas' },
         { id: 'ia', label: 'Resumo executivo do GerônIA', padrao: false, dica: 'Texto gerado por IA a partir dos números da tela.' },
       ],
       filtros: function () { var d = dados(); return [['Competência', app._months[ms]], ['Empresas somadas no consolidado', d.somados.length === d.eData.length ? 'Todas' : (d.somados.map(d.nome).join(', ') || 'Nenhuma')]]; },
@@ -65,8 +64,6 @@
           colunas: [{ h: 'Empresa', larg: 1.4 }, { h: 'Regime', larg: 0.9 }, { h: 'Entrada', al: 'right', larg: 1.3 }, { h: 'Saída', al: 'right', larg: 1.3 }, { h: 'Despesa', al: 'right', larg: 1.2 }, { h: 'Resultado', al: 'right', larg: 1.3 }, { h: 'Var. resultado vs mês ant.', al: 'right', larg: 1.1 }, { h: 'Estoque', al: 'right', larg: 1.2 }, { h: 'Alíquota', al: 'right', larg: 0.8 }, { h: 'No consolidado', al: 'center', larg: 0.9 }], linhas: linhas });
         var gr = sel.opcoes.graficos ? graficosVisiveis(app, [['chart-bar', 'Entrada / Saída / Despesa por empresa'], ['chart-line', 'Evolução']]) : [];
         blocos.push({ tipo: 'graficos', opcao: 'graficos', titulo: 'Gráficos', itens: gr });
-        var al = (app._alertasArr || []).map(function (a) { return '• ' + a.label + ': ' + a.texto; });
-        blocos.push({ tipo: 'texto', opcao: 'alertas', titulo: 'Destaques e alertas', texto: al.length ? al.join('\n') : 'Nenhum alerta no momento.' });
         return { blocos: blocos, subtitulo: app._months[ms], contextoIA: textoKpis(kp) + '\n' + d.eData.map(function (e) { return '- ' + d.nome(e) + ': entrada ' + brl2(e.entrada) + ', saída ' + brl2(e.saida) + ', despesa ' + brl2(e.despesa) + ', resultado ' + brl2(e.resultado); }).join('\n') };
       },
     };
