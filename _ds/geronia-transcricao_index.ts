@@ -2,7 +2,7 @@
 // Deploy target: Supabase project ujsoqyhkebasszwtexmp (painelgerencial_gruposacoman)
 // Secret necessario: ANTHROPIC_API_KEY (mesmo secret do geronia-chat)
 //
-// Dá suporte ao "Gerôn Transcript" em reunioes.html: a transcrição ao vivo em si
+// Dá suporte ao "Ger Áudio" em geraudio.html: a transcrição ao vivo em si
 // roda 100% no navegador (Web Speech API — sem diarização, sem custo, sem essa
 // function no meio). Esta function só entra em dois momentos:
 //   mode "consideracao" — durante a reunião, com o texto parcial até agora, gera
@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
     const { data: profRows } = await sb.from('user_profiles').select('is_admin, can_reunioes_editar').eq('id', caller.id).limit(1)
     const prof = profRows?.[0]
     if (!prof || !(prof.is_admin || prof.can_reunioes_editar === true))
-      return json({ error: 'Sem permissão pra usar o Gerôn Transcript.' }, 403)
+      return json({ error: 'Sem permissão pra usar o Ger Áudio.' }, 403)
 
     const body = await req.json()
     const mode = body?.mode
