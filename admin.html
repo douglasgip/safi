@@ -883,6 +883,28 @@
           </div>
         </div>
 
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Tesouraria</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Lançamentos de caixa e adiantamentos por portador — visível por padrão só pra ninguém</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-tesouraria">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('tesouraria', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('tesouraria', false)">Não</button>
+          </div>
+        </div>
+
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Plano Orçamentário</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Meta trimestral de vendas e compras por categoria de produto (Exposição/Via Closet) — visível por padrão só pra ninguém</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-planoorc">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('planoorc', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('planoorc', false)">Não</button>
+          </div>
+        </div>
+
         <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
             <div>
@@ -1186,6 +1208,8 @@ const ACCESS_DOMAINS = [
   u => u.can_calc_importacao === true,
   u => u.can_fechar_mes === true,
   u => u.can_orcamento === true,
+  u => u.can_tesouraria === true,
+  u => u.can_plano_orcamentario === true,
   u => u.can_produtos === true,
   u => u.can_reunioes === true || u.can_reunioes_editar === true,
 ];
@@ -1299,7 +1323,7 @@ function openCreateModal() {
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
   setToggle('mfa', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-baixar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','fechamento','orcamento','reunioes','reunioes-editar','produtos'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-baixar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','fechamento','orcamento','tesouraria','planoorc','reunioes','reunioes-editar','produtos'].forEach(k => setToggle(k, false));
   setToggle('ped-lancar', true);
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
@@ -1348,6 +1372,8 @@ function openEditModal(u) {
   setToggle('calcimport',      !!u.can_calc_importacao);
   setToggle('fechamento',      !!u.can_fechar_mes);
   setToggle('orcamento',       !!u.can_orcamento);
+  setToggle('tesouraria',      !!u.can_tesouraria);
+  setToggle('planoorc',        !!u.can_plano_orcamentario);
   setToggle('produtos',        !!u.can_produtos);
   setToggle('reunioes',        !!u.can_reunioes);
   setToggle('reunioes-editar', !!u.can_reunioes_editar);
@@ -1411,6 +1437,8 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     can_calc_importacao: toggleState.calcimport,
     can_fechar_mes: toggleState.fechamento,
     can_orcamento: toggleState.orcamento,
+    can_tesouraria: toggleState.tesouraria,
+    can_plano_orcamentario: toggleState.planoorc,
     can_produtos: toggleState.produtos,
     can_reunioes: toggleState.reunioes,
     can_reunioes_editar: toggleState['reunioes-editar'],

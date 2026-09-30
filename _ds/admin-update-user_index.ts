@@ -40,7 +40,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Muitas edições em pouco tempo. Aguarde alguns minutos.' }), { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } })
 
   const body = await req.json()
-  const { user_id, email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_fluxo_caixa, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_pedidos, pedidos_epgip, pedidos_exposicao, pedidos_viacloset, pedidos_pode_lancar, pedidos_pode_conferir, pedidos_pode_conciliar, pedidos_pode_baixar, can_despesas_fixas, despesas_fixas_epgip, despesas_fixas_exposicao, despesas_fixas_viacloset, can_calc_importacao, can_fechar_mes, can_orcamento, can_reunioes, can_reunioes_editar, can_produtos, mfa_obrigatorio } = body
+  const { user_id, email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_fluxo_caixa, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_pedidos, pedidos_epgip, pedidos_exposicao, pedidos_viacloset, pedidos_pode_lancar, pedidos_pode_conferir, pedidos_pode_conciliar, pedidos_pode_baixar, can_despesas_fixas, despesas_fixas_epgip, despesas_fixas_exposicao, despesas_fixas_viacloset, can_calc_importacao, can_fechar_mes, can_orcamento, can_tesouraria, can_plano_orcamentario, can_reunioes, can_reunioes_editar, can_produtos, mfa_obrigatorio } = body
   if (!user_id)
     return new Response(JSON.stringify({ error: 'user_id obrigatorio' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
 
@@ -93,6 +93,8 @@ Deno.serve(async (req: Request) => {
   if (can_calc_importacao !== undefined) up.can_calc_importacao = can_calc_importacao
   if (can_fechar_mes !== undefined) up.can_fechar_mes = can_fechar_mes
   if (can_orcamento !== undefined) up.can_orcamento = can_orcamento
+  if (can_tesouraria !== undefined) up.can_tesouraria = can_tesouraria
+  if (can_plano_orcamentario !== undefined) up.can_plano_orcamentario = can_plano_orcamentario
   if (can_reunioes !== undefined) up.can_reunioes = can_reunioes
   if (can_reunioes_editar !== undefined) up.can_reunioes_editar = can_reunioes_editar
   if (can_produtos !== undefined) up.can_produtos = can_produtos

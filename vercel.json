@@ -18,6 +18,8 @@
     { "source": "/fechamento", "destination": "/fechamento.html" },
     { "source": "/conselho", "destination": "/conselho.html" },
     { "source": "/orcamento", "destination": "/orcamento.html" },
+    { "source": "/tesouraria", "destination": "/tesouraria.html" },
+    { "source": "/plano-orcamentario", "destination": "/plano-orcamentario.html" },
     { "source": "/reunioes", "destination": "/reunioes.html" },
     { "source": "/geraudio", "destination": "/geraudio.html" },
     { "source": "/produtos", "destination": "/produtos.html" }

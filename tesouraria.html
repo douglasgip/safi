@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Tesouraria</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+
+    .bg { position: fixed; inset: 0; z-index: 0; background:
+        radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #38bdf8; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #1d4ed8; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #ts-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #ts-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #7dd3fc; }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .fe-select:focus { outline: none; border-color: #38bdf8; }
+    select option { background: #0f172a; color: #f1f5f9; }
+
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
+
+    .kpi-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+    .kpi { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 16px 18px; }
+    .kpi-l { font-size: 10.5px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .kpi-v { font-size: 22px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; }
+
+    .port-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+    .port-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; padding: 12px 14px; }
+    .port-nome { font-size: 12.5px; font-weight: 700; color: #e2e8f0; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .port-saldo { font-size: 16px; font-weight: 800; color: #6ee7b7; font-variant-numeric: tabular-nums; }
+    .port-saldo.neg { color: #fca5a5; }
+
+    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 520px; }
+    table.tbl { width: 100%; border-collapse: collapse; min-width: 900px; }
+    .tbl thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 11px 12px; font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    .tbl td { padding: 10px 12px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .tbl .muted { color: #64748b; }
+    .tbl tr.click { cursor: pointer; } .tbl tr.click:hover td { background: rgba(255,255,255,0.03); }
+    .entrada-v { color: #6ee7b7; } .saida-v { color: #fca5a5; }
+    .rat-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+    .rat-b { padding: 2px 7px; border-radius: 6px; font-size: 10px; font-weight: 800; white-space: nowrap; }
+    .rat-exp { background: rgba(56,189,248,0.14); color: #7dd3fc; } .rat-via { background: rgba(167,139,250,0.16); color: #c4b5fd; } .rat-gip { background: rgba(251,191,36,0.14); color: #fcd34d; }
+    .row-actions { display: flex; gap: 6px; }
+    .icon-btn { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; color: #94a3b8; cursor: pointer; }
+    .icon-btn:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .icon-btn.danger:hover { background: rgba(239,68,68,0.14); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+
+    .btn-primary { padding: 11px 18px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
+    .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
+    .btn-danger { padding: 11px 14px; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; color: #fca5a5; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
+    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
+    .modal-error.visible { display: block; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
+    .field input, .field select, .field textarea { width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #38bdf8; }
+    .field textarea { min-height: 64px; resize: vertical; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .field-hint { font-size: 11px; color: #64748b; margin-top: 4px; }
+    .section-lbl { font-size: 10px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #64748b; margin: 16px 0 8px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+    /* ── Autocompletar próprio (portador) — datalist nativo não dá pra estilizar ── */
+    .ac-wrap { position: relative; }
+    .ac-box { display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 60; max-height: 210px; overflow-y: auto; background: #12182b; border: 1px solid rgba(56,189,248,0.3); border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,0.55); padding: 5px; }
+    .ac-box.open { display: block; }
+    .ac-item { padding: 9px 11px; border-radius: 8px; font-size: 12.5px; color: #e2e8f0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-item:hover, .ac-item.active { background: rgba(56,189,248,0.16); color: #7dd3fc; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+    #ts-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 1000px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .kpi-grid { grid-template-columns: 1fr; } .grid2, .grid4 { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="ts-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="ts-sidebar"></aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="ts-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Tesouraria</div>
+    </div>
+  </header>
+
+  <div id="ts-loading">Carregando…</div>
+
+  <main class="main" id="ts-main" style="display:none">
+    <div class="fe-toolbar">
+      <div>
+        <h1>Tesouraria</h1>
+        <div class="fe-toolbar-sub">Caixa e adiantamentos por portador — separado das Despesas Fixas.</div>
+      </div>
+      <button class="btn-primary" id="btn-novo" type="button">+ Novo lançamento</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-l">Total entradas</div><div class="kpi-v" id="kpi-entradas" style="color:#6ee7b7">R$ 0,00</div></div>
+      <div class="kpi"><div class="kpi-l">Total saídas</div><div class="kpi-v" id="kpi-saidas" style="color:#fca5a5">R$ 0,00</div></div>
+      <div class="kpi"><div class="kpi-l">Saldo em caixa (todos portadores)</div><div class="kpi-v" id="kpi-saldo">R$ 0,00</div></div>
+    </div>
+
+    <div class="panel" id="panel-portadores">
+      <div class="panel-head">Saldo por portador</div>
+      <div class="port-grid" id="port-grid"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Lançamentos</div>
+      <div class="filters">
+        <select class="fe-select" id="f-portador"><option value="">Todos os portadores</option></select>
+        <input class="fe-select" id="f-busca" type="text" placeholder="Buscar por finalidade…" style="min-width:220px;cursor:text">
+      </div>
+      <div class="table-scroll"><table class="tbl" id="tbl-lanc"></table></div>
+    </div>
+  </main>
+
+  <!-- Modal: Novo/Editar lançamento -->
+  <div class="modal-overlay" id="ts-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="ts-modal-title">Novo Lançamento</div>
+      <div class="modal-sub">Cada linha é um lançamento de caixa: uma entrada (empresa entrega dinheiro ao portador) ou uma saída (portador gastou/prestou contas).</div>
+      <div class="modal-error" id="ts-modal-error"></div>
+      <form id="ts-form" autocomplete="off">
+        <div class="grid2">
+          <div class="field"><label for="ts-data">Data</label><input type="date" id="ts-data" required></div>
+          <div class="field"><label for="ts-portador">Portador (quem está com o dinheiro)</label><input type="text" id="ts-portador" placeholder="Nome de quem recebeu/gastou" required autocomplete="off"></div>
+        </div>
+        <div class="field"><label for="ts-finalidade">Finalidade</label><input type="text" id="ts-finalidade" placeholder="Ex.: Compra no Brás, viagem a São Paulo…"></div>
+        <div class="grid2">
+          <div class="field"><label for="ts-entrada">Entrada (R$)</label><input type="text" inputmode="decimal" id="ts-entrada" placeholder="0,00"></div>
+          <div class="field"><label for="ts-saida">Saída (R$)</label><input type="text" inputmode="decimal" id="ts-saida" placeholder="0,00"></div>
+        </div>
+        <div class="field"><label for="ts-consumido">Valor consumido (na finalidade principal)</label><input type="text" inputmode="decimal" id="ts-consumido" placeholder="0,00"></div>
+
+        <div class="section-lbl">Despesas (viagem, se houver)</div>
+        <div class="grid4">
+          <div class="field"><label for="ts-viagem">Viagem</label><input type="text" inputmode="decimal" id="ts-viagem" placeholder="0,00"></div>
+          <div class="field"><label for="ts-hospedagem">Hospedagem</label><input type="text" inputmode="decimal" id="ts-hospedagem" placeholder="0,00"></div>
+          <div class="field"><label for="ts-refeicao">Refeição</label><input type="text" inputmode="decimal" id="ts-refeicao" placeholder="0,00"></div>
+          <div class="field"><label for="ts-locomocao">Locomoção</label><input type="text" inputmode="decimal" id="ts-locomocao" placeholder="0,00"></div>
+        </div>
+
+        <div class="section-lbl">Rateio entre empresas (opcional)</div>
+        <div class="grid2" style="grid-template-columns:1fr 1fr 1fr;gap:10px">
+          <div class="field"><label for="ts-rat-exp">Exposição Paulista</label><input type="text" inputmode="decimal" id="ts-rat-exp" placeholder="0,00"></div>
+          <div class="field"><label for="ts-rat-via">Via Closet</label><input type="text" inputmode="decimal" id="ts-rat-via" placeholder="0,00"></div>
+          <div class="field"><label for="ts-rat-gip">GIP</label><input type="text" inputmode="decimal" id="ts-rat-gip" placeholder="0,00"></div>
+        </div>
+
+        <div class="field"><label for="ts-obs">Observações</label><textarea id="ts-obs" placeholder="Opcional"></textarea></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="ts-btn-cancelar">Cancelar</button>
+          <button type="button" class="btn-danger" id="ts-btn-excluir" style="display:none">Excluir</button>
+          <button type="submit" class="btn-primary" id="ts-btn-salvar" style="flex:1">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    SafiSidebar.mount('ts', { active: 'tesouraria', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('ts');
+
+    const g = id => document.getElementById(id);
+    const brl = v => 'R$ ' + (Math.round((v || 0) * 100) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    let me = null, podeEditar = false, allRows = [], editId = null;
+
+    async function fetchAll(build) {
+      const out = []; const step = 1000;
+      for (let from = 0; ; from += step) {
+        const { data, error } = await build().range(from, from + step - 1);
+        if (error) throw error;
+        out.push(...data);
+        if (data.length < step) break;
+      }
+      return out;
+    }
+
+    async function carregar() {
+      allRows = await fetchAll(() => sb.from('tesouraria_lancamentos').select('*').order('data', { ascending: true }).order('created_at', { ascending: true }));
+    }
+
+    function distintosPortadores() {
+      const mapa = new Map();
+      allRows.forEach(r => { const v = (r.portador || '').trim(); if (v && !mapa.has(v.toLowerCase())) mapa.set(v.toLowerCase(), v); });
+      return [...mapa.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    }
+
+    // ── Autocompletar próprio (mesmo padrão de Pedidos) ──
+    function attachAutocomplete(input, getItems) {
+      const wrap = document.createElement('div'); wrap.className = 'ac-wrap';
+      input.parentNode.insertBefore(wrap, input); wrap.appendChild(input);
+      const box = document.createElement('div'); box.className = 'ac-box'; wrap.appendChild(box);
+      let items = [], activeIdx = -1;
+      function render() {
+        const q = input.value.trim().toLowerCase();
+        items = getItems().filter(v => !q || v.toLowerCase().includes(q));
+        if (!items.length) { box.classList.remove('open'); return; }
+        box.innerHTML = items.map((v, i) => '<div class="ac-item' + (i === activeIdx ? ' active' : '') + '" data-i="' + i + '">' + esc(v) + '</div>').join('');
+        box.classList.add('open');
+      }
+      function close() { box.classList.remove('open'); activeIdx = -1; }
+      function escolher(i) { input.value = items[i]; close(); }
+      input.addEventListener('focus', () => { activeIdx = -1; render(); });
+      input.addEventListener('input', () => { activeIdx = -1; render(); });
+      input.addEventListener('keydown', e => {
+        if (!box.classList.contains('open')) return;
+        if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); render(); }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); render(); }
+        else if (e.key === 'Enter') { if (activeIdx >= 0) { e.preventDefault(); escolher(activeIdx); } }
+        else if (e.key === 'Escape') close();
+      });
+      box.addEventListener('mousedown', e => { const item = e.target.closest('.ac-item'); if (!item) return; e.preventDefault(); escolher(+item.dataset.i); });
+      document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+    }
+
+    // ── Saldo corrente por portador (ordem: data, depois criação) ──
+    function calcularSaldos() {
+      const porPortador = {}; // nome -> saldo corrente
+      const comSaldo = allRows.map(r => {
+        const chave = (r.portador || '').trim();
+        const atual = (porPortador[chave] || 0) + (+r.entrada || 0) - (+r.saida || 0);
+        porPortador[chave] = atual;
+        return { ...r, saldoCorrente: atual };
+      });
+      return { comSaldo, porPortador };
+    }
+
+    function renderKpisEPortadores(porPortador) {
+      const totE = allRows.reduce((a, r) => a + (+r.entrada || 0), 0);
+      const totS = allRows.reduce((a, r) => a + (+r.saida || 0), 0);
+      g('kpi-entradas').textContent = brl(totE);
+      g('kpi-saidas').textContent = brl(totS);
+      g('kpi-saldo').textContent = brl(totE - totS);
+      const nomes = Object.keys(porPortador).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+      g('panel-portadores').style.display = nomes.length ? '' : 'none';
+      g('port-grid').innerHTML = nomes.map(n =>
+        '<div class="port-card"><div class="port-nome" title="' + esc(n) + '">' + esc(n) + '</div><div class="port-saldo' + (porPortador[n] < 0 ? ' neg' : '') + '">' + brl(porPortador[n]) + '</div></div>'
+      ).join('');
+    }
+
+    function badgesRateio(r) {
+      const b = [];
+      if (+r.rateio_exposicao) b.push('<span class="rat-b rat-exp">EXP ' + brl(r.rateio_exposicao) + '</span>');
+      if (+r.rateio_viacloset) b.push('<span class="rat-b rat-via">VIA ' + brl(r.rateio_viacloset) + '</span>');
+      if (+r.rateio_gip) b.push('<span class="rat-b rat-gip">GIP ' + brl(r.rateio_gip) + '</span>');
+      return b.length ? '<div class="rat-badges">' + b.join('') + '</div>' : '<span class="muted">—</span>';
+    }
+
+    function render() {
+      const { comSaldo, porPortador } = calcularSaldos();
+      renderKpisEPortadores(porPortador);
+
+      const portadorSel = g('f-portador').value;
+      const busca = g('f-busca').value.trim().toLowerCase();
+      const linhas = comSaldo.filter(r => {
+        if (portadorSel && r.portador !== portadorSel) return false;
+        if (busca && !(r.finalidade || '').toLowerCase().includes(busca)) return false;
+        return true;
+      }).slice().reverse(); // mais recentes primeiro
+
+      if (!linhas.length) {
+        g('tbl-lanc').innerHTML = '<thead><tr><th>Data</th><th>Portador</th><th>Finalidade</th><th class="num">Entrada</th><th class="num">Saída</th><th class="num">Despesas</th><th>Rateio</th><th class="num">Saldo portador</th><th></th></tr></thead><tbody><tr><td colspan="9"><div class="empty">Nenhum lançamento ainda.</div></td></tr></tbody>';
+        return;
+      }
+      g('tbl-lanc').innerHTML = '<thead><tr><th>Data</th><th>Portador</th><th>Finalidade</th><th class="num">Entrada</th><th class="num">Saída</th><th class="num">Despesas</th><th>Rateio</th><th class="num">Saldo portador</th><th></th></tr></thead><tbody>' +
+        linhas.map(r => {
+          const despesas = (+r.despesa_viagem || 0) + (+r.despesa_hospedagem || 0) + (+r.despesa_refeicao || 0) + (+r.despesa_locomocao || 0);
+          return '<tr class="click" data-id="' + r.id + '">' +
+            '<td>' + fmtDate(r.data) + '</td>' +
+            '<td>' + esc(r.portador) + '</td>' +
+            '<td>' + (r.finalidade ? esc(r.finalidade) : '<span class="muted">—</span>') + '</td>' +
+            '<td class="num entrada-v">' + (+r.entrada ? brl(r.entrada) : '<span class="muted">—</span>') + '</td>' +
+            '<td class="num saida-v">' + (+r.saida ? brl(r.saida) : '<span class="muted">—</span>') + '</td>' +
+            '<td class="num">' + (despesas ? brl(despesas) : '<span class="muted">—</span>') + '</td>' +
+            '<td>' + badgesRateio(r) + '</td>' +
+            '<td class="num">' + brl(r.saldoCorrente) + '</td>' +
+            '<td><div class="row-actions"><button type="button" class="icon-btn" data-editar="' + r.id + '" title="Editar">✎</button></div></td>' +
+          '</tr>';
+        }).join('') + '</tbody>';
+    }
+
+    function populateFiltros() {
+      g('f-portador').innerHTML = '<option value="">Todos os portadores</option>' + distintosPortadores().map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join('');
+    }
+
+    // ── Modal ──
+    function limparForm() {
+      ['ts-portador', 'ts-finalidade', 'ts-entrada', 'ts-saida', 'ts-consumido', 'ts-viagem', 'ts-hospedagem', 'ts-refeicao', 'ts-locomocao', 'ts-rat-exp', 'ts-rat-via', 'ts-rat-gip', 'ts-obs'].forEach(id => g(id).value = '');
+      g('ts-data').value = todayLocal();
+    }
+    function abrirNovo() {
+      editId = null;
+      g('ts-modal-title').textContent = 'Novo Lançamento';
+      g('ts-btn-excluir').style.display = 'none';
+      g('ts-modal-error').classList.remove('visible');
+      limparForm();
+      g('ts-modal').classList.add('open');
+    }
+    function abrirEditar(r) {
+      editId = r.id;
+      g('ts-modal-title').textContent = 'Editar Lançamento';
+      g('ts-btn-excluir').style.display = podeEditar ? '' : 'none';
+      g('ts-modal-error').classList.remove('visible');
+      g('ts-data').value = r.data;
+      g('ts-portador').value = r.portador || '';
+      g('ts-finalidade').value = r.finalidade || '';
+      g('ts-entrada').value = r.entrada ? numberToMoneyMasked(+r.entrada) : '';
+      g('ts-saida').value = r.saida ? numberToMoneyMasked(+r.saida) : '';
+      g('ts-consumido').value = r.vlr_consumido ? numberToMoneyMasked(+r.vlr_consumido) : '';
+      g('ts-viagem').value = r.despesa_viagem ? numberToMoneyMasked(+r.despesa_viagem) : '';
+      g('ts-hospedagem').value = r.despesa_hospedagem ? numberToMoneyMasked(+r.despesa_hospedagem) : '';
+      g('ts-refeicao').value = r.despesa_refeicao ? numberToMoneyMasked(+r.despesa_refeicao) : '';
+      g('ts-locomocao').value = r.despesa_locomocao ? numberToMoneyMasked(+r.despesa_locomocao) : '';
+      g('ts-rat-exp').value = r.rateio_exposicao ? numberToMoneyMasked(+r.rateio_exposicao) : '';
+      g('ts-rat-via').value = r.rateio_viacloset ? numberToMoneyMasked(+r.rateio_viacloset) : '';
+      g('ts-rat-gip').value = r.rateio_gip ? numberToMoneyMasked(+r.rateio_gip) : '';
+      g('ts-obs').value = r.observacoes || '';
+      g('ts-modal').classList.add('open');
+    }
+    function fecharModal() { g('ts-modal').classList.remove('open'); }
+
+    g('btn-novo').addEventListener('click', abrirNovo);
+    g('ts-btn-cancelar').addEventListener('click', fecharModal);
+    g('ts-modal').addEventListener('mousedown', e => { if (e.target === g('ts-modal')) fecharModal(); });
+
+    g('ts-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const errEl = g('ts-modal-error'); errEl.classList.remove('visible');
+      const portador = g('ts-portador').value.trim();
+      if (!portador) { errEl.textContent = 'Informe o portador.'; errEl.classList.add('visible'); return; }
+      const num = id => moneyToNumber(g(id).value) || 0;
+      const payload = {
+        data: g('ts-data').value, portador, finalidade: g('ts-finalidade').value.trim() || null,
+        entrada: num('ts-entrada'), saida: num('ts-saida'), vlr_consumido: num('ts-consumido') || null,
+        despesa_viagem: num('ts-viagem') || null, despesa_hospedagem: num('ts-hospedagem') || null,
+        despesa_refeicao: num('ts-refeicao') || null, despesa_locomocao: num('ts-locomocao') || null,
+        rateio_exposicao: num('ts-rat-exp') || null, rateio_viacloset: num('ts-rat-via') || null, rateio_gip: num('ts-rat-gip') || null,
+        observacoes: g('ts-obs').value.trim() || null,
+      };
+      if (!payload.entrada && !payload.saida) { errEl.textContent = 'Informe ao menos uma Entrada ou Saída.'; errEl.classList.add('visible'); return; }
+      const btn = g('ts-btn-salvar'); btn.disabled = true; btn.textContent = 'Salvando…';
+      try {
+        if (editId) {
+          const { error } = await sb.from('tesouraria_lancamentos').update(payload).eq('id', editId);
+          if (error) throw error;
+        } else {
+          payload.created_by = me.id; payload.created_by_nome = me.full_name || '';
+          const { error } = await sb.from('tesouraria_lancamentos').insert(payload);
+          if (error) throw error;
+        }
+        await carregar(); populateFiltros(); render();
+        fecharModal();
+        showToast('Lançamento salvo.', 'green');
+      } catch (err) { errEl.textContent = 'Erro ao salvar: ' + err.message; errEl.classList.add('visible'); }
+      btn.disabled = false; btn.textContent = 'Salvar';
+    });
+
+    g('ts-btn-excluir').addEventListener('click', async () => {
+      if (!editId) return;
+      if (!confirm('Excluir este lançamento? Essa ação não pode ser desfeita.')) return;
+      try {
+        const { error } = await sb.from('tesouraria_lancamentos').delete().eq('id', editId);
+        if (error) throw error;
+        await carregar(); populateFiltros(); render();
+        fecharModal();
+        showToast('Lançamento excluído.', 'green');
+      } catch (err) { showToast('Erro ao excluir: ' + err.message, 'red'); }
+    });
+
+    g('tbl-lanc').addEventListener('click', e => {
+      const btn = e.target.closest('[data-editar]');
+      const tr = e.target.closest('tr[data-id]');
+      const id = (btn && btn.dataset.editar) || (tr && tr.dataset.id);
+      if (!id) return;
+      const r = allRows.find(x => x.id === id);
+      if (r) abrirEditar(r);
+    });
+    g('f-portador').addEventListener('change', render);
+    g('f-busca').addEventListener('input', render);
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      me = (rows && rows[0]) || null;
+      if (!me || !(me.is_admin || me.can_tesouraria === true)) return window.location.replace('/');
+      me.id = data.session.user.id;
+      podeEditar = true; // quem vê a tela edita — sem granularidade fina por enquanto
+      SafiSidebar.apply('ts', me, { email: data.session.user.email, sb });
+
+      ['ts-entrada', 'ts-saida', 'ts-consumido', 'ts-viagem', 'ts-hospedagem', 'ts-refeicao', 'ts-locomocao', 'ts-rat-exp', 'ts-rat-via', 'ts-rat-gip'].forEach(id => attachMoneyMask(g(id)));
+      attachAutocomplete(g('ts-portador'), () => distintosPortadores());
+
+      try { await carregar(); } catch (err) { g('ts-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
+      populateFiltros();
+      g('ts-loading').style.display = 'none';
+      g('ts-main').style.display = 'block';
+      render();
+    }
+    init();
+  </script>
+</body>
+</html>

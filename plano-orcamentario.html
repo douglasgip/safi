@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Plano Orçamentário</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SAFI">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+
+    .bg { position: fixed; inset: 0; z-index: 0; background:
+        radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%),
+        radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%),
+        linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .orb { position: fixed; border-radius: 50%; filter: blur(80px); will-change: transform; opacity: 0.13; animation: drift linear infinite; z-index: 0; pointer-events: none; }
+    .orb1 { width: 600px; height: 600px; background: #fbbf24; top: -150px; left: -100px; animation-duration: 22s; }
+    .orb2 { width: 500px; height: 500px; background: #d97706; bottom: -100px; right: -100px; animation-duration: 28s; animation-delay: -10s; }
+    @keyframes drift { 0%{transform:translate(0,0) scale(1)} 33%{transform:translate(30px,-30px) scale(1.05)} 66%{transform:translate(-20px,20px) scale(.95)} 100%{transform:translate(0,0) scale(1)} }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #po-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #po-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; will-change: transform; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar { scrollbar-width: thin; scrollbar-color: #fbbf24 rgba(255,255,255,0.04); }
+    .dc-sidebar::-webkit-scrollbar { width: 8px; }
+    .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
+    .dc-sidebar::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 8px; }
+    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #fcd34d; }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(251,191,36,0.12); color: #fcd34d; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
+    .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+
+    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    .fe-select:focus { outline: none; border-color: #fbbf24; }
+    select option { background: #0f172a; color: #f1f5f9; }
+
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .po-note { background: rgba(251,191,36,0.07); border: 1px solid rgba(251,191,36,0.22); color: #fcd34d; border-radius: 12px; padding: 11px 14px; font-size: 12px; line-height: 1.55; margin-bottom: 16px; }
+    .po-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .po-bar .grow { flex: 1; }
+    .po-dirty { font-size: 11.5px; font-weight: 700; color: #fcd34d; display: none; }
+    .po-dirty.on { display: inline; }
+    .btn-primary { padding: 11px 22px; background: linear-gradient(135deg, #fde68a 0%, #fbbf24 55%, #d97706 100%); border: none; border-radius: 10px; color: #1a0a00; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #92400e; }
+    .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #92400e; }
+
+    .po-scroll { overflow: auto; max-height: 68vh; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    table.po-tbl { border-collapse: separate; border-spacing: 0; min-width: 1400px; width: 100%; }
+    .po-tbl th, .po-tbl td { padding: 5px 5px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
+    .po-tbl thead tr.grp th { position: sticky; top: 0; z-index: 3; background: #101728; font-size: 9px; font-weight: 800; color: #64748b; text-transform: uppercase; letter-spacing: .8px; text-align: center; padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .po-tbl thead tr.cols th { position: sticky; top: 24px; z-index: 3; background: #101728; font-size: 9.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .4px; text-align: right; padding: 8px 6px; }
+    .po-tbl thead th.lbl { text-align: left; }
+    .po-tbl .lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; font-size: 12px; color: #cbd5e1; min-width: 190px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; padding-left: 12px; }
+    .po-tbl thead th.lbl { z-index: 4; background: #101728; }
+    .po-tbl tr.sum td { background: #111a2c; font-weight: 800; color: #f1f5f9; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; padding: 9px 8px; }
+    .po-tbl tr.sum td.lbl { background: #131c30; text-align: left; }
+    .po-in { width: 88px; padding: 7px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .po-in:focus { outline: none; border-color: #fbbf24; background: rgba(251,191,36,0.08); }
+    .po-in.chg { border-color: rgba(251,191,36,0.55); }
+    .po-foot { font-size: 11px; color: #64748b; margin-top: 12px; line-height: 1.6; }
+    .col-sep { border-left: 2px solid rgba(255,255,255,0.08) !important; }
+    #po-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="orb orb1"></div><div class="orb orb2"></div><div class="grid-overlay"></div>
+
+  <div class="dc-sidebar-backdrop" id="po-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="po-sidebar"></aside>
+
+  <header class="header">
+    <div class="header-brand">
+      <button id="po-hamburger" aria-label="Menu">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Plano Orçamentário</div>
+    </div>
+  </header>
+
+  <div id="po-loading">Carregando…</div>
+
+  <main class="main" id="po-main" style="display:none">
+    <div class="fe-toolbar">
+      <div>
+        <h1>Plano Orçamentário</h1>
+        <div class="fe-toolbar-sub">Meta trimestral de vendas e compras por categoria de produto — Exposição Paulista e Via Closet.</div>
+      </div>
+      <div class="po-bar" style="margin-bottom:0">
+        <select class="fe-select" id="sel-op"></select>
+        <select class="fe-select" id="sel-tri"></select>
+        <select class="fe-select" id="sel-ano"></select>
+      </div>
+    </div>
+
+    <div class="po-note">Previsto e Realizado são digitados à mão por enquanto — ainda não puxa de Pedidos nem de Produtos. Isso deve mudar depois de uma sessão de discovery com o time.</div>
+
+    <div class="panel">
+      <div class="po-bar">
+        <span class="grow"></span>
+        <span class="po-dirty" id="dirty">● alterações não salvas</span>
+        <button class="btn-primary" id="btn-save" type="button">Salvar plano</button>
+      </div>
+      <div class="po-scroll"><table class="po-tbl" id="po-tbl"></table></div>
+      <div class="po-foot">Peças = unidades (pçs). Estoque e Saldo final são a posição de estoque da categoria no início/fim do trimestre. Deixe em branco o que não tiver meta ou valor ainda.</div>
+    </div>
+  </main>
+
+  <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
+
+  <script>
+    const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+    SafiSidebar.mount('po', { active: 'planoorc', accent: { g1: '#fbbf24', g2: '#d97706', text: '#1a0a00', adminRgb: '251,191,36', adminFg: '#fcd34d' } });
+    wireSidebarToggle('po');
+
+    const OPS = [{ id: 'Exposicao', nome: 'Exposição Paulista' }, { id: 'ViaCloset', nome: 'Via Closet' }];
+    const CATEGORIAS = ['MASCULINO AD', 'MASCULINO PLUS', 'JEANS MASCULINO', 'JEANS MASCULINO PLUS', 'FEMININO AD', 'FEMININO PLUS', 'JEANS FEMININO', 'JEANS FEMININO PLUS', 'MASCULINO INFANTIL', 'FEMININO INFANTIL', 'LANGERIE ADULTO', 'LANGERIE INFANTIL', 'FEMININO FITNESS', 'MASCULINO FITNESS', 'ENXOVAL', 'ACESSÓRIO ESCOLAR', 'ACESSÓRIOS', 'BOCA DE CAIXA', 'ACESSÓRIOS DE INVERNO', 'TROCAS DE PRODUTO'];
+    // [chave, rótulo, é R$ (senão é peças), começa um grupo novo com separador]
+    const CAMPOS = [
+      ['estoque_pcas', 'Estoque', false, true],
+      ['vendas_previsto_r', 'Vendas prev. R$', true, true],
+      ['vendas_realizado_r', 'Vendas real. R$', true, false],
+      ['vendas_previsto_pcs', 'Vendas prev. pçs', false, false],
+      ['vendas_realizado_pcs', 'Vendas real. pçs', false, false],
+      ['compras_previsto_r', 'Compras prev. R$', true, true],
+      ['compras_realizado_r', 'Compras real. R$', true, false],
+      ['compras_previsto_pcs', 'Compras prev. pçs', false, false],
+      ['compras_realizado_pcs', 'Compras real. pçs', false, false],
+      ['saldo_estoque_pcas', 'Saldo final', false, true],
+    ];
+
+    const g = id => document.getElementById(id);
+    const fmt0 = v => (+v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+    let vals = {}, orig = {}, sel = { op: 'Exposicao', tri: 1, ano: new Date().getFullYear() };
+    const k = (cat, campo) => cat + '|' + campo;
+    function dirtyCount() { let n = 0; new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(x => { if (vals[x] !== orig[x]) n++; }); return n; }
+
+    async function carregar() {
+      const { data, error } = await sb.from('plano_orcamentario').select('*').eq('operacao', sel.op).eq('ano', sel.ano).eq('trimestre', sel.tri);
+      if (error) throw error;
+      vals = {}; orig = {};
+      (data || []).forEach(r => { CAMPOS.forEach(([campo]) => { const v = r[campo]; if (v != null) { vals[k(r.categoria, campo)] = +v; orig[k(r.categoria, campo)] = +v; } }); });
+    }
+
+    function render() {
+      let h = '<thead><tr class="grp"><th class="lbl" rowspan="2">Categoria</th>';
+      CAMPOS.forEach(([, label, , sep]) => { h += '<th' + (sep ? ' class="col-sep"' : '') + '>' + (label.indexOf('Vendas') === 0 ? 'Vendas' : label.indexOf('Compras') === 0 ? 'Compras' : '') + '</th>'; });
+      h += '</tr><tr class="cols">';
+      CAMPOS.forEach(([campo, label, , sep]) => { h += '<th' + (sep ? ' class="col-sep"' : '') + '>' + esc(label.replace('Vendas ', '').replace('Compras ', '')) + '</th>'; });
+      h += '</tr></thead><tbody>';
+      CATEGORIAS.forEach(cat => {
+        h += '<tr><td class="lbl" title="' + esc(cat) + '">' + esc(cat) + '</td>';
+        CAMPOS.forEach(([campo, label, isR, sep]) => {
+          const v = vals[k(cat, campo)];
+          h += '<td' + (sep ? ' class="col-sep"' : '') + '><input class="po-in" data-cat="' + esc(cat) + '" data-campo="' + campo + '" data-money="' + (isR ? '1' : '0') + '" value="' + (v == null ? '' : (isR ? numberToMoneyMasked(v) : fmt0(v))) + '" placeholder="—" aria-label="' + esc(cat) + ' ' + esc(label) + '"></td>';
+        });
+        h += '</tr>';
+      });
+      h += '<tr class="sum"><td class="lbl">Total</td>';
+      CAMPOS.forEach(([campo, , , sep]) => { h += '<td' + (sep ? ' class="col-sep"' : '') + ' data-tot="' + campo + '"></td>'; });
+      h += '</tr></tbody>';
+      g('po-tbl').innerHTML = h;
+      g('po-tbl').querySelectorAll('.po-in[data-money="1"]').forEach(el => attachMoneyMask(el));
+      recalc();
+    }
+
+    function recalc() {
+      CAMPOS.forEach(([campo]) => {
+        let tot = 0, any = false;
+        CATEGORIAS.forEach(cat => { const v = vals[k(cat, campo)]; if (v != null) { tot += v; any = true; } });
+        const el = document.querySelector('[data-tot="' + campo + '"]'); if (el) el.textContent = any ? fmt0(tot) : '—';
+      });
+      g('po-tbl').querySelectorAll('.po-in').forEach(el => { const key = k(el.dataset.cat, el.dataset.campo); el.classList.toggle('chg', vals[key] !== orig[key]); });
+      g('dirty').classList.toggle('on', dirtyCount() > 0);
+    }
+
+    g('po-tbl').addEventListener('input', e => {
+      const el = e.target.closest('.po-in'); if (!el) return;
+      const isMoney = el.dataset.money === '1';
+      const n = isMoney ? moneyToNumber(el.value) : (el.value.trim() === '' ? null : Math.round(+el.value.replace(/\D/g, '') || 0));
+      const key = k(el.dataset.cat, el.dataset.campo);
+      if (n == null) delete vals[key]; else vals[key] = n;
+      recalc();
+    });
+
+    g('btn-save').addEventListener('click', async () => {
+      const porCategoria = {};
+      new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(key => {
+        if (vals[key] === orig[key]) return;
+        const [cat] = key.split('|');
+        porCategoria[cat] = true;
+      });
+      const categorias = Object.keys(porCategoria);
+      if (!categorias.length) return showToast('Nenhuma alteração para salvar.', 'green');
+      const btn = g('btn-save'); btn.disabled = true; btn.textContent = 'Salvando…';
+      try {
+        const upserts = categorias.map(cat => {
+          const row = { operacao: sel.op, categoria: cat, ano: sel.ano, trimestre: sel.tri, updated_by: window.__poUserId, updated_at: new Date().toISOString() };
+          CAMPOS.forEach(([campo]) => { row[campo] = vals[k(cat, campo)] == null ? null : vals[k(cat, campo)]; });
+          return row;
+        });
+        const { error } = await sb.from('plano_orcamentario').upsert(upserts, { onConflict: 'operacao,categoria,ano,trimestre' });
+        if (error) throw error;
+        orig = { ...vals }; recalc();
+        showToast('Plano orçamentário salvo.', 'green');
+      } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
+      btn.disabled = false; btn.textContent = 'Salvar plano';
+    });
+
+    async function trocar() {
+      const op = g('sel-op').value, tri = +g('sel-tri').value, ano = +g('sel-ano').value;
+      if (dirtyCount() > 0 && !confirm('Há alterações não salvas. Descartar e trocar?')) { g('sel-op').value = sel.op; g('sel-tri').value = sel.tri; g('sel-ano').value = sel.ano; return; }
+      sel = { op, tri, ano };
+      try { await carregar(); render(); } catch (err) { showToast('Erro ao carregar: ' + err.message, 'red'); }
+    }
+    g('sel-op').addEventListener('change', trocar);
+    g('sel-tri').addEventListener('change', trocar);
+    g('sel-ano').addEventListener('change', trocar);
+    window.addEventListener('beforeunload', e => { if (dirtyCount() > 0) { e.preventDefault(); e.returnValue = ''; } });
+
+    async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (rows && rows[0]) || null;
+      if (!prof || !(prof.is_admin || prof.can_plano_orcamentario === true)) return window.location.replace('/');
+      window.__poUserId = data.session.user.id;
+      SafiSidebar.apply('po', prof, { email: data.session.user.email, sb });
+
+      g('sel-op').innerHTML = OPS.map(o => '<option value="' + o.id + '">' + o.nome + '</option>').join('');
+      const hoje = new Date(), triAtual = Math.floor(hoje.getMonth() / 3) + 1, y = hoje.getFullYear();
+      g('sel-tri').innerHTML = [1, 2, 3, 4].map(t => '<option value="' + t + '"' + (t === triAtual ? ' selected' : '') + '>' + t + 'º Trimestre</option>').join('');
+      g('sel-ano').innerHTML = [y - 1, y, y + 1].map(a => '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>').join('');
+      sel = { op: OPS[0].id, tri: triAtual, ano: y };
+      try { await carregar(); } catch (err) { g('po-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
+      g('po-loading').style.display = 'none';
+      g('po-main').style.display = 'block';
+      render();
+    }
+    init();
+  </script>
+</body>
+</html>
