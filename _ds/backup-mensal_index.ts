@@ -100,9 +100,15 @@ Deno.serve(async (req: Request) => {
     const bufferXlsx = XLSX.write(wb, { type: 'array', bookType: 'xlsx' }) as ArrayBuffer
     const base64 = bufferParaBase64(new Uint8Array(bufferXlsx))
 
-    const { data: admins } = await sb.from('user_profiles').select('email').eq('is_admin', true).not('email', 'is', null)
-    const destinatarios = (admins || []).map((a: { email: string }) => a.email).filter(Boolean)
-    if (!destinatarios.length) throw new Error('Nenhum admin com e-mail cadastrado para receber o backup.')
+    // Destinatário padrão é a lista de admins; um teste avulso pode mandar pra outro
+    // e-mail passando {"para": ["fulano@..."]} no corpo (o agendamento mensal chama sem corpo).
+    let destinatarios: string[] = []
+    try { const body = await req.json(); if (Array.isArray(body?.para) && body.para.length) destinatarios = body.para.filter((e: unknown) => typeof e === 'string' && e) } catch (_e) { /* sem corpo = usa os admins */ }
+    if (!destinatarios.length) {
+      const { data: admins } = await sb.from('user_profiles').select('email').eq('is_admin', true).not('email', 'is', null)
+      destinatarios = (admins || []).map((a: { email: string }) => a.email).filter(Boolean)
+    }
+    if (!destinatarios.length) throw new Error('Nenhum destinatário — nenhum admin com e-mail cadastrado.')
 
     const hoje = new Date()
     const competencia = MESES[hoje.getUTCMonth()] + ' de ' + hoje.getUTCFullYear()
