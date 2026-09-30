@@ -409,6 +409,35 @@ window.SAFI_AJUDA = { telas: {
     ],
   },
 
+  tesouraria: {
+    titulo: 'Tesouraria', versao: 1,
+    resumo: 'Controle de <b>caixa e adiantamentos</b>: cada linha é um lançamento — a empresa entrega dinheiro a um <b>portador</b>, ou o portador gasta/presta contas. Separado das Despesas Fixas.',
+    passos: [
+      { t: 'Registre o lançamento', d: '<b>+ Novo lançamento</b>: data, portador (quem está com o dinheiro), finalidade, e Entrada e/ou Saída em R$.' },
+      { t: 'Detalhe se for viagem', d: 'Valor consumido e as despesas por categoria (viagem, hospedagem, refeição, locomoção) são opcionais.' },
+      { t: 'Divida entre as empresas', d: 'O rateio (Exposição, Via Closet, GIP) também é opcional — preencha se o gasto for de mais de uma empresa.' },
+      { t: 'Acompanhe o saldo', d: 'Cada portador tem um saldo corrente (entradas − saídas), mostrado nos cartões do topo.' },
+    ],
+    dicas: ['O portador é texto livre, mas os já usados aparecem como sugestão ao digitar (igual Pedidos).', 'Clique numa linha da tabela para editar ou excluir o lançamento.'],
+    naoFaz: ['Não tem relação com Despesas Fixas — são módulos independentes.', 'Não calcula automaticamente o que falta prestar contas — isso é lido pelo saldo do portador.'],
+    quemVe: 'Quem tem a permissão Tesouraria.',
+    dados: 'Cadastro próprio, lançamento por lançamento.',
+  },
+
+  planoorc: {
+    titulo: 'Plano Orçamentário', versao: 1,
+    resumo: 'Meta <b>trimestral</b> de vendas e compras por categoria de produto (roupa), só para <b>Exposição Paulista e Via Closet</b>.',
+    passos: [
+      { t: 'Escolha operação, trimestre e ano', d: 'Nos seletores do topo.' },
+      { t: 'Preencha a grade', d: 'Por categoria (Masculino, Jeans, Feminino Plus…): estoque, previsto e realizado de vendas e de compras (em R$ e em peças), e o saldo final de estoque.' },
+      { t: 'Salve', d: '<b>Salvar plano</b> grava só as células alteradas (borda âmbar até salvar).' },
+    ],
+    dicas: ['Deixe em branco o que não tiver meta ou valor ainda — célula vazia não é zero.', 'Trocar de operação/trimestre/ano com alterações não salvas pede confirmação.'],
+    naoFaz: ['Previsto e Realizado são digitados à mão — ainda não puxa de Pedidos nem de Produtos.', 'Não vale para o GIP (e-commerce) — só as duas lojas físicas.'],
+    quemVe: 'Quem tem a permissão Plano Orçamentário.',
+    dados: 'Digitado nesta tela.',
+  },
+
   admin: {
     titulo: 'Gestão de Acessos', versao: 3,
     resumo: 'Aqui o admin cria usuários, define <b>exatamente o que cada um pode ver e fazer</b> no SAFI — tela por tela e, em vários casos, empresa por empresa — e acompanha quem está usando o sistema.',
