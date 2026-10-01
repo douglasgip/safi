@@ -420,6 +420,18 @@
             </div>
           </a>
 
+          <a href="/tesouraria" id="card-tesouraria" class="dash-card theme-cyan" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/></svg>
+            </div>
+            <div class="dash-card-title">Tesouraria</div>
+            <div class="dash-card-desc">Caixa e adiantamentos por portador, com rateio entre as empresas — separado das Despesas Fixas.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
         </div>
       </div>
 
@@ -500,6 +512,18 @@
             </div>
             <div class="dash-card-title">Calculadora de Importação</div>
             <div class="dash-card-desc">Custo de desembarque por produto/container, com histórico dos últimos cálculos — para decidir se vale a pena importar.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
+          <a href="/plano-orcamentario" id="card-planoorc" class="dash-card theme-amber" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9M13 17V5M8 17v-3"/></svg>
+            </div>
+            <div class="dash-card-title">Plano Orçamentário</div>
+            <div class="dash-card-desc">Meta trimestral de vendas e compras por categoria de produto — Exposição Paulista e Via Closet.</div>
             <div class="dash-card-arrow">
               Acessar
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
@@ -610,6 +634,10 @@
       if (showProdutos) { const c=document.getElementById('card-produtos'); if(c) c.style.display=''; }
       const showOrcamento = !!prof && (prof.is_admin || prof.can_orcamento === true);
       if (showOrcamento) { const c=document.getElementById('card-orcamento'); if(c) c.style.display=''; }
+      const showTesouraria = !!prof && (prof.is_admin || prof.can_tesouraria === true);
+      if (showTesouraria) { const c=document.getElementById('card-tesouraria'); if(c) c.style.display=''; }
+      const showPlanoOrc = !!prof && (prof.is_admin || prof.can_plano_orcamentario === true);
+      if (showPlanoOrc) { const c=document.getElementById('card-planoorc'); if(c) c.style.display=''; }
       if (showDre) { const c=document.getElementById('card-conselho'); if(c) c.style.display=''; }
       const showFechamento = !!prof && (prof.is_admin || prof.can_fechar_mes === true);
       if (showFechamento) { const c=document.getElementById('card-fechamento'); if(c) c.style.display=''; }
@@ -637,9 +665,9 @@
       // um rótulo de setor flutuando sem nada embaixo (mesmos setores da barra lateral).
       [
         ['section-conselho', ['card-conselho','card-reunioes']],
-        ['section-financeiro', ['card-dre','card-lancamentos','card-orcamento','card-fluxocaixa','card-despfixas']],
+        ['section-financeiro', ['card-dre','card-lancamentos','card-orcamento','card-fluxocaixa','card-despfixas','card-tesouraria']],
         ['section-contabil', ['card-resumo','card-fechamento']],
-        ['section-compras', ['card-pedidos','card-conciliacao','card-produtos','card-calcimport']],
+        ['section-compras', ['card-pedidos','card-conciliacao','card-produtos','card-calcimport','card-planoorc']],
         ['section-pessoal', ['card-funcionarios']],
         ['section-gestao', ['card-mapasoc']],
       ].forEach(([sectionId, cardIds]) => {
