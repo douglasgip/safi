@@ -410,15 +410,16 @@ window.SAFI_AJUDA = { telas: {
   },
 
   tesouraria: {
-    titulo: 'Tesouraria', versao: 1,
-    resumo: 'Controle de <b>caixa e adiantamentos</b>: cada linha é um lançamento — a empresa entrega dinheiro a um <b>portador</b>, ou o portador gasta/presta contas. Separado das Despesas Fixas.',
+    titulo: 'Tesouraria', versao: 2,
+    resumo: 'Duas abas: <b>Cheques</b> (controle dos cheques emitidos, igual à planilha: registro, CNPJ, titular, nº, valor, fornecedor, compensação e OK) e <b>Caixa</b> (adiantamentos por <b>portador</b>, com entradas, saídas e rateio). Separado das Despesas Fixas.',
     passos: [
-      { t: 'Registre o lançamento', d: '<b>+ Novo lançamento</b>: data, portador (quem está com o dinheiro), finalidade, e Entrada e/ou Saída em R$.' },
+      { t: 'Cheques: lance e acompanhe', d: 'Aba <b>Cheques</b> → <b>+ Novo cheque</b>. Para uma sequência da mesma compra use <b>Salvar e adicionar outro</b> (mantém titular, fornecedor e valor, e soma 1 no número). Clique no selo da coluna <b>OK?</b> para marcar o cheque como compensado.' },
+      { t: 'Caixa: registre o lançamento', d: 'Aba <b>Caixa</b> → <b>+ Novo lançamento</b>: data, portador (quem está com o dinheiro), finalidade, e Entrada e/ou Saída em R$.' },
       { t: 'Detalhe se for viagem', d: 'Valor consumido e as despesas por categoria (viagem, hospedagem, refeição, locomoção) são opcionais.' },
       { t: 'Divida entre as empresas', d: 'O rateio (Exposição, Via Closet, GIP) também é opcional — preencha se o gasto for de mais de uma empresa.' },
       { t: 'Acompanhe o saldo', d: 'Cada portador tem um saldo corrente (entradas − saídas), mostrado nos cartões do topo.' },
     ],
-    dicas: ['O portador é texto livre, mas os já usados aparecem como sugestão ao digitar (igual Pedidos).', 'Clique numa linha da tabela para editar ou excluir o lançamento.'],
+    dicas: ['<b>Vencido</b> = passou da data de compensação e ainda não tem OK (fica em vermelho, com contador na aba).', 'Titular, fornecedor e portador são texto livre, mas os já usados aparecem como sugestão ao digitar (igual Pedidos).', 'O CNPJ do cheque usa as mesmas opções de Pedidos (Guilherme, Juliane, Isa, EP).', 'Clique numa linha para editar ou excluir.'],
     naoFaz: ['Não tem relação com Despesas Fixas — são módulos independentes.', 'Não calcula automaticamente o que falta prestar contas — isso é lido pelo saldo do portador.'],
     quemVe: 'Quem tem a permissão Tesouraria.',
     dados: 'Cadastro próprio, lançamento por lançamento.',

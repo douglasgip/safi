@@ -133,6 +133,22 @@
     .ac-item { padding: 9px 11px; border-radius: 8px; font-size: 12.5px; color: #e2e8f0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .ac-item:hover, .ac-item.active { background: rgba(56,189,248,0.16); color: #7dd3fc; }
 
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 360px; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .tab .badge-n { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px; border-radius: 9px; background: rgba(239,68,68,0.2); color: #fca5a5; font-size: 10.5px; font-weight: 800; }
+    .kpi-sub { font-size: 11.5px; color: #64748b; margin-top: 4px; }
+    .st-pill { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 10.5px; font-weight: 800; white-space: nowrap; border: none; font-family: inherit; cursor: pointer; }
+    .st-ok { background: rgba(52,211,153,0.16); color: #6ee7b7; }
+    .st-venc { background: rgba(239,68,68,0.16); color: #fca5a5; }
+    .st-aberto { background: rgba(148,163,184,0.14); color: #cbd5e1; }
+    .st-pill:hover { filter: brightness(1.25); }
+    .dt-venc { color: #fca5a5; font-weight: 800; }
+    .tbl tfoot td { font-weight: 800; background: rgba(255,255,255,0.03); border-top: 1px solid rgba(255,255,255,0.1); border-bottom: none; }
+    .field .chk-line { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #cbd5e1; cursor: pointer; margin: 0 0 10px; letter-spacing: 0; }
+    .field .chk-line input[type="checkbox"] { width: auto; padding: 0; accent-color: #38bdf8; }
+    .modal-actions .btn-ghost { flex-shrink: 0; }
+
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
     .toast.visible { opacity: 1; pointer-events: auto; }
     .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -165,31 +181,109 @@
     <div class="fe-toolbar">
       <div>
         <h1>Tesouraria</h1>
-        <div class="fe-toolbar-sub">Caixa e adiantamentos por portador — separado das Despesas Fixas.</div>
+        <div class="fe-toolbar-sub">Cheques emitidos e caixa/adiantamentos por portador — separado das Despesas Fixas.</div>
       </div>
-      <button class="btn-primary" id="btn-novo" type="button">+ Novo lançamento</button>
-    </div>
-
-    <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-l">Total entradas</div><div class="kpi-v" id="kpi-entradas" style="color:#6ee7b7">R$ 0,00</div></div>
-      <div class="kpi"><div class="kpi-l">Total saídas</div><div class="kpi-v" id="kpi-saidas" style="color:#fca5a5">R$ 0,00</div></div>
-      <div class="kpi"><div class="kpi-l">Saldo em caixa (todos portadores)</div><div class="kpi-v" id="kpi-saldo">R$ 0,00</div></div>
-    </div>
-
-    <div class="panel" id="panel-portadores">
-      <div class="panel-head">Saldo por portador</div>
-      <div class="port-grid" id="port-grid"></div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">Lançamentos</div>
-      <div class="filters">
-        <select class="fe-select" id="f-portador"><option value="">Todos os portadores</option></select>
-        <input class="fe-select" id="f-busca" type="text" placeholder="Buscar por finalidade…" style="min-width:220px;cursor:text">
+      <div style="display:flex;gap:10px">
+        <button class="btn-primary" id="btn-novo-cheque" type="button">+ Novo cheque</button>
+        <button class="btn-primary" id="btn-novo" type="button" style="display:none">+ Novo lançamento</button>
       </div>
-      <div class="table-scroll"><table class="tbl" id="tbl-lanc"></table></div>
+    </div>
+
+    <div class="tabs" id="ts-tabs">
+      <button class="tab active" data-tab="cheques" type="button">Cheques<span class="badge-n" id="badge-venc" style="display:none"></span></button>
+      <button class="tab" data-tab="caixa" type="button">Caixa</button>
+    </div>
+
+    <!-- ══ ABA: CHEQUES ══ -->
+    <div id="tab-cheques">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-l">Em aberto (a compensar)</div><div class="kpi-v" id="ck-aberto">R$ 0,00</div><div class="kpi-sub" id="ck-aberto-n"></div></div>
+        <div class="kpi"><div class="kpi-l">Compensam nos próximos 7 dias</div><div class="kpi-v" id="ck-prox">R$ 0,00</div><div class="kpi-sub" id="ck-prox-n"></div></div>
+        <div class="kpi"><div class="kpi-l">Vencidos sem OK</div><div class="kpi-v" id="ck-venc">R$ 0,00</div><div class="kpi-sub" id="ck-venc-n"></div></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Cheques</div>
+        <div class="filters">
+          <select class="fe-select" id="fc-status">
+            <option value="aberto">Em aberto</option>
+            <option value="venc">Vencidos sem OK</option>
+            <option value="ok">Compensados</option>
+            <option value="todos">Todos</option>
+          </select>
+          <select class="fe-select" id="fc-cnpj"><option value="">Todos os CNPJs</option></select>
+          <input class="fe-select" id="fc-busca" type="text" placeholder="Buscar por nº, titular ou fornecedor…" style="min-width:260px;cursor:text">
+        </div>
+        <div class="table-scroll"><table class="tbl" id="tbl-cheques"></table></div>
+      </div>
+    </div>
+
+    <!-- ══ ABA: CAIXA ══ -->
+    <div id="tab-caixa" style="display:none">
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-l">Total entradas</div><div class="kpi-v" id="kpi-entradas" style="color:#6ee7b7">R$ 0,00</div></div>
+        <div class="kpi"><div class="kpi-l">Total saídas</div><div class="kpi-v" id="kpi-saidas" style="color:#fca5a5">R$ 0,00</div></div>
+        <div class="kpi"><div class="kpi-l">Saldo em caixa (todos portadores)</div><div class="kpi-v" id="kpi-saldo">R$ 0,00</div></div>
+      </div>
+
+      <div class="panel" id="panel-portadores">
+        <div class="panel-head">Saldo por portador</div>
+        <div class="port-grid" id="port-grid"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">Lançamentos</div>
+        <div class="filters">
+          <select class="fe-select" id="f-portador"><option value="">Todos os portadores</option></select>
+          <input class="fe-select" id="f-busca" type="text" placeholder="Buscar por finalidade…" style="min-width:220px;cursor:text">
+        </div>
+        <div class="table-scroll"><table class="tbl" id="tbl-lanc"></table></div>
+      </div>
     </div>
   </main>
+
+  <!-- Modal: Novo/Editar cheque -->
+  <div class="modal-overlay" id="ch-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="ch-modal-title">Novo Cheque</div>
+      <div class="modal-sub">Um cheque por linha, igual à planilha de controle. Use "Salvar e adicionar outro" para uma sequência da mesma compra.</div>
+      <div class="modal-error" id="ch-modal-error"></div>
+      <form id="ch-form" autocomplete="off">
+        <div class="grid2">
+          <div class="field"><label for="ch-data">Data de registro</label><input type="date" id="ch-data" required></div>
+          <div class="field"><label for="ch-cnpj">CNPJ (empresa emissora)</label>
+            <select id="ch-cnpj" required>
+              <option value="">Selecione</option>
+              <option value="Guilherme">Guilherme</option>
+              <option value="Juliane">Juliane</option>
+              <option value="Isa">Isa</option>
+              <option value="EP">EP</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="ch-titular">Titular (quem lançou)</label><input type="text" id="ch-titular" placeholder="Nome" required autocomplete="off"></div>
+          <div class="field"><label for="ch-fornecedor">Fornecedor</label><input type="text" id="ch-fornecedor" placeholder="Nome do fornecedor" required autocomplete="off"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="ch-numero">Nº do cheque</label><input type="text" inputmode="numeric" id="ch-numero" required></div>
+          <div class="field"><label for="ch-valor">Valor (R$)</label><input type="text" inputmode="decimal" id="ch-valor" placeholder="0,00" required></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label for="ch-compensacao">Data de compensação</label><input type="date" id="ch-compensacao"></div>
+          <div class="field" style="display:flex;align-items:flex-end"><label class="chk-line"><input type="checkbox" id="ch-ok"> Já compensado (OK)</label></div>
+        </div>
+        <div class="field"><label for="ch-obs">Observações</label><textarea id="ch-obs" placeholder="Opcional"></textarea></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" id="ch-btn-cancelar">Cancelar</button>
+          <button type="button" class="btn-danger" id="ch-btn-excluir" style="display:none">Excluir</button>
+          <button type="button" class="btn-ghost" id="ch-btn-outro">Salvar e adicionar outro</button>
+          <button type="submit" class="btn-primary" id="ch-btn-salvar" style="flex:1">Salvar</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Modal: Novo/Editar lançamento -->
   <div class="modal-overlay" id="ts-modal">
@@ -464,6 +558,182 @@
     g('f-portador').addEventListener('change', render);
     g('f-busca').addEventListener('input', render);
 
+    // ══ ABA CHEQUES ═══════════════════════════════════════════════════════════
+    // Controle dos cheques emitidos (mesma lógica da planilha do Guilherme): data de registro,
+    // CNPJ, titular, nº, valor, fornecedor, compensação e OK. Vencido = passou da data de
+    // compensação e ainda sem OK.
+    let allCheques = [], editChId = null, chSalvarOutro = false;
+    const TAB_KEY = 'safi-tesouraria-tab';
+
+    async function carregarCheques() {
+      allCheques = await fetchAll(() => sb.from('tesouraria_cheques').select('*').order('data_registro', { ascending: false }).order('created_at', { ascending: false }));
+    }
+    function addDiasLocal(dias) { const d = new Date(); d.setDate(d.getDate() + dias); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); }
+    function statusCheque(r, hoje) { if (r.compensado) return 'ok'; if (r.compensacao && r.compensacao < hoje) return 'venc'; return 'aberto'; }
+    function distintosCheques(campo) {
+      const mapa = new Map();
+      allCheques.forEach(r => { const v = (r[campo] || '').trim(); if (v && !mapa.has(v.toLowerCase())) mapa.set(v.toLowerCase(), v); });
+      return [...mapa.values()].sort((a, b) => a.localeCompare(b, 'pt-BR'));
+    }
+
+    function renderCheques() {
+      const hoje = todayLocal(), em7 = addDiasLocal(7);
+      const abertos = allCheques.filter(r => !r.compensado);
+      const prox = abertos.filter(r => r.compensacao && r.compensacao >= hoje && r.compensacao <= em7);
+      const venc = abertos.filter(r => r.compensacao && r.compensacao < hoje);
+      const soma = arr => arr.reduce((a, r) => a + (+r.valor || 0), 0);
+      const nTxt = n => n + (n === 1 ? ' cheque' : ' cheques');
+      g('ck-aberto').textContent = brl(soma(abertos)); g('ck-aberto-n').textContent = nTxt(abertos.length);
+      g('ck-prox').textContent = brl(soma(prox)); g('ck-prox-n').textContent = nTxt(prox.length);
+      g('ck-venc').textContent = brl(soma(venc)); g('ck-venc-n').textContent = nTxt(venc.length);
+      g('ck-venc').style.color = venc.length ? '#fca5a5' : '';
+      const badge = g('badge-venc'); badge.textContent = venc.length; badge.style.display = venc.length ? '' : 'none';
+
+      const st = g('fc-status').value, cnpj = g('fc-cnpj').value, q = g('fc-busca').value.trim().toLowerCase();
+      let linhas = allCheques.filter(r => {
+        const s = statusCheque(r, hoje);
+        if (st === 'aberto' && s === 'ok') return false;
+        if (st === 'venc' && s !== 'venc') return false;
+        if (st === 'ok' && s !== 'ok') return false;
+        if (cnpj && r.cnpj !== cnpj) return false;
+        if (q && ![r.numero, r.titular, r.fornecedor, r.observacoes].filter(Boolean).join(' ').toLowerCase().includes(q)) return false;
+        return true;
+      });
+      const cmpData = (a, b) => (a.compensacao || '9999') < (b.compensacao || '9999') ? -1 : (a.compensacao || '9999') > (b.compensacao || '9999') ? 1 : 0;
+      if (st === 'aberto' || st === 'venc') linhas.sort(cmpData);
+      else if (st === 'ok') linhas.sort((a, b) => -cmpData(a, b));
+
+      const cab = '<thead><tr><th>Registro</th><th>CNPJ</th><th>Titular</th><th>Nº</th><th class="num">Valor</th><th>Fornecedor</th><th>Compensação</th><th>OK?</th><th></th></tr></thead>';
+      if (!linhas.length) { g('tbl-cheques').innerHTML = cab + '<tbody><tr><td colspan="9"><div class="empty">Nenhum cheque neste filtro.</div></td></tr></tbody>'; return; }
+      const rot = { ok: 'OK', venc: 'Vencido', aberto: 'A compensar' };
+      g('tbl-cheques').innerHTML = cab + '<tbody>' + linhas.map(r => {
+        const s = statusCheque(r, hoje);
+        return '<tr class="click" data-ch="' + r.id + '">' +
+          '<td>' + fmtDate(r.data_registro) + '</td>' +
+          '<td>' + esc(r.cnpj) + '</td>' +
+          '<td>' + esc(r.titular) + '</td>' +
+          '<td>' + esc(r.numero) + '</td>' +
+          '<td class="num">' + brl(r.valor) + '</td>' +
+          '<td>' + esc(r.fornecedor) + '</td>' +
+          '<td' + (s === 'venc' ? ' class="dt-venc"' : '') + '>' + (r.compensacao ? fmtDate(r.compensacao) : '<span class="muted">—</span>') + '</td>' +
+          '<td><button type="button" class="st-pill st-' + s + '" data-toggle="' + r.id + '" title="' + (s === 'ok' ? 'Clique para desmarcar a compensação' : 'Clique para marcar como compensado (OK)') + '">' + rot[s] + '</button></td>' +
+          '<td><div class="row-actions"><button type="button" class="icon-btn" data-edit-ch="' + r.id + '" title="Editar">✎</button></div></td>' +
+        '</tr>';
+      }).join('') + '</tbody><tfoot><tr><td colspan="4">Total (' + nTxt(linhas.length) + ')</td><td class="num">' + brl(soma(linhas)) + '</td><td colspan="4"></td></tr></tfoot>';
+    }
+
+    function populateFiltrosCheques() {
+      const atual = g('fc-cnpj').value;
+      g('fc-cnpj').innerHTML = '<option value="">Todos os CNPJs</option>' + ['Guilherme', 'Juliane', 'Isa', 'EP'].map(c => '<option value="' + c + '">' + c + '</option>').join('');
+      g('fc-cnpj').value = atual;
+    }
+
+    function limparFormCheque() {
+      ['ch-cnpj', 'ch-titular', 'ch-fornecedor', 'ch-numero', 'ch-valor', 'ch-compensacao', 'ch-obs'].forEach(id => g(id).value = '');
+      g('ch-ok').checked = false;
+      g('ch-data').value = todayLocal();
+    }
+    function abrirNovoCheque() {
+      editChId = null;
+      g('ch-modal-title').textContent = 'Novo Cheque';
+      g('ch-btn-excluir').style.display = 'none'; g('ch-btn-outro').style.display = '';
+      g('ch-modal-error').classList.remove('visible');
+      limparFormCheque();
+      g('ch-modal').classList.add('open');
+    }
+    function abrirEditarCheque(r) {
+      editChId = r.id;
+      g('ch-modal-title').textContent = 'Editar Cheque';
+      g('ch-btn-excluir').style.display = podeEditar ? '' : 'none'; g('ch-btn-outro').style.display = 'none';
+      g('ch-modal-error').classList.remove('visible');
+      g('ch-data').value = r.data_registro; g('ch-cnpj').value = r.cnpj; g('ch-titular').value = r.titular || '';
+      g('ch-fornecedor').value = r.fornecedor || ''; g('ch-numero').value = r.numero || '';
+      g('ch-valor').value = numberToMoneyMasked(+r.valor); g('ch-compensacao').value = r.compensacao || '';
+      g('ch-ok').checked = !!r.compensado; g('ch-obs').value = r.observacoes || '';
+      g('ch-modal').classList.add('open');
+    }
+    function fecharModalCheque() { g('ch-modal').classList.remove('open'); }
+    function proximoNumero(n) { return /^\d+$/.test(n) ? String(+n + 1).padStart(n.length, '0') : n; }
+
+    g('btn-novo-cheque').addEventListener('click', abrirNovoCheque);
+    g('ch-btn-cancelar').addEventListener('click', fecharModalCheque);
+    g('ch-modal').addEventListener('mousedown', e => { if (e.target === g('ch-modal')) fecharModalCheque(); });
+    g('ch-btn-outro').addEventListener('click', () => { chSalvarOutro = true; g('ch-form').requestSubmit(); });
+
+    g('ch-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const outro = chSalvarOutro; chSalvarOutro = false;
+      const errEl = g('ch-modal-error'); errEl.classList.remove('visible');
+      const valor = moneyToNumber(g('ch-valor').value);
+      if (!valor || valor <= 0) { errEl.textContent = 'Informe o valor do cheque.'; errEl.classList.add('visible'); return; }
+      const payload = {
+        data_registro: g('ch-data').value, cnpj: g('ch-cnpj').value, titular: g('ch-titular').value.trim(),
+        numero: g('ch-numero').value.trim(), valor, fornecedor: g('ch-fornecedor').value.trim(),
+        compensacao: g('ch-compensacao').value || null, compensado: g('ch-ok').checked,
+        observacoes: g('ch-obs').value.trim() || null,
+      };
+      const repetido = allCheques.some(x => x.cnpj === payload.cnpj && x.numero === payload.numero && x.id !== editChId);
+      if (repetido && !confirm('Já existe um cheque nº ' + payload.numero + ' deste CNPJ (' + payload.cnpj + '). Lançar mesmo assim?')) return;
+      const btns = [g('ch-btn-salvar'), g('ch-btn-outro')]; btns.forEach(b => b.disabled = true);
+      try {
+        if (editChId) {
+          const { error } = await sb.from('tesouraria_cheques').update(payload).eq('id', editChId);
+          if (error) throw error;
+        } else {
+          payload.created_by = me.id; payload.created_by_nome = me.full_name || '';
+          const { error } = await sb.from('tesouraria_cheques').insert(payload);
+          if (error) throw error;
+        }
+        await carregarCheques(); renderCheques();
+        if (outro && !editChId) {
+          g('ch-numero').value = proximoNumero(payload.numero); g('ch-compensacao').value = ''; g('ch-ok').checked = false; g('ch-obs').value = '';
+          showToast('Cheque ' + payload.numero + ' salvo. Próximo: ' + g('ch-numero').value + '.', 'green');
+          g('ch-compensacao').focus();
+        } else { fecharModalCheque(); showToast('Cheque salvo.', 'green'); }
+      } catch (err) { errEl.textContent = 'Erro ao salvar: ' + err.message; errEl.classList.add('visible'); }
+      btns.forEach(b => b.disabled = false);
+    });
+
+    g('ch-btn-excluir').addEventListener('click', async () => {
+      if (!editChId) return;
+      if (!confirm('Excluir este cheque? Essa ação não pode ser desfeita.')) return;
+      try {
+        const { error } = await sb.from('tesouraria_cheques').delete().eq('id', editChId);
+        if (error) throw error;
+        await carregarCheques(); renderCheques(); fecharModalCheque();
+        showToast('Cheque excluído.', 'green');
+      } catch (err) { showToast('Erro ao excluir: ' + err.message, 'red'); }
+    });
+
+    g('tbl-cheques').addEventListener('click', async e => {
+      const tg = e.target.closest('[data-toggle]');
+      if (tg) {
+        const r = allCheques.find(x => x.id === tg.dataset.toggle); if (!r) return;
+        if (r.compensado && !confirm('Desmarcar a compensação do cheque nº ' + r.numero + '?')) return;
+        const novo = !r.compensado;
+        const { error } = await sb.from('tesouraria_cheques').update({ compensado: novo }).eq('id', r.id);
+        if (error) return showToast('Erro ao atualizar: ' + error.message, 'red');
+        r.compensado = novo; renderCheques();
+        return showToast(novo ? 'Cheque ' + r.numero + ' marcado como compensado.' : 'Compensação desmarcada.', 'green');
+      }
+      const ed = e.target.closest('[data-edit-ch]'); const tr = e.target.closest('tr[data-ch]');
+      const id = (ed && ed.dataset.editCh) || (tr && tr.dataset.ch); if (!id) return;
+      const r = allCheques.find(x => x.id === id); if (r) abrirEditarCheque(r);
+    });
+    ['fc-status', 'fc-cnpj'].forEach(id => g(id).addEventListener('change', renderCheques));
+    g('fc-busca').addEventListener('input', renderCheques);
+
+    // ── Abas ──
+    function setTab(t) {
+      try { localStorage.setItem(TAB_KEY, t); } catch (e) {}
+      g('tab-cheques').style.display = t === 'cheques' ? '' : 'none';
+      g('tab-caixa').style.display = t === 'caixa' ? '' : 'none';
+      g('btn-novo-cheque').style.display = t === 'cheques' ? '' : 'none';
+      g('btn-novo').style.display = t === 'caixa' ? '' : 'none';
+      document.querySelectorAll('#ts-tabs .tab').forEach(b => b.classList.toggle('active', b.dataset.tab === t));
+    }
+    g('ts-tabs').addEventListener('click', e => { const b = e.target.closest('.tab'); if (b) setTab(b.dataset.tab); });
+
     async function init() {
       const { data } = await sb.auth.getSession();
       if (!data.session) return window.location.replace('/login');
@@ -476,12 +746,19 @@
 
       ['ts-entrada', 'ts-saida', 'ts-consumido', 'ts-viagem', 'ts-hospedagem', 'ts-refeicao', 'ts-locomocao', 'ts-rat-exp', 'ts-rat-via', 'ts-rat-gip'].forEach(id => attachMoneyMask(g(id)));
       attachAutocomplete(g('ts-portador'), () => distintosPortadores());
+      attachMoneyMask(g('ch-valor'));
+      attachAutocomplete(g('ch-titular'), () => distintosCheques('titular'));
+      attachAutocomplete(g('ch-fornecedor'), () => distintosCheques('fornecedor'));
 
-      try { await carregar(); } catch (err) { g('ts-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
+      try { await Promise.all([carregar(), carregarCheques()]); } catch (err) { g('ts-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
       populateFiltros();
+      populateFiltrosCheques();
       g('ts-loading').style.display = 'none';
       g('ts-main').style.display = 'block';
       render();
+      renderCheques();
+      let tabInicial = 'cheques'; try { tabInicial = localStorage.getItem(TAB_KEY) === 'caixa' ? 'caixa' : 'cheques'; } catch (e) {}
+      setTab(tabInicial);
     }
     init();
   </script>
