@@ -1,0 +1,8 @@
+#!/bin/sh
+# Roda os testes do SAFI antes de todo "git push". Se algo falhar, o push é barrado.
+echo "Rodando testes do SAFI..."
+if ! npm test --silent; then
+  echo ""
+  echo "Testes falharam — push cancelado. Corrija e tente de novo."
+  exit 1
+fi

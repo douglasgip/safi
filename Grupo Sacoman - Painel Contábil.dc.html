@@ -1403,6 +1403,23 @@
 
 <!-- ══ SCRIPTS DE CONTROLE (fora do x-dc) ══ -->
 <script>
+  // O Supabase corta qualquer consulta em 1000 linhas (Max rows da API) e devolve o resto como se não existisse.
+  // Lê página por página (limit/offset) até vir uma página vazia — não depende de a página cheia ter 1000 linhas,
+  // então continua certo se o teto da API mudar. 'url' já deve trazer ordenação estável (order=id).
+  async function buscarTodasPaginasREST(url, headers, pagina) {
+    pagina = pagina || 1000;
+    var linhas = [];
+    for (var off = 0, n = 0; n < 500; n++) {
+      var resp = await fetch(url + '&limit=' + pagina + '&offset=' + off, { headers: headers });
+      var pag = await resp.json();
+      if (!Array.isArray(pag)) return pag;
+      if (!pag.length) break;
+      linhas.push.apply(linhas, pag);
+      off += pag.length;
+    }
+    return linhas;
+  }
+
   // Botão Sair
   document.addEventListener('click', function(e) {
     var btn = e.target.closest('[data-action="logout"]');
@@ -1581,19 +1598,7 @@ class Component extends DCLogic {
         fetch(`${B}/rest/v1/lancamentos_classes?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_campos?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_subcampos?select=*&order=ordem`, {headers:hU}),
-        // O Supabase corta qualquer consulta em 1000 linhas. lancamentos_valores já passou disso (1011 em 2026),
-        // então pagina — sem isso, os últimos lançamentos (ex.: Via Closet set/2026) sumiam dos Lançamentos Detalhados.
-        (async () => {
-          const PAGINA = 1000, linhas = [];
-          for (let off = 0; ; off += PAGINA) {
-            const resp = await fetch(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026&order=id&limit=${PAGINA}&offset=${off}`, {headers:hU});
-            const pag = await resp.json();
-            if (!Array.isArray(pag)) return { json: async () => pag };
-            linhas.push(...pag);
-            if (pag.length < PAGINA) break;
-          }
-          return { json: async () => linhas };
-        })(),
+        buscarTodasPaginasREST(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026&order=id`, hU).then(linhas => ({ json: async () => linhas })),
         fetch(`${B}/rest/v1/creditos_tributarios?select=empresa_id,icms,pis,cofins,total,atualizado_em`, {headers:hU})
       ];
       const [r1,r2,r3,r4,r5,r6,r7,r8,r9] = await Promise.all(requests);
