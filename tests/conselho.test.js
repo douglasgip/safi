@@ -32,3 +32,15 @@ test('conselho: percentuais ficam nulos quando não há faturamento', () => {
 test('conselho: margem bruta desconta o CMV da receita líquida', () => {
   assert.strictEqual(snap(mes).mb, 750);
 });
+
+test('conselho: avisa quando EBITDA == Resultado por falta de despesa financeira e IR', () => {
+  const aviso = extrairFuncao(codigo, 'avisoEbitdaIgual', {});
+  assert.match(aviso(snap(mes)), /EBITDA igual ao Resultado/);
+  assert.strictEqual(aviso(snap({ ...mes, df: 40 })), null);
+  assert.strictEqual(aviso(snap({ ...mes, ir: 10 })), null);
+  assert.strictEqual(aviso(null), null);
+});
+
+test('conselho: o aviso entra na faixa de avisos da tela', () => {
+  assert.match(codigo, /avisoEbitdaIgual\(cur\)[^\n]*msgs\.push/);
+});

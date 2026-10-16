@@ -504,6 +504,12 @@
         }).join('') + '</tbody>';
     }
 
+    // EBITDA e Resultado Líquido só diferem se houver Despesas Financeiras ou IR e CSLL lançados.
+    function avisoEbitdaIgual(cur) {
+      if (!cur || cur.df || cur.ir) return null;
+      return "EBITDA igual ao Resultado Líquido: não há Despesas Financeiras nem IR e CSLL lançados neste mês.";
+    }
+
     function render() {
       const mesSel = g('sel-mes').value; if (!mesSel) return;
       const [ano, mes] = mesSel.split('-').map(Number);
@@ -519,6 +525,7 @@
       const parcial = orc && opsO.length < ops.length;
       const note = g('co-note');
       const msgs = [];
+      const avisoEb = avisoEbitdaIgual(cur); if (avisoEb) msgs.push(avisoEb);
       if (!base) msgs.push('Sem dados para o comparativo "' + CMP_LABEL[modo] + '" — escolha outra base.');
       if (parcial) msgs.push('Orçamento lançado só para ' + opsO.map(o => OP_NOME[o] || o).join(' + ') + ' neste mês — o "Orçado" dos indicadores compara apenas esse conjunto.');
       note.textContent = msgs.join(' '); note.classList.toggle('on', msgs.length > 0);
