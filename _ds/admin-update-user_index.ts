@@ -58,6 +58,23 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: error.message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
   }
 
+  // MFA "Sim" -> "Não" também remove o autenticador que a pessoa já cadastrou. A flag sozinha só
+  // obriga a cadastrar; quem já tem um fator verificado continuaria sendo desafiado no login.
+  // Só na virada Sim -> Não: o admin.html manda o formulário inteiro a cada edição, e quem
+  // cadastrou o autenticador por conta própria (flag já "Não") não pode perdê-lo à toa.
+  let fatoresRemovidos = 0
+  if (mfa_obrigatorio === false && before?.mfa_obrigatorio === true) {
+    const { data: lf, error: lfErr } = await sb.auth.admin.mfa.listFactors({ userId: user_id })
+    if (lfErr)
+      return new Response(JSON.stringify({ error: 'Não foi possível listar os autenticadores: ' + lfErr.message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
+    for (const f of lf?.factors || []) {
+      const { error: delErr } = await sb.auth.admin.mfa.deleteFactor({ id: f.id, userId: user_id })
+      if (delErr)
+        return new Response(JSON.stringify({ error: 'Não foi possível remover o autenticador: ' + delErr.message }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
+      fatoresRemovidos++
+    }
+  }
+
   const up: Record<string, unknown> = {}
   if (email !== undefined) up.email = email
   if (full_name !== undefined) up.full_name = full_name
@@ -116,6 +133,7 @@ Deno.serve(async (req: Request) => {
       if (antes !== depois) diff[key] = { de: antes ?? null, para: depois ?? null }
     }
   }
+  if (fatoresRemovidos) diff.mfa_autenticadores_removidos = { de: fatoresRemovidos, para: 0 }
   if (Object.keys(diff).length > 0) {
     const { error: logErr } = await sb.from('admin_actions_log').insert({
       actor_id: caller!.id, actor_email: caller!.email,
