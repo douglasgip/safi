@@ -704,11 +704,20 @@ Deno.serve(async (req: Request) => {
 
     let lancamentosDataText = ''
     if (lancamentosFullAccess) {
-      const { data: lancRows } = await sb
-        .from('lancamentos_valores')
-        .select('empresa_id, mes, valor, lancamentos_subcampos(nome, ordem, lancamentos_campos(nome, ordem, lancamentos_classes(nome, ordem)))')
-        .eq('ano', 2026)
-      lancamentosDataText = lancamentosDetailText(lancRows || [])
+      // O Supabase corta consultas em 1000 linhas e lancamentos_valores já passou disso — pagina.
+      const lancRows: Record<string, unknown>[] = []
+      for (let off = 0; ; off += 1000) {
+        const { data: pag } = await sb
+          .from('lancamentos_valores')
+          .select('empresa_id, mes, valor, lancamentos_subcampos(nome, ordem, lancamentos_campos(nome, ordem, lancamentos_classes(nome, ordem)))')
+          .eq('ano', 2026)
+          .order('id')
+          .range(off, off + 999)
+        if (!pag || !pag.length) break
+        lancRows.push(...pag)
+        if (pag.length < 1000) break
+      }
+      lancamentosDataText = lancamentosDetailText(lancRows as never[])
     }
 
     // ---- Extras: manual do SAFI + indicadores do conselho, reuniões, produtos, fechamento ----
