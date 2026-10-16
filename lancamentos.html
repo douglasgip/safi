@@ -99,6 +99,18 @@
     .mes-nav:disabled { opacity: .35; cursor: default; }
     .entry-filters select, .entry-filters input { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; }
     select option { background: #0f172a; color: #f1f5f9; }
+    /* Dropdown de empresa com logo — o <select> nativo continua no DOM (escondido) como fonte da verdade. */
+    .ls-wrap { position: relative; }
+    .ls-btn { display: inline-flex; align-items: center; gap: 9px; min-width: 210px; padding: 6px 12px 6px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; cursor: pointer; text-align: left; }
+    .ls-btn:hover, .ls-wrap.open .ls-btn { border-color: rgba(167,139,250,0.5); background: rgba(255,255,255,0.07); }
+    .ls-btn .ls-txt { flex: 1; white-space: nowrap; }
+    .ls-btn .ls-seta { color: #94a3b8; font-size: 10px; }
+    .ls-logo { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; flex: none; background: rgba(255,255,255,0.06); }
+    .ls-list { display: none; position: absolute; left: 0; min-width: 100%; top: calc(100% + 6px); z-index: 60; background: #12182b; border: 1px solid rgba(167,139,250,0.3); border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,0.55); padding: 5px; }
+    .ls-wrap.open .ls-list { display: block; }
+    .ls-item { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px 7px 8px; background: none; border: none; border-radius: 8px; color: #e2e8f0; font-family: Inter, sans-serif; font-size: 13px; text-align: left; cursor: pointer; white-space: nowrap; }
+    .ls-item:hover, .ls-item.ativo { background: rgba(139,92,246,0.18); }
+    .ls-item.sel { color: #c4b5fd; font-weight: 700; }
     .btn-save { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 60%, #7c3aed 100%); border: none; border-radius: 10px; color: #1a0a3d; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 0 #5b21b6; transition: transform 0.1s; }
     .btn-save:hover { transform: translateY(-1px); }
     .btn-save:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -538,6 +550,58 @@
       { id: 'RP', nome: 'RP' },
     ];
 
+    // Logos das empresas: EP e Guilherme usam a logo da GIP, Isabela a da Exposição, Juliane a da Via Closet.
+    const EMPRESA_LOGOS = {
+      EP: '/public/gipecommerce_logo.png',
+      GIP: '/public/gipecommerce_logo.png',
+      Exposicao: '/public/exposicaopaulista_logo.png',
+      ViaCloset: '/public/viacloset_logo.png',
+    };
+
+    // Troca o dropdown nativo por um com logo, sem mudar o contrato: o <select> segue escondido no DOM
+    // e continua sendo lido/gravado por .value, onchange e innerHTML. Chamar de novo só atualiza o visual.
+    function attachLogoSelect(sel) {
+      if (sel._logoSel) { sel._logoSel(); return; }
+      const wrap = document.createElement('div');
+      wrap.className = 'ls-wrap';
+      const btn = document.createElement('button');
+      btn.type = 'button'; btn.className = 'ls-btn';
+      const list = document.createElement('div');
+      list.className = 'ls-list';
+      sel.parentNode.insertBefore(wrap, sel);
+      wrap.append(btn, list, sel);
+      sel.style.display = 'none';
+      const logoHtml = v => EMPRESA_LOGOS[v] ? `<img class="ls-logo" src="${EMPRESA_LOGOS[v]}" alt="">` : '<span class="ls-logo"></span>';
+      function refresh() {
+        const o = sel.options[sel.selectedIndex];
+        btn.innerHTML = o ? `${logoHtml(o.value)}<span class="ls-txt">${esc(o.text)}</span><span class="ls-seta">&#9662;</span>` : '';
+        list.innerHTML = Array.from(sel.options).map(op =>
+          `<button type="button" class="ls-item${op.value === sel.value ? ' sel' : ''}" data-v="${esc(op.value)}">${logoHtml(op.value)}<span>${esc(op.text)}</span></button>`).join('');
+      }
+      const fechar = () => wrap.classList.remove('open');
+      const escolher = v => {
+        fechar();
+        if (v === sel.value) return;
+        sel.value = v;
+        sel.dispatchEvent(new Event('change'));
+      };
+      btn.addEventListener('click', () => wrap.classList.toggle('open'));
+      list.addEventListener('click', e => { const it = e.target.closest('.ls-item'); if (it) escolher(it.dataset.v); });
+      document.addEventListener('click', e => { if (!wrap.contains(e.target)) fechar(); });
+      wrap.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { fechar(); btn.focus(); return; }
+        if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+        e.preventDefault();
+        const i = Math.max(0, Math.min(sel.options.length - 1, sel.selectedIndex + (e.key === 'ArrowDown' ? 1 : -1)));
+        if (sel.options[i]) escolher(sel.options[i].value);
+      });
+      // Código que faz sel.value = ... precisa refletir no visual.
+      const desc = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value');
+      Object.defineProperty(sel, 'value', { configurable: true, get() { return desc.get.call(this); }, set(v) { desc.set.call(this, v); refresh(); } });
+      sel._logoSel = refresh;
+      refresh();
+    }
+
     function populateResumoEmpresaSelect() {
       // Mesma regra de permissão da escrita no banco (private.lancamentos_empresa_allowed):
       // só mostra empresas que o usuário realmente tem lancamentos_xx liberado — 'RP' não
@@ -546,6 +610,7 @@
       const allowedIds = new Set(allowedEmpresas.map(e => e.id));
       const opcoes = RESUMO_EMPRESAS.filter(e => e.id === 'RP' || allowedIds.has(e.id));
       document.getElementById('rs-empresa').innerHTML = opcoes.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+      attachLogoSelect(document.getElementById('rs-empresa'));
     }
 
     // Resultado nunca é digitado — é sempre recalculado a partir de Entrada/Saída/
@@ -655,6 +720,7 @@
     function populateEmpresaSelect() {
       const sel = document.getElementById('f-empresa');
       sel.innerHTML = allowedEmpresas.map(e => `<option value="${e.id}">${esc(e.nome)}</option>`).join('');
+      attachLogoSelect(sel);
     }
     function populateAnoSelect() {
       const y = new Date().getFullYear(), sel = document.getElementById('f-ano');
