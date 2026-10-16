@@ -507,7 +507,7 @@
     // EBITDA e Resultado Líquido só diferem se houver Despesas Financeiras ou IR e CSLL lançados.
     function avisoEbitdaIgual(cur) {
       if (!cur || cur.df || cur.ir) return null;
-      return "EBITDA igual ao Resultado Líquido: não há Despesas Financeiras nem IR e CSLL lançados neste mês.";
+      return "EBITDA igual ao Resultado Líquido: não há Despesas Financeiras lançadas neste mês (o IR e a CSLL do Simples já estão dentro do DAS e não são separados).";
     }
 
     function render() {

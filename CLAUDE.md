@@ -9,7 +9,7 @@ Todo ajuste ou correção no SAFI vem com um teste que simula a situação.
 - **Correção de bug:** escrever primeiro o teste que reproduz o erro (precisa FALHAR sem a correção), depois corrigir.
 - **Funcionalidade nova:** pelo menos um teste do comportamento principal (a conta, a regra, a ligação com menu/permissão).
 - **Antes de todo commit/deploy:** rodar `npm test`. Tudo verde ou não sobe. Se um teste antigo quebrar, entender o porquê — não apagar o teste para passar.
-- Ao concluir, dizer ao Douglas em uma linha qual teste foi criado/rodado.
+- Rodar os testes é pressuposto: não recapitular nas respostas. Só falar deles se falharem ou se algo importante ficou sem cobertura.
 
 ### Como são os testes
 - Pasta `tests/`, arquivos `*.test.js`, só com o Node (`node:test`) — **sem dependências** e sem `node_modules`.
