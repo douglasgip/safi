@@ -1189,7 +1189,14 @@
         </div>
         <sc-for list="{{ dreRows }}" as="row" hint-placeholder-count="26">
           <div style="display:grid;grid-template-columns:1fr 180px 72px 112px;padding:{{ row.rowPadding }};background:{{ row.rowBg }};border-bottom:{{ row.rowBorderBottom }}">
-            <div style="padding-left:{{ row.paddingLeft }};font-size:{{ row.labelFontSize }};font-weight:{{ row.labelFontWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.labelLetterSpacing }};text-transform:{{ row.labelTransform }}">{{ row.label }}</div>
+            <div style="padding-left:{{ row.paddingLeft }};font-size:{{ row.labelFontSize }};font-weight:{{ row.labelFontWeight }};color:{{ row.labelColor }};letter-spacing:{{ row.labelLetterSpacing }};text-transform:{{ row.labelTransform }};display:flex;align-items:center;gap:7px">
+              <sc-if value="{{ row.canToggle }}" hint-placeholder-val="{{ false }}">
+                <button type="button" onClick="{{ row.toggleFn }}" title="Ver a venda por canal" aria-label="Ver a venda por canal" style="background:transparent;border:none;padding:0;margin:0;cursor:pointer;color:#7dd3fc;display:flex;align-items:center;justify-content:center;flex-shrink:0;width:15px;height:15px;transform:rotate({{ row.chevronRotate }});transition:transform .15s ease">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+              </sc-if>
+              <span>{{ row.label }}</span>
+            </div>
             <div data-ask="{{ row.ask }}" style="font-size:11px;font-weight:{{ row.valueFontWeight }};color:{{ row.valueColor }};text-align:right;font-variant-numeric:tabular-nums;cursor:{{ row.askCursor }}" title="{{ row.askTitle }}">{{ row.valueFmt }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:10px;color:#64748b;text-align:right;cursor:{{ row.askCursor }}">{{ row.av }}</div>
             <div data-ask="{{ row.ask }}" style="font-size:10px;color:{{ row.ahColor }};text-align:right;font-weight:600;cursor:{{ row.askCursor }}">{{ row.ah }}</div>
@@ -1403,6 +1410,32 @@
 
 <!-- ══ SCRIPTS DE CONTROLE (fora do x-dc) ══ -->
 <script>
+  // DRE > GIP Ecommerce aberto por canal: cada conta de venda do e-commerce (ex.: "Shopee (GIP)",
+  // "Mercado Livre (EP) (Full)") vai para o canal/marketplace dela. O que não casar com nenhum vira "Outros".
+  function canalDoSubcampo(nome) {
+    var n = String(nome || '').toLowerCase();
+    var canais = [['shopee', 'Shopee'], ['mercado livre', 'Mercado Livre'], ['shein', 'Shein'], ['tiktok', 'TikTok Shop'], ['magalu', 'Magalu'], ['temu', 'Temu'], ['nuvem', 'Nuvemshop']];
+    for (var i = 0; i < canais.length; i++) if (n.indexOf(canais[i][0]) >= 0) return canais[i][1];
+    return 'Outros';
+  }
+  // contas: [{nome, total, ant}] (ant = mesmo tanto de meses imediatamente antes; null = sem base).
+  // Devolve os canais do maior para o menor, cada um com as contas que venderam (também do maior para o menor).
+  function agruparCanais(contas) {
+    var mapa = {};
+    contas.forEach(function (c) {
+      if (!c.total && !c.ant) return;
+      var nome = canalDoSubcampo(c.nome);
+      var g = mapa[nome] || (mapa[nome] = { canal: nome, total: 0, ant: c.ant == null ? null : 0, contas: [] });
+      g.total += c.total || 0;
+      if (g.ant != null && c.ant != null) g.ant += c.ant; else g.ant = null;
+      if (c.total) g.contas.push(c);
+    });
+    return Object.keys(mapa).map(function (k) { return mapa[k]; })
+      .filter(function (g) { return g.total; })
+      .sort(function (a, b) { return b.total - a.total; })
+      .map(function (g) { g.contas.sort(function (a, b) { return b.total - a.total; }); return g; });
+  }
+
   // O Supabase corta qualquer consulta em 1000 linhas (Max rows da API) e devolve o resto como se não existisse.
   // Lê página por página (limit/offset) até vir uma página vazia — não depende de a página cheia ter 1000 linhas,
   // então continua certo se o teto da API mudar. 'url' já deve trazer ordenação estável (order=id).
@@ -1471,7 +1504,9 @@ class Component extends DCLogic {
     lancCollapsedGroups: {},
     // Créditos Tributários atuais — mostra só o total por padrão; clique expande o
     // detalhe (ICMS/PIS/COFINS). Puramente de UI, não afeta nenhum cálculo.
-    ctExpanded: false };
+    ctExpanded: false,
+    // DRE: linha "GIP Ecommerce" aberta mostrando a venda por canal.
+    ecomExpanded: false };
 
   // Índice do "mês de referência" do DRE dentro de _months (0=Jan) — o mês ANTERIOR
   // ao calendário, nunca o corrente: o DRE fecha com defasagem de um mês, então nunca
@@ -1909,7 +1944,11 @@ class Component extends DCLogic {
 
     rows.push({t:'H',l:'BLOCO 1 — RECEITA'});
     rows.push({t:'I',l:'(+) Receita Operacional Bruta',v:rb,a:av(rb),h:ah('rb'),i:0,b:1,bp:'—'});
-    if(ec>0) rows.push({t:'S',l:'GIP Ecommerce',v:ec,a:av(ec),h:ah('ec'),i:1,bp:'—'});
+    if(ec>0) {
+      const aberto=!!this.state.ecomExpanded;
+      rows.push({t:'S',l:'GIP Ecommerce',v:ec,a:av(ec),h:ah('ec'),i:1,bp:'—',toggle:()=>this.setState({ecomExpanded:!aberto}),aberto});
+      if(aberto) this._canaisEcomRows(selectedCos, ms+1, me+1, dp?[ms-L+1, ms]:null, av, ahv, ec).forEach(r=>rows.push(r));
+    }
     if(vc>0) rows.push({t:'S',l:'Via Closet',v:vc,a:av(vc),h:ah('vc'),i:1,bp:'—'});
     if(exp>0) rows.push({t:'S',l:'Exposição Paulista',v:exp,a:av(exp),h:ah('exp'),i:1,bp:'—'});
     rows.push({t:'I',l:'(−) Deduções da Receita',v:-ded,a:av(ded),h:ah('ded'),i:0,bp:'—'});
@@ -1924,6 +1963,25 @@ class Component extends DCLogic {
     campoRows('Gastos Operacionais', -1, mc).forEach(r=>rows.push(r));
     rows.push({t:'R',l:'(=) Resultado Líquido',v:res,a:av(res),h:ah('res'),i:0,bp:pctBloco(res,mc)});
     return rows;
+  }
+
+  // Venda do e-commerce (EP + GIP) por canal, a partir das contas de "Venda Ecommerce" dos Lançamentos.
+  // Canal = soma das contas do mesmo marketplace; abaixo de cada canal, as contas que venderam no período.
+  _canaisEcomRows(selectedCos, m1, m2, ant, av, ahv, ec) {
+    const membros=[...new Set(selectedCos.flatMap(co=>this._expand(co)))].filter(mid=>mid==='EP'||mid==='GIP');
+    const campoId=this._lancCampoIdByNome['Venda Ecommerce'];
+    if(!membros.length||!campoId) return [];
+    const soma=(sid,a,b)=>{let t=0;for(let m=a;m<=b;m++) membros.forEach(mid=>{t+=this._lancValoresMap[`${sid}-${mid}-${m}`]||0;});return t;};
+    const contas=(this._lancSubcampos||[]).filter(sc=>sc.campo_id===campoId)
+      .map(sc=>({nome:sc.nome,total:soma(sc.id,m1,m2),ant:ant?soma(sc.id,ant[0],ant[1]):null}));
+    const pctEc=v=>(ec>0?(v/ec*100).toFixed(1):'0.0').replace('.',',')+'%';
+    const out=[];
+    agruparCanais(contas).forEach(g=>{
+      out.push({t:'C',l:g.canal+' · '+pctEc(g.total)+' do e-commerce',v:g.total,a:av(g.total),h:ahv(g.total,g.ant),i:2,bp:'—'});
+      if(g.contas.length>1) g.contas.forEach(c=>out.push({t:'C2',l:c.nome,v:c.total,a:av(c.total),h:ahv(c.total,c.ant),i:3,bp:'—'}));
+    });
+    if(!out.length) out.push({t:'C2',l:'Sem venda por canal lançada no período',v:null,i:2});
+    return out;
   }
 
   // DRE: soma os membros da entidade (ex.: EPGIP = EP + Guilherme)
@@ -2433,7 +2491,7 @@ class Component extends DCLogic {
 
     const rawRows=this._dreRows(selectedCos);
     const dreRows=rawRows.map(r=>{
-      const isH=r.t==='H',isR=r.t==='R',isS=r.t==='S';
+      const isH=r.t==='H',isR=r.t==='R',isS=r.t==='S',isC=r.t==='C',isC2=r.t==='C2';
       const ahColor=!r.h||r.h==='—'?'#475569':r.h.startsWith('+')?'#4ade80':'#f87171';
       const blocoColor=(!r.bp||r.bp==='—')?'#475569':isR?'#fbbf24':'#94a3b8';
       const valFmt=r.v==null?'':(r.v<0?'('+F(r.v)+')':F(r.v));
@@ -2449,16 +2507,17 @@ class Component extends DCLogic {
         rowBg:isH?'rgba(15,23,42,0.6)':isR?'rgba(255,255,255,0.03)':'transparent',
         rowBorderTop:'none',
         rowBorderBottom:isH?'1px solid #1e3a5f':'1px solid rgba(255,255,255,0.05)',
-        labelColor:isH?'#64748b':isR?'#f1f5f9':isS?'#94a3b8':'#cbd5e1',
-        labelFontSize:isH?'9px':'12px',
+        labelColor:isH?'#64748b':isR?'#f1f5f9':isS?'#94a3b8':isC?'#7dd3fc':isC2?'#64748b':'#cbd5e1',
+        labelFontSize:isH?'9px':isC2?'11px':'12px',
+        canToggle:!!r.toggle, toggleFn:r.toggle||(()=>{}), chevronRotate:r.aberto?'0deg':'-90deg',
         labelFontWeight:(isH||isR||r.b)?'700':'400',
         labelLetterSpacing:isH?'2px':'0',
         labelTransform:isH?'uppercase':'none',
-        paddingLeft:r.i===2?'52px':r.i===1?'28px':'0',
+        paddingLeft:r.i===3?'76px':r.i===2?'52px':r.i===1?'28px':'0',
         valueColor:r.v==null?'transparent':r.v>=0?'#4ade80':'#f87171',
         valueFontWeight:isR?'700':'400',
         ahColor,
-        rowPadding:isH?'9px 20px 7px 20px':isR?'11px 20px':isS?'5px 20px':'8px 20px'
+        rowPadding:isH?'9px 20px 7px 20px':isR?'11px 20px':(isS||isC||isC2)?'5px 20px':'8px 20px'
       };
     });
 

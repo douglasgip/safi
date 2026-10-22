@@ -142,7 +142,7 @@
         var linhas = rows.map(function (r) {
           if (r.t === 'H') return { k: 'H', c: [r.l, '', '', '', ''] };
           var cor = {}; if (r.v != null && r.v < 0) cor[1] = RUIM; if (r.h && r.h !== '—') cor[3] = r.h[0] === '+' ? OK : RUIM;
-          return { k: r.t === 'R' ? 'R' : r.t === 'S' ? 'S' : 'I', cor: cor, c: [r.l, r.v == null ? '' : brl2(r.v), r.a || '-', (r.h && r.h !== '—') ? r.h : '-', (r.bp && r.bp !== '—') ? r.bp : '-'] };
+          return { k: r.t === 'R' ? 'R' : (r.t === 'S' || r.t === 'C' || r.t === 'C2') ? 'S' : 'I', cor: cor, c: [r.l, r.v == null ? '' : brl2(r.v), r.a || '-', (r.h && r.h !== '—') ? r.h : '-', (r.bp && r.bp !== '—') ? r.bp : '-'] };
         });
         blocos.push({ tipo: 'tabela', opcao: 'dre', titulo: 'Demonstrativo de Resultados - ' + E.p.rot + ' (' + E.cos.map(function (c) { return app._dreLabels[c] || c; }).join(', ') + ')',
           colunas: [{ h: 'Conta', larg: 3 }, { h: 'Valor', al: 'right', larg: 1.6 }, { h: 'AV% (sobre a receita bruta)', al: 'right', larg: 1.2 }, { h: baseTxt, al: 'right', larg: 1.1 }, { h: '% do bloco', al: 'right', larg: 1 }], linhas: linhas });
