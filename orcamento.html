@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SAFI | Orçamento</title>
+  <title>SAFI | Orçamento e Metas</title>
   <link rel="icon" type="image/png" href="/public/favicon.png">
   <link rel="apple-touch-icon" href="/public/favicon.png">
   <link rel="manifest" href="/manifest.json">
@@ -15,6 +15,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="/user-menu.js"></script>
   <script src="/sidebar.js"></script>
   <style>
@@ -61,105 +62,61 @@
     .dc-sidebar-submenu.collapsed { display: none; }
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
-
     .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
     .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
     .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
     .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
     .fe-select:focus { outline: none; border-color: #38bdf8; }
     select option { background: #0f172a; color: #f1f5f9; }
+    .or-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 
     .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
     .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
     .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
-    .tab .badge-n { display: inline-block; min-width: 18px; padding: 1px 6px; margin-left: 6px; border-radius: 9px; background: rgba(251,191,36,0.18); color: #fbbf24; font-size: 10.5px; font-weight: 800; }
+    .subtabs { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 3px; }
+    .subtab { padding: 7px 12px; background: transparent; border: none; border-radius: 7px; color: #64748b; font-family: Inter, sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .subtab.active { background: rgba(255,255,255,0.08); color: #f1f5f9; }
 
     .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
     .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
     .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
 
-    .op-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
-    .op-card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 18px; padding: 20px; backdrop-filter: blur(16px); display: flex; flex-direction: column; gap: 14px; }
-    .op-card.travado { border-color: rgba(52,211,153,0.35); }
-    .op-card.aprovado { border-color: rgba(251,191,36,0.35); }
-    .op-head { display: flex; align-items: center; gap: 12px; }
-    .op-logo { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; background: #fff; border: 1px solid rgba(255,255,255,0.15); flex-shrink: 0; }
-    .op-name { font-size: 15px; font-weight: 800; color: #f8fafc; }
-    .op-period { font-size: 11px; color: #64748b; margin-top: 1px; }
-    .status-badge { display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 800; align-self: flex-start; }
-    .status-badge .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .st-aberto { background: rgba(148,163,184,0.14); color: #cbd5e1; } .st-aberto .dot { background: #94a3b8; }
-    .st-aprovado { background: rgba(251,191,36,0.14); color: #fcd34d; } .st-aprovado .dot { background: #fbbf24; }
-    .st-travado { background: rgba(52,211,153,0.14); color: #6ee7b7; } .st-travado .dot { background: #34d399; }
-    .op-meta { font-size: 11.5px; color: #64748b; line-height: 1.5; min-height: 34px; }
-    .op-alertas { font-size: 12px; font-weight: 700; padding: 8px 12px; border-radius: 10px; }
-    .op-alertas.ok { background: rgba(52,211,153,0.1); color: #6ee7b7; }
-    .op-alertas.warn { background: rgba(251,191,36,0.1); color: #fcd34d; cursor: pointer; }
-    .op-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; }
-
-    .btn-primary { flex: 1; padding: 11px 14px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary { padding: 11px 22px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
     .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
+    .btn-primary:disabled { opacity: .6; cursor: default; }
     .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
     .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
 
-    .matrix-scroll { overflow-x: auto; }
-    .matrix { border-collapse: separate; border-spacing: 6px; min-width: 640px; }
-    .matrix th { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; padding: 4px 6px; text-align: center; }
-    .matrix th.row-h { text-align: left; color: #cbd5e1; font-size: 12px; text-transform: none; letter-spacing: 0; white-space: nowrap; padding-right: 12px; }
-    .mx-cell { width: 44px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); cursor: pointer; font-size: 10px; font-weight: 800; color: #475569; }
-    .mx-cell.aprovado { background: rgba(251,191,36,0.18); border-color: rgba(251,191,36,0.4); color: #fcd34d; }
-    .mx-cell.travado { background: rgba(52,211,153,0.18); border-color: rgba(52,211,153,0.4); color: #6ee7b7; }
-    .mx-cell.sel { outline: 2px solid #38bdf8; outline-offset: 1px; }
-    .legend { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; font-size: 11px; color: #64748b; }
-    .legend span::before { content: ''; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
-    .legend .l-aberto::before { background: rgba(255,255,255,0.12); } .legend .l-aprovado::before { background: #fbbf24; } .legend .l-travado::before { background: #34d399; }
+    /* KPIs do período */
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .kpi { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 16px; }
+    .kpi-l { font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .8px; }
+    .kpi-v { font-size: 20px; font-weight: 800; color: #f8fafc; margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .kpi-s { font-size: 11.5px; color: #94a3b8; margin-top: 4px; }
+    .bom { color: #4ade80 !important; } .ruim { color: #f87171 !important; } .neutro { color: #94a3b8; }
 
-    .chk-list { display: flex; flex-direction: column; gap: 8px; }
-    .chk { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
-    .chk-sev { flex-shrink: 0; margin-top: 2px; padding: 3px 9px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
-    .sev-alerta { background: rgba(251,191,36,0.15); color: #fcd34d; }
-    .sev-info { background: rgba(56,189,248,0.14); color: #7dd3fc; }
-    .chk-body { min-width: 0; flex: 1; }
-    .chk-msg { font-size: 13px; color: #e2e8f0; font-weight: 600; }
-    .chk-meta { font-size: 11px; color: #64748b; margin-top: 2px; }
-    .chk-op { font-size: 11px; font-weight: 800; color: #94a3b8; white-space: nowrap; }
+    .chart-box { position: relative; height: 280px; }
 
-    .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
-    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 460px; }
-    table.tbl { width: 100%; border-collapse: collapse; min-width: 720px; }
-    .tbl thead th { position: sticky; top: 0; z-index: 2; background: #101728; text-align: left; padding: 11px 12px; font-size: 9.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
-    .tbl td { padding: 10px 12px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
-    .tbl td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .tbl .muted { color: #64748b; }
-    .delta-pos { color: #4ade80; } .delta-neg { color: #f87171; }
-    .acao { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10.5px; font-weight: 800; }
-    .acao.INSERT { background: rgba(52,211,153,0.14); color: #6ee7b7; } .acao.UPDATE { background: rgba(56,189,248,0.14); color: #7dd3fc; } .acao.DELETE { background: rgba(248,113,113,0.14); color: #fca5a5; }
+    /* Tabela orçado × real */
+    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 70vh; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    table.an { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 980px; }
+    .an th, .an td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .an thead th { position: sticky; top: 0; z-index: 3; background: #101728; font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: right; }
+    .an thead tr.grp th { font-size: 10px; color: #7dd3fc; text-align: center; border-bottom: none; }
+    .an thead tr:nth-child(2) th { top: 29px; }
+    .an th.lbl, .an td.lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; min-width: 240px; }
+    .an thead th.lbl { z-index: 4; background: #101728; }
+    .an td { font-size: 12.5px; color: #e2e8f0; text-align: right; }
+    .an td.lbl { font-size: 12.5px; color: #cbd5e1; padding-left: 26px; }
+    .an tr.cp td { background: #0f1b30; font-weight: 800; color: #f1f5f9; }
+    .an tr.cp td.lbl { background: #10203a; padding-left: 12px; color: #7dd3fc; }
+    .an tr.tot td { background: #111a2c; font-weight: 800; color: #f8fafc; border-top: 1px solid rgba(255,255,255,0.12); }
+    .an tr.tot td.lbl { background: #131c30; padding-left: 12px; }
+    .an td.sep, .an th.sep { border-left: 1px solid rgba(255,255,255,0.08); }
+    .an .muted { color: #475569; }
 
-    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 20px; }
-    .modal-overlay.open { display: flex; }
-    .modal-card { width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; background: rgba(12,10,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 26px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
-    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
-    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 16px; line-height: 1.5; }
-    .modal-warn { background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; border-radius: 10px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
-    .modal-error { display: none; background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; padding: 10px 14px; color: #fca5a5; font-size: 12px; margin-bottom: 14px; line-height: 1.4; }
-    .modal-error.visible { display: block; }
-    .field label { display: block; font-size: 10.5px; font-weight: 700; color: #94a3b8; margin-bottom: 5px; letter-spacing: .3px; }
-    .field textarea { width: 100%; min-height: 84px; padding: 11px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; resize: vertical; color-scheme: dark; }
-    .field textarea:focus { outline: none; border-color: #38bdf8; }
-    .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
-    .btn-cancel { padding: 13px 20px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
-
-    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
-    .toast.visible { opacity: 1; pointer-events: auto; }
-    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
-    #or-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
-
-    @media (max-width: 900px) { .op-grid { grid-template-columns: 1fr; } }
-    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 16px; } .tabs { max-width: none; } }
-  
+    /* Grade de lançamento do orçamento */
     .or-note { background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.22); color: #93c5fd; border-radius: 12px; padding: 11px 14px; font-size: 12px; line-height: 1.55; margin-bottom: 16px; }
-    .or-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
     .or-num { width: 70px; padding: 10px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; text-align: right; }
     .or-num:focus { outline: none; border-color: #38bdf8; }
     .or-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
@@ -170,22 +127,52 @@
     table.or-tbl { border-collapse: separate; border-spacing: 0; min-width: 1500px; width: 100%; }
     .or-tbl th, .or-tbl td { padding: 4px 5px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
     .or-tbl thead th { position: sticky; top: 0; z-index: 3; background: #101728; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: right; padding: 10px 6px; }
-    .or-tbl .lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; font-size: 12px; color: #cbd5e1; min-width: 210px; max-width: 260px; overflow: hidden; text-overflow: ellipsis; padding-left: 12px; }
-    .or-tbl thead th.lbl { z-index: 4; background: #101728; text-align: left; }
-    .or-tbl tr.cls td { background: #0f2036; color: #7dd3fc; font-size: 10.5px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; padding: 8px 12px; position: sticky; left: 0; }
-    .or-tbl tr.sum td { background: #111a2c; font-weight: 800; color: #f1f5f9; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; padding: 8px 8px; }
-    .or-tbl tr.sum td.lbl { background: #131c30; text-align: left; }
-    .or-tbl tr.sum.hi td { color: #6ee7b7; }
-    .or-tbl td.tot { text-align: right; font-size: 12px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; padding: 4px 10px; }
+    .or-tbl .lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; font-size: 12px; color: #cbd5e1; min-width: 230px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; padding-left: 22px; }
+    .or-tbl thead th.lbl { z-index: 4; background: #101728; text-align: left; padding-left: 12px; }
+    .or-tbl tr.cp td { background: #0f1b30; color: #7dd3fc; font-size: 11.5px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; padding: 8px 8px; }
+    .or-tbl tr.cp td.lbl { background: #10203a; text-align: left; padding-left: 12px; }
+    .or-tbl tr.tot td { background: #111a2c; font-weight: 800; color: #6ee7b7; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; padding: 8px 8px; }
+    .or-tbl tr.tot td.lbl { background: #131c30; text-align: left; padding-left: 12px; }
+    .or-tbl td.t { text-align: right; font-size: 12px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; padding: 4px 10px; }
     .or-in { width: 92px; padding: 7px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
     .or-in:focus { outline: none; border-color: #38bdf8; background: rgba(56,189,248,0.08); }
     .or-in.chg { border-color: rgba(251,191,36,0.55); }
     .or-fill { width: 26px; height: 26px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #64748b; cursor: pointer; font-size: 12px; }
     .or-fill:hover { color: #7dd3fc; border-color: rgba(56,189,248,0.4); }
     .or-foot { font-size: 11px; color: #64748b; margin-top: 12px; line-height: 1.6; }
-    #or-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
-    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } }
 
+    /* Metas */
+    .meta-ano { padding: 22px; }
+    .meta-top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .meta-tit { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .meta-num { font-size: 13px; color: #94a3b8; font-variant-numeric: tabular-nums; }
+    .meta-num b { color: #f8fafc; font-size: 15px; }
+    .barra { position: relative; height: 14px; background: rgba(255,255,255,0.06); border-radius: 8px; overflow: visible; }
+    .barra-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px; background: linear-gradient(90deg, #0284c7, #38bdf8); transition: width .5s cubic-bezier(.16,1,.3,1); max-width: 100%; }
+    .barra-fill.ok { background: linear-gradient(90deg, #059669, #34d399); }
+    .barra-tempo { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #fbbf24; border-radius: 2px; }
+    .barra-leg { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 11.5px; color: #64748b; }
+    .barra-leg .tempo::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: #fbbf24; margin-right: 6px; vertical-align: 0; }
+    .tri-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
+    .tri { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .tri.atual { border-color: rgba(56,189,248,0.45); }
+    .tri-h { display: flex; justify-content: space-between; align-items: center; }
+    .tri-n { font-size: 13px; font-weight: 800; color: #f8fafc; }
+    .tri-m { font-size: 10.5px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
+    .tri label { font-size: 10.5px; font-weight: 700; color: #94a3b8; }
+    .tri .or-in { width: 100%; font-size: 13px; padding: 9px 10px; }
+    .tri-pct { font-size: 22px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; }
+    .tri-s { font-size: 11.5px; color: #94a3b8; line-height: 1.5; font-variant-numeric: tabular-nums; }
+
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
+    .toast.visible { opacity: 1; pointer-events: auto; }
+    .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
+    #or-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+
+    @media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, 1fr); } .tri-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .tabs { max-width: none; } }
+    @media (max-width: 520px) { .kpis, .tri-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -200,7 +187,7 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
       <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
-      <div class="header-sub">Orçamento</div>
+      <div class="header-sub">Orçamento e Metas</div>
     </div>
   </header>
 
@@ -209,8 +196,8 @@
   <main class="main" id="or-main" style="display:none">
     <div class="fe-toolbar">
       <div>
-        <h1>Orçamento</h1>
-        <div class="fe-toolbar-sub">Meta mensal por operação, na mesma estrutura do DRE. Alimenta o comparativo "× Orçado" do Painel do Conselho.</div>
+        <h1>Orçamento e Metas</h1>
+        <div class="fe-toolbar-sub">Orçamento = objetivo de <b>gasto</b> (só Gastos Operacionais). Meta = objetivo de <b>receita</b>, por trimestre.</div>
       </div>
       <div class="or-controls">
         <select class="fe-select" id="sel-op" aria-label="Operação"></select>
@@ -218,19 +205,63 @@
       </div>
     </div>
 
-    <div class="or-note">Estrutura provisória: o nível de detalhe (por campo do DRE) e quem preenche serão definidos com o conselho. Enquanto não houver orçamento lançado, o Painel do Conselho mostra apenas o realizado.</div>
-
-    <div class="panel">
-      <div class="or-bar">
-        <button class="btn-ghost" id="btn-copy" type="button" title="Preenche só as células vazias com o realizado do ano anterior, com o reajuste informado">Preencher com realizado do ano anterior</button>
-        <label class="or-controls" style="gap:6px"><span style="font-size:11px;color:#64748b;font-weight:700">Reajuste %</span><input class="or-num" id="inp-reaj" value="0" inputmode="decimal" aria-label="Reajuste percentual"></label>
-        <span class="grow"></span>
-        <span class="or-dirty" id="dirty">● alterações não salvas</span>
-        <button class="btn-primary" id="btn-save" type="button" style="flex:0 0 auto;padding:11px 22px">Salvar orçamento</button>
-      </div>
-      <div class="or-scroll"><table class="or-tbl" id="or-tbl"></table></div>
-      <div class="or-foot">Valores sempre positivos, como nos Lançamentos. Deixe a célula vazia para "sem meta". A seta → repete o primeiro valor preenchido da linha nos meses vazios. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL.</div>
+    <div class="tabs" role="tablist">
+      <button class="tab active" id="tab-orc" type="button" data-aba="orc">Orçamento de Gastos Operacionais</button>
+      <button class="tab" id="tab-metas" type="button" data-aba="metas">Metas</button>
     </div>
+
+    <!-- ══ ORÇAMENTO DE GASTOS ══ -->
+    <section id="aba-orc">
+      <div class="or-bar">
+        <div class="subtabs">
+          <button class="subtab active" type="button" data-vis="analise">Orçado × Real</button>
+          <button class="subtab" type="button" data-vis="lancar">Lançar orçamento</button>
+        </div>
+        <span class="grow"></span>
+        <div class="or-controls" id="an-controls">
+          <select class="fe-select" id="sel-per" aria-label="Período"></select>
+        </div>
+      </div>
+
+      <div id="vis-analise">
+        <div class="kpis" id="an-kpis"></div>
+        <div class="panel">
+          <div class="panel-head">Gasto orçado × gasto real — mês a mês</div>
+          <div class="chart-box"><canvas id="ch-orc"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head" id="an-titulo">Análise vertical e horizontal</div>
+          <div class="table-scroll"><table class="an" id="an-tbl"></table></div>
+          <div class="or-foot"><b>AV</b> (análise vertical) = quanto a linha pesa no total de gastos do período. <b>AH</b> (análise horizontal) = variação contra o período anterior <span id="an-ah-ref"></span>. <b>Diferença</b> = real − orçado: positivo (vermelho) é gasto acima do orçado. <b>Real ÷ Orçado</b> acima de 100% = estourou o orçamento.</div>
+        </div>
+      </div>
+
+      <div id="vis-lancar" style="display:none">
+        <div class="panel">
+          <div class="or-bar">
+            <button class="btn-ghost" id="btn-copy" type="button" title="Preenche só as células vazias com o realizado do ano anterior, com o reajuste informado">Preencher com realizado do ano anterior</button>
+            <label class="or-controls" style="gap:6px"><span style="font-size:11px;color:#64748b;font-weight:700">Reajuste %</span><input class="or-num" id="inp-reaj" value="0" inputmode="decimal" aria-label="Reajuste percentual"></label>
+            <span class="grow"></span>
+            <span class="or-dirty" id="dirty">● alterações não salvas</span>
+            <button class="btn-primary" id="btn-save" type="button">Salvar orçamento</button>
+          </div>
+          <div class="or-scroll"><table class="or-tbl" id="or-tbl"></table></div>
+          <div class="or-foot">Uma linha para cada conta de Gastos Operacionais do DRE. Valores positivos, como nos Lançamentos. Célula vazia = sem orçamento. A seta → repete o primeiro valor preenchido da linha nos meses vazios.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ METAS DE RECEITA ══ -->
+    <section id="aba-metas" style="display:none">
+      <div class="panel meta-ano" id="meta-ano"></div>
+      <div class="tri-grid" id="meta-tris"></div>
+      <div class="or-bar">
+        <span class="or-foot" style="margin:0">Receita realizada = Receita Operacional Bruta lançada no DRE. A marca amarela mostra quanto do período já passou: se a barra azul está antes dela, a venda está atrás do ritmo.</span>
+        <span class="grow"></span>
+        <span class="or-dirty" id="dirty-metas">● alterações não salvas</span>
+        <button class="btn-primary" id="btn-save-metas" type="button">Salvar metas</button>
+      </div>
+    </section>
   </main>
 
   <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
@@ -249,20 +280,64 @@
       { id: 'ViaCloset', nome: 'Via Closet',         empresas: ['ViaCloset'] },
     ];
     const MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    const CLASSES = ['receita_bruta', 'deducoes', 'custos_variaveis', 'gastos_operacionais'];
+    const MES_NOME = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
     const g = id => document.getElementById(id);
     const fmt0 = v => (+v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    const brl = v => v == null ? '—' : (Math.round(v) < 0 ? '-' : '') + 'R$ ' + Math.abs(Math.round(v)).toLocaleString('pt-BR');
+    const pct = v => v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
-    let classes = [];   // classes de entrada do DRE
-    let campos = [];    // campos ativos dessas classes
-    let vals = {};      // "campoId|mes" -> valor atual (ausente = sem meta)
-    let orig = {};      // idem, como está salvo no banco
-    let sel = { op: 'GIP', ano: new Date().getFullYear() };
+    // ── Contas puras (testadas em tests/orcamento-metas.test.js) ─────────────
+    // Uma linha da análise: orçado e real do período, os do período de comparação (AH) e os totais (AV).
+    function analisarLinha(orc, real, orcAnt, realAnt, totOrc, totReal) {
+      const div = (a, b) => (b ? a / b : null);
+      return {
+        orc, real,
+        avOrc: div(orc, totOrc), avReal: div(real, totReal),
+        ahOrc: orcAnt ? (orc - orcAnt) / orcAnt : null,
+        ahReal: realAnt ? (real - realAnt) / realAnt : null,
+        dif: real - orc,
+        ating: div(real, orc),
+      };
+    }
+    // Meses do período e do período de comparação. modo 'mes': mês x mês anterior;
+    // modo 'acum': jan..mês x o mesmo intervalo do ano anterior.
+    function periodo(modo, ano, mes) {
+      if (modo === 'acum') {
+        const meses = Array.from({ length: mes }, (_, i) => ({ ano, mes: i + 1 }));
+        return { meses, ant: meses.map(p => ({ ano: ano - 1, mes: p.mes })) };
+      }
+      return { meses: [{ ano, mes }], ant: [mes === 1 ? { ano: ano - 1, mes: 12 } : { ano, mes: mes - 1 }] };
+    }
+    const trimestreDoMes = mes => Math.ceil(mes / 3);
+    // Progresso de uma meta: % atingido (sem teto, pode passar de 100%) e quanto falta (nunca negativo).
+    function progressoMeta(meta, real) {
+      if (!meta) return { pct: null, falta: null };
+      return { pct: real / meta, falta: Math.max(0, meta - real) };
+    }
+    // Fração do período (ano ou trimestre) já decorrida em `hoje`: 0 antes de começar, 1 depois de acabar.
+    function fracaoDecorrida(ano, trimestre, hoje) {
+      const ini = trimestre ? new Date(ano, (trimestre - 1) * 3, 1) : new Date(ano, 0, 1);
+      const fim = trimestre ? new Date(ano, trimestre * 3, 1) : new Date(ano + 1, 0, 1);
+      return Math.min(1, Math.max(0, (hoje - ini) / (fim - ini)));
+    }
 
-    const k = (cid, m) => cid + '|' + m;
-    function dirtyCount() { let n = 0; new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(x => { if (vals[x] !== orig[x]) n++; }); return n; }
+    // ── Estado ──────────────────────────────────────────────────────────────
+    let campos = [];       // campos ativos de Gastos Operacionais
+    let subs = [];         // subcampos ativos desses campos (linhas do orçamento)
+    let subCampo = {};     // subcampo_id -> campo_id (todos)
+    let campoClasse = {};  // campo_id -> chave da classe
+    let vals = {}, orig = {};          // orçamento: "subId|mes" -> valor
+    let real = {};                     // gastos reais: "ano|mes|subId" -> valor
+    let receita = {};                  // receita bruta real: "ano|mes" -> valor
+    let metas = {}, metasOrig = {};    // trimestre -> valor
+    let sel = { op: 'GIP', ano: new Date().getFullYear() };
+    let aba = 'orc', vis = 'analise', chart = null;
+
+    const k = (sid, m) => sid + '|' + m;
+    const kr = (a, m, sid) => a + '|' + m + '|' + sid;
+    function dirtyCount(a, b) { let n = 0; new Set([...Object.keys(a), ...Object.keys(b)]).forEach(x => { if (a[x] !== b[x]) n++; }); return n; }
 
     async function fetchAll(build) {
       const out = []; const step = 1000;
@@ -276,134 +351,280 @@
     }
 
     async function carregarEstrutura() {
-      const [cl, cp] = await Promise.all([
-        sb.from('lancamentos_classes').select('id,chave,nome,ordem').in('chave', CLASSES).order('ordem'),
-        sb.from('lancamentos_campos').select('id,nome,chave,classe_id,ordem,ativo').eq('ativo', true).order('ordem'),
+      const [cl, cp, sc] = await Promise.all([
+        sb.from('lancamentos_classes').select('id,chave'),
+        sb.from('lancamentos_campos').select('id,nome,chave,classe_id,ordem,ativo').order('ordem'),
+        fetchAll(() => sb.from('lancamentos_subcampos').select('id,nome,campo_id,ordem,ativo').order('ordem').order('id')),
       ]);
       if (cl.error || cp.error) throw (cl.error || cp.error);
-      classes = cl.data;
-      const ids = new Set(classes.map(c => c.id));
-      campos = cp.data.filter(c => ids.has(c.classe_id));
+      const chaveDe = Object.fromEntries(cl.data.map(c => [c.id, c.chave]));
+      cp.data.forEach(c => { campoClasse[c.id] = chaveDe[c.classe_id]; });
+      sc.forEach(s => { subCampo[s.id] = s.campo_id; });
+      campos = cp.data.filter(c => c.ativo && chaveDe[c.classe_id] === 'gastos_operacionais');
+      const ids = new Set(campos.map(c => c.id));
+      subs = sc.filter(s => s.ativo && ids.has(s.campo_id));
     }
 
-    async function carregarOrcamento() {
-      const rows = await fetchAll(() => sb.from('orcamento').select('campo_id,mes,valor').eq('operacao', sel.op).eq('ano', sel.ano));
+    async function carregarDados() {
+      const op = OPS.find(o => o.id === sel.op);
+      const [orcRows, metaRows, valRows] = await Promise.all([
+        fetchAll(() => sb.from('orcamento_gastos').select('subcampo_id,mes,valor').eq('operacao', sel.op).eq('ano', sel.ano).order('id')),
+        fetchAll(() => sb.from('metas_receita').select('trimestre,valor').eq('operacao', sel.op).eq('ano', sel.ano).order('trimestre')),
+        fetchAll(() => sb.from('lancamentos_valores').select('subcampo_id,ano,mes,valor').in('ano', [sel.ano - 1, sel.ano]).in('empresa_id', op.empresas).order('id')),
+      ]);
       vals = {}; orig = {};
-      rows.forEach(r => { vals[k(r.campo_id, r.mes)] = +r.valor; orig[k(r.campo_id, r.mes)] = +r.valor; });
+      orcRows.forEach(r => { vals[k(r.subcampo_id, r.mes)] = +r.valor; orig[k(r.subcampo_id, r.mes)] = +r.valor; });
+      metas = {}; metasOrig = {};
+      metaRows.forEach(r => { metas[r.trimestre] = +r.valor; metasOrig[r.trimestre] = +r.valor; });
+      real = {}; receita = {};
+      valRows.forEach(r => {
+        const ch = campoClasse[subCampo[r.subcampo_id]];
+        if (ch === 'gastos_operacionais') real[kr(r.ano, r.mes, r.subcampo_id)] = (real[kr(r.ano, r.mes, r.subcampo_id)] || 0) + (+r.valor);
+        else if (ch === 'receita_bruta') receita[r.ano + '|' + r.mes] = (receita[r.ano + '|' + r.mes] || 0) + (+r.valor);
+      });
     }
 
-    function render() {
-      let h = '<thead><tr><th class="lbl">Campo do DRE</th>' + MES_CURTO.map(m => '<th>' + m + '</th>').join('') + '<th>Total</th><th></th></tr></thead><tbody>';
-      classes.forEach(cl => {
-        h += '<tr class="cls"><td colspan="15">' + esc(cl.nome) + '</td></tr>';
-        campos.filter(c => c.classe_id === cl.id).forEach(c => {
-          h += '<tr><td class="lbl" title="' + esc(c.nome) + '">' + esc(c.nome) + '</td>';
+    // Último mês do ano com gasto real lançado (para abrir a análise nele).
+    function ultimoMesComReal(ano) {
+      for (let m = 12; m >= 1; m--) if (subs.some(s => real[kr(ano, m, s.id)])) return m;
+      return new Date().getFullYear() === ano ? new Date().getMonth() + 1 : 12;
+    }
+    function preencherPeriodos() {
+      const m0 = ultimoMesComReal(sel.ano);
+      const atual = g('sel-per').value;
+      g('sel-per').innerHTML =
+        '<optgroup label="Mês">' + MES_NOME.map((n, i) => '<option value="mes|' + (i + 1) + '">' + n[0].toUpperCase() + n.slice(1) + '</option>').join('') + '</optgroup>' +
+        '<optgroup label="Acumulado no ano">' + MES_NOME.map((n, i) => '<option value="acum|' + (i + 1) + '">Jan até ' + MES_CURTO[i] + '</option>').join('') + '</optgroup>';
+      g('sel-per').value = atual && g('sel-per').querySelector('option[value="' + atual + '"]') ? atual : 'mes|' + m0;
+    }
+
+    // ── Orçado × Real ───────────────────────────────────────────────────────
+    const somaOrc = (sid, meses) => meses.reduce((a, p) => a + (p.ano === sel.ano ? (vals[k(sid, p.mes)] || 0) : 0), 0);
+    const somaReal = (sid, meses) => meses.reduce((a, p) => a + (real[kr(p.ano, p.mes, sid)] || 0), 0);
+    // Orçado do período de comparação: só existe se for do mesmo ano (o orçamento carregado é o do ano escolhido).
+    const somaOrcAnt = (sid, meses) => meses.every(p => p.ano === sel.ano) ? somaOrc(sid, meses) : 0;
+
+    function renderAnalise() {
+      const [modo, mesTxt] = g('sel-per').value.split('|');
+      const mes = +mesTxt;
+      const per = periodo(modo, sel.ano, mes);
+      const linhas = subs.map(s => ({ s, o: somaOrc(s.id, per.meses), r: somaReal(s.id, per.meses), oa: somaOrcAnt(s.id, per.ant), ra: somaReal(s.id, per.ant) }));
+      const tot = linhas.reduce((a, l) => ({ o: a.o + l.o, r: a.r + l.r, oa: a.oa + l.oa, ra: a.ra + l.ra }), { o: 0, r: 0, oa: 0, ra: 0 });
+      const rotPer = modo === 'acum' ? 'janeiro a ' + MES_NOME[mes - 1] + ' de ' + sel.ano : MES_NOME[mes - 1] + ' de ' + sel.ano;
+      g('an-titulo').textContent = 'Análise vertical e horizontal — ' + rotPer;
+      g('an-ah-ref').textContent = modo === 'acum' ? '(mesmo período de ' + (sel.ano - 1) + ')' : '(mês anterior)';
+
+      const totA = analisarLinha(tot.o, tot.r, tot.oa, tot.ra, tot.o, tot.r);
+      const recPer = per.meses.reduce((a, p) => a + (receita[p.ano + '|' + p.mes] || 0), 0);
+      g('an-kpis').innerHTML = [
+        { l: 'Gasto orçado', v: brl(tot.o), s: tot.o ? '' : 'sem orçamento lançado' },
+        { l: 'Gasto real', v: brl(tot.r), s: recPer ? pct(tot.r / recPer) + ' do faturamento' : '' },
+        { l: 'Diferença', v: (totA.dif > 0 ? '+' : '') + brl(totA.dif), s: tot.o ? (totA.dif > 0 ? 'acima do orçado' : 'dentro do orçado') : '', cls: tot.o ? (totA.dif > 0 ? 'ruim' : 'bom') : '' },
+        { l: 'Real ÷ Orçado', v: pct(totA.ating), s: tot.o ? (totA.ating > 1 ? 'estourou o orçamento' : 'do orçamento usado') : '—', cls: tot.o ? (totA.ating > 1 ? 'ruim' : 'bom') : '' },
+      ].map(x => '<div class="kpi"><div class="kpi-l">' + x.l + '</div><div class="kpi-v ' + (x.cls || '') + '">' + x.v + '</div><div class="kpi-s">' + x.s + '</div></div>').join('');
+
+      const linhaHtml = (nome, a, cls) => {
+        const ah = v => v == null ? '<span class="muted">—</span>' : '<span class="' + (v > 0 ? 'ruim' : v < 0 ? 'bom' : 'neutro') + '">' + (v > 0 ? '+' : '') + pct(v) + '</span>';
+        const vazio = !a.orc && !a.real;
+        return '<tr class="' + (cls || '') + '"><td class="lbl">' + esc(nome) + '</td>' +
+          '<td class="sep">' + (a.orc ? brl(a.orc) : '<span class="muted">—</span>') + '</td><td>' + (a.orc ? pct(a.avOrc) : '<span class="muted">—</span>') + '</td><td>' + ah(a.ahOrc) + '</td>' +
+          '<td class="sep">' + (a.real ? brl(a.real) : '<span class="muted">—</span>') + '</td><td>' + (a.real ? pct(a.avReal) : '<span class="muted">—</span>') + '</td><td>' + ah(a.ahReal) + '</td>' +
+          '<td class="sep ' + (vazio || !a.orc ? 'muted' : a.dif > 0 ? 'ruim' : a.dif < 0 ? 'bom' : 'neutro') + '">' + (vazio ? '—' : (a.dif > 0 ? '+' : '') + brl(a.dif)) + '</td>' +
+          '<td class="' + (!a.orc ? 'muted' : a.ating > 1 ? 'ruim' : 'bom') + '">' + pct(a.ating) + '</td></tr>';
+      };
+      let h = '<thead><tr class="grp"><th class="lbl"></th><th class="sep" colspan="3">Orçado</th><th class="sep" colspan="3">Real</th><th class="sep" colspan="2">Orçado × Real</th></tr>' +
+        '<tr><th class="lbl">Conta</th><th class="sep">R$</th><th>AV</th><th>AH</th><th class="sep">R$</th><th>AV</th><th>AH</th><th class="sep">Diferença</th><th>Real ÷ Orçado</th></tr></thead><tbody>';
+      campos.forEach(c => {
+        const ls = linhas.filter(l => l.s.campo_id === c.id);
+        if (!ls.length) return;
+        const t = ls.reduce((a, l) => ({ o: a.o + l.o, r: a.r + l.r, oa: a.oa + l.oa, ra: a.ra + l.ra }), { o: 0, r: 0, oa: 0, ra: 0 });
+        h += linhaHtml(c.nome, analisarLinha(t.o, t.r, t.oa, t.ra, tot.o, tot.r), 'cp');
+        ls.forEach(l => { h += linhaHtml(l.s.nome, analisarLinha(l.o, l.r, l.oa, l.ra, tot.o, tot.r)); });
+      });
+      h += linhaHtml('Total de Gastos Operacionais', totA, 'tot');
+      g('an-tbl').innerHTML = h + '</tbody>';
+      renderGrafico(mes);
+    }
+
+    function renderGrafico(mesSel) {
+      const orcM = [], realM = [];
+      for (let m = 1; m <= 12; m++) {
+        let o = 0, r = 0, temO = false;
+        subs.forEach(s => { const v = vals[k(s.id, m)]; if (v != null) { o += v; temO = true; } r += real[kr(sel.ano, m, s.id)] || 0; });
+        orcM.push(temO ? o : null); realM.push(r || null);
+      }
+      if (chart) chart.destroy();
+      chart = new Chart(g('ch-orc'), {
+        type: 'bar',
+        data: { labels: MES_CURTO, datasets: [
+          { label: 'Orçado', data: orcM, backgroundColor: MES_CURTO.map((_, i) => i + 1 === mesSel ? 'rgba(251,191,36,0.85)' : 'rgba(251,191,36,0.45)'), borderRadius: 4 },
+          { label: 'Real', data: realM, backgroundColor: MES_CURTO.map((_, i) => i + 1 === mesSel ? 'rgba(56,189,248,0.95)' : 'rgba(56,189,248,0.5)'), borderRadius: 4 },
+        ] },
+        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } },
+            tooltip: { callbacks: { label: c => c.dataset.label + ': ' + brl(c.parsed.y), afterBody: it => { const o = orcM[it[0].dataIndex], r = realM[it[0].dataIndex]; return o && r ? 'Real ÷ Orçado: ' + pct(r / o) : ''; } } } },
+          scales: { x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false } },
+            y: { ticks: { color: '#64748b', callback: v => Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + ' mil' : v }, grid: { color: 'rgba(255,255,255,0.06)' } } } },
+      });
+    }
+
+    // ── Lançar orçamento (grade 12 meses) ───────────────────────────────────
+    function renderGrade() {
+      let h = '<thead><tr><th class="lbl">Conta</th>' + MES_CURTO.map(m => '<th>' + m + '</th>').join('') + '<th>Total</th><th></th></tr></thead><tbody>';
+      campos.forEach(c => {
+        const ls = subs.filter(s => s.campo_id === c.id);
+        if (!ls.length) return;
+        h += '<tr class="cp"><td class="lbl">' + esc(c.nome) + '</td>' + Array.from({ length: 13 }, (_, i) => '<td data-cp="' + c.id + '|' + (i + 1) + '"></td>').join('') + '<td></td></tr>';
+        ls.forEach(s => {
+          h += '<tr><td class="lbl" title="' + esc(s.nome) + '">' + esc(s.nome) + '</td>';
           for (let m = 1; m <= 12; m++) {
-            const v = vals[k(c.id, m)];
-            h += '<td><input class="or-in" data-campo="' + c.id + '" data-mes="' + m + '" value="' + (v == null ? '' : numberToMoneyMasked(v)) + '" placeholder="—" aria-label="' + esc(c.nome) + ' ' + MES_CURTO[m - 1] + '"></td>';
+            const v = vals[k(s.id, m)];
+            h += '<td><input class="or-in" data-sub="' + s.id + '" data-mes="' + m + '" value="' + (v == null ? '' : numberToMoneyMasked(v)) + '" placeholder="—" aria-label="' + esc(s.nome) + ' ' + MES_CURTO[m - 1] + '"></td>';
           }
-          h += '<td class="tot" data-tot="' + c.id + '"></td><td><button type="button" class="or-fill" data-fill="' + c.id + '" title="Repetir o primeiro valor nos meses vazios">→</button></td></tr>';
+          h += '<td class="t" data-tot="' + s.id + '"></td><td><button type="button" class="or-fill" data-fill="' + s.id + '" title="Repetir o primeiro valor nos meses vazios">→</button></td></tr>';
         });
       });
-      [['rl', 'Receita Líquida'], ['mc', 'Margem de Contribuição'], ['res', 'Resultado Líquido'], ['ebitda', 'EBITDA']].forEach(([id, nome]) => {
-        h += '<tr class="sum' + (id === 'ebitda' ? ' hi' : '') + '"><td class="lbl">(=) ' + nome + '</td>' + Array.from({ length: 13 }, (_, i) => '<td data-sum="' + id + '|' + (i + 1) + '"></td>').join('') + '<td></td></tr>';
-      });
+      h += '<tr class="tot"><td class="lbl">Total de Gastos Operacionais</td>' + Array.from({ length: 13 }, (_, i) => '<td data-total="' + (i + 1) + '"></td>').join('') + '<td></td></tr>';
       g('or-tbl').innerHTML = h + '</tbody>';
       g('or-tbl').querySelectorAll('.or-in').forEach(el => attachMoneyMask(el));
       recalc();
     }
-
-    // Totais por linha e linhas de resultado (Receita Líquida, MC, Resultado, EBITDA), ao vivo.
     function recalc() {
-      const chaveDaClasse = Object.fromEntries(classes.map(c => [c.id, c.chave]));
-      const porMes = Array.from({ length: 13 }, () => ({ rb: 0, ded: 0, cv: 0, go: 0, df: 0, ir: 0 })); // [12] = ano
-      campos.forEach(c => {
-        let tot = 0;
+      const porCampo = {}, total = Array(13).fill(0);
+      subs.forEach(s => {
+        let t = 0;
         for (let m = 1; m <= 12; m++) {
-          const v = vals[k(c.id, m)]; if (v == null) continue;
-          tot += v;
-          const ch = chaveDaClasse[c.classe_id];
-          [porMes[m - 1], porMes[12]].forEach(b => {
-            if (ch === 'receita_bruta') b.rb += v; else if (ch === 'deducoes') b.ded += v; else if (ch === 'custos_variaveis') b.cv += v;
-            else if (ch === 'gastos_operacionais') { b.go += v; if (c.chave === 'despesas_financeiras') b.df += v; if (c.chave === 'ir_csll') b.ir += v; }
-          });
+          const v = vals[k(s.id, m)]; if (v == null) continue;
+          t += v; total[m - 1] += v; total[12] += v;
+          const pc = (porCampo[s.campo_id] = porCampo[s.campo_id] || Array(13).fill(0));
+          pc[m - 1] += v; pc[12] += v;
         }
-        const el = document.querySelector('[data-tot="' + c.id + '"]'); if (el) el.textContent = tot ? fmt0(tot) : '';
+        const el = document.querySelector('[data-tot="' + s.id + '"]'); if (el) el.textContent = t ? fmt0(t) : '';
       });
-      porMes.forEach((b, i) => {
-        const rl = b.rb - b.ded, mc = rl - b.cv, res = mc - b.go, ebitda = res + b.df + b.ir;
-        const any = b.rb || b.ded || b.cv || b.go;
-        const put = (id, v) => { const el = document.querySelector('[data-sum="' + id + '|' + (i + 1) + '"]'); if (el) el.textContent = any ? fmt0(v) : ''; };
-        put('rl', rl); put('mc', mc); put('res', res); put('ebitda', ebitda);
-      });
-      document.querySelectorAll('.or-in').forEach(el => { const key = k(el.dataset.campo, el.dataset.mes); el.classList.toggle('chg', vals[key] !== orig[key]); });
-      g('dirty').classList.toggle('on', dirtyCount() > 0);
+      document.querySelectorAll('[data-cp]').forEach(el => { const [cid, i] = el.dataset.cp.split('|'); const v = (porCampo[cid] || [])[+i - 1]; el.textContent = v ? fmt0(v) : ''; });
+      document.querySelectorAll('[data-total]').forEach(el => { const v = total[+el.dataset.total - 1]; el.textContent = v ? fmt0(v) : ''; });
+      document.querySelectorAll('.or-in').forEach(el => { const key = k(el.dataset.sub, el.dataset.mes); el.classList.toggle('chg', vals[key] !== orig[key]); });
+      g('dirty').classList.toggle('on', dirtyCount(vals, orig) > 0);
     }
-
     g('or-tbl').addEventListener('input', e => {
       const el = e.target.closest('.or-in'); if (!el) return;
-      const n = moneyToNumber(el.value);
-      const key = k(el.dataset.campo, el.dataset.mes);
+      const n = moneyToNumber(el.value), key = k(el.dataset.sub, el.dataset.mes);
       if (n == null) delete vals[key]; else vals[key] = n;
       recalc();
     });
     g('or-tbl').addEventListener('click', e => {
       const b = e.target.closest('[data-fill]'); if (!b) return;
-      const cid = b.dataset.fill;
+      const sid = b.dataset.fill;
       let first = null;
-      for (let m = 1; m <= 12 && first == null; m++) if (vals[k(cid, m)] != null) first = vals[k(cid, m)];
+      for (let m = 1; m <= 12 && first == null; m++) if (vals[k(sid, m)] != null) first = vals[k(sid, m)];
       if (first == null) return showToast('Preencha ao menos um mês da linha primeiro.', 'red');
-      for (let m = 1; m <= 12; m++) if (vals[k(cid, m)] == null) { vals[k(cid, m)] = first; const el = document.querySelector('.or-in[data-campo="' + cid + '"][data-mes="' + m + '"]'); if (el) el.value = numberToMoneyMasked(first); }
+      for (let m = 1; m <= 12; m++) if (vals[k(sid, m)] == null) { vals[k(sid, m)] = first; const el = document.querySelector('.or-in[data-sub="' + sid + '"][data-mes="' + m + '"]'); if (el) el.value = numberToMoneyMasked(first); }
       recalc();
     });
-
-    // Realizado do ano anterior por campo/mês — só preenche as células vazias.
-    g('btn-copy').addEventListener('click', async () => {
+    g('btn-copy').addEventListener('click', () => {
       const reaj = 1 + ((moneyToNumber(g('inp-reaj').value) || 0) / 100);
-      const btn = g('btn-copy'); btn.disabled = true; btn.textContent = 'Buscando…';
-      try {
-        const emp = OPS.find(o => o.id === sel.op).empresas;
-        const subs = await fetchAll(() => sb.from('lancamentos_subcampos').select('id,campo_id'));
-        const campoDe = Object.fromEntries(subs.map(s => [s.id, s.campo_id]));
-        const rows = await fetchAll(() => sb.from('lancamentos_valores').select('subcampo_id,mes,valor').eq('ano', sel.ano - 1).in('empresa_id', emp));
-        const acc = {};
-        rows.forEach(r => { const c = campoDe[r.subcampo_id]; if (!c) return; acc[k(c, r.mes)] = (acc[k(c, r.mes)] || 0) + (+r.valor); });
-        let n = 0;
-        campos.forEach(c => { for (let m = 1; m <= 12; m++) { const key = k(c.id, m); if (acc[key] && vals[key] == null) { vals[key] = Math.round(acc[key] * reaj * 100) / 100; n++; } } });
-        render();
-        showToast(n ? n + ' células preenchidas com o realizado de ' + (sel.ano - 1) + '. Revise e salve.' : 'Nada a preencher: sem realizado em ' + (sel.ano - 1) + ' ou células já preenchidas.', n ? 'green' : 'red');
-      } catch (err) { showToast('Erro ao buscar o realizado: ' + err.message, 'red'); }
-      btn.disabled = false; btn.textContent = 'Preencher com realizado do ano anterior';
+      let n = 0;
+      subs.forEach(s => { for (let m = 1; m <= 12; m++) { const r = real[kr(sel.ano - 1, m, s.id)]; if (r && vals[k(s.id, m)] == null) { vals[k(s.id, m)] = Math.round(r * reaj * 100) / 100; n++; } } });
+      renderGrade();
+      showToast(n ? n + ' células preenchidas com o realizado de ' + (sel.ano - 1) + '. Revise e salve.' : 'Nada a preencher: sem realizado em ' + (sel.ano - 1) + ' ou células já preenchidas.', n ? 'green' : 'red');
     });
-
     g('btn-save').addEventListener('click', async () => {
       const upserts = [], dels = {};
       new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(key => {
         if (vals[key] === orig[key]) return;
-        const [cid, m] = key.split('|');
-        if (vals[key] == null) (dels[m] = dels[m] || []).push(cid);
-        else upserts.push({ operacao: sel.op, ano: sel.ano, mes: +m, campo_id: cid, valor: vals[key] });
+        const [sid, m] = key.split('|');
+        if (vals[key] == null) (dels[m] = dels[m] || []).push(sid);
+        else upserts.push({ operacao: sel.op, ano: sel.ano, mes: +m, subcampo_id: sid, valor: vals[key] });
       });
       if (!upserts.length && !Object.keys(dels).length) return showToast('Nenhuma alteração para salvar.', 'green');
       const btn = g('btn-save'); btn.disabled = true; btn.textContent = 'Salvando…';
       try {
-        if (upserts.length) { const { error } = await sb.from('orcamento').upsert(upserts, { onConflict: 'operacao,ano,mes,campo_id' }); if (error) throw error; }
-        for (const m of Object.keys(dels)) { const { error } = await sb.from('orcamento').delete().eq('operacao', sel.op).eq('ano', sel.ano).eq('mes', +m).in('campo_id', dels[m]); if (error) throw error; }
+        if (upserts.length) { const { error } = await sb.from('orcamento_gastos').upsert(upserts, { onConflict: 'operacao,ano,mes,subcampo_id' }); if (error) throw error; }
+        for (const m of Object.keys(dels)) { const { error } = await sb.from('orcamento_gastos').delete().eq('operacao', sel.op).eq('ano', sel.ano).eq('mes', +m).in('subcampo_id', dels[m]); if (error) throw error; }
         orig = { ...vals }; recalc();
         showToast('Orçamento salvo.', 'green');
       } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
       btn.disabled = false; btn.textContent = 'Salvar orçamento';
     });
 
+    // ── Metas de receita ────────────────────────────────────────────────────
+    const receitaTri = t => [1, 2, 3].reduce((a, i) => a + (receita[sel.ano + '|' + ((t - 1) * 3 + i)] || 0), 0);
+    function barraHtml(p, tempo) {
+      const w = p.pct == null ? 0 : Math.min(100, p.pct * 100);
+      return '<div class="barra"><div class="barra-fill' + (p.pct >= 1 ? ' ok' : '') + '" style="width:' + w + '%"></div>' +
+        (tempo > 0 && tempo < 1 ? '<div class="barra-tempo" style="left:calc(' + (tempo * 100) + '% - 1px)" title="Quanto do período já passou"></div>' : '') + '</div>';
+    }
+    function renderMetas() {
+      const hoje = new Date();
+      const metaAno = [1, 2, 3, 4].reduce((a, t) => a + (metas[t] || 0), 0);
+      const realAno = [1, 2, 3, 4].reduce((a, t) => a + receitaTri(t), 0);
+      const pA = progressoMeta(metaAno, realAno), tA = fracaoDecorrida(sel.ano, 0, hoje);
+      const nomeOp = OPS.find(o => o.id === sel.op).nome;
+      g('meta-ano').innerHTML = '<div class="meta-top"><div class="meta-tit">Meta anual ' + sel.ano + ' — ' + esc(nomeOp) + '</div>' +
+        '<div class="meta-num"><b>' + brl(realAno) + '</b> de ' + (metaAno ? brl(metaAno) : 'meta não definida') + (pA.pct != null ? ' · <b>' + pct(pA.pct) + '</b>' : '') + '</div></div>' +
+        barraHtml(pA, tA) +
+        '<div class="barra-leg"><span>' + (pA.pct == null ? 'Defina as metas dos trimestres abaixo — a meta do ano é a soma dos quatro.' : pA.falta ? 'Faltam ' + brl(pA.falta) + ' para bater a meta do ano.' : 'Meta do ano batida!') + '</span>' +
+        (tA > 0 && tA < 1 ? '<span class="tempo">' + pct(tA) + ' do ano já passou</span>' : '') + '</div>';
+
+      const triAtual = hoje.getFullYear() === sel.ano ? trimestreDoMes(hoje.getMonth() + 1) : 0;
+      g('meta-tris').innerHTML = [1, 2, 3, 4].map(t => {
+        const r = receitaTri(t), p = progressoMeta(metas[t], r), tt = fracaoDecorrida(sel.ano, t, hoje);
+        return '<div class="tri' + (t === triAtual ? ' atual' : '') + '"><div class="tri-h"><span class="tri-n">' + t + 'º trimestre</span><span class="tri-m">' + MES_CURTO[(t - 1) * 3] + '–' + MES_CURTO[(t - 1) * 3 + 2] + '</span></div>' +
+          '<div><label for="meta-' + t + '">Meta de receita</label><input class="or-in" id="meta-' + t + '" data-tri="' + t + '" value="' + (metas[t] == null ? '' : numberToMoneyMasked(metas[t])) + '" placeholder="—"></div>' +
+          '<div class="tri-pct">' + (p.pct == null ? '—' : pct(p.pct)) + '</div>' + barraHtml(p, tt) +
+          '<div class="tri-s">Realizado: ' + brl(r) + (p.pct == null ? '' : '<br>' + (p.falta ? 'Faltam ' + brl(p.falta) : 'Meta batida')) + (tt > 0 && tt < 1 ? '<br>' + pct(tt) + ' do trimestre já passou' : '') + '</div></div>';
+      }).join('');
+      g('meta-tris').querySelectorAll('.or-in').forEach(el => { attachMoneyMask(el); el.classList.toggle('chg', metas[el.dataset.tri] !== metasOrig[el.dataset.tri]); });
+      g('dirty-metas').classList.toggle('on', dirtyCount(metas, metasOrig) > 0);
+    }
+    g('meta-tris').addEventListener('change', e => {
+      const el = e.target.closest('[data-tri]'); if (!el) return;
+      const n = moneyToNumber(el.value);
+      if (n == null) delete metas[el.dataset.tri]; else metas[el.dataset.tri] = n;
+      // Redesenha depois que o foco já foi para o próximo campo, e devolve o foco a ele.
+      setTimeout(() => { const foco = document.activeElement && document.activeElement.id; renderMetas(); if (foco && g(foco)) g(foco).focus(); }, 0);
+    });
+    g('btn-save-metas').addEventListener('click', async () => {
+      const ups = [], dels = [];
+      [1, 2, 3, 4].forEach(t => { if (metas[t] === metasOrig[t]) return; if (metas[t] == null) dels.push(t); else ups.push({ operacao: sel.op, ano: sel.ano, trimestre: t, valor: metas[t] }); });
+      if (!ups.length && !dels.length) return showToast('Nenhuma alteração para salvar.', 'green');
+      const btn = g('btn-save-metas'); btn.disabled = true; btn.textContent = 'Salvando…';
+      try {
+        if (ups.length) { const { error } = await sb.from('metas_receita').upsert(ups, { onConflict: 'operacao,ano,trimestre' }); if (error) throw error; }
+        if (dels.length) { const { error } = await sb.from('metas_receita').delete().eq('operacao', sel.op).eq('ano', sel.ano).in('trimestre', dels); if (error) throw error; }
+        metasOrig = { ...metas }; renderMetas();
+        showToast('Metas salvas.', 'green');
+      } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
+      btn.disabled = false; btn.textContent = 'Salvar metas';
+    });
+
+    // ── Navegação ───────────────────────────────────────────────────────────
+    function render() {
+      g('aba-orc').style.display = aba === 'orc' ? '' : 'none';
+      g('aba-metas').style.display = aba === 'metas' ? '' : 'none';
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.aba === aba));
+      document.querySelectorAll('.subtab').forEach(t => t.classList.toggle('active', t.dataset.vis === vis));
+      g('vis-analise').style.display = vis === 'analise' ? '' : 'none';
+      g('vis-lancar').style.display = vis === 'lancar' ? '' : 'none';
+      g('an-controls').style.display = vis === 'analise' ? '' : 'none';
+      if (aba === 'metas') renderMetas();
+      else if (vis === 'analise') renderAnalise();
+      else renderGrade();
+    }
+    const temPendencia = () => dirtyCount(vals, orig) > 0 || dirtyCount(metas, metasOrig) > 0;
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { aba = t.dataset.aba; try { localStorage.setItem('safi-orc-aba', aba); } catch (e) {} render(); }));
+    document.querySelectorAll('.subtab').forEach(t => t.addEventListener('click', () => { vis = t.dataset.vis; render(); }));
+    g('sel-per').addEventListener('change', renderAnalise);
+
     async function trocar() {
       const op = g('sel-op').value, ano = +g('sel-ano').value;
-      if (dirtyCount() > 0 && !confirm('Há alterações não salvas. Descartar e trocar?')) { g('sel-op').value = sel.op; g('sel-ano').value = sel.ano; return; }
+      if (temPendencia() && !confirm('Há alterações não salvas. Descartar e trocar?')) { g('sel-op').value = sel.op; g('sel-ano').value = sel.ano; return; }
       sel = { op, ano };
-      try { await carregarOrcamento(); render(); } catch (err) { showToast('Erro ao carregar: ' + err.message, 'red'); }
+      try { await carregarDados(); preencherPeriodos(); render(); } catch (err) { showToast('Erro ao carregar: ' + err.message, 'red'); }
     }
     g('sel-op').addEventListener('change', trocar);
     g('sel-ano').addEventListener('change', trocar);
-    window.addEventListener('beforeunload', e => { if (dirtyCount() > 0) { e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('beforeunload', e => { if (temPendencia()) { e.preventDefault(); e.returnValue = ''; } });
 
     async function init() {
       const { data } = await sb.auth.getSession();
@@ -417,10 +638,12 @@
       const y = new Date().getFullYear();
       g('sel-ano').innerHTML = [y - 1, y, y + 1].map(a => '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>').join('');
       sel = { op: OPS[0].id, ano: y };
-      try { await carregarEstrutura(); await carregarOrcamento(); }
+      try { const a = localStorage.getItem('safi-orc-aba'); if (a === 'orc' || a === 'metas') aba = a; } catch (e) {}
+      try { await carregarEstrutura(); await carregarDados(); }
       catch (err) { g('or-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
       g('or-loading').style.display = 'none';
       g('or-main').style.display = 'block';
+      preencherPeriodos();
       render();
     }
     init();

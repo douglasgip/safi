@@ -47,7 +47,7 @@
     conselho: { label: 'Painel do Conselho', href: '/conselho', can: function (p) { return p.is_admin || p.can_dre !== false; } },
     reunioes: { label: 'Reuniões e Decisões', href: '/reunioes', can: function (p) { return p.is_admin || p.can_reunioes === true || p.can_reunioes_editar === true; } },
     produtos: { label: 'Produtos & Estoque', href: '/produtos', can: function (p) { return p.is_admin || p.can_produtos === true; } },
-    orcamento: { label: 'Orçamento', href: '/orcamento', can: function (p) { return p.is_admin || p.can_orcamento === true; } },
+    orcamento: { label: 'Orçamento e Metas', href: '/orcamento', can: function (p) { return p.is_admin || p.can_orcamento === true; } },
     tesouraria: { label: 'Tesouraria', href: '/tesouraria', can: function (p) { return p.is_admin || p.can_tesouraria === true; } },
     planoorc: { label: 'Plano Orçamentário', href: '/plano-orcamentario', can: function (p) { return p.is_admin || p.can_plano_orcamentario === true; } },
     dre: { label: 'DRE', href: '/dre', can: function (p) { return p.is_admin || p.can_dre !== false; } },

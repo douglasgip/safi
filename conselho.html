@@ -271,7 +271,7 @@
     <div class="co-foot">
       Receita Líquida = Faturamento − Deduções · Margem de Contribuição = Receita Líquida − Custos Variáveis · Resultado Líquido = Margem − Gastos Operacionais ·
       <b>EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL</b> (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento.
-      "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Orçado" aparece quando há orçamento lançado para o mês e a operação.
+      "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. <b>Meta</b> (receita; meta do trimestre ÷ 3 em cada mês) e <b>Orçado</b> (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo.
       <br><b>Rentabilidade e custos:</b> Margem Bruta = Receita Líquida − CMV · Despesas variáveis = custos variáveis (CMV + demais) · Despesas fixas = gastos operacionais · Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros · variação em pontos percentuais (p.p.) do % sobre o faturamento.
       <b>Produtividade:</b> valor do mês ÷ quadro atual de funcionários (o SAFI não guarda o quadro de meses passados, então em meses antigos é uma aproximação).
     </div>
@@ -329,16 +329,18 @@
       });
       return tem ? snap(acc) : null;
     }
-    // Operações do escopo que têm orçamento lançado no mês (o comparativo vale só para elas).
-    const opsComOrc = (ops, ano, mes) => ops.filter(op => { const r = porChave[op + '|' + ano + '|' + mes]; return r && r.tem_orcamento; });
+    // Tela Orçamento e Metas: meta de receita (trimestre ÷ 3 por mês) e orçamento de gastos operacionais.
+    // Cada comparativo só vale quando TODAS as operações do escopo têm o valor lançado no mês.
+    const opsCom = (campo, ops, ano, mes) => ops.filter(op => { const r = porChave[op + '|' + ano + '|' + mes]; return r && r[campo]; });
     function orcado(ops, ano, mes) {
-      const acc = zero();
+      let meta = 0, go = 0, df = 0, ir = 0, temMeta = ops.length > 0, temOrc = ops.length > 0;
       for (const op of ops) {
         const r = porChave[op + '|' + ano + '|' + mes];
-        if (!r || !r.tem_orcamento) return null;
-        somar(acc, { rb: +r.orc_receita_bruta, ded: +r.orc_deducoes, cv: +r.orc_custos_variaveis, go: +r.orc_gastos_operacionais, df: +r.orc_desp_financeiras, ir: +r.orc_ir_csll });
+        if (!r || !r.tem_meta) temMeta = false; else meta += +r.meta_receita;
+        if (!r || !r.tem_orc_gastos) temOrc = false; else { go += +r.orc_gastos_operacionais; df += +r.orc_desp_financeiras; ir += +r.orc_ir_csll; }
       }
-      return acc.rb || acc.go ? snap(acc) : null;
+      if (!temMeta && !temOrc) return null;
+      return { rb: temMeta ? meta : null, opex: temOrc ? go - df - ir : null };
     }
     function ultimos12(ops, ano, mes) {
       const out = [];
@@ -362,10 +364,10 @@
     // Ordem = ordem visual na grade 3x2: linha 1 (Faturamento, Receita Líquida, Margem de
     // Contribuição) e linha 2 (Gastos Operacionais, EBITDA, Resultado Líquido).
     const KPIS = [
-      { id: 'rb', l: 'Faturamento', v: s => s.rb, custo: false },
+      { id: 'rb', l: 'Faturamento', v: s => s.rb, custo: false, orc: 'rb', rotOrc: 'Meta' },
       { id: 'rl', l: 'Receita Líquida', v: s => s.rl, custo: false },
       { id: 'mc', l: 'Margem de Contribuição', v: s => s.mc, custo: false, pct: s => s.mcPct, pctK: 'mcPct' },
-      { id: 'opex', l: 'Gastos Operacionais', v: s => s.opex, custo: true },
+      { id: 'opex', l: 'Gastos Operacionais', v: s => s.opex, custo: true, orc: 'opex', rotOrc: 'Orçado' },
       { id: 'ebitda', l: 'EBITDA', v: s => s.ebitda, custo: false, pct: s => s.ebitdaPct, pctK: 'ebitdaPct', hi: true },
       { id: 'res', l: 'Resultado Líquido', v: s => s.res, custo: false },
     ];
@@ -378,7 +380,13 @@
       const cls = (up ? 'up-' : 'dn-') + (bom ? 'good' : 'bad');
       return '<span class="' + cls + '">' + (up ? '▲' : '▼') + ' ' + (rel == null ? brl(Math.abs(d)) : pct(Math.abs(rel))) + '</span><span class="base">vs ' + esc(rot) + ' (' + brl(base) + ')</span>';
     }
-    function renderKpis(cur, base, orc, curOrc, rotOrc) {
+    // Linha "Meta"/"Orçado" de um indicador (só Faturamento e Gastos Operacionais têm).
+    function comparaOrc(k, cur, orc) {
+      if (!orc || !k.orc || orc[k.orc] == null) return null;
+      const ov = orc[k.orc], ating = ov ? k.v(cur) / ov : null;
+      return { rot: k.rotOrc, ov, ating, verbo: k.custo ? 'gastou ' : 'atingiu ' };
+    }
+    function renderKpis(cur, base, orc) {
       g('kpis').innerHTML = KPIS.map(k => {
         const v = k.v(cur);
         const sub = k.pct ? '<div class="kpi-sub">' + pct(k.pct(cur)) + ' do faturamento</div>' : '';
@@ -389,18 +397,8 @@
           const zeroPp = Math.abs(pp) < 0.05;
           dp = '<div class="kpi-d"><span class="' + (zeroPp ? 'neutro' : pp >= 0 ? 'up-good' : 'dn-bad') + '">' + (zeroPp ? '=' : pp >= 0 ? '▲' : '▼') + ' ' + Math.abs(pp).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.</span><span class="base">na margem</span></div>';
         }
-        let o = '';
-        if (orc) {
-          const ov = k.v(orc);
-          const vReal = k.v(curOrc);
-          const ating = ov ? vReal / ov : null;
-          let extra = '';
-          if (k.pct && orc[k.pctK] != null && curOrc[k.pctK] != null) {
-            const pp = (curOrc[k.pctK] - orc[k.pctK]) * 100;
-            extra = ' · margem orçada ' + pct(orc[k.pctK]) + ' (' + (pp >= 0 ? '+' : '') + pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.)';
-          }
-          o = '<div class="kpi-o">Orçado' + (rotOrc ? ' (' + esc(rotOrc) + ')' : '') + ': <b>' + brl(ov) + '</b>' + (ating != null && isFinite(ating) ? ' · ' + (k.custo ? 'gastou ' : 'atingiu ') + '<b>' + pct(ating) + '</b>' : '') + extra + '</div>';
-        }
+        const c = comparaOrc(k, cur, orc);
+        const o = c ? '<div class="kpi-o">' + c.rot + ': <b>' + brl(c.ov) + '</b>' + (c.ating != null && isFinite(c.ating) ? ' · ' + c.verbo + '<b>' + pct(c.ating) + '</b>' : '') + '</div>' : '';
         return '<div class="kpi' + (k.hi ? ' hi' : '') + '"><div class="kpi-l">' + k.l + '</div><div class="kpi-v">' + brl(v) + '</div>' + sub +
           '<div class="kpi-d">' + dl + '</div>' + dp + o + '</div>';
       }).join('');
@@ -413,13 +411,13 @@
       for (let i = 11; i >= 0; i--) {
         const p = addM(ano, mes, -i); const s = realizado(ops, p.ano, p.mes); const o = orcado(ops, p.ano, p.mes);
         lab.push(MES_CURTO[p.mes - 1] + '/' + String(p.ano).slice(2));
-        fat.push(s ? s.rb : null); eb.push(s ? s.ebitda : null); ebo.push(o ? o.ebitda : null); if (o) temOrc = true;
+        fat.push(s ? s.rb : null); eb.push(s ? s.ebitda : null); ebo.push(o && o.rb != null ? o.rb : null); if (o && o.rb != null) temOrc = true;
       }
       const ds = [
         { type: 'bar', label: 'Faturamento', data: fat, backgroundColor: 'rgba(56,189,248,0.35)', borderRadius: 4, yAxisID: 'y' },
         { type: 'line', label: 'EBITDA', data: eb, borderColor: '#6ee7b7', backgroundColor: '#6ee7b7', tension: .25, pointRadius: 3, yAxisID: 'y1' },
       ];
-      if (temOrc) ds.push({ type: 'line', label: 'EBITDA orçado', data: ebo, borderColor: '#fbbf24', borderDash: [5, 4], pointRadius: 2, tension: .25, yAxisID: 'y1', spanGaps: false });
+      if (temOrc) ds.push({ type: 'line', label: 'Meta de faturamento', data: ebo, borderColor: '#fbbf24', backgroundColor: '#fbbf24', borderDash: [5, 4], pointRadius: 2, tension: 0, yAxisID: 'y', spanGaps: false });
       if (charts.evol) charts.evol.destroy();
       charts.evol = new Chart(g('ch-evol'), { data: { labels: lab, datasets: ds }, options: {
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
@@ -458,9 +456,9 @@
         const d = x.base ? x.cur.ebitda - x.base.s.ebitda : null;
         return '<tr class="' + (cls || '') + '"><td>' + esc(nome) + '</td><td class="num">' + brl(x.cur.rb) + '</td><td class="num">' + pct(x.cur.mcPct) + '</td><td class="num">' + brl(x.cur.ebitda) + '</td><td class="num">' + pct(x.cur.ebitdaPct) + '</td><td class="num">' + brl(x.cur.res) + '</td>' +
           '<td class="num ' + (d == null ? 'muted' : d >= 0 ? 'up-good' : 'dn-bad') + '">' + (d == null ? '—' : (d >= 0 ? '+' : '−') + brl(Math.abs(d))) + '</td>' +
-          '<td class="num ' + (x.orc ? '' : 'muted') + '">' + (x.orc && x.orc.ebitda ? pct(x.cur.ebitda / x.orc.ebitda) : '—') + '</td></tr>';
+          '<td class="num ' + (x.orc && x.orc.rb ? '' : 'muted') + '">' + (x.orc && x.orc.rb ? pct(x.cur.rb / x.orc.rb) : '—') + '</td></tr>';
       };
-      g('tbl-ops').innerHTML = '<thead><tr><th>Operação</th><th class="r">Faturamento</th><th class="r">Margem contrib. %</th><th class="r">EBITDA</th><th class="r">EBITDA %</th><th class="r">Resultado líquido</th><th class="r">Δ EBITDA vs base</th><th class="r">EBITDA × orçado</th></tr></thead><tbody>' +
+      g('tbl-ops').innerHTML = '<thead><tr><th>Operação</th><th class="r">Faturamento</th><th class="r">Margem contrib. %</th><th class="r">EBITDA</th><th class="r">EBITDA %</th><th class="r">Resultado líquido</th><th class="r">Δ EBITDA vs base</th><th class="r">Faturamento × meta</th></tr></thead><tbody>' +
         linhas.map(x => linha(OP_NOME[x.op] || x.op, x)).join('') + (linhas.length > 1 && tot.cur ? linha('Total', tot, 'total') : '') + '</tbody>';
     }
 
@@ -519,18 +517,18 @@
       const cur = realizado(ops, ano, mes);
       if (!cur) { g('kpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Sem dados para este mês.</div>'; return; }
       const base = baseDe(modo, ops, ano, mes);
-      const opsO = opsComOrc(ops, ano, mes);
-      const orc = opsO.length ? orcado(opsO, ano, mes) : null;
-      const curOrc = orc ? realizado(opsO, ano, mes) : null;
-      const parcial = orc && opsO.length < ops.length;
+      const orc = orcado(ops, ano, mes);
       const note = g('co-note');
       const msgs = [];
       const avisoEb = avisoEbitdaIgual(cur); if (avisoEb) msgs.push(avisoEb);
       if (!base) msgs.push('Sem dados para o comparativo "' + CMP_LABEL[modo] + '" — escolha outra base.');
-      if (parcial) msgs.push('Orçamento lançado só para ' + opsO.map(o => OP_NOME[o] || o).join(' + ') + ' neste mês — o "Orçado" dos indicadores compara apenas esse conjunto.');
+      [['tem_meta', 'Meta de receita'], ['tem_orc_gastos', 'Orçamento de gastos']].forEach(([campo, nome]) => {
+        const com = opsCom(campo, ops, ano, mes);
+        if (com.length && com.length < ops.length) msgs.push(nome + ' lançado só para ' + com.map(o => OP_NOME[o] || o).join(' + ') + ' neste mês — o comparativo do conjunto não é mostrado; escolha a operação.');
+      });
       note.textContent = msgs.join(' '); note.classList.toggle('on', msgs.length > 0);
-      ULTIMO = { ops, ano, mes, modo, opSel, cur, base, orc: orc && curOrc ? orc : null, curOrc, parcial, opsO, msgs };
-      renderKpis(cur, base, orc && curOrc ? orc : null, curOrc, parcial ? opsO.map(o => OP_NOME[o] || o).join(' + ') : '');
+      ULTIMO = { ops, ano, mes, modo, opSel, cur, base, orc, msgs };
+      renderKpis(cur, base, orc);
       renderEvolucao(ops, ano, mes);
       renderPonte(cur, base);
       g('panel-ops').style.display = opSel === 'todas' && opsVisiveis.length > 1 ? '' : 'none';
@@ -587,12 +585,8 @@
             linhas.push({ t: (Math.abs(pp) < 0.05 ? '=' : pp >= 0 ? '+' : '-') + ' ' + Math.abs(pp).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p. na margem', cor: Math.abs(pp) < 0.05 ? null : pp >= 0 ? OK : RUIM });
           }
         } else linhas.push({ t: 'sem base de comparação' });
-        if (U.orc) {
-          const ov = k.v(U.orc), vr = k.v(U.curOrc), ating = ov ? vr / ov : null;
-          let t = 'Orçado' + (U.parcial ? ' (' + U.opsO.map(o => OP_NOME[o] || o).join(' + ') + ')' : '') + ': ' + brlS(ov) + (ating != null && isFinite(ating) ? ' - ' + (k.custo ? 'gastou ' : 'atingiu ') + pct(ating) : '');
-          if (k.pct && U.orc[k.pctK] != null && U.curOrc[k.pctK] != null) { const pp = (U.curOrc[k.pctK] - U.orc[k.pctK]) * 100; t += ' - margem orçada ' + pct(U.orc[k.pctK]) + ' (' + (pp >= 0 ? '+' : '') + pp.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.)'; }
-          linhas.push({ t, cor: [29, 78, 216] });
-        }
+        const c = comparaOrc(k, U.cur, U.orc);
+        if (c) linhas.push({ t: c.rot + ': ' + brlS(c.ov) + (c.ating != null && isFinite(c.ating) ? ' - ' + c.verbo + pct(c.ating) : ''), cor: [29, 78, 216] });
         return { l: k.l, v: brlS(v), vCor: v < 0 ? RUIM : null, linhas, barra: k.hi ? [2, 132, 199] : null };
       });
     }
@@ -627,12 +621,12 @@
         const mk = (nome, x, k) => {
           const d = x.base ? x.cur.ebitda - x.base.s.ebitda : null;
           const cor = {}; if (x.cur.ebitda < 0) cor[3] = RUIM; if (x.cur.res < 0) cor[5] = RUIM; if (d != null) cor[6] = d >= 0 ? OK : RUIM;
-          linhas.push({ k, cor, c: [nome, brlS(x.cur.rb), pct(x.cur.mcPct), brlS(x.cur.ebitda), pct(x.cur.ebitdaPct), brlS(x.cur.res), d == null ? '—' : (d >= 0 ? '+' : '-') + brlS(Math.abs(d)).replace('-', ''), x.orc && x.orc.ebitda ? pct(x.cur.ebitda / x.orc.ebitda) : '—'] });
+          linhas.push({ k, cor, c: [nome, brlS(x.cur.rb), pct(x.cur.mcPct), brlS(x.cur.ebitda), pct(x.cur.ebitdaPct), brlS(x.cur.res), d == null ? '—' : (d >= 0 ? '+' : '-') + brlS(Math.abs(d)).replace('-', ''), x.orc && x.orc.rb ? pct(x.cur.rb / x.orc.rb) : '—'] });
         };
         opsVisiveis.forEach(op => { const cur = realizado([op], U.ano, U.mes); if (cur) mk(OP_NOME[op] || op, { cur, base: baseDe(U.modo, [op], U.ano, U.mes), orc: orcado([op], U.ano, U.mes) }); });
         const tot = realizado(opsVisiveis, U.ano, U.mes); if (linhas.length > 1 && tot) mk('Total', { cur: tot, base: baseDe(U.modo, opsVisiveis, U.ano, U.mes), orc: orcado(opsVisiveis, U.ano, U.mes) }, 'T');
         blocos.push({ tipo: 'tabela', opcao: 'ops', titulo: 'Por operação - ' + MESES[U.mes - 1] + ' / ' + U.ano,
-          colunas: [{ h: 'Operação', larg: 1.7 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem contrib. %', al: 'right', larg: 1.1 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'Var. EBITDA vs base', al: 'right', larg: 1.3 }, { h: 'EBITDA x orçado', al: 'right', larg: 1.1 }], linhas });
+          colunas: [{ h: 'Operação', larg: 1.7 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem contrib. %', al: 'right', larg: 1.1 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'Var. EBITDA vs base', al: 'right', larg: 1.3 }, { h: 'Faturamento x meta', al: 'right', larg: 1.1 }], linhas });
       }
       // Série mensal (os 12 meses do gráfico, em números)
       const serie = [];
@@ -640,13 +634,13 @@
         const p = addM(U.ano, U.mes, -i), s = realizado(U.ops, p.ano, p.mes), o = orcado(U.ops, p.ano, p.mes);
         if (!s) continue;
         const cor = {}; if (s.ebitda < 0) cor[3] = RUIM; if (s.res < 0) cor[5] = RUIM;
-        serie.push({ k: i === 0 ? 'R' : '', cor, c: [MES_CURTO[p.mes - 1] + '/' + p.ano, brlS(s.rb), brlS(s.mc), brlS(s.ebitda), pct(s.ebitdaPct), brlS(s.res), o ? brlS(o.ebitda) : '—'] });
+        serie.push({ k: i === 0 ? 'R' : '', cor, c: [MES_CURTO[p.mes - 1] + '/' + p.ano, brlS(s.rb), brlS(s.mc), brlS(s.ebitda), pct(s.ebitdaPct), brlS(s.res), o && o.rb != null ? brlS(o.rb) : '—'] });
       }
       blocos.push({ tipo: 'tabela', opcao: 'serie', titulo: 'Série mensal - últimos 12 meses (' + nomeOps + ')',
-        colunas: [{ h: 'Mês', larg: 1 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem de contribuição', al: 'right', larg: 1.4 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'EBITDA orçado', al: 'right', larg: 1.2 }], linhas: serie });
+        colunas: [{ h: 'Mês', larg: 1 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem de contribuição', al: 'right', larg: 1.4 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'Meta de faturamento', al: 'right', larg: 1.2 }], linhas: serie });
       const notas = (U.msgs || []).join(' ');
       blocos.push({ tipo: 'nota', opcao: 'notas', texto: (notas ? 'Avisos da tela: ' + notas + ' ' : '') +
-        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Orçado" aparece quando há orçamento lançado para o mês e a operação. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
+        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Meta" (receita; meta do trimestre dividida por 3 em cada mês) e "Orçado" (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
       const ctx = itens.map(it => '- ' + it.l + ': ' + it.v + ' | ' + it.linhas.map(l => l.t).join(' | ')).join('\n');
       return { blocos, subtitulo: MESES[U.mes - 1] + ' / ' + U.ano + '  -  ' + nomeOps, contextoIA: ctx };
     }
