@@ -271,7 +271,7 @@
     <div class="co-foot">
       Receita Líquida = Faturamento − Deduções · Margem de Contribuição = Receita Líquida − Custos Variáveis · Resultado Líquido = Margem − Gastos Operacionais ·
       <b>EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL</b> (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento.
-      "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. <b>Meta</b> (receita; meta do trimestre ÷ 3 em cada mês) e <b>Orçado</b> (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo.
+      "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. <b>Meta</b> (receita, lançada mês a mês) e <b>Orçado</b> (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo.
       <br><b>Rentabilidade e custos:</b> Margem Bruta = Receita Líquida − CMV · Despesas variáveis = custos variáveis (CMV + demais) · Despesas fixas = gastos operacionais · Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros · variação em pontos percentuais (p.p.) do % sobre o faturamento.
       <b>Produtividade:</b> valor do mês ÷ quadro atual de funcionários (o SAFI não guarda o quadro de meses passados, então em meses antigos é uma aproximação).
     </div>
@@ -329,7 +329,7 @@
       });
       return tem ? snap(acc) : null;
     }
-    // Tela Orçamento e Metas: meta de receita (trimestre ÷ 3 por mês) e orçamento de gastos operacionais.
+    // Tela Orçamento e Metas: meta de receita (por mês) e orçamento de gastos operacionais.
     // Cada comparativo só vale quando TODAS as operações do escopo têm o valor lançado no mês.
     const opsCom = (campo, ops, ano, mes) => ops.filter(op => { const r = porChave[op + '|' + ano + '|' + mes]; return r && r[campo]; });
     function orcado(ops, ano, mes) {
@@ -640,7 +640,7 @@
         colunas: [{ h: 'Mês', larg: 1 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem de contribuição', al: 'right', larg: 1.4 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'Meta de faturamento', al: 'right', larg: 1.2 }], linhas: serie });
       const notas = (U.msgs || []).join(' ');
       blocos.push({ tipo: 'nota', opcao: 'notas', texto: (notas ? 'Avisos da tela: ' + notas + ' ' : '') +
-        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Meta" (receita; meta do trimestre dividida por 3 em cada mês) e "Orçado" (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
+        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Meta" (receita, lançada mês a mês) e "Orçado" (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
       const ctx = itens.map(it => '- ' + it.l + ': ' + it.v + ' | ' + it.linhas.map(l => l.t).join(' | ')).join('\n');
       return { blocos, subtitulo: MESES[U.mes - 1] + ' / ' + U.ano + '  -  ' + nomeOps, contextoIA: ctx };
     }

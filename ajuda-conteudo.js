@@ -317,13 +317,13 @@ window.SAFI_AJUDA = { telas: {
   },
 
   orcamento: {
-    titulo: 'Orçamento e Metas', versao: 2,
-    resumo: 'Duas abas: <b>Orçamento de Gastos Operacionais</b> (objetivo de <b>gasto</b>, por conta e mês, comparado com o gasto real) e <b>Metas</b> (objetivo de <b>receita</b> por trimestre, com barras de progresso do trimestre e do ano). Não se orça venda, DAS nem custos aqui.',
+    titulo: 'Orçamento e Metas', versao: 3,
+    resumo: 'Duas abas: <b>Orçamento de Gastos Operacionais</b> (objetivo de <b>gasto</b>, por conta e mês, comparado com o gasto real) e <b>Metas</b> (objetivo de <b>receita</b> lançado <b>mês a mês</b>, agrupado por trimestre, com barras de progresso do mês, do trimestre e do ano). Não se orça venda, DAS nem custos aqui.',
     passos: [
       { t: 'Escolha operação e ano', d: 'Nos seletores do topo. Vale para as duas abas.' },
       { t: 'Lance o orçamento de gastos', d: 'Na aba <b>Orçamento de Gastos Operacionais</b> → <b>Lançar orçamento</b>: uma linha por conta (Aluguel, Folha, Marketing…) × 12 meses. Depois clique em <b>Salvar orçamento</b>.' },
       { t: 'Compare orçado × real', d: 'Em <b>Orçado × Real</b>, escolha um mês ou o acumulado do ano. O gráfico mostra mês a mês e a tabela traz a diferença, o quanto do orçamento foi usado e as análises <b>vertical</b> (peso de cada conta no total) e <b>horizontal</b> (variação contra o período anterior).' },
-      { t: 'Defina as metas de receita', d: 'Na aba <b>Metas</b>, digite a meta de cada trimestre e clique em <b>Salvar metas</b>. A meta do ano é a soma dos quatro.' },
+      { t: 'Defina as metas de receita', d: 'Na aba <b>Metas</b>, digite a meta de <b>cada mês</b> (os meses aparecem dentro do seu trimestre) e clique em <b>Salvar metas</b>. A meta do trimestre e a do ano são a soma dos meses.' },
       { t: 'Acompanhe o progresso', d: 'As barras mostram quanto da meta já foi vendido. A marca amarela mostra quanto do período já passou: barra antes da marca = venda atrás do ritmo.' },
     ],
     dicas: ['<b>Preencher com realizado do ano anterior</b> (com % de reajuste) completa só as células vazias; a seta <b>→</b> repete o primeiro valor da linha.', 'Na análise, vermelho é gasto acima do orçado ou crescendo; verde é dentro do orçado ou caindo.', 'A receita realizada é a Receita Operacional Bruta lançada no DRE.'],

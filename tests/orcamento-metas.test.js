@@ -1,5 +1,5 @@
 'use strict';
-// Orçamento e Metas: orçamento só de Gastos Operacionais (orçado × real, AV e AH) e metas de receita trimestrais.
+// Orçamento e Metas: orçamento só de Gastos Operacionais (orçado × real, AV e AH) e metas de receita lançadas por mês (trimestre e ano = soma dos meses).
 const test = require('node:test');
 const assert = require('node:assert');
 const { ler, scriptsDaPagina, extrairFuncao } = require('./helpers/carregar');
@@ -92,4 +92,20 @@ test('Conselho e GerônIA leem o sinal novo (tem_orc_gastos), não o antigo do o
     assert.match(src, /tem_orc_gastos/, arq);
     assert.doesNotMatch(src, /tem_orcamento/, arq);
   }
+});
+
+test('metas por mês: o trimestre e o ano são a soma dos meses lançados', () => {
+  const somaMetas = extrairFuncao(codigo, 'somaMetas', {});
+  const metas = { 1: 100000, 2: 120000, 3: 80000, 10: 300000, 11: 450000 };
+  assert.strictEqual(somaMetas(metas, [1, 2, 3]), 300000);          // 1º trimestre
+  assert.strictEqual(somaMetas(metas, [10, 11, 12]), 750000);       // dezembro sem meta não zera o resto
+  assert.strictEqual(somaMetas(metas, [4, 5, 6]), null);            // trimestre sem nenhuma meta = "não definida"
+  assert.strictEqual(somaMetas(metas, Array.from({ length: 12 }, (_, i) => i + 1)), 1050000);
+});
+
+test('metas por mês: a tela grava e lê por mês (não por trimestre)', () => {
+  assert.match(codigo, /upsert\(ups, \{ onConflict: 'operacao,ano,mes' \}\)/);
+  assert.match(codigo, /from\('metas_receita'\)\.select\('mes,valor'\)/);
+  assert.doesNotMatch(codigo, /trimestre: t, valor/);
+  assert.match(codigo, /data-mes="' \+ m \+ '"/);
 });

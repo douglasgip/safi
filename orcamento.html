@@ -163,6 +163,15 @@
     .tri .or-in { width: 100%; font-size: 13px; padding: 9px 10px; }
     .tri-pct { font-size: 22px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; }
     .tri-s { font-size: 11.5px; color: #94a3b8; line-height: 1.5; font-variant-numeric: tabular-nums; }
+    .mes-meta { display: flex; flex-direction: column; gap: 5px; padding: 9px 10px; border-radius: 12px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05); }
+    .mes-meta.atual { border-color: rgba(56,189,248,0.35); }
+    .mes-h { display: flex; justify-content: space-between; align-items: baseline; }
+    .mes-p { font-size: 11px; font-weight: 800; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+    .mes-r { font-size: 10.5px; color: #64748b; font-variant-numeric: tabular-nums; }
+    .barra.fina { height: 6px; }
+    .tri-tot { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 2px; }
+    .tri-tot-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
+    .tri-tot-h b { font-size: 13px; color: #f8fafc; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
 
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
     .toast.visible { opacity: 1; pointer-events: auto; }
@@ -197,7 +206,7 @@
     <div class="fe-toolbar">
       <div>
         <h1>Orçamento e Metas</h1>
-        <div class="fe-toolbar-sub">Orçamento = objetivo de <b>gasto</b> (só Gastos Operacionais). Meta = objetivo de <b>receita</b>, por trimestre.</div>
+        <div class="fe-toolbar-sub">Orçamento = objetivo de <b>gasto</b> (só Gastos Operacionais). Meta = objetivo de <b>receita</b>, por mês (o trimestre e o ano somam sozinhos).</div>
       </div>
       <div class="or-controls">
         <select class="fe-select" id="sel-op" aria-label="Operação"></select>
@@ -311,6 +320,12 @@
       return { meses: [{ ano, mes }], ant: [mes === 1 ? { ano: ano - 1, mes: 12 } : { ano, mes: mes - 1 }] };
     }
     const trimestreDoMes = mes => Math.ceil(mes / 3);
+    // Soma das metas dos meses informados (mês -> valor); null se nenhum deles tem meta lançada.
+    function somaMetas(metas, meses) {
+      let t = 0, tem = false;
+      meses.forEach(m => { if (metas[m] != null) { t += metas[m]; tem = true; } });
+      return tem ? t : null;
+    }
     // Progresso de uma meta: % atingido (sem teto, pode passar de 100%) e quanto falta (nunca negativo).
     function progressoMeta(meta, real) {
       if (!meta) return { pct: null, falta: null };
@@ -331,7 +346,7 @@
     let vals = {}, orig = {};          // orçamento: "subId|mes" -> valor
     let real = {};                     // gastos reais: "ano|mes|subId" -> valor
     let receita = {};                  // receita bruta real: "ano|mes" -> valor
-    let metas = {}, metasOrig = {};    // trimestre -> valor
+    let metas = {}, metasOrig = {};    // mês -> valor
     let sel = { op: 'GIP', ano: new Date().getFullYear() };
     let aba = 'orc', vis = 'analise', chart = null;
 
@@ -369,13 +384,13 @@
       const op = OPS.find(o => o.id === sel.op);
       const [orcRows, metaRows, valRows] = await Promise.all([
         fetchAll(() => sb.from('orcamento_gastos').select('subcampo_id,mes,valor').eq('operacao', sel.op).eq('ano', sel.ano).order('id')),
-        fetchAll(() => sb.from('metas_receita').select('trimestre,valor').eq('operacao', sel.op).eq('ano', sel.ano).order('trimestre')),
+        fetchAll(() => sb.from('metas_receita').select('mes,valor').eq('operacao', sel.op).eq('ano', sel.ano).order('mes')),
         fetchAll(() => sb.from('lancamentos_valores').select('subcampo_id,ano,mes,valor').in('ano', [sel.ano - 1, sel.ano]).in('empresa_id', op.empresas).order('id')),
       ]);
       vals = {}; orig = {};
       orcRows.forEach(r => { vals[k(r.subcampo_id, r.mes)] = +r.valor; orig[k(r.subcampo_id, r.mes)] = +r.valor; });
       metas = {}; metasOrig = {};
-      metaRows.forEach(r => { metas[r.trimestre] = +r.valor; metasOrig[r.trimestre] = +r.valor; });
+      metaRows.forEach(r => { metas[r.mes] = +r.valor; metasOrig[r.mes] = +r.valor; });
       real = {}; receita = {};
       valRows.forEach(r => {
         const ch = campoClasse[subCampo[r.subcampo_id]];
@@ -547,51 +562,62 @@
       btn.disabled = false; btn.textContent = 'Salvar orçamento';
     });
 
-    // ── Metas de receita ────────────────────────────────────────────────────
-    const receitaTri = t => [1, 2, 3].reduce((a, i) => a + (receita[sel.ano + '|' + ((t - 1) * 3 + i)] || 0), 0);
-    function barraHtml(p, tempo) {
+    // ── Metas de receita (lançadas por mês; trimestre e ano são a soma dos meses) ──
+    const mesesDoTri = t => [1, 2, 3].map(i => (t - 1) * 3 + i);
+    const receitaMes = m => receita[sel.ano + '|' + m] || 0;
+    const receitaTri = t => mesesDoTri(t).reduce((a, m) => a + receitaMes(m), 0);
+    function barraHtml(p, tempo, fina) {
       const w = p.pct == null ? 0 : Math.min(100, p.pct * 100);
-      return '<div class="barra"><div class="barra-fill' + (p.pct >= 1 ? ' ok' : '') + '" style="width:' + w + '%"></div>' +
+      return '<div class="barra' + (fina ? ' fina' : '') + '"><div class="barra-fill' + (p.pct >= 1 ? ' ok' : '') + '" style="width:' + w + '%"></div>' +
         (tempo > 0 && tempo < 1 ? '<div class="barra-tempo" style="left:calc(' + (tempo * 100) + '% - 1px)" title="Quanto do período já passou"></div>' : '') + '</div>';
     }
     function renderMetas() {
       const hoje = new Date();
-      const metaAno = [1, 2, 3, 4].reduce((a, t) => a + (metas[t] || 0), 0);
+      const metaAno = somaMetas(metas, Array.from({ length: 12 }, (_, i) => i + 1));
       const realAno = [1, 2, 3, 4].reduce((a, t) => a + receitaTri(t), 0);
       const pA = progressoMeta(metaAno, realAno), tA = fracaoDecorrida(sel.ano, 0, hoje);
       const nomeOp = OPS.find(o => o.id === sel.op).nome;
       g('meta-ano').innerHTML = '<div class="meta-top"><div class="meta-tit">Meta anual ' + sel.ano + ' — ' + esc(nomeOp) + '</div>' +
         '<div class="meta-num"><b>' + brl(realAno) + '</b> de ' + (metaAno ? brl(metaAno) : 'meta não definida') + (pA.pct != null ? ' · <b>' + pct(pA.pct) + '</b>' : '') + '</div></div>' +
         barraHtml(pA, tA) +
-        '<div class="barra-leg"><span>' + (pA.pct == null ? 'Defina as metas dos trimestres abaixo — a meta do ano é a soma dos quatro.' : pA.falta ? 'Faltam ' + brl(pA.falta) + ' para bater a meta do ano.' : 'Meta do ano batida!') + '</span>' +
+        '<div class="barra-leg"><span>' + (pA.pct == null ? 'Defina a meta de cada mês abaixo — trimestre e ano somam sozinhos.' : pA.falta ? 'Faltam ' + brl(pA.falta) + ' para bater a meta do ano.' : 'Meta do ano batida!') + '</span>' +
         (tA > 0 && tA < 1 ? '<span class="tempo">' + pct(tA) + ' do ano já passou</span>' : '') + '</div>';
 
       const triAtual = hoje.getFullYear() === sel.ano ? trimestreDoMes(hoje.getMonth() + 1) : 0;
+      const mesAtual = hoje.getFullYear() === sel.ano ? hoje.getMonth() + 1 : 0;
       g('meta-tris').innerHTML = [1, 2, 3, 4].map(t => {
-        const r = receitaTri(t), p = progressoMeta(metas[t], r), tt = fracaoDecorrida(sel.ano, t, hoje);
+        const meta = somaMetas(metas, mesesDoTri(t)), r = receitaTri(t), p = progressoMeta(meta, r), tt = fracaoDecorrida(sel.ano, t, hoje);
+        const meses = mesesDoTri(t).map(m => {
+          const pm = progressoMeta(metas[m], receitaMes(m));
+          return '<div class="mes-meta' + (m === mesAtual ? ' atual' : '') + '"><div class="mes-h"><label for="meta-' + m + '">' + MES_NOME[m - 1][0].toUpperCase() + MES_NOME[m - 1].slice(1) + '</label>' +
+            '<span class="mes-p">' + (pm.pct == null ? '' : pct(pm.pct)) + '</span></div>' +
+            '<input class="or-in" id="meta-' + m + '" data-mes="' + m + '" value="' + (metas[m] == null ? '' : numberToMoneyMasked(metas[m])) + '" placeholder="—" aria-label="Meta de ' + MES_NOME[m - 1] + '">' +
+            barraHtml(pm, 0, true) + '<div class="mes-r">Realizado: ' + brl(receitaMes(m)) + '</div></div>';
+        }).join('');
         return '<div class="tri' + (t === triAtual ? ' atual' : '') + '"><div class="tri-h"><span class="tri-n">' + t + 'º trimestre</span><span class="tri-m">' + MES_CURTO[(t - 1) * 3] + '–' + MES_CURTO[(t - 1) * 3 + 2] + '</span></div>' +
-          '<div><label for="meta-' + t + '">Meta de receita</label><input class="or-in" id="meta-' + t + '" data-tri="' + t + '" value="' + (metas[t] == null ? '' : numberToMoneyMasked(metas[t])) + '" placeholder="—"></div>' +
+          meses +
+          '<div class="tri-tot"><div class="tri-tot-h"><span>Meta do trimestre</span><b>' + (meta == null ? '—' : brl(meta)) + '</b></div>' +
           '<div class="tri-pct">' + (p.pct == null ? '—' : pct(p.pct)) + '</div>' + barraHtml(p, tt) +
-          '<div class="tri-s">Realizado: ' + brl(r) + (p.pct == null ? '' : '<br>' + (p.falta ? 'Faltam ' + brl(p.falta) : 'Meta batida')) + (tt > 0 && tt < 1 ? '<br>' + pct(tt) + ' do trimestre já passou' : '') + '</div></div>';
+          '<div class="tri-s">Realizado: ' + brl(r) + (p.pct == null ? '' : '<br>' + (p.falta ? 'Faltam ' + brl(p.falta) : 'Meta batida')) + (tt > 0 && tt < 1 ? '<br>' + pct(tt) + ' do trimestre já passou' : '') + '</div></div></div>';
       }).join('');
-      g('meta-tris').querySelectorAll('.or-in').forEach(el => { attachMoneyMask(el); el.classList.toggle('chg', metas[el.dataset.tri] !== metasOrig[el.dataset.tri]); });
+      g('meta-tris').querySelectorAll('.or-in').forEach(el => { attachMoneyMask(el); el.classList.toggle('chg', metas[el.dataset.mes] !== metasOrig[el.dataset.mes]); });
       g('dirty-metas').classList.toggle('on', dirtyCount(metas, metasOrig) > 0);
     }
     g('meta-tris').addEventListener('change', e => {
-      const el = e.target.closest('[data-tri]'); if (!el) return;
+      const el = e.target.closest('[data-mes]'); if (!el) return;
       const n = moneyToNumber(el.value);
-      if (n == null) delete metas[el.dataset.tri]; else metas[el.dataset.tri] = n;
+      if (n == null) delete metas[el.dataset.mes]; else metas[el.dataset.mes] = n;
       // Redesenha depois que o foco já foi para o próximo campo, e devolve o foco a ele.
       setTimeout(() => { const foco = document.activeElement && document.activeElement.id; renderMetas(); if (foco && g(foco)) g(foco).focus(); }, 0);
     });
     g('btn-save-metas').addEventListener('click', async () => {
       const ups = [], dels = [];
-      [1, 2, 3, 4].forEach(t => { if (metas[t] === metasOrig[t]) return; if (metas[t] == null) dels.push(t); else ups.push({ operacao: sel.op, ano: sel.ano, trimestre: t, valor: metas[t] }); });
+      for (let m = 1; m <= 12; m++) { if (metas[m] === metasOrig[m]) continue; if (metas[m] == null) dels.push(m); else ups.push({ operacao: sel.op, ano: sel.ano, mes: m, valor: metas[m] }); }
       if (!ups.length && !dels.length) return showToast('Nenhuma alteração para salvar.', 'green');
       const btn = g('btn-save-metas'); btn.disabled = true; btn.textContent = 'Salvando…';
       try {
-        if (ups.length) { const { error } = await sb.from('metas_receita').upsert(ups, { onConflict: 'operacao,ano,trimestre' }); if (error) throw error; }
-        if (dels.length) { const { error } = await sb.from('metas_receita').delete().eq('operacao', sel.op).eq('ano', sel.ano).in('trimestre', dels); if (error) throw error; }
+        if (ups.length) { const { error } = await sb.from('metas_receita').upsert(ups, { onConflict: 'operacao,ano,mes' }); if (error) throw error; }
+        if (dels.length) { const { error } = await sb.from('metas_receita').delete().eq('operacao', sel.op).eq('ano', sel.ano).in('mes', dels); if (error) throw error; }
         metasOrig = { ...metas }; renderMetas();
         showToast('Metas salvas.', 'green');
       } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
