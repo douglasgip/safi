@@ -109,3 +109,23 @@ test('metas por mês: a tela grava e lê por mês (não por trimestre)', () => {
   assert.doesNotMatch(codigo, /trimestre: t, valor/);
   assert.match(codigo, /data-mes="' \+ m \+ '"/);
 });
+
+test('filtro de operações igual ao DRE: liga/desliga, nunca fica vazio e mantém a ordem', () => {
+  const alternar = extrairFuncao(codigo, 'alternarOperacao', {});
+  const ordem = ['GIP', 'Exposicao', 'ViaCloset'];
+  const j = x => JSON.parse(JSON.stringify(x));
+  assert.deepStrictEqual(j(alternar(['GIP'], 'ViaCloset', ordem)), ['GIP', 'ViaCloset']);
+  assert.deepStrictEqual(j(alternar(['ViaCloset', 'GIP'], 'Exposicao', ordem)), ['GIP', 'Exposicao', 'ViaCloset']);
+  assert.deepStrictEqual(j(alternar(['GIP', 'ViaCloset'], 'GIP', ordem)), ['ViaCloset']);
+  assert.deepStrictEqual(j(alternar(['GIP'], 'GIP', ordem)), ['GIP'], 'a última operação não pode sair');
+});
+
+test('com mais de uma operação a tela soma e fica só para consulta; lançar exige uma só', () => {
+  assert.match(html, /id="sel-ops"/);
+  assert.doesNotMatch(html, /id="sel-op"/, 'a caixa de seleção única foi trocada pelos botões');
+  assert.match(codigo, /const editavel = \(\) => sel\.ops\.length === 1/);
+  assert.match(codigo, /\.in\('operacao', sel\.ops\)/);
+  assert.match(codigo, /if \(!editavel\(\)\) return;\n\s+const upserts/);
+  assert.match(codigo, /if \(!editavel\(\)\) return;\n\s+const ups = \[\]/);
+  assert.match(codigo, /operacao: sel\.ops\[0\]/);
+});

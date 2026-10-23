@@ -69,6 +69,12 @@
     .fe-select:focus { outline: none; border-color: #38bdf8; }
     select option { background: #0f172a; color: #f1f5f9; }
     .or-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .op-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .op-btns-l { font-size: 9px; font-weight: 700; color: #e2e8f0; letter-spacing: 2px; text-transform: uppercase; }
+    .op-btn { padding: 7px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: #64748b; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: all .18s cubic-bezier(.16,1,.3,1); }
+    .op-btn img { width: 20px; height: 20px; object-fit: cover; border-radius: 50%; flex-shrink: 0; opacity: .55; }
+    .op-btn.on { background: #18283e; border-color: rgba(255,255,255,0.15); color: #f1f5f9; box-shadow: inset 3px 0 0 var(--cor), 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
+    .op-btn.on img { opacity: 1; }
 
     .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
     .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
@@ -137,6 +143,7 @@
     .or-in { width: 92px; padding: 7px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
     .or-in:focus { outline: none; border-color: #38bdf8; background: rgba(56,189,248,0.08); }
     .or-in.chg { border-color: rgba(251,191,36,0.55); }
+    .or-in:disabled { opacity: .65; cursor: default; background: rgba(255,255,255,0.02); }
     .or-fill { width: 26px; height: 26px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #64748b; cursor: pointer; font-size: 12px; }
     .or-fill:hover { color: #7dd3fc; border-color: rgba(56,189,248,0.4); }
     .or-foot { font-size: 11px; color: #64748b; margin-top: 12px; line-height: 1.6; }
@@ -209,7 +216,7 @@
         <div class="fe-toolbar-sub">Orçamento = objetivo de <b>gasto</b> (só Gastos Operacionais). Meta = objetivo de <b>receita</b>, por mês (o trimestre e o ano somam sozinhos).</div>
       </div>
       <div class="or-controls">
-        <select class="fe-select" id="sel-op" aria-label="Operação"></select>
+        <div class="op-btns" id="sel-ops" role="group" aria-label="Operações"><span class="op-btns-l">Operações:</span></div>
         <select class="fe-select" id="sel-ano" aria-label="Ano"></select>
       </div>
     </div>
@@ -218,6 +225,8 @@
       <button class="tab active" id="tab-orc" type="button" data-aba="orc">Orçamento de Gastos Operacionais</button>
       <button class="tab" id="tab-metas" type="button" data-aba="metas">Metas</button>
     </div>
+
+    <div class="or-note" id="nota-multi" style="display:none"></div>
 
     <!-- ══ ORÇAMENTO DE GASTOS ══ -->
     <section id="aba-orc">
@@ -284,9 +293,9 @@
     wireSidebarToggle('or');
 
     const OPS = [
-      { id: 'GIP',       nome: 'GIP Ecommerce',      empresas: ['EP', 'GIP'] },
-      { id: 'Exposicao', nome: 'Exposição Paulista', empresas: ['Exposicao'] },
-      { id: 'ViaCloset', nome: 'Via Closet',         empresas: ['ViaCloset'] },
+      { id: 'GIP',       nome: 'GIP Ecommerce',      empresas: ['EP', 'GIP'],  logo: '/public/gipecommerce_logo.png',      cor: '#ffffff' },
+      { id: 'Exposicao', nome: 'Exposição Paulista', empresas: ['Exposicao'],  logo: '/public/exposicaopaulista_logo.png', cor: '#fff115' },
+      { id: 'ViaCloset', nome: 'Via Closet',         empresas: ['ViaCloset'],  logo: '/public/viacloset_logo.png',        cor: '#d4526e' },
     ];
     const MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
     const MES_NOME = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -320,6 +329,14 @@
       return { meses: [{ ano, mes }], ant: [mes === 1 ? { ano: ano - 1, mes: 12 } : { ano, mes: mes - 1 }] };
     }
     const trimestreDoMes = mes => Math.ceil(mes / 3);
+    // Filtro de operações (igual ao DRE): clicar liga/desliga; a última selecionada não pode sair.
+    // Devolve sempre na ordem de OPS_ORDEM.
+    function alternarOperacao(atuais, op, ordem) {
+      const tem = atuais.includes(op);
+      if (tem && atuais.length === 1) return atuais.slice();
+      const novo = tem ? atuais.filter(x => x !== op) : atuais.concat(op);
+      return ordem.filter(x => novo.includes(x));
+    }
     // Soma das metas dos meses informados (mês -> valor); null se nenhum deles tem meta lançada.
     function somaMetas(metas, meses) {
       let t = 0, tem = false;
@@ -347,7 +364,10 @@
     let real = {};                     // gastos reais: "ano|mes|subId" -> valor
     let receita = {};                  // receita bruta real: "ano|mes" -> valor
     let metas = {}, metasOrig = {};    // mês -> valor
-    let sel = { op: 'GIP', ano: new Date().getFullYear() };
+    let sel = { ops: ['GIP'], ano: new Date().getFullYear() };
+    // Lançar só com UMA operação selecionada; com 2 ou 3 a tela soma tudo e fica só para consulta.
+    const editavel = () => sel.ops.length === 1;
+    const nomeOps = () => sel.ops.map(id => OPS.find(o => o.id === id).nome).join(' + ');
     let aba = 'orc', vis = 'analise', chart = null;
 
     const k = (sid, m) => sid + '|' + m;
@@ -381,16 +401,19 @@
     }
 
     async function carregarDados() {
-      const op = OPS.find(o => o.id === sel.op);
+      const empresas = sel.ops.flatMap(id => OPS.find(o => o.id === id).empresas);
       const [orcRows, metaRows, valRows] = await Promise.all([
-        fetchAll(() => sb.from('orcamento_gastos').select('subcampo_id,mes,valor').eq('operacao', sel.op).eq('ano', sel.ano).order('id')),
-        fetchAll(() => sb.from('metas_receita').select('mes,valor').eq('operacao', sel.op).eq('ano', sel.ano).order('mes')),
-        fetchAll(() => sb.from('lancamentos_valores').select('subcampo_id,ano,mes,valor').in('ano', [sel.ano - 1, sel.ano]).in('empresa_id', op.empresas).order('id')),
+        fetchAll(() => sb.from('orcamento_gastos').select('subcampo_id,mes,valor').in('operacao', sel.ops).eq('ano', sel.ano).order('id')),
+        fetchAll(() => sb.from('metas_receita').select('mes,valor').in('operacao', sel.ops).eq('ano', sel.ano).order('id')),
+        fetchAll(() => sb.from('lancamentos_valores').select('subcampo_id,ano,mes,valor').in('ano', [sel.ano - 1, sel.ano]).in('empresa_id', empresas).order('id')),
       ]);
-      vals = {}; orig = {};
-      orcRows.forEach(r => { vals[k(r.subcampo_id, r.mes)] = +r.valor; orig[k(r.subcampo_id, r.mes)] = +r.valor; });
-      metas = {}; metasOrig = {};
-      metaRows.forEach(r => { metas[r.mes] = +r.valor; metasOrig[r.mes] = +r.valor; });
+      // Com mais de uma operação, orçamento e metas são a soma delas.
+      vals = {};
+      orcRows.forEach(r => { vals[k(r.subcampo_id, r.mes)] = (vals[k(r.subcampo_id, r.mes)] || 0) + (+r.valor); });
+      orig = { ...vals };
+      metas = {};
+      metaRows.forEach(r => { metas[r.mes] = (metas[r.mes] || 0) + (+r.valor); });
+      metasOrig = { ...metas };
       real = {}; receita = {};
       valRows.forEach(r => {
         const ch = campoClasse[subCampo[r.subcampo_id]];
@@ -494,9 +517,9 @@
           h += '<tr><td class="lbl" title="' + esc(s.nome) + '">' + esc(s.nome) + '</td>';
           for (let m = 1; m <= 12; m++) {
             const v = vals[k(s.id, m)];
-            h += '<td><input class="or-in" data-sub="' + s.id + '" data-mes="' + m + '" value="' + (v == null ? '' : numberToMoneyMasked(v)) + '" placeholder="—" aria-label="' + esc(s.nome) + ' ' + MES_CURTO[m - 1] + '"></td>';
+            h += '<td><input class="or-in"' + (editavel() ? '' : ' disabled') + ' data-sub="' + s.id + '" data-mes="' + m + '" value="' + (v == null ? '' : numberToMoneyMasked(v)) + '" placeholder="—" aria-label="' + esc(s.nome) + ' ' + MES_CURTO[m - 1] + '"></td>';
           }
-          h += '<td class="t" data-tot="' + s.id + '"></td><td><button type="button" class="or-fill" data-fill="' + s.id + '" title="Repetir o primeiro valor nos meses vazios">→</button></td></tr>';
+          h += '<td class="t" data-tot="' + s.id + '"></td><td><button type="button" class="or-fill"' + (editavel() ? '' : ' style="display:none"') + ' data-fill="' + s.id + '" title="Repetir o primeiro valor nos meses vazios">→</button></td></tr>';
         });
       });
       h += '<tr class="tot"><td class="lbl">Total de Gastos Operacionais</td>' + Array.from({ length: 13 }, (_, i) => '<td data-total="' + (i + 1) + '"></td>').join('') + '<td></td></tr>';
@@ -544,18 +567,19 @@
       showToast(n ? n + ' células preenchidas com o realizado de ' + (sel.ano - 1) + '. Revise e salve.' : 'Nada a preencher: sem realizado em ' + (sel.ano - 1) + ' ou células já preenchidas.', n ? 'green' : 'red');
     });
     g('btn-save').addEventListener('click', async () => {
+      if (!editavel()) return;
       const upserts = [], dels = {};
       new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(key => {
         if (vals[key] === orig[key]) return;
         const [sid, m] = key.split('|');
         if (vals[key] == null) (dels[m] = dels[m] || []).push(sid);
-        else upserts.push({ operacao: sel.op, ano: sel.ano, mes: +m, subcampo_id: sid, valor: vals[key] });
+        else upserts.push({ operacao: sel.ops[0], ano: sel.ano, mes: +m, subcampo_id: sid, valor: vals[key] });
       });
       if (!upserts.length && !Object.keys(dels).length) return showToast('Nenhuma alteração para salvar.', 'green');
       const btn = g('btn-save'); btn.disabled = true; btn.textContent = 'Salvando…';
       try {
         if (upserts.length) { const { error } = await sb.from('orcamento_gastos').upsert(upserts, { onConflict: 'operacao,ano,mes,subcampo_id' }); if (error) throw error; }
-        for (const m of Object.keys(dels)) { const { error } = await sb.from('orcamento_gastos').delete().eq('operacao', sel.op).eq('ano', sel.ano).eq('mes', +m).in('subcampo_id', dels[m]); if (error) throw error; }
+        for (const m of Object.keys(dels)) { const { error } = await sb.from('orcamento_gastos').delete().eq('operacao', sel.ops[0]).eq('ano', sel.ano).eq('mes', +m).in('subcampo_id', dels[m]); if (error) throw error; }
         orig = { ...vals }; recalc();
         showToast('Orçamento salvo.', 'green');
       } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
@@ -576,7 +600,7 @@
       const metaAno = somaMetas(metas, Array.from({ length: 12 }, (_, i) => i + 1));
       const realAno = [1, 2, 3, 4].reduce((a, t) => a + receitaTri(t), 0);
       const pA = progressoMeta(metaAno, realAno), tA = fracaoDecorrida(sel.ano, 0, hoje);
-      const nomeOp = OPS.find(o => o.id === sel.op).nome;
+      const nomeOp = nomeOps();
       g('meta-ano').innerHTML = '<div class="meta-top"><div class="meta-tit">Meta anual ' + sel.ano + ' — ' + esc(nomeOp) + '</div>' +
         '<div class="meta-num"><b>' + brl(realAno) + '</b> de ' + (metaAno ? brl(metaAno) : 'meta não definida') + (pA.pct != null ? ' · <b>' + pct(pA.pct) + '</b>' : '') + '</div></div>' +
         barraHtml(pA, tA) +
@@ -591,7 +615,7 @@
           const pm = progressoMeta(metas[m], receitaMes(m));
           return '<div class="mes-meta' + (m === mesAtual ? ' atual' : '') + '"><div class="mes-h"><label for="meta-' + m + '">' + MES_NOME[m - 1][0].toUpperCase() + MES_NOME[m - 1].slice(1) + '</label>' +
             '<span class="mes-p">' + (pm.pct == null ? '' : pct(pm.pct)) + '</span></div>' +
-            '<input class="or-in" id="meta-' + m + '" data-mes="' + m + '" value="' + (metas[m] == null ? '' : numberToMoneyMasked(metas[m])) + '" placeholder="—" aria-label="Meta de ' + MES_NOME[m - 1] + '">' +
+            '<input class="or-in"' + (editavel() ? '' : ' disabled') + ' id="meta-' + m + '" data-mes="' + m + '" value="' + (metas[m] == null ? '' : numberToMoneyMasked(metas[m])) + '" placeholder="—" aria-label="Meta de ' + MES_NOME[m - 1] + '">' +
             barraHtml(pm, 0, true) + '<div class="mes-r">Realizado: ' + brl(receitaMes(m)) + '</div></div>';
         }).join('');
         return '<div class="tri' + (t === triAtual ? ' atual' : '') + '"><div class="tri-h"><span class="tri-n">' + t + 'º trimestre</span><span class="tri-m">' + MES_CURTO[(t - 1) * 3] + '–' + MES_CURTO[(t - 1) * 3 + 2] + '</span></div>' +
@@ -611,13 +635,14 @@
       setTimeout(() => { const foco = document.activeElement && document.activeElement.id; renderMetas(); if (foco && g(foco)) g(foco).focus(); }, 0);
     });
     g('btn-save-metas').addEventListener('click', async () => {
+      if (!editavel()) return;
       const ups = [], dels = [];
-      for (let m = 1; m <= 12; m++) { if (metas[m] === metasOrig[m]) continue; if (metas[m] == null) dels.push(m); else ups.push({ operacao: sel.op, ano: sel.ano, mes: m, valor: metas[m] }); }
+      for (let m = 1; m <= 12; m++) { if (metas[m] === metasOrig[m]) continue; if (metas[m] == null) dels.push(m); else ups.push({ operacao: sel.ops[0], ano: sel.ano, mes: m, valor: metas[m] }); }
       if (!ups.length && !dels.length) return showToast('Nenhuma alteração para salvar.', 'green');
       const btn = g('btn-save-metas'); btn.disabled = true; btn.textContent = 'Salvando…';
       try {
         if (ups.length) { const { error } = await sb.from('metas_receita').upsert(ups, { onConflict: 'operacao,ano,mes' }); if (error) throw error; }
-        if (dels.length) { const { error } = await sb.from('metas_receita').delete().eq('operacao', sel.op).eq('ano', sel.ano).in('mes', dels); if (error) throw error; }
+        if (dels.length) { const { error } = await sb.from('metas_receita').delete().eq('operacao', sel.ops[0]).eq('ano', sel.ano).in('mes', dels); if (error) throw error; }
         metasOrig = { ...metas }; renderMetas();
         showToast('Metas salvas.', 'green');
       } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
@@ -625,7 +650,16 @@
     });
 
     // ── Navegação ───────────────────────────────────────────────────────────
+    function renderOps() {
+      g('sel-ops').innerHTML = '<span class="op-btns-l">Operações:</span>' + OPS.map(o => '<button type="button" class="op-btn' + (sel.ops.includes(o.id) ? ' on' : '') + '" data-op="' + o.id + '" style="--cor:' + o.cor + '" aria-pressed="' + sel.ops.includes(o.id) + '"><img src="' + o.logo + '" alt="">' + esc(o.nome) + '</button>').join('');
+      const nota = g('nota-multi');
+      nota.style.display = editavel() ? 'none' : '';
+      nota.innerHTML = editavel() ? '' : 'Mostrando a <b>soma</b> de ' + esc(nomeOps()) + '. Para lançar ou alterar orçamento e metas, deixe <b>só uma operação</b> selecionada.';
+      ['btn-save', 'btn-save-metas', 'btn-copy'].forEach(id => { g(id).style.display = editavel() ? '' : 'none'; });
+      g('inp-reaj').closest('label').style.display = editavel() ? '' : 'none';
+    }
     function render() {
+      renderOps();
       g('aba-orc').style.display = aba === 'orc' ? '' : 'none';
       g('aba-metas').style.display = aba === 'metas' ? '' : 'none';
       document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.aba === aba));
@@ -642,14 +676,19 @@
     document.querySelectorAll('.subtab').forEach(t => t.addEventListener('click', () => { vis = t.dataset.vis; render(); }));
     g('sel-per').addEventListener('change', renderAnalise);
 
-    async function trocar() {
-      const op = g('sel-op').value, ano = +g('sel-ano').value;
-      if (temPendencia() && !confirm('Há alterações não salvas. Descartar e trocar?')) { g('sel-op').value = sel.op; g('sel-ano').value = sel.ano; return; }
-      sel = { op, ano };
+    async function trocar(ops) {
+      const ano = +g('sel-ano').value;
+      if (temPendencia() && !confirm('Há alterações não salvas. Descartar e trocar?')) { g('sel-ano').value = sel.ano; return; }
+      sel = { ops: ops || sel.ops, ano };
+      try { localStorage.setItem('safi-orc-ops', JSON.stringify(sel.ops)); } catch (e) {}
       try { await carregarDados(); preencherPeriodos(); render(); } catch (err) { showToast('Erro ao carregar: ' + err.message, 'red'); }
     }
-    g('sel-op').addEventListener('change', trocar);
-    g('sel-ano').addEventListener('change', trocar);
+    g('sel-ops').addEventListener('click', e => {
+      const b = e.target.closest('[data-op]'); if (!b) return;
+      const novo = alternarOperacao(sel.ops, b.dataset.op, OPS.map(o => o.id));
+      if (novo.join() !== sel.ops.join()) trocar(novo);
+    });
+    g('sel-ano').addEventListener('change', () => trocar());
     window.addEventListener('beforeunload', e => { if (temPendencia()) { e.preventDefault(); e.returnValue = ''; } });
 
     async function init() {
@@ -660,10 +699,10 @@
       if (!prof || !(prof.is_admin || prof.can_orcamento === true)) return window.location.replace('/');
       SafiSidebar.apply('or', prof, { email: data.session.user.email, sb });
 
-      g('sel-op').innerHTML = OPS.map(o => '<option value="' + o.id + '">' + o.nome + '</option>').join('');
       const y = new Date().getFullYear();
       g('sel-ano').innerHTML = [y - 1, y, y + 1].map(a => '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>').join('');
-      sel = { op: OPS[0].id, ano: y };
+      sel = { ops: [OPS[0].id], ano: y };
+      try { const salvo = JSON.parse(localStorage.getItem('safi-orc-ops') || 'null'); if (Array.isArray(salvo)) { const ok = OPS.map(o => o.id).filter(id => salvo.includes(id)); if (ok.length) sel.ops = ok; } } catch (e) {}
       try { const a = localStorage.getItem('safi-orc-aba'); if (a === 'orc' || a === 'metas') aba = a; } catch (e) {}
       try { await carregarEstrutura(); await carregarDados(); }
       catch (err) { g('or-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
