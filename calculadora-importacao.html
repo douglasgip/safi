@@ -688,6 +688,11 @@
     // pela legislação) — só entra na base do ICMS, junto com Siscomex/AFRMM/
     // Outras despesas. ICMS calculado "por dentro" (BC = custo / (1-alíq)).
     // II nunca gera crédito, os demais seguem os checkboxes de aproveitamento. ──
+    // Fatia do frete internacional de um produto: pelo peso; se nenhum produto tiver peso informado,
+    // rateia pelo valor (antes o frete inteiro sumia do custo sem aviso).
+    function fatiaFrete(pesoKg, totalPeso, shareValor) {
+      return totalPeso > 0 ? pesoKg / totalPeso : shareValor;
+    }
     function calcularTudo() {
       const h = readHeader();
       const totalVMLEUSD = produtos.reduce((s, p) => s + p.qtd * p.valorUnitUSD, 0);
@@ -699,7 +704,7 @@
         const vmleUSD = p.qtd * p.valorUnitUSD;
         const vmleBRL = vmleUSD * h.cambio;
         const shareValor = totalVMLEUSD > 0 ? vmleUSD / totalVMLEUSD : 0;
-        const sharePeso = totalPeso > 0 ? p.pesoKg / totalPeso : 0;
+        const sharePeso = fatiaFrete(p.pesoKg, totalPeso, shareValor);
 
         const freteRat = sharePeso * (h.frete * h.cambio);
         const seguroRat = shareValor * (h.seguro * h.cambio);

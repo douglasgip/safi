@@ -378,7 +378,7 @@
     function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 
     function escapeHtml(s){
-      return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
     }
     function inlineMd(text){
       text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -795,14 +795,18 @@
       render();
       scheduleThinkingSteps(text, state.model, myGen);
 
+      // Tempo limite: se a resposta travar, avisa em vez de ficar "pensando" para sempre.
+      var ctrl = new AbortController(), timerLimite = setTimeout(function(){ ctrl.abort(); }, 170000);
       (window.UserMenu ? window.UserMenu.freshToken(sb, state.token) : Promise.resolve(state.token)).then(function(token){
         state.token = token;
         return fetch(EDGE_URL, {
           method:'POST',
           headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
-          body: JSON.stringify({ message:text, thread_id: state.threadId, model: state.model })
+          body: JSON.stringify({ message:text, thread_id: state.threadId, model: state.model }),
+          signal: ctrl.signal
         });
       }).then(function(r){ return r.json(); }).then(function(data){
+        clearTimeout(timerLimite);
         clearThinkingTimers();
         if (state.threadGen !== myGen) { state.loading = false; return; } // usuário trocou de conversa enquanto isso, ignora
         state.loading = false;
@@ -823,11 +827,14 @@
           renderSidebar();
         }
         render();
-      }).catch(function(){
+      }).catch(function(err){
+        clearTimeout(timerLimite);
         clearThinkingTimers();
         if (state.threadGen !== myGen) { state.loading = false; return; }
         state.loading = false;
-        var reply = { role:'assistant', content:'Erro de conexão com o GerônIA. Tente novamente em instantes.' };
+        var reply = { role:'assistant', content: err && err.name === 'AbortError'
+          ? 'O GerônIA demorou demais para responder. Tente de novo — se a pergunta for muito ampla, divida em partes menores.'
+          : 'Erro de conexão com o GerônIA. Tente novamente em instantes.' };
         state.messages.push(reply);
         state.pendingAnimate = reply;
         render();

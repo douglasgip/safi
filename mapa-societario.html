@@ -277,6 +277,11 @@
       return `<div class="map-canal-item"><span class="map-tag" style="margin:0">${esc(lbl)}</span></div>`;
     }
 
+    // Nome exibido da empresa; sem nome fantasia nem razão social, não derruba a tela.
+    function nomeEmpresa(e) {
+      const n = [e.nome_fantasia, e.nome_empresarial].map(x => String(x || '').trim()).find(Boolean);
+      return n || 'Empresa sem nome';
+    }
     function renderNodes(empresas) {
       const nodesEl = document.getElementById('map-nodes');
       const linesEl = document.getElementById('map-lines');
@@ -289,8 +294,8 @@
         const cx = x + NODE_W / 2;
         linesHtml += `<path d="M ${ROOT_CENTER_X} ${ROOT_BOTTOM_Y} C ${ROOT_CENTER_X} ${ROOT_BOTTOM_Y+90}, ${cx} ${NODE_Y-70}, ${cx} ${NODE_Y}" stroke="rgba(139,92,246,0.35)" stroke-width="2" fill="none" marker-end="url(#arrow)"></path>`;
 
-        const nome = e.nome_fantasia || e.nome_empresarial;
-        const initials = nome.split(/\s+/).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+        const nome = nomeEmpresa(e);
+        const initials = nome.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
         const regimeClass = e.regime_tributario === 'Lucro Real' ? 'lucro' : 'simples';
         const socios = (e.socios || []).map(s => `<span class="map-socio-pill">${esc(s.nome)} <span class="map-socio-pct">${s.percentual}%</span></span>`).join('');
         const operacoes = (e.operacoes || []).map(o => {

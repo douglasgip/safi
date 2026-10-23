@@ -25,6 +25,12 @@ function rateLimited(key: string): boolean {
   return calls.length > RATE_LIMIT_MAX
 }
 
+// O login do admin depende do e-mail fixo em ADMIN_EMAIL: trocar o e-mail da própria conta do admin
+// trancaria o painel administrativo para sempre. (O admin.html já trava o campo, mas a regra precisa valer aqui.)
+function trocaEmailDoAdminBloqueada(caller: { id: string; email?: string }, userId: string, email?: string): boolean {
+  return userId === caller.id && !!email && email.trim().toLowerCase() !== String(caller.email || '').toLowerCase()
+}
+
 Deno.serve(async (req: Request) => {
   const cors = corsFor(req)
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
@@ -48,6 +54,10 @@ Deno.serve(async (req: Request) => {
   // o admin.html sempre manda o formulário inteiro, mesmo campos sem alteração).
   const { data: beforeRows } = await sb.from('user_profiles').select('*').eq('id', user_id).limit(1)
   const before = beforeRows?.[0] || null
+  if (!before)
+    return new Response(JSON.stringify({ error: 'Usuário não encontrado' }), { status: 404, headers: { ...cors, 'Content-Type': 'application/json' } })
+  if (trocaEmailDoAdminBloqueada(caller!, user_id, email))
+    return new Response(JSON.stringify({ error: 'O e-mail da conta do administrador não pode ser alterado por aqui.' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
 
   const authUpdate: Record<string, string> = {}
   if (email) authUpdate.email = email

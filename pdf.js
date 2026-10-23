@@ -395,7 +395,9 @@
       if (window.UserMenu && window.UserMenu.freshToken) return window.UserMenu.freshToken(sb, token);
       return token;
     }).then(function (t) {
-      return fetch(url + '/functions/v1/geronia-chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }, body: JSON.stringify({ message: pergunta, model: 'standard' }) });
+      // Tempo limite: sem resposta em 170 s, o PDF sai sem o resumo (em vez de travar em "GerônIA analisando…").
+      var ctrl = new AbortController(); setTimeout(function () { ctrl.abort(); }, 170000);
+      return fetch(url + '/functions/v1/geronia-chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + t }, body: JSON.stringify({ message: pergunta, model: 'standard' }), signal: ctrl.signal });
     }).then(function (r) { return r.json(); }).then(function (d) {
       if (d && d.thread_id) { try { sb.from('geronia_threads').delete().eq('id', d.thread_id).then(function () {}, function () {}); } catch (e) {} }
       if (!d || !d.reply) throw new Error(d && d.error ? d.error : 'sem resposta');
