@@ -7,6 +7,8 @@
 //     nomeArquivo: () => 'SAFI-Painel-do-Conselho-2026-08',
 //     coletar: async (sel) => ({ blocos: [...], contextoIA: '...' })   // sel = { orientacao, opcoes:{id:true/false} }
 //   })
+//   semBotao: true  -> não põe o botão no topo; a tela chama SafiPdf.abrir() de onde quiser.
+//   filtrosNoPdf: false -> os filtros vão só para o registro, não são impressos no PDF.
 //
 // Blocos: { tipo:'kpis',    opcao, titulo?, itens:[{ l, v, vCor?, linhas?:[{ t, cor? }], barra? }] }
 //         { tipo:'graficos',opcao, titulo?, itens:[{ t, url, ratio }] }            (SafiPdf.imgDeCanvas gera url/ratio)
@@ -437,7 +439,7 @@
     y += lh + 8; linhaGradiente(M, y, CW); y += 12;
     doc.setFontSize(8); cor(COR.tx);
     var linhasMeta = [];
-    if (filtros.length) linhasMeta.push('Filtros:  ' + filtros.map(function (f) { return f[0] + ' - ' + f[1]; }).join('   |   '));
+    if (filtros.length && CFG.filtrosNoPdf !== false) linhasMeta.push('Filtros:  ' + filtros.map(function (f) { return f[0] + ' - ' + f[1]; }).join('   |   '));
     linhasMeta.push('Finalidade:  ' + sel.finalidade);
     linhasMeta.forEach(function (l, i) {
       var partes = doc.splitTextToSize(limpa(l), CW);
@@ -615,8 +617,8 @@
     CFG = cfg; injetarEstilo();
     var acc = cfg.accent || '#38bdf8';
     document.documentElement.style.setProperty('--sp-acc', acc); document.documentElement.style.setProperty('--sp-rgb', hexRgb(acc));
-    colocarBotao();
+    if (!cfg.semBotao) colocarBotao();
   }
 
-  window.SafiPdf = { iniciar: iniciar, imgDeCanvas: imgDeCanvas, aviso: aviso };
+  window.SafiPdf = { iniciar: iniciar, abrir: function () { abrirJanela(); }, imgDeCanvas: imgDeCanvas, aviso: aviso };
 })();

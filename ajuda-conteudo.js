@@ -362,12 +362,13 @@ window.SAFI_AJUDA = { telas: {
   },
 
   reunioes: {
-    titulo: 'Reuniões e Decisões', versao: 1,
+    titulo: 'Reuniões e Decisões', versao: 2,
     resumo: 'Registre as <b>reuniões</b> (pauta e ata) e acompanhe o que ficou decidido: <b>quem faz, até quando e em que pé está</b> cada ação.',
     passos: [
       { t: 'Registre a reunião', d: '<b>Nova reunião</b>: título, data, tipo, participantes, pauta e ata.' },
       { t: 'Crie as ações', d: 'Dentro da reunião, <b>Adicionar ação</b>: o que fazer, responsável, prazo, operação e situação.' },
       { t: 'Acompanhe', d: 'Na aba <b>Ações e decisões</b>, filtre por situação, responsável e operação. As <b>vencidas</b> ficam em vermelho.' },
+      { t: 'Exporte a ata em PDF', d: 'Com a reunião aberta, clique em <b>Exportar PDF</b> e marque o que deve aparecer (título, data, tipo, participantes, pauta, ata). Por padrão saem só o <b>título</b> e a <b>ata</b>.' },
       { t: 'Atualize o andamento', d: 'O responsável muda a situação da própria ação: <b>Aberta → Em andamento → Concluída</b> (ou Cancelada).' },
     ],
     dicas: ['O histórico de cada ação (criada, prazo, responsável, situação) fica registrado e não pode ser apagado.', 'O responsável pode ser alguém sem conta no SAFI — digite o nome.', 'Só o admin exclui; prefira marcar como <b>Cancelada</b>.'],

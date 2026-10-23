@@ -17,6 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/user-menu.js"></script>
   <script src="/sidebar.js"></script>
+  <script src="/pdf.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
@@ -284,6 +285,7 @@
       </div>
       <div class="modal-actions">
         <button class="btn-primary" id="reu-save" type="button">Salvar</button>
+        <button class="btn-ghost" id="reu-pdf" type="button" style="display:none">Exportar PDF</button>
         <button class="btn-danger" id="reu-del" type="button" style="display:none">Excluir</button>
         <button class="btn-cancel" type="button" onclick="closeModal('reu-modal')">Fechar</button>
       </div>
@@ -420,6 +422,33 @@
 
     function renderTudo() { respFilterOptions(); renderAcoes(); renderReunioes(); }
 
+    // ── PDF da reunião ─────────────────────────────────────────────────────
+    // O que pode entrar no PDF; por padrão só o título e a ata (pedido do Douglas).
+    const PDF_REUNIAO_OPCOES = [
+      { id: 'titulo', label: 'Título', padrao: true },
+      { id: 'data', label: 'Data', padrao: false },
+      { id: 'tipo', label: 'Tipo', padrao: false },
+      { id: 'participantes', label: 'Participantes', padrao: false },
+      { id: 'pauta', label: 'Pauta', padrao: false },
+      { id: 'ata', label: 'Ata / resumo do que foi tratado', padrao: true },
+    ];
+    // Blocos do PDF a partir da reunião e das caixas marcadas (sel.opcoes).
+    function blocosReuniao(r, op, tipoLabel, fmtData) {
+      const blocos = [];
+      if (op.titulo) blocos.push({ tipo: 'texto', titulo: r.titulo || 'Reunião', texto: '' });
+      const info = [];
+      if (op.data && r.data) info.push(['Data', fmtData(r.data)]);
+      if (op.tipo && r.tipo) info.push(['Tipo', tipoLabel[r.tipo] || r.tipo]);
+      if (op.participantes && r.participantes) info.push(['Participantes', r.participantes]);
+      if (info.length) blocos.push({ tipo: 'tabela', colunas: [{ h: 'Informação', larg: 1 }, { h: '', larg: 4 }], linhas: info.map(x => ({ c: x })) });
+      if (op.pauta && r.pauta) blocos.push({ tipo: 'texto', titulo: 'Pauta', texto: r.pauta });
+      if (op.ata) blocos.push({ tipo: 'texto', titulo: 'Ata / resumo do que foi tratado', texto: r.ata || '(sem ata registrada)' });
+      return blocos;
+    }
+    // Lê o que está na janela agora (o que a pessoa está vendo).
+    const reuniaoDoFormulario = () => ({ titulo: g('reu-titulo').value.trim(), data: g('reu-data').value, tipo: g('reu-tipo').value, participantes: g('reu-part').value.trim(), pauta: g('reu-pauta').value.trim(), ata: g('reu-ata').value.trim() });
+    g('reu-pdf').addEventListener('click', () => { if (window.SafiPdf) SafiPdf.abrir(); });
+
     // ── Modal: reunião ─────────────────────────────────────────────────────
     function abrirReuniao(id) {
       reuAtual = id ? reunioes.find(r => r.id === id) : null;
@@ -434,6 +463,7 @@
       ['reu-titulo', 'reu-data', 'reu-tipo', 'reu-part', 'reu-pauta', 'reu-ata'].forEach(x => { g(x).disabled = !podeEditar; });
       g('reu-save').style.display = podeEditar ? '' : 'none';
       g('reu-del').style.display = ehAdmin && reuAtual ? '' : 'none';
+      g('reu-pdf').style.display = reuAtual ? '' : 'none';
       g('reu-add-acao').style.display = podeEditar ? '' : 'none';
       renderReuAcoes();
       openModal('reu-modal');
@@ -567,6 +597,13 @@
       me.id = data.session.user.id;
       ehAdmin = !!me.is_admin; podeEditar = ehAdmin || me.can_reunioes_editar === true;
       SafiSidebar.apply('re', me, { email: data.session.user.email, sb });
+      if (window.SafiPdf) SafiPdf.iniciar({
+        chave: 'reunioes', titulo: 'Ata de reunião', sb, profile: me, semBotao: true, filtrosNoPdf: false,
+        opcoes: PDF_REUNIAO_OPCOES,
+        filtros: () => { const r = reuniaoDoFormulario(); return [['Reunião', (r.titulo || '—') + ' (' + fmtD(r.data) + ')']]; },
+        nomeArquivo: () => { const r = reuniaoDoFormulario(); return 'SAFI-Reuniao-' + (r.data || '') + '-' + (r.titulo || '').slice(0, 40); },
+        coletar: sel => { const r = reuniaoDoFormulario(); return { blocos: blocosReuniao(r, sel.opcoes, TIPO_LABEL, fmtD), subtitulo: '' }; },
+      });
       try { await carregar(); } catch (err) { g('re-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
       if (podeEditar) {
         g('re-actions').innerHTML = '<button class="btn-primary" id="btn-nova-acao" type="button" style="flex:0 0 auto;padding:11px 18px">+ Nova ação</button><button class="btn-ghost" id="btn-nova-reu" type="button">+ Nova reunião</button><a class="btn-ghost" href="/geraudio" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex;align-items:center">Ger Áudio</a>';
