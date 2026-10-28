@@ -149,6 +149,33 @@
     .field .chk-line input[type="checkbox"] { width: auto; padding: 0; accent-color: #38bdf8; }
     .modal-actions .btn-ghost { flex-shrink: 0; }
 
+    /* Caixa: tipo, lojas do rateio e gastos */
+    .seg { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 3px; }
+    .seg button { padding: 8px 16px; background: transparent; border: none; border-radius: 7px; color: #64748b; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .seg button.on { background: rgba(56,189,248,0.18); color: #7dd3fc; }
+    .lojas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .loja { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; background: rgba(255,255,255,0.03); cursor: pointer; user-select: none; }
+    .loja.on { border-color: rgba(56,189,248,0.5); background: rgba(56,189,248,0.08); }
+    .loja-n { display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700; color: #cbd5e1; }
+    .loja-n img { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; opacity: .5; }
+    .loja.on .loja-n img { opacity: 1; }
+    .loja-v { font-size: 12px; color: #64748b; font-variant-numeric: tabular-nums; }
+    .loja.on .loja-v { color: #7dd3fc; font-weight: 700; }
+    .gasto-row { display: grid; grid-template-columns: 1.1fr 1.4fr auto 30px; gap: 8px; align-items: center; margin-bottom: 8px; }
+    .gasto-row input, .gasto-row select { width: 100%; padding: 10px 11px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; }
+    .gasto-row .seg button { padding: 7px 11px; font-size: 12px; }
+    .gasto-del { width: 30px; height: 30px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #94a3b8; cursor: pointer; font-size: 15px; line-height: 1; }
+    .gasto-del:hover { color: #fca5a5; border-color: rgba(248,113,113,0.4); }
+    .saldo-box { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 13px 15px; border-radius: 12px; background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.25); margin-top: 6px; }
+    .saldo-box .l { font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #94a3b8; }
+    .saldo-box .s { font-size: 11.5px; color: #64748b; margin-top: 2px; }
+    .saldo-box .v { font-size: 20px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; }
+    .saldo-box .v.neg { color: #fca5a5; }
+    .tipo-b { display: inline-block; padding: 2px 9px; border-radius: 8px; font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; }
+    .tipo-saque { background: rgba(56,189,248,0.15); color: #7dd3fc; } .tipo-sangria { background: rgba(251,191,36,0.15); color: #fcd34d; }
+    .ac-wrap .ac-seta { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 10px; pointer-events: none; }
+    @media (max-width: 600px) { .lojas { grid-template-columns: 1fr; } .gasto-row { grid-template-columns: 1fr 1fr; } }
+
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
     .toast.visible { opacity: 1; pointer-events: auto; }
     .toast-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -181,7 +208,7 @@
     <div class="fe-toolbar">
       <div>
         <h1>Tesouraria</h1>
-        <div class="fe-toolbar-sub">Cheques emitidos e caixa/adiantamentos por portador — separado das Despesas Fixas.</div>
+        <div class="fe-toolbar-sub">Cheques emitidos e caixa (saques e sangrias por portador) — separado das Despesas Fixas.</div>
       </div>
       <div style="display:flex;gap:10px">
         <button class="btn-primary" id="btn-novo-cheque" type="button">+ Novo cheque</button>
@@ -221,13 +248,13 @@
     <!-- ══ ABA: CAIXA ══ -->
     <div id="tab-caixa" style="display:none">
       <div class="kpi-grid">
-        <div class="kpi"><div class="kpi-l">Total entradas</div><div class="kpi-v" id="kpi-entradas" style="color:#6ee7b7">R$ 0,00</div></div>
-        <div class="kpi"><div class="kpi-l">Total saídas</div><div class="kpi-v" id="kpi-saidas" style="color:#fca5a5">R$ 0,00</div></div>
-        <div class="kpi"><div class="kpi-l">Saldo em caixa (todos portadores)</div><div class="kpi-v" id="kpi-saldo">R$ 0,00</div></div>
+        <div class="kpi"><div class="kpi-l">Total enviado (saques e sangrias)</div><div class="kpi-v" id="kpi-entradas" style="color:#6ee7b7">R$ 0,00</div></div>
+        <div class="kpi"><div class="kpi-l">Total gasto</div><div class="kpi-v" id="kpi-saidas" style="color:#fca5a5">R$ 0,00</div></div>
+        <div class="kpi"><div class="kpi-l">Saldo com os portadores</div><div class="kpi-v" id="kpi-saldo">R$ 0,00</div></div>
       </div>
 
       <div class="panel" id="panel-portadores">
-        <div class="panel-head">Saldo por portador</div>
+        <div class="panel-head">Saldo por portador (enviado − gastos)</div>
         <div class="port-grid" id="port-grid"></div>
       </div>
 
@@ -289,36 +316,30 @@
   <div class="modal-overlay" id="ts-modal">
     <div class="modal-card">
       <div class="modal-title" id="ts-modal-title">Novo Lançamento</div>
-      <div class="modal-sub">Cada linha é um lançamento de caixa: uma entrada (empresa entrega dinheiro ao portador) ou uma saída (portador gastou/prestou contas).</div>
+      <div class="modal-sub">Um saque ou sangria entregue a um portador, dividido entre as lojas escolhidas. Depois lance os gastos um a um: o saldo final é o valor enviado menos os gastos.</div>
       <div class="modal-error" id="ts-modal-error"></div>
       <form id="ts-form" autocomplete="off">
+        <div class="field"><label>Tipo</label>
+          <div class="seg" id="ts-tipo" role="radiogroup" aria-label="Tipo de lançamento"><button type="button" data-tipo="saque" class="on">Saque</button><button type="button" data-tipo="sangria">Sangria</button></div>
+        </div>
         <div class="grid2">
           <div class="field"><label for="ts-data">Data</label><input type="date" id="ts-data" required></div>
-          <div class="field"><label for="ts-portador">Portador (quem está com o dinheiro)</label><input type="text" id="ts-portador" placeholder="Nome de quem recebeu/gastou" required autocomplete="off"></div>
+          <div class="field"><label for="ts-portador">Portador (quem está com o dinheiro)</label><input type="text" id="ts-portador" placeholder="Digite ou escolha um nome" required autocomplete="off"></div>
         </div>
         <div class="field"><label for="ts-finalidade">Finalidade</label><input type="text" id="ts-finalidade" placeholder="Ex.: Compra no Brás, viagem a São Paulo…"></div>
-        <div class="grid2">
-          <div class="field"><label for="ts-entrada">Entrada (R$)</label><input type="text" inputmode="decimal" id="ts-entrada" placeholder="0,00"></div>
-          <div class="field"><label for="ts-saida">Saída (R$)</label><input type="text" inputmode="decimal" id="ts-saida" placeholder="0,00"></div>
-        </div>
-        <div class="field"><label for="ts-consumido">Valor consumido (na finalidade principal)</label><input type="text" inputmode="decimal" id="ts-consumido" placeholder="0,00"></div>
+        <div class="field"><label for="ts-valor">Valor enviado (R$)</label><input type="text" inputmode="decimal" id="ts-valor" placeholder="0,00" required></div>
 
-        <div class="section-lbl">Despesas (viagem, se houver)</div>
-        <div class="grid4">
-          <div class="field"><label for="ts-viagem">Viagem</label><input type="text" inputmode="decimal" id="ts-viagem" placeholder="0,00"></div>
-          <div class="field"><label for="ts-hospedagem">Hospedagem</label><input type="text" inputmode="decimal" id="ts-hospedagem" placeholder="0,00"></div>
-          <div class="field"><label for="ts-refeicao">Refeição</label><input type="text" inputmode="decimal" id="ts-refeicao" placeholder="0,00"></div>
-          <div class="field"><label for="ts-locomocao">Locomoção</label><input type="text" inputmode="decimal" id="ts-locomocao" placeholder="0,00"></div>
-        </div>
+        <div class="section-lbl">Lojas que entram no rateio</div>
+        <div class="lojas" id="ts-lojas"></div>
+        <div class="field-hint" id="ts-lojas-hint">O valor enviado é dividido igualmente entre as lojas marcadas.</div>
 
-        <div class="section-lbl">Rateio entre empresas (opcional)</div>
-        <div class="grid2" style="grid-template-columns:1fr 1fr 1fr;gap:10px">
-          <div class="field"><label for="ts-rat-exp">Exposição Paulista</label><input type="text" inputmode="decimal" id="ts-rat-exp" placeholder="0,00"></div>
-          <div class="field"><label for="ts-rat-via">Via Closet</label><input type="text" inputmode="decimal" id="ts-rat-via" placeholder="0,00"></div>
-          <div class="field"><label for="ts-rat-gip">GIP</label><input type="text" inputmode="decimal" id="ts-rat-gip" placeholder="0,00"></div>
-        </div>
+        <div class="section-lbl">Gastos</div>
+        <div id="ts-gastos"></div>
+        <button type="button" class="btn-ghost" id="ts-add-gasto">+ Adicionar gasto</button>
 
-        <div class="field"><label for="ts-obs">Observações</label><textarea id="ts-obs" placeholder="Opcional"></textarea></div>
+        <div class="saldo-box"><div><div class="l">Saldo final</div><div class="s" id="ts-saldo-sub">Valor enviado − gastos</div></div><div class="v" id="ts-saldo">R$ 0,00</div></div>
+
+        <div class="field" style="margin-top:14px"><label for="ts-obs">Observações</label><textarea id="ts-obs" placeholder="Opcional"></textarea></div>
 
         <div class="modal-actions">
           <button type="button" class="btn-cancel" id="ts-btn-cancelar">Cancelar</button>
@@ -370,6 +391,7 @@
       const wrap = document.createElement('div'); wrap.className = 'ac-wrap';
       input.parentNode.insertBefore(wrap, input); wrap.appendChild(input);
       const box = document.createElement('div'); box.className = 'ac-box'; wrap.appendChild(box);
+      const seta = document.createElement('span'); seta.className = 'ac-seta'; seta.textContent = '▾'; wrap.appendChild(seta);
       let items = [], activeIdx = -1;
       function render() {
         const q = input.value.trim().toLowerCase();
@@ -393,21 +415,45 @@
       document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
     }
 
-    // ── Saldo corrente por portador (ordem: data, depois criação) ──
+    // ── Regras do caixa (testadas em tests/tesouraria.test.js) ──
+    const LOJAS = [
+      { id: 'Exposicao', nome: 'Exposição Paulista', curto: 'EXP', logo: '/public/exposicaopaulista_logo.png', cls: 'rat-exp' },
+      { id: 'ViaCloset', nome: 'Via Closet', curto: 'VIA', logo: '/public/viacloset_logo.png', cls: 'rat-via' },
+      { id: 'GIP', nome: 'GIP', curto: 'GIP', logo: '/public/gipecommerce_logo.png', cls: 'rat-gip' },
+    ];
+    const CATEGORIAS = [['viagem', 'Viagem'], ['hospedagem', 'Hospedagem'], ['refeicao', 'Refeição'], ['locomocao', 'Locomoção'], ['outros', 'Outros']];
+    const NOME_CAT = Object.fromEntries(CATEGORIAS);
+    // Divide o valor igualmente entre as lojas, em centavos; a sobra de centavo fica com a primeira.
+    function dividirRateio(valor, lojas) {
+      if (!lojas.length) return {};
+      const cent = Math.round((valor || 0) * 100), parte = Math.floor(cent / lojas.length), sobra = cent - parte * lojas.length;
+      const out = {};
+      lojas.forEach((l, i) => { out[l] = (parte + (i === 0 ? sobra : 0)) / 100; });
+      return out;
+    }
+    const totalGastos = gastos => Math.round((gastos || []).reduce((a, x) => a + (+x.valor || 0), 0) * 100) / 100;
+    const saldoFinal = (valor, gastos) => Math.round(((+valor || 0) - totalGastos(gastos)) * 100) / 100;
+    function gastosPorCategoria(gastos) {
+      const out = {};
+      (gastos || []).forEach(x => { if (+x.valor) out[x.categoria] = Math.round(((out[x.categoria] || 0) + (+x.valor)) * 100) / 100; });
+      return out;
+    }
+
+    // ── Saldo por portador = soma de (valor enviado − gastos) dos lançamentos dele ──
     function calcularSaldos() {
-      const porPortador = {}; // nome -> saldo corrente
+      const porPortador = {};
       const comSaldo = allRows.map(r => {
         const chave = (r.portador || '').trim();
-        const atual = (porPortador[chave] || 0) + (+r.entrada || 0) - (+r.saida || 0);
-        porPortador[chave] = atual;
-        return { ...r, saldoCorrente: atual };
+        const saldo = saldoFinal(r.valor_enviado, r.gastos);
+        porPortador[chave] = Math.round(((porPortador[chave] || 0) + saldo) * 100) / 100;
+        return { ...r, saldo };
       });
       return { comSaldo, porPortador };
     }
 
     function renderKpisEPortadores(porPortador) {
-      const totE = allRows.reduce((a, r) => a + (+r.entrada || 0), 0);
-      const totS = allRows.reduce((a, r) => a + (+r.saida || 0), 0);
+      const totE = allRows.reduce((a, r) => a + (+r.valor_enviado || 0), 0);
+      const totS = allRows.reduce((a, r) => a + totalGastos(r.gastos), 0);
       g('kpi-entradas').textContent = brl(totE);
       g('kpi-saidas').textContent = brl(totS);
       g('kpi-saldo').textContent = brl(totE - totS);
@@ -419,10 +465,8 @@
     }
 
     function badgesRateio(r) {
-      const b = [];
-      if (+r.rateio_exposicao) b.push('<span class="rat-b rat-exp">EXP ' + brl(r.rateio_exposicao) + '</span>');
-      if (+r.rateio_viacloset) b.push('<span class="rat-b rat-via">VIA ' + brl(r.rateio_viacloset) + '</span>');
-      if (+r.rateio_gip) b.push('<span class="rat-b rat-gip">GIP ' + brl(r.rateio_gip) + '</span>');
+      const div = dividirRateio(+r.valor_enviado, r.rateio_ops || []);
+      const b = LOJAS.filter(l => (r.rateio_ops || []).includes(l.id)).map(l => '<span class="rat-b ' + l.cls + '">' + l.curto + ' ' + brl(div[l.id]) + '</span>');
       return b.length ? '<div class="rat-badges">' + b.join('') + '</div>' : '<span class="muted">—</span>';
     }
 
@@ -438,22 +482,21 @@
         return true;
       }).slice().reverse(); // mais recentes primeiro
 
-      if (!linhas.length) {
-        g('tbl-lanc').innerHTML = '<thead><tr><th>Data</th><th>Portador</th><th>Finalidade</th><th class="num">Entrada</th><th class="num">Saída</th><th class="num">Despesas</th><th>Rateio</th><th class="num">Saldo portador</th><th></th></tr></thead><tbody><tr><td colspan="9"><div class="empty">Nenhum lançamento ainda.</div></td></tr></tbody>';
-        return;
-      }
-      g('tbl-lanc').innerHTML = '<thead><tr><th>Data</th><th>Portador</th><th>Finalidade</th><th class="num">Entrada</th><th class="num">Saída</th><th class="num">Despesas</th><th>Rateio</th><th class="num">Saldo portador</th><th></th></tr></thead><tbody>' +
+      const cab = '<thead><tr><th>Data</th><th>Tipo</th><th>Portador</th><th>Finalidade</th><th class="num">Enviado</th><th class="num">Gastos</th><th class="num">Saldo final</th><th>Rateio</th><th></th></tr></thead>';
+      if (!linhas.length) { g('tbl-lanc').innerHTML = cab + '<tbody><tr><td colspan="9"><div class="empty">Nenhum lançamento ainda.</div></td></tr></tbody>'; return; }
+      g('tbl-lanc').innerHTML = cab + '<tbody>' +
         linhas.map(r => {
-          const despesas = (+r.despesa_viagem || 0) + (+r.despesa_hospedagem || 0) + (+r.despesa_refeicao || 0) + (+r.despesa_locomocao || 0);
+          const tg = totalGastos(r.gastos), cats = gastosPorCategoria(r.gastos);
+          const detalhe = Object.keys(cats).map(c => (NOME_CAT[c] || c) + ' ' + brl(cats[c])).join(' · ');
           return '<tr class="click" data-id="' + r.id + '">' +
             '<td>' + fmtDate(r.data) + '</td>' +
+            '<td><span class="tipo-b tipo-' + r.tipo + '">' + (r.tipo === 'sangria' ? 'Sangria' : 'Saque') + '</span></td>' +
             '<td>' + esc(r.portador) + '</td>' +
             '<td>' + (r.finalidade ? esc(r.finalidade) : '<span class="muted">—</span>') + '</td>' +
-            '<td class="num entrada-v">' + (+r.entrada ? brl(r.entrada) : '<span class="muted">—</span>') + '</td>' +
-            '<td class="num saida-v">' + (+r.saida ? brl(r.saida) : '<span class="muted">—</span>') + '</td>' +
-            '<td class="num">' + (despesas ? brl(despesas) : '<span class="muted">—</span>') + '</td>' +
+            '<td class="num entrada-v">' + brl(r.valor_enviado) + '</td>' +
+            '<td class="num saida-v"' + (detalhe ? ' title="' + esc(detalhe) + '"' : '') + '>' + (tg ? brl(tg) : '<span class="muted">—</span>') + '</td>' +
+            '<td class="num' + (r.saldo < 0 ? ' saida-v' : '') + '">' + brl(r.saldo) + '</td>' +
             '<td>' + badgesRateio(r) + '</td>' +
-            '<td class="num">' + brl(r.saldoCorrente) + '</td>' +
             '<td><div class="row-actions"><button type="button" class="icon-btn" data-editar="' + r.id + '" title="Editar">✎</button></div></td>' +
           '</tr>';
         }).join('') + '</tbody>';
@@ -463,10 +506,60 @@
       g('f-portador').innerHTML = '<option value="">Todos os portadores</option>' + distintosPortadores().map(p => '<option value="' + esc(p) + '">' + esc(p) + '</option>').join('');
     }
 
-    // ── Modal ──
+    // ── Formulário ──
+    let tipoAtual = 'saque', lojasSel = [], gastosForm = [];
+    function setTipo(t) { tipoAtual = t; g('ts-tipo').querySelectorAll('[data-tipo]').forEach(b => b.classList.toggle('on', b.dataset.tipo === t)); }
+    function renderLojas() {
+      const div = dividirRateio(moneyToNumber(g('ts-valor').value) || 0, lojasSel);
+      g('ts-lojas').innerHTML = LOJAS.map(l => '<div class="loja' + (lojasSel.includes(l.id) ? ' on' : '') + '" data-loja="' + l.id + '" role="checkbox" aria-checked="' + lojasSel.includes(l.id) + '" tabindex="0">' +
+        '<div class="loja-n"><img src="' + l.logo + '" alt="">' + esc(l.nome) + '</div><div class="loja-v">' + (lojasSel.includes(l.id) ? brl(div[l.id]) : 'fora do rateio') + '</div></div>').join('');
+    }
+    function renderGastos() {
+      g('ts-gastos').innerHTML = gastosForm.map((x, i) =>
+        '<div class="gasto-row" data-i="' + i + '">' +
+          '<input type="text" inputmode="decimal" class="g-valor" placeholder="Valor" value="' + (x.valor ? numberToMoneyMasked(x.valor) : '') + '" aria-label="Valor do gasto">' +
+          '<select class="g-cat" aria-label="Categoria">' + CATEGORIAS.map(([v, n]) => '<option value="' + v + '"' + (x.categoria === v ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>' +
+          '<div class="seg g-forma" role="radiogroup" aria-label="Forma de pagamento"><button type="button" data-forma="dinheiro"' + (x.forma !== 'pix' ? ' class="on"' : '') + '>Dinheiro</button><button type="button" data-forma="pix"' + (x.forma === 'pix' ? ' class="on"' : '') + '>Pix</button></div>' +
+          '<button type="button" class="gasto-del" title="Remover gasto" aria-label="Remover gasto">×</button>' +
+        '</div>').join('');
+      g('ts-gastos').querySelectorAll('.g-valor').forEach(el => attachMoneyMask(el));
+      atualizarSaldo();
+    }
+    function atualizarSaldo() {
+      const valor = moneyToNumber(g('ts-valor').value) || 0;
+      const sf = saldoFinal(valor, gastosForm);
+      g('ts-saldo').textContent = brl(sf);
+      g('ts-saldo').classList.toggle('neg', sf < 0);
+      g('ts-saldo-sub').textContent = brl(valor) + ' enviado − ' + brl(totalGastos(gastosForm)) + ' em gastos';
+    }
+    g('ts-tipo').addEventListener('click', e => { const b = e.target.closest('[data-tipo]'); if (b) setTipo(b.dataset.tipo); });
+    g('ts-valor').addEventListener('input', () => { renderLojas(); atualizarSaldo(); });
+    const alternarLoja = el => { const id = el.dataset.loja; lojasSel = lojasSel.includes(id) ? lojasSel.filter(x => x !== id) : LOJAS.map(l => l.id).filter(x => x === id || lojasSel.includes(x)); renderLojas(); };
+    g('ts-lojas').addEventListener('click', e => { const el = e.target.closest('[data-loja]'); if (el) alternarLoja(el); });
+    g('ts-lojas').addEventListener('keydown', e => { const el = e.target.closest('[data-loja]'); if (el && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); alternarLoja(el); } });
+    g('ts-add-gasto').addEventListener('click', () => { gastosForm.push({ valor: 0, categoria: 'viagem', forma: 'dinheiro' }); renderGastos(); const v = g('ts-gastos').querySelectorAll('.g-valor'); if (v.length) v[v.length - 1].focus(); });
+    g('ts-gastos').addEventListener('input', e => {
+      const row = e.target.closest('.gasto-row'); if (!row) return;
+      const x = gastosForm[+row.dataset.i];
+      if (e.target.classList.contains('g-valor')) { x.valor = moneyToNumber(e.target.value) || 0; atualizarSaldo(); }
+    });
+    g('ts-gastos').addEventListener('change', e => {
+      const row = e.target.closest('.gasto-row'); if (!row) return;
+      if (e.target.classList.contains('g-cat')) gastosForm[+row.dataset.i].categoria = e.target.value;
+    });
+    g('ts-gastos').addEventListener('click', e => {
+      const row = e.target.closest('.gasto-row'); if (!row) return;
+      const i = +row.dataset.i;
+      const f = e.target.closest('[data-forma]');
+      if (f) { gastosForm[i].forma = f.dataset.forma; row.querySelectorAll('[data-forma]').forEach(b => b.classList.toggle('on', b === f)); return; }
+      if (e.target.closest('.gasto-del')) { gastosForm.splice(i, 1); renderGastos(); }
+    });
+
     function limparForm() {
-      ['ts-portador', 'ts-finalidade', 'ts-entrada', 'ts-saida', 'ts-consumido', 'ts-viagem', 'ts-hospedagem', 'ts-refeicao', 'ts-locomocao', 'ts-rat-exp', 'ts-rat-via', 'ts-rat-gip', 'ts-obs'].forEach(id => g(id).value = '');
+      ['ts-portador', 'ts-finalidade', 'ts-valor', 'ts-obs'].forEach(id => g(id).value = '');
       g('ts-data').value = todayLocal();
+      setTipo('saque'); lojasSel = []; gastosForm = [];
+      renderLojas(); renderGastos();
     }
     function abrirNovo() {
       editId = null;
@@ -484,17 +577,12 @@
       g('ts-data').value = r.data;
       g('ts-portador').value = r.portador || '';
       g('ts-finalidade').value = r.finalidade || '';
-      g('ts-entrada').value = r.entrada ? numberToMoneyMasked(+r.entrada) : '';
-      g('ts-saida').value = r.saida ? numberToMoneyMasked(+r.saida) : '';
-      g('ts-consumido').value = r.vlr_consumido ? numberToMoneyMasked(+r.vlr_consumido) : '';
-      g('ts-viagem').value = r.despesa_viagem ? numberToMoneyMasked(+r.despesa_viagem) : '';
-      g('ts-hospedagem').value = r.despesa_hospedagem ? numberToMoneyMasked(+r.despesa_hospedagem) : '';
-      g('ts-refeicao').value = r.despesa_refeicao ? numberToMoneyMasked(+r.despesa_refeicao) : '';
-      g('ts-locomocao').value = r.despesa_locomocao ? numberToMoneyMasked(+r.despesa_locomocao) : '';
-      g('ts-rat-exp').value = r.rateio_exposicao ? numberToMoneyMasked(+r.rateio_exposicao) : '';
-      g('ts-rat-via').value = r.rateio_viacloset ? numberToMoneyMasked(+r.rateio_viacloset) : '';
-      g('ts-rat-gip').value = r.rateio_gip ? numberToMoneyMasked(+r.rateio_gip) : '';
+      g('ts-valor').value = r.valor_enviado ? numberToMoneyMasked(+r.valor_enviado) : '';
       g('ts-obs').value = r.observacoes || '';
+      setTipo(r.tipo === 'sangria' ? 'sangria' : 'saque');
+      lojasSel = (r.rateio_ops || []).slice();
+      gastosForm = (r.gastos || []).map(x => ({ valor: +x.valor || 0, categoria: x.categoria || 'outros', forma: x.forma === 'pix' ? 'pix' : 'dinheiro' }));
+      renderLojas(); renderGastos();
       g('ts-modal').classList.add('open');
     }
     function fecharModal() { g('ts-modal').classList.remove('open'); }
@@ -506,18 +594,18 @@
     g('ts-form').addEventListener('submit', async e => {
       e.preventDefault();
       const errEl = g('ts-modal-error'); errEl.classList.remove('visible');
+      const erro = m => { errEl.textContent = m; errEl.classList.add('visible'); };
       const portador = g('ts-portador').value.trim();
-      if (!portador) { errEl.textContent = 'Informe o portador.'; errEl.classList.add('visible'); return; }
-      const num = id => moneyToNumber(g(id).value) || 0;
+      const valor = moneyToNumber(g('ts-valor').value) || 0;
+      if (!portador) return erro('Informe o portador.');
+      if (!(valor > 0)) return erro('Informe o valor enviado.');
+      if (!lojasSel.length) return erro('Marque ao menos uma loja para o rateio.');
+      const gastos = gastosForm.filter(x => +x.valor > 0).map(x => ({ valor: Math.round(x.valor * 100) / 100, categoria: x.categoria, forma: x.forma }));
+      if (gastosForm.some(x => !(+x.valor > 0))) return erro('Há gasto sem valor: preencha ou remova a linha.');
       const payload = {
-        data: g('ts-data').value, portador, finalidade: g('ts-finalidade').value.trim() || null,
-        entrada: num('ts-entrada'), saida: num('ts-saida'), vlr_consumido: num('ts-consumido') || null,
-        despesa_viagem: num('ts-viagem') || null, despesa_hospedagem: num('ts-hospedagem') || null,
-        despesa_refeicao: num('ts-refeicao') || null, despesa_locomocao: num('ts-locomocao') || null,
-        rateio_exposicao: num('ts-rat-exp') || null, rateio_viacloset: num('ts-rat-via') || null, rateio_gip: num('ts-rat-gip') || null,
-        observacoes: g('ts-obs').value.trim() || null,
+        data: g('ts-data').value, tipo: tipoAtual, portador, finalidade: g('ts-finalidade').value.trim() || null,
+        valor_enviado: valor, rateio_ops: lojasSel.slice(), gastos, observacoes: g('ts-obs').value.trim() || null,
       };
-      if (!payload.entrada && !payload.saida) { errEl.textContent = 'Informe ao menos uma Entrada ou Saída.'; errEl.classList.add('visible'); return; }
       const btn = g('ts-btn-salvar'); btn.disabled = true; btn.textContent = 'Salvando…';
       try {
         if (editId) {
@@ -531,7 +619,7 @@
         await carregar(); populateFiltros(); render();
         fecharModal();
         showToast('Lançamento salvo.', 'green');
-      } catch (err) { errEl.textContent = 'Erro ao salvar: ' + err.message; errEl.classList.add('visible'); }
+      } catch (err) { erro('Erro ao salvar: ' + err.message); }
       btn.disabled = false; btn.textContent = 'Salvar';
     });
 
@@ -744,7 +832,7 @@
       podeEditar = true; // quem vê a tela edita — sem granularidade fina por enquanto
       SafiSidebar.apply('ts', me, { email: data.session.user.email, sb });
 
-      ['ts-entrada', 'ts-saida', 'ts-consumido', 'ts-viagem', 'ts-hospedagem', 'ts-refeicao', 'ts-locomocao', 'ts-rat-exp', 'ts-rat-via', 'ts-rat-gip'].forEach(id => attachMoneyMask(g(id)));
+      attachMoneyMask(g('ts-valor'));
       attachAutocomplete(g('ts-portador'), () => distintosPortadores());
       attachMoneyMask(g('ch-valor'));
       attachAutocomplete(g('ch-titular'), () => distintosCheques('titular'));
