@@ -254,7 +254,7 @@
       </div>
 
       <div class="panel" id="panel-portadores">
-        <div class="panel-head">Saldo por portador (enviado − gastos)</div>
+        <div class="panel-head">Saldo por portador (enviado − gastos em dinheiro)</div>
         <div class="port-grid" id="port-grid"></div>
       </div>
 
@@ -316,7 +316,7 @@
   <div class="modal-overlay" id="ts-modal">
     <div class="modal-card">
       <div class="modal-title" id="ts-modal-title">Novo Lançamento</div>
-      <div class="modal-sub">Um saque ou sangria entregue a um portador, dividido entre as lojas escolhidas. Depois lance os gastos um a um: o saldo final é o valor enviado menos os gastos.</div>
+      <div class="modal-sub">Um saque ou sangria entregue a um portador, dividido entre as lojas escolhidas. Depois lance os gastos um a um: o saldo final é o valor enviado menos os gastos em dinheiro (gasto em Pix não desconta).</div>
       <div class="modal-error" id="ts-modal-error"></div>
       <form id="ts-form" autocomplete="off">
         <div class="field"><label>Tipo</label>
@@ -337,7 +337,7 @@
         <div id="ts-gastos"></div>
         <button type="button" class="btn-ghost" id="ts-add-gasto">+ Adicionar gasto</button>
 
-        <div class="saldo-box"><div><div class="l">Saldo final</div><div class="s" id="ts-saldo-sub">Valor enviado − gastos</div></div><div class="v" id="ts-saldo">R$ 0,00</div></div>
+        <div class="saldo-box"><div><div class="l">Saldo final</div><div class="s" id="ts-saldo-sub">Valor enviado − gastos em dinheiro</div></div><div class="v" id="ts-saldo">R$ 0,00</div></div>
 
         <div class="field" style="margin-top:14px"><label for="ts-obs">Observações</label><textarea id="ts-obs" placeholder="Opcional"></textarea></div>
 
@@ -401,9 +401,9 @@
         box.classList.add('open');
       }
       function close() { box.classList.remove('open'); activeIdx = -1; }
-      function escolher(i) { input.value = items[i]; close(); }
+      function escolher(i) { input.value = items[i]; close(); input.dispatchEvent(new Event('input', { bubbles: true })); }
       input.addEventListener('focus', () => { activeIdx = -1; render(); });
-      input.addEventListener('input', () => { activeIdx = -1; render(); });
+      input.addEventListener('input', e => { if (!e.isTrusted) return; activeIdx = -1; render(); });
       input.addEventListener('keydown', e => {
         if (!box.classList.contains('open')) return;
         if (e.key === 'ArrowDown') { e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); render(); }
@@ -431,15 +431,32 @@
       lojas.forEach((l, i) => { out[l] = (parte + (i === 0 ? sobra : 0)) / 100; });
       return out;
     }
-    const totalGastos = gastos => Math.round((gastos || []).reduce((a, x) => a + (+x.valor || 0), 0) * 100) / 100;
-    const saldoFinal = (valor, gastos) => Math.round(((+valor || 0) - totalGastos(gastos)) * 100) / 100;
+    const somaGastos = (gastos, filtro) => Math.round((gastos || []).filter(filtro || (() => true)).reduce((a, x) => a + (+x.valor || 0), 0) * 100) / 100;
+    const totalGastos = gastos => somaGastos(gastos);
+    const totalPix = gastos => somaGastos(gastos, x => x.forma === 'pix');
+    const totalDinheiro = gastos => somaGastos(gastos, x => x.forma !== 'pix');
+    // Gasto em Pix sai da conta da empresa, não do dinheiro que está com o portador: não desconta do saldo.
+    const saldoFinal = (valor, gastos) => Math.round(((+valor || 0) - totalDinheiro(gastos)) * 100) / 100;
+    // Categoria é texto livre; lançamentos antigos guardavam o código (viagem, refeicao…).
+    const nomeCategoria = c => NOME_CAT[c] || String(c || '').trim() || 'Sem categoria';
     function gastosPorCategoria(gastos) {
-      const out = {};
-      (gastos || []).forEach(x => { if (+x.valor) out[x.categoria] = Math.round(((out[x.categoria] || 0) + (+x.valor)) * 100) / 100; });
+      const out = {}, nomes = {};
+      (gastos || []).forEach(x => {
+        if (!+x.valor) return;
+        const n = nomeCategoria(x.categoria), k = n.toLowerCase();
+        nomes[k] = nomes[k] || n;
+        out[nomes[k]] = Math.round(((out[nomes[k]] || 0) + (+x.valor)) * 100) / 100;
+      });
       return out;
     }
 
     // ── Saldo por portador = soma de (valor enviado − gastos) dos lançamentos dele ──
+    function sugestoesCategoria() {
+      const mapa = new Map();
+      CATEGORIAS.map(c => c[1]).concat(allRows.flatMap(r => (r.gastos || []).map(x => nomeCategoria(x.categoria))), gastosForm.map(x => nomeCategoria(x.categoria)))
+        .filter(n => n && n !== 'Sem categoria').forEach(n => { if (!mapa.has(n.toLowerCase())) mapa.set(n.toLowerCase(), n); });
+      return [...mapa.values()];
+    }
     function calcularSaldos() {
       const porPortador = {};
       const comSaldo = allRows.map(r => {
@@ -454,9 +471,10 @@
     function renderKpisEPortadores(porPortador) {
       const totE = allRows.reduce((a, r) => a + (+r.valor_enviado || 0), 0);
       const totS = allRows.reduce((a, r) => a + totalGastos(r.gastos), 0);
+      const totD = allRows.reduce((a, r) => a + totalDinheiro(r.gastos), 0);
       g('kpi-entradas').textContent = brl(totE);
       g('kpi-saidas').textContent = brl(totS);
-      g('kpi-saldo').textContent = brl(totE - totS);
+      g('kpi-saldo').textContent = brl(totE - totD);
       const nomes = Object.keys(porPortador).sort((a, b) => a.localeCompare(b, 'pt-BR'));
       g('panel-portadores').style.display = nomes.length ? '' : 'none';
       g('port-grid').innerHTML = nomes.map(n =>
@@ -487,14 +505,15 @@
       g('tbl-lanc').innerHTML = cab + '<tbody>' +
         linhas.map(r => {
           const tg = totalGastos(r.gastos), cats = gastosPorCategoria(r.gastos);
-          const detalhe = Object.keys(cats).map(c => (NOME_CAT[c] || c) + ' ' + brl(cats[c])).join(' · ');
+          const tp = totalPix(r.gastos);
+          const detalhe = Object.keys(cats).map(c => c + ' ' + brl(cats[c])).join(' · ') + (tp ? ' · Pix (não desconta do saldo): ' + brl(tp) : '');
           return '<tr class="click" data-id="' + r.id + '">' +
             '<td>' + fmtDate(r.data) + '</td>' +
             '<td><span class="tipo-b tipo-' + r.tipo + '">' + (r.tipo === 'sangria' ? 'Sangria' : 'Saque') + '</span></td>' +
             '<td>' + esc(r.portador) + '</td>' +
             '<td>' + (r.finalidade ? esc(r.finalidade) : '<span class="muted">—</span>') + '</td>' +
             '<td class="num entrada-v">' + brl(r.valor_enviado) + '</td>' +
-            '<td class="num saida-v"' + (detalhe ? ' title="' + esc(detalhe) + '"' : '') + '>' + (tg ? brl(tg) : '<span class="muted">—</span>') + '</td>' +
+            '<td class="num saida-v"' + (detalhe ? ' title="' + esc(detalhe) + '"' : '') + '>' + (tg ? brl(tg) + (tp ? '<div class="muted" style="font-size:10.5px">' + brl(tp) + ' em Pix</div>' : '') : '<span class="muted">—</span>') + '</td>' +
             '<td class="num' + (r.saldo < 0 ? ' saida-v' : '') + '">' + brl(r.saldo) + '</td>' +
             '<td>' + badgesRateio(r) + '</td>' +
             '<td><div class="row-actions"><button type="button" class="icon-btn" data-editar="' + r.id + '" title="Editar">✎</button></div></td>' +
@@ -518,11 +537,12 @@
       g('ts-gastos').innerHTML = gastosForm.map((x, i) =>
         '<div class="gasto-row" data-i="' + i + '">' +
           '<input type="text" inputmode="decimal" class="g-valor" placeholder="Valor" value="' + (x.valor ? numberToMoneyMasked(x.valor) : '') + '" aria-label="Valor do gasto">' +
-          '<select class="g-cat" aria-label="Categoria">' + CATEGORIAS.map(([v, n]) => '<option value="' + v + '"' + (x.categoria === v ? ' selected' : '') + '>' + n + '</option>').join('') + '</select>' +
+          '<input type="text" class="g-cat" placeholder="Categoria (ex.: Viagem)" value="' + esc(x.categoria ? nomeCategoria(x.categoria) : '') + '" aria-label="Categoria do gasto" autocomplete="off">' +
           '<div class="seg g-forma" role="radiogroup" aria-label="Forma de pagamento"><button type="button" data-forma="dinheiro"' + (x.forma !== 'pix' ? ' class="on"' : '') + '>Dinheiro</button><button type="button" data-forma="pix"' + (x.forma === 'pix' ? ' class="on"' : '') + '>Pix</button></div>' +
           '<button type="button" class="gasto-del" title="Remover gasto" aria-label="Remover gasto">×</button>' +
         '</div>').join('');
       g('ts-gastos').querySelectorAll('.g-valor').forEach(el => attachMoneyMask(el));
+      g('ts-gastos').querySelectorAll('.g-cat').forEach(el => attachAutocomplete(el, sugestoesCategoria));
       atualizarSaldo();
     }
     function atualizarSaldo() {
@@ -530,28 +550,26 @@
       const sf = saldoFinal(valor, gastosForm);
       g('ts-saldo').textContent = brl(sf);
       g('ts-saldo').classList.toggle('neg', sf < 0);
-      g('ts-saldo-sub').textContent = brl(valor) + ' enviado − ' + brl(totalGastos(gastosForm)) + ' em gastos';
+      const tp = totalPix(gastosForm);
+      g('ts-saldo-sub').textContent = brl(valor) + ' enviado − ' + brl(totalDinheiro(gastosForm)) + ' em dinheiro' + (tp ? ' · ' + brl(tp) + ' em Pix não desconta' : '');
     }
     g('ts-tipo').addEventListener('click', e => { const b = e.target.closest('[data-tipo]'); if (b) setTipo(b.dataset.tipo); });
     g('ts-valor').addEventListener('input', () => { renderLojas(); atualizarSaldo(); });
     const alternarLoja = el => { const id = el.dataset.loja; lojasSel = lojasSel.includes(id) ? lojasSel.filter(x => x !== id) : LOJAS.map(l => l.id).filter(x => x === id || lojasSel.includes(x)); renderLojas(); };
     g('ts-lojas').addEventListener('click', e => { const el = e.target.closest('[data-loja]'); if (el) alternarLoja(el); });
     g('ts-lojas').addEventListener('keydown', e => { const el = e.target.closest('[data-loja]'); if (el && (e.key === ' ' || e.key === 'Enter')) { e.preventDefault(); alternarLoja(el); } });
-    g('ts-add-gasto').addEventListener('click', () => { gastosForm.push({ valor: 0, categoria: 'viagem', forma: 'dinheiro' }); renderGastos(); const v = g('ts-gastos').querySelectorAll('.g-valor'); if (v.length) v[v.length - 1].focus(); });
+    g('ts-add-gasto').addEventListener('click', () => { gastosForm.push({ valor: 0, categoria: '', forma: 'dinheiro' }); renderGastos(); const v = g('ts-gastos').querySelectorAll('.g-valor'); if (v.length) v[v.length - 1].focus(); });
     g('ts-gastos').addEventListener('input', e => {
       const row = e.target.closest('.gasto-row'); if (!row) return;
       const x = gastosForm[+row.dataset.i];
       if (e.target.classList.contains('g-valor')) { x.valor = moneyToNumber(e.target.value) || 0; atualizarSaldo(); }
-    });
-    g('ts-gastos').addEventListener('change', e => {
-      const row = e.target.closest('.gasto-row'); if (!row) return;
-      if (e.target.classList.contains('g-cat')) gastosForm[+row.dataset.i].categoria = e.target.value;
+      if (e.target.classList.contains('g-cat')) x.categoria = e.target.value;
     });
     g('ts-gastos').addEventListener('click', e => {
       const row = e.target.closest('.gasto-row'); if (!row) return;
       const i = +row.dataset.i;
       const f = e.target.closest('[data-forma]');
-      if (f) { gastosForm[i].forma = f.dataset.forma; row.querySelectorAll('[data-forma]').forEach(b => b.classList.toggle('on', b === f)); return; }
+      if (f) { gastosForm[i].forma = f.dataset.forma; row.querySelectorAll('[data-forma]').forEach(b => b.classList.toggle('on', b === f)); atualizarSaldo(); return; }
       if (e.target.closest('.gasto-del')) { gastosForm.splice(i, 1); renderGastos(); }
     });
 
@@ -581,7 +599,7 @@
       g('ts-obs').value = r.observacoes || '';
       setTipo(r.tipo === 'sangria' ? 'sangria' : 'saque');
       lojasSel = (r.rateio_ops || []).slice();
-      gastosForm = (r.gastos || []).map(x => ({ valor: +x.valor || 0, categoria: x.categoria || 'outros', forma: x.forma === 'pix' ? 'pix' : 'dinheiro' }));
+      gastosForm = (r.gastos || []).map(x => ({ valor: +x.valor || 0, categoria: x.categoria ? nomeCategoria(x.categoria) : '', forma: x.forma === 'pix' ? 'pix' : 'dinheiro' }));
       renderLojas(); renderGastos();
       g('ts-modal').classList.add('open');
     }
@@ -600,7 +618,7 @@
       if (!portador) return erro('Informe o portador.');
       if (!(valor > 0)) return erro('Informe o valor enviado.');
       if (!lojasSel.length) return erro('Marque ao menos uma loja para o rateio.');
-      const gastos = gastosForm.filter(x => +x.valor > 0).map(x => ({ valor: Math.round(x.valor * 100) / 100, categoria: x.categoria, forma: x.forma }));
+      const gastos = gastosForm.filter(x => +x.valor > 0).map(x => ({ valor: Math.round(x.valor * 100) / 100, categoria: String(x.categoria || '').trim() || 'Outros', forma: x.forma }));
       if (gastosForm.some(x => !(+x.valor > 0))) return erro('Há gasto sem valor: preencha ou remova a linha.');
       const payload = {
         data: g('ts-data').value, tipo: tipoAtual, portador, finalidade: g('ts-finalidade').value.trim() || null,

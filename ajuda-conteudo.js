@@ -414,14 +414,14 @@ window.SAFI_AJUDA = { telas: {
   },
 
   tesouraria: {
-    titulo: 'Tesouraria', versao: 3,
+    titulo: 'Tesouraria', versao: 4,
     resumo: 'Duas abas: <b>Cheques</b> (controle dos cheques emitidos, igual à planilha: registro, CNPJ, titular, nº, valor, fornecedor, compensação e OK) e <b>Caixa</b> (cada <b>saque ou sangria</b> entregue a um portador, dividido entre as lojas, com os gastos lançados um a um; saldo final = valor enviado − gastos).',
     passos: [
       { t: 'Cheques: lance e acompanhe', d: 'Aba <b>Cheques</b> → <b>+ Novo cheque</b>. Para uma sequência da mesma compra use <b>Salvar e adicionar outro</b> (mantém titular, fornecedor e valor, e soma 1 no número). Clique no selo da coluna <b>OK?</b> para marcar o cheque como compensado.' },
       { t: 'Caixa: registre o lançamento', d: 'Aba <b>Caixa</b> → <b>+ Novo lançamento</b>: escolha <b>Saque</b> ou <b>Sangria</b>, a data, o <b>portador</b> (os nomes já usados aparecem na lista ao clicar no campo), a finalidade e o <b>valor enviado</b>.' },
       { t: 'Divida entre as lojas', d: 'Marque as lojas que entram no rateio (Exposição Paulista, Via Closet, GIP — uma, duas ou as três). O valor enviado é dividido igualmente entre elas automaticamente.' },
-      { t: 'Lance os gastos', d: '<b>+ Adicionar gasto</b>: valor, categoria (Viagem, Hospedagem, Refeição, Locomoção ou Outros) e se foi em <b>Dinheiro</b> ou <b>Pix</b>. Um gasto por linha.' },
-      { t: 'Confira o saldo final', d: 'O <b>saldo final</b> (valor enviado − gastos) é calculado na hora. Os cartões do topo somam o saldo de cada portador.' },
+      { t: 'Lance os gastos', d: '<b>+ Adicionar gasto</b>: valor, categoria (escreva livremente — as já usadas e Viagem, Hospedagem, Refeição, Locomoção e Outros aparecem como sugestão) e se foi em <b>Dinheiro</b> ou <b>Pix</b>. Um gasto por linha.' },
+      { t: 'Confira o saldo final', d: 'O <b>saldo final</b> (valor enviado − gastos em dinheiro) é calculado na hora. Gasto em <b>Pix</b> não desconta do saldo, porque sai da conta da empresa e não do dinheiro com o portador. Os cartões do topo somam o saldo de cada portador.' },
     ],
     dicas: ['<b>Vencido</b> = passou da data de compensação e ainda não tem OK (fica em vermelho, com contador na aba).', 'Titular, fornecedor e portador são texto livre, mas os já usados aparecem como sugestão ao digitar (igual Pedidos).', 'O CNPJ do cheque usa as mesmas opções de Pedidos (Guilherme, Juliane, Isa, EP).', 'Clique numa linha para editar ou excluir.'],
     naoFaz: ['Não tem relação com Despesas Fixas — são módulos independentes.', 'Não lança nada no DRE: o rateio entre lojas é só o controle da tesouraria.'],
