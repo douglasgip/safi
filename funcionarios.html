@@ -151,6 +151,23 @@
     .btn-edit:hover { background: rgba(139,92,246,0.18); }
     .btn-delete { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.25); color: #f87171; }
     .btn-delete:hover { background: rgba(239,68,68,0.18); }
+    .btn-deslig { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.25); color: #fcd34d; }
+    .btn-deslig:hover { background: rgba(251,191,36,0.18); }
+    .btn-readm { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.25); color: #6ee7b7; }
+    .btn-readm:hover { background: rgba(52,211,153,0.18); }
+    tr.row-deslig td { opacity: .62; }
+    tr.row-deslig td:last-child, tr.row-deslig td.td-conekto { opacity: 1; }
+    .deslig-tag { display: inline-block; margin-top: 3px; padding: 1px 7px; border-radius: 6px; font-size: 10px; font-weight: 800; background: rgba(251,191,36,0.14); color: #fcd34d; }
+    .ck { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 8px; font-size: 10.5px; font-weight: 800; border: none; font-family: inherit; cursor: pointer; white-space: nowrap; }
+    .ck-ok { background: rgba(52,211,153,0.14); color: #6ee7b7; }
+    .ck-erro { background: rgba(239,68,68,0.15); color: #fca5a5; }
+    .ck-nao { background: rgba(148,163,184,0.12); color: #94a3b8; }
+    .ck:hover { filter: brightness(1.25); }
+    .field .req { color: #fca5a5; }
+    .field-hint { font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.4; }
+    .ck-info { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); font-size: 12px; color: #cbd5e1; line-height: 1.5; display: none; }
+    .ck-info.on { display: block; }
+    .btn-link { background: none; border: none; color: #c4b5fd; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; padding: 0; }
     .loading-row td, .empty-row td { padding: 50px 20px; text-align: center; color: #334155; font-size: 13px; }
 
     /* ── Modal ── */
@@ -259,6 +276,11 @@
       <select class="filter-select" id="f-empresa">
         <option value="">Todas as empresas</option>
       </select>
+      <select class="filter-select" id="f-status">
+        <option value="ativo">Ativos</option>
+        <option value="desligado">Desligados</option>
+        <option value="">Todos</option>
+      </select>
       <select class="filter-select" id="f-tempo">
         <option value="">Tempo de casa (todos)</option>
         <option value="lt1">Menos de 1 ano</option>
@@ -292,11 +314,12 @@
               <th>E-mail</th>
               <th>Data de Admissão</th>
               <th>Tempo de Casa</th>
+              <th>Conekto</th>
               <th style="width:130px">Ações</th>
             </tr>
           </thead>
           <tbody id="func-tbody">
-            <tr class="loading-row"><td colspan="11">Carregando colaboradores...</td></tr>
+            <tr class="loading-row"><td colspan="12">Carregando colaboradores...</td></tr>
           </tbody>
         </table>
       </div>
@@ -325,13 +348,19 @@
       <form id="func-form" autocomplete="off">
         <input type="hidden" id="edit-id">
 
-        <div class="field">
-          <label>Empresa</label>
-          <select id="f-form-empresa" required></select>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field">
+            <label>Gestão (loja/operação) <span class="req">*</span></label>
+            <select id="f-form-empresa" required></select>
+          </div>
+          <div class="field">
+            <label>CNPJ de registro</label>
+            <select id="f-form-cnpj"></select>
+          </div>
         </div>
 
         <div class="field">
-          <label>Nome completo</label>
+          <label>Nome completo <span class="req">*</span></label>
           <input type="text" id="f-form-nome" placeholder="Nome completo" required>
         </div>
 
@@ -353,12 +382,12 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div class="field">
-            <label>CPF</label>
-            <input type="text" id="f-form-cpf" placeholder="000.000.000-00">
+            <label>CPF <span class="req">*</span></label>
+            <input type="text" id="f-form-cpf" placeholder="000.000.000-00" required>
           </div>
           <div class="field">
-            <label>Data de Admissão</label>
-            <input type="date" id="f-form-admissao">
+            <label>Data de Admissão <span class="req">*</span></label>
+            <input type="date" id="f-form-admissao" required>
           </div>
         </div>
 
@@ -372,9 +401,58 @@
           <input type="text" id="f-form-endereco" placeholder="Rua, número, bairro, cidade">
         </div>
 
+        <div id="ck-area" style="display:none">
+          <button type="button" class="btn-link" id="btn-ck-consultar">Conferir no Conekto</button>
+          <div class="ck-info" id="ck-info"></div>
+        </div>
+
         <div class="modal-actions">
           <button type="submit" class="btn-submit" id="btn-submit">Salvar</button>
           <button type="button" class="btn-cancel" onclick="closeModal()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Desligar -->
+  <div class="modal-overlay" id="deslig-modal">
+    <div class="modal-card">
+      <div class="modal-title">Desligar colaborador</div>
+      <div class="modal-sub" id="deslig-sub"></div>
+      <div class="modal-error" id="deslig-error"></div>
+      <form id="deslig-form" autocomplete="off">
+        <div class="field">
+          <label>Último dia trabalhado <span class="req">*</span></label>
+          <input type="date" id="deslig-data" required>
+          <div class="field-hint">A pessoa ainda bate ponto nesse dia; a partir do dia seguinte o ponto é bloqueado no Conekto. Data futura fica agendada.</div>
+        </div>
+        <div class="field">
+          <label>Motivo <span class="req">*</span></label>
+          <input type="text" id="deslig-motivo" placeholder="Ex.: pedido de demissão, fim de experiência, dispensa" required>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="btn-deslig">Desligar</button>
+          <button type="button" class="btn-cancel" onclick="fecharDeslig()">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal Readmitir -->
+  <div class="modal-overlay" id="readm-modal">
+    <div class="modal-card">
+      <div class="modal-title">Readmitir colaborador</div>
+      <div class="modal-sub" id="readm-sub"></div>
+      <div class="modal-error" id="readm-error"></div>
+      <form id="readm-form" autocomplete="off">
+        <div class="field">
+          <label>Nova data de admissão <span class="req">*</span></label>
+          <input type="date" id="readm-data" required>
+          <div class="field-hint">No Conekto a pessoa volta no mesmo registro, com o histórico de ponto preservado.</div>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="btn-submit" id="btn-readm">Readmitir</button>
+          <button type="button" class="btn-cancel" onclick="fecharReadm()">Cancelar</button>
         </div>
       </form>
     </div>
@@ -384,7 +462,7 @@
   <div class="confirm-overlay" id="confirm-modal">
     <div class="confirm-card">
       <div class="confirm-icon">⚠️</div>
-      <div class="confirm-title">Remover colaborador?</div>
+      <div class="confirm-title">Excluir de vez?</div>
       <div class="confirm-text" id="confirm-text">Este cadastro será removido permanentemente.</div>
       <div class="confirm-actions">
         <button class="btn-confirm-delete" id="btn-confirm-delete">Remover</button>
@@ -415,6 +493,31 @@
       { key: '5+', label: 'Mais de 5 anos', color: '#4f46e5' },
     ];
     const COPY_ICON = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+    // Empresas em que o colaborador pode estar registrado (tabela do contrato com o Conekto). Vazio = padrão da gestão.
+    const CNPJS = [
+      { cnpj: '54098011000185', nome: 'Isa Confecções Ltda', mascara: '54.098.011/0001-85' },
+      { cnpj: '08297302000185', nome: 'EP Comércio e Confecções', mascara: '08.297.302/0001-85' },
+      { cnpj: '02688541000180', nome: 'Juliane Sacoman & Cia', mascara: '02.688.541/0001-80' },
+      { cnpj: '47023165000142', nome: 'Guilherme S Navarrete Confecções', mascara: '47.023.165/0001-42' },
+    ];
+    // CPF válido = 11 dígitos, não todos iguais, e os dois dígitos verificadores batem.
+    function cpfValido(cpf) {
+      const d = String(cpf || '').replace(/\D/g, '');
+      if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) return false;
+      const dv = n => { let s = 0; for (let i = 0; i < n; i++) s += +d[i] * (n + 1 - i); const r = (s * 10) % 11; return r === 10 ? 0 : r; };
+      return dv(9) === +d[9] && dv(10) === +d[10];
+    }
+    // Campos obrigatórios do cadastro (os mesmos que o Conekto exige). Devolve a mensagem do primeiro problema, ou null.
+    function validarCadastro(p) {
+      if (!p.empresa) return 'Selecione a gestão (loja/operação) do colaborador.';
+      if (!p.nome) return 'Informe o nome completo.';
+      if (!p.cpf) return 'Informe o CPF.';
+      if (!cpfValido(p.cpf)) return 'CPF inválido: confira os números.';
+      if (!p.data_admissao) return 'Informe a data de admissão.';
+      if (p.cnpj && !CNPJS.some(c => c.cnpj === p.cnpj)) return 'CNPJ de registro inválido.';
+      return null;
+    }
 
     let currentProfile = null;
     let allowedCompanies = [];
@@ -507,13 +610,16 @@
       const filterSel = document.getElementById('f-empresa');
       const formSel = document.getElementById('f-form-empresa');
       filterSel.innerHTML = '<option value="">Todas as empresas</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-      formSel.innerHTML = allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      formSel.innerHTML = '<option value="">Selecione a gestão</option>' + allowedCompanies.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+      document.getElementById('f-form-cnpj').innerHTML = '<option value="">Padrão da gestão</option>' + CNPJS.map(c => `<option value="${c.cnpj}">${esc(c.nome)} · ${c.mascara}</option>`).join('');
     }
 
     function passesFilters(row) {
       const search = document.getElementById('f-search').value.trim().toLowerCase();
       const empresa = document.getElementById('f-empresa').value;
       const tempoBucket = document.getElementById('f-tempo').value;
+      const situacao = document.getElementById('f-status').value;
+      if (situacao && (row.status || 'ativo') !== situacao) return false;
       if (empresa && row.empresa !== empresa) return false;
       if (tempoBucket && tempoDeCasa(row.data_admissao).bucket !== tempoBucket) return false;
       if (search) {
@@ -543,20 +649,21 @@
       updateCharts(filtered);
 
       if (!allRows.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="11">Nenhum colaborador cadastrado ainda.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="12">Nenhum colaborador cadastrado ainda.</td></tr>';
         return;
       }
       if (!filtered.length) {
-        tbody.innerHTML = '<tr class="empty-row"><td colspan="11">Nenhum colaborador encontrado com esses filtros.</td></tr>';
+        tbody.innerHTML = '<tr class="empty-row"><td colspan="12">Nenhum colaborador encontrado com esses filtros.</td></tr>';
         return;
       }
 
       tbody.innerHTML = filtered.map(r => {
         const tc = tempoDeCasa(r.data_admissao);
         const dash = '<span class="td-muted">—</span>';
-        return `<tr>
+        const desl = r.status === 'desligado';
+        return `<tr class="${desl ? 'row-deslig' : ''}">
           <td><img class="td-empresa-logo" src="${MARCA_LOGOS[r.empresa] || ''}" alt="${esc(r.empresa)}" title="${esc(r.empresa)}"></td>
-          <td class="td-nome">${copyCell(r.id, 'nome', esc(r.nome), r.nome)}</td>
+          <td class="td-nome">${copyCell(r.id, 'nome', esc(r.nome), r.nome)}${desl ? `<div><span class="deslig-tag" title="${esc(r.motivo_desligamento || '')}">Desligado · último dia ${fmtDate(r.data_desligamento)}</span></div>` : ''}</td>
           <td>${r.cargo ? copyCell(r.id, 'cargo', esc(r.cargo), r.cargo) : dash}</td>
           <td>${copyCell(r.id, 'data_nascimento', fmtDate(r.data_nascimento), r.data_nascimento)}</td>
           <td>${r.telefone ? copyCell(r.id, 'telefone', esc(r.telefone), r.telefone) : dash}</td>
@@ -565,14 +672,18 @@
           <td>${r.email ? copyCell(r.id, 'email', esc(r.email), r.email) : dash}</td>
           <td>${copyCell(r.id, 'data_admissao', fmtDate(r.data_admissao), r.data_admissao)}</td>
           <td>${tc.label !== '—' ? copyCell(r.id, 'tempo_de_casa', esc(tc.label), tc.label) : dash}</td>
+          <td class="td-conekto">${badgeConekto(r)}</td>
           <td>
             <div class="td-actions">
               <button class="btn-action btn-edit" data-id="${esc(r.id)}" title="Editar" aria-label="Editar">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
               </button>
-              <button class="btn-action btn-delete" data-id="${esc(r.id)}" title="Remover" aria-label="Remover">
+              ${desl
+                ? `<button class="btn-action btn-readm" data-id="${esc(r.id)}" title="Readmitir" aria-label="Readmitir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></button>`
+                : `<button class="btn-action btn-deslig" data-id="${esc(r.id)}" title="Desligar" aria-label="Desligar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="18" y1="8" x2="23" y2="13"/><line x1="23" y1="8" x2="18" y2="13"/></svg></button>`}
+              ${currentProfile && currentProfile.is_admin ? `<button class="btn-action btn-delete" data-id="${esc(r.id)}" title="Excluir de vez (só admin)" aria-label="Excluir de vez">` : '<span style="display:none">'}
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-              </button>
+              ${currentProfile && currentProfile.is_admin ? '</button>' : '</span>'}
             </div>
           </td>
         </tr>`;
@@ -581,6 +692,9 @@
       tbody.querySelectorAll('.btn-edit').forEach(btn => {
         btn.addEventListener('click', () => openEditModal(allRows.find(r => r.id === btn.dataset.id)));
       });
+      tbody.querySelectorAll('.btn-deslig').forEach(btn => btn.addEventListener('click', () => abrirDeslig(allRows.find(r => r.id === btn.dataset.id))));
+      tbody.querySelectorAll('.btn-readm').forEach(btn => btn.addEventListener('click', () => abrirReadm(allRows.find(r => r.id === btn.dataset.id))));
+      tbody.querySelectorAll('[data-ck]').forEach(btn => btn.addEventListener('click', () => reenviarConekto(btn.dataset.ck)));
       tbody.querySelectorAll('.btn-delete').forEach(btn => {
         btn.addEventListener('click', () => {
           const row = allRows.find(r => r.id === btn.dataset.id);
@@ -607,14 +721,14 @@
       }
       const { data, error } = await sb.from('funcionarios').select('*').in('empresa', allowedCompanies).order('nome', { ascending: true });
       if (error) {
-        document.getElementById('func-tbody').innerHTML = `<tr class="empty-row"><td colspan="11">Erro ao carregar: ${esc(error.message)}</td></tr>`;
+        document.getElementById('func-tbody').innerHTML = `<tr class="empty-row"><td colspan="12">Erro ao carregar: ${esc(error.message)}</td></tr>`;
         return;
       }
       allRows = data || [];
       renderTable();
     }
 
-    ['f-search','f-empresa','f-tempo'].forEach(id => {
+    ['f-search','f-empresa','f-tempo','f-status'].forEach(id => {
       document.getElementById(id).addEventListener('input', renderTable);
       document.getElementById(id).addEventListener('change', renderTable);
     });
@@ -635,6 +749,10 @@
         'E-mail': r.email || '',
         'Data de Admissão': fmtDate(r.data_admissao),
         'Tempo de Casa': tempoDeCasa(r.data_admissao).label,
+        'Situação': r.status === 'desligado' ? 'Desligado' : 'Ativo',
+        'Último dia trabalhado': fmtDate(r.data_desligamento),
+        'Motivo do desligamento': r.motivo_desligamento || '',
+        'CNPJ de registro': (CNPJS.find(c => c.cnpj === r.cnpj) || {}).mascara || '',
       }));
 
       const ws = XLSX.utils.json_to_sheet(data);
@@ -654,7 +772,9 @@
       document.getElementById('modal-sub').textContent = 'Preencha os dados do colaborador';
       document.getElementById('edit-id').value = '';
       document.getElementById('func-form').reset();
-      document.getElementById('f-form-empresa').value = allowedCompanies[0];
+      document.getElementById('f-form-empresa').value = allowedCompanies.length === 1 ? allowedCompanies[0] : '';
+      document.getElementById('f-form-cnpj').value = '';
+      document.getElementById('ck-area').style.display = 'none';
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
     }
@@ -673,6 +793,9 @@
       document.getElementById('f-form-admissao').value = r.data_admissao || '';
       document.getElementById('f-form-email').value = r.email || '';
       document.getElementById('f-form-endereco').value = r.endereco || '';
+      document.getElementById('f-form-cnpj').value = r.cnpj || '';
+      document.getElementById('ck-area').style.display = '';
+      document.getElementById('ck-info').className = 'ck-info';
       document.getElementById('modal-error').className = 'modal-error';
       document.getElementById('modal').classList.add('open');
     }
@@ -701,19 +824,22 @@
         data_admissao: document.getElementById('f-form-admissao').value || null,
         email: document.getElementById('f-form-email').value.trim() || null,
         endereco: document.getElementById('f-form-endereco').value.trim() || null,
+        cnpj: document.getElementById('f-form-cnpj').value || null,
       };
 
-      if (!payload.nome) { showModalError('Informe o nome.'); return; }
+      const problema = validarCadastro(payload);
+      if (problema) { showModalError(problema); return; }
 
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>Salvando...';
 
-      let error;
+      let error, salvo = null;
       if (editId) {
         ({ error } = await sb.from('funcionarios').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', editId));
       } else {
-        ({ error } = await sb.from('funcionarios').insert(payload));
+        let data; ({ data, error } = await sb.from('funcionarios').insert(payload).select('id').single()); salvo = data;
       }
+      if (error && /funcionarios_cpf_unico|duplicate key/i.test(error.message)) error = { message: 'Já existe um colaborador com esse CPF (pode estar desligado: veja o filtro "Desligados" e use Readmitir).' };
 
       btn.disabled = false;
       btn.innerHTML = 'Salvar';
@@ -722,13 +848,14 @@
 
       closeModal();
       showToast(editId ? 'Colaborador atualizado' : 'Colaborador cadastrado', 'green');
+      await sincronizarConekto(editId || (salvo && salvo.id), 'enviar');
       loadFuncionarios();
     });
 
     // ── Exclusão ──
     function confirmDelete(row) {
       deleteTarget = row.id;
-      document.getElementById('confirm-text').textContent = `O cadastro de ${row.nome} será removido permanentemente.`;
+      document.getElementById('confirm-text').textContent = `O cadastro de ${row.nome} será apagado de vez, sem histórico. Para quem saiu da empresa, use Desligar. A exclusão não avisa o Conekto.`;
       document.getElementById('confirm-modal').classList.add('open');
       document.getElementById('btn-confirm-delete').onclick = async () => {
         const id = deleteTarget;
@@ -736,11 +863,103 @@
         const { data, error } = await sb.from('funcionarios').delete().eq('id', id).select('id');
         if (error) { showToast(error.message, 'red'); return; }
         if (!data || !data.length) { showToast('Não foi possível remover — verifique sua permissão para essa empresa.', 'red'); return; }
-        showToast('Colaborador removido', 'red');
+        showToast('Colaborador excluído', 'red');
         loadFuncionarios();
       };
     }
     function closeConfirm() { document.getElementById('confirm-modal').classList.remove('open'); deleteTarget = null; }
+
+    // ── Conekto (o envio é feito pelo servidor do SAFI — o token nunca passa pelo navegador) ──
+    function badgeConekto(r) {
+      if (r.conekto_status === 'ok') return `<button type="button" class="ck ck-ok" data-ck="${esc(r.id)}" title="Enviado em ${r.conekto_em ? new Date(r.conekto_em).toLocaleString('pt-BR') : ''}. Clique para reenviar.">✓ Enviado</button>`;
+      if (r.conekto_status === 'erro') return `<button type="button" class="ck ck-erro" data-ck="${esc(r.id)}" title="${esc(r.conekto_msg || 'Erro')} — clique para tentar de novo.">⚠ Erro · reenviar</button>`;
+      return `<button type="button" class="ck ck-nao" data-ck="${esc(r.id)}" title="Ainda não enviado ao Conekto. Clique para enviar.">Enviar</button>`;
+    }
+    async function sincronizarConekto(id, acao, silencioso) {
+      if (!id) return null;
+      let r;
+      try {
+        const { data, error } = await sb.functions.invoke('conekto-sync', { body: { funcionario_id: id, acao } });
+        r = data || (error && { ok: false, mensagem: 'Não foi possível falar com o Conekto agora.' });
+      } catch (e) { r = { ok: false, mensagem: 'Não foi possível falar com o Conekto agora.' }; }
+      if (!r || r.ignorado) return r;
+      if (!r.ok) showToast('Conekto: ' + (r.mensagem || 'erro'), 'red');
+      else if (!silencioso && acao !== 'consultar') {
+        const txt = { criado: 'cadastrado no Conekto', atualizado: 'atualizado no Conekto', readmitido: 'readmitido no Conekto', desligado: 'desligado no Conekto', sem_alteracao: 'Conekto já estava em dia' }[r.resultado] || 'enviado ao Conekto';
+        showToast(txt.charAt(0).toUpperCase() + txt.slice(1), 'green');
+      }
+      return r;
+    }
+    async function reenviarConekto(id) {
+      showToast('Enviando ao Conekto…', 'green');
+      await sincronizarConekto(id, 'enviar');
+      loadFuncionarios();
+    }
+    document.getElementById('btn-ck-consultar').addEventListener('click', async () => {
+      const id = document.getElementById('edit-id').value, box = document.getElementById('ck-info');
+      box.className = 'ck-info on'; box.textContent = 'Consultando o Conekto…';
+      const r = await sincronizarConekto(id, 'consultar', true);
+      if (!r) { box.textContent = 'Sem resposta.'; return; }
+      if (r.ignorado) { box.textContent = r.mensagem; return; }
+      if (r.http === 404 || r.existe === false) { box.textContent = 'Este CPF ainda não está cadastrado no Conekto.'; return; }
+      if (!r.ok) { box.textContent = r.mensagem || 'Erro ao consultar.'; return; }
+      const c = r.colaborador || {}, pend = (c.pendencias || []).map(p => ({ jornada: 'jornada', horario_entrada: 'horário de entrada', reconhecimento_facial: 'reconhecimento facial', codigo_dominio: 'código Domínio' }[p] || p));
+      const st = { ativo: 'Ativo', desligado: 'Desligado', inativo: 'Inativo (sem data de desligamento)' }[c.status] || c.status;
+      box.innerHTML = '<b>Situação no Conekto:</b> ' + esc(st) + (c.desligamento ? ' · último dia ' + fmtDate(c.desligamento) : '') +
+        '<br><b>Empresa:</b> ' + esc(c.empresa || '—') + ' · <b>Gestão:</b> ' + esc(c.gestao || '—') +
+        (c.senha_provisoria ? '<br>Ainda não trocou a senha provisória.' : '') +
+        (pend.length ? '<br><b>Falta configurar no Conekto:</b> ' + esc(pend.join(', ')) : '');
+    });
+
+    // ── Desligar / readmitir (desligar não apaga: guarda o último dia trabalhado e o motivo) ──
+    let desligAlvo = null, readmAlvo = null;
+    const hojeISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+    function abrirDeslig(r) {
+      if (!r) return; desligAlvo = r;
+      document.getElementById('deslig-sub').textContent = r.nome + ' · ' + r.empresa;
+      document.getElementById('deslig-data').value = hojeISO();
+      document.getElementById('deslig-motivo').value = '';
+      document.getElementById('deslig-error').className = 'modal-error';
+      document.getElementById('deslig-modal').classList.add('open');
+    }
+    function fecharDeslig() { document.getElementById('deslig-modal').classList.remove('open'); desligAlvo = null; }
+    function abrirReadm(r) {
+      if (!r) return; readmAlvo = r;
+      document.getElementById('readm-sub').textContent = r.nome + ' · ' + r.empresa + (r.data_desligamento ? ' · desligado em ' + fmtDate(r.data_desligamento) : '');
+      document.getElementById('readm-data').value = hojeISO();
+      document.getElementById('readm-error').className = 'modal-error';
+      document.getElementById('readm-modal').classList.add('open');
+    }
+    function fecharReadm() { document.getElementById('readm-modal').classList.remove('open'); readmAlvo = null; }
+    const erroEm = (id, msg) => { const el = document.getElementById(id); el.textContent = msg; el.className = 'modal-error visible'; };
+    document.getElementById('deslig-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const r = desligAlvo; if (!r) return;
+      const data = document.getElementById('deslig-data').value, motivo = document.getElementById('deslig-motivo').value.trim();
+      if (!data) return erroEm('deslig-error', 'Informe o último dia trabalhado.');
+      if (!motivo) return erroEm('deslig-error', 'Informe o motivo.');
+      if (r.data_admissao && data < r.data_admissao) return erroEm('deslig-error', 'O último dia trabalhado não pode ser antes da admissão.');
+      const { error } = await sb.from('funcionarios').update({ status: 'desligado', data_desligamento: data, motivo_desligamento: motivo, updated_at: new Date().toISOString() }).eq('id', r.id);
+      if (error) return erroEm('deslig-error', error.message);
+      fecharDeslig();
+      showToast(r.nome + ' desligado', 'green');
+      await sincronizarConekto(r.id, 'desligar');
+      loadFuncionarios();
+    });
+    document.getElementById('readm-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const r = readmAlvo; if (!r) return;
+      const data = document.getElementById('readm-data').value;
+      if (!data) return erroEm('readm-error', 'Informe a nova data de admissão.');
+      const { error } = await sb.from('funcionarios').update({ status: 'ativo', data_admissao: data, data_desligamento: null, motivo_desligamento: null, updated_at: new Date().toISOString() }).eq('id', r.id);
+      if (error) return erroEm('readm-error', error.message);
+      fecharReadm();
+      showToast(r.nome + ' readmitido', 'green');
+      await sincronizarConekto(r.id, 'enviar');
+      loadFuncionarios();
+    });
+    document.getElementById('deslig-modal').addEventListener('click', e => { if (e.target === e.currentTarget) fecharDeslig(); });
+    document.getElementById('readm-modal').addEventListener('click', e => { if (e.target === e.currentTarget) fecharReadm(); });
 
     // showToast vem de user-menu.js.
 

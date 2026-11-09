@@ -244,15 +244,18 @@ window.SAFI_AJUDA = { telas: {
   },
 
   funcionarios: {
-    titulo: 'Funcionários', versao: 1,
-    resumo: 'Cadastro dos <b>colaboradores</b> de cada empresa, com tempo de casa, filtros, gráficos e exportação para Excel.',
+    titulo: 'Funcionários', versao: 2,
+    resumo: 'Cadastro dos <b>colaboradores</b> de cada empresa — a fonte da verdade do grupo. Admissões, alterações e desligamentos feitos aqui vão automaticamente para o <b>Conekto</b> (ponto).',
     passos: [
-      { t: 'Filtre a lista', d: 'Busque por nome e filtre por empresa e por tempo de casa.' },
-      { t: 'Cadastre ou edite', d: '<b>Novo Colaborador</b> abre o formulário (empresa, nome, cargo, nascimento, contato, CPF, admissão…). Clique numa linha para editar.' },
+      { t: 'Filtre a lista', d: 'Busque por nome e filtre por situação (ativos, desligados), empresa e tempo de casa.' },
+      { t: 'Cadastre ou edite', d: '<b>Novo Colaborador</b>: escolha a <b>gestão</b> (loja/operação) e, se souber, o <b>CNPJ de registro</b>. Gestão, nome, CPF válido e data de admissão são obrigatórios. Ao salvar, o cadastro vai para o Conekto.' },
+      { t: 'Desligue quem saiu', d: 'Botão amarelo <b>Desligar</b>: informe o <b>último dia trabalhado</b> e o motivo. A pessoa sai da lista de ativos, mas o histórico fica; no Conekto o ponto é bloqueado a partir do dia seguinte.' },
+      { t: 'Readmita, se voltar', d: 'No filtro <b>Desligados</b>, botão verde <b>Readmitir</b> com a nova data de admissão. No Conekto ela volta no mesmo registro.' },
+      { t: 'Acompanhe o Conekto', d: 'A coluna <b>Conekto</b> mostra ✓ Enviado, ⚠ Erro (passe o mouse para ver o motivo e clique para reenviar) ou Enviar. No formulário de edição, <b>Conferir no Conekto</b> mostra a situação lá e o que falta configurar (jornada, reconhecimento facial…).' },
       { t: 'Exporte', d: '<b>Exportar XLSX</b> baixa a lista filtrada.' },
     ],
     dicas: ['O <b>tempo de casa</b> é calculado pela data de admissão.', 'Os gráficos mostram o quadro por empresa e por faixa de tempo de casa.'],
-    naoFaz: ['Dados pessoais (CPF, telefone, endereço, e-mail) <b>não</b> são enviados ao GerônIA.'],
+    naoFaz: ['Dados pessoais (CPF, telefone, endereço, e-mail) <b>não</b> são enviados ao GerônIA.', 'Excluir de vez é só do administrador e não avisa o Conekto — para quem saiu, use Desligar.', 'Jornada, horário, reconhecimento facial e código Domínio são configurados no próprio Conekto.'],
     quemVe: 'Quem tem a permissão Funcionários, empresa por empresa.',
     dados: 'Cadastro próprio.',
     tour: [

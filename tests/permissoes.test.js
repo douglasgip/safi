@@ -74,5 +74,5 @@ test('toda permissão can_* usada no menu existe no Admin e nas funções de cri
 
 test('nenhum arquivo de teste/ferramenta é publicado no Vercel', () => {
   const ign = ler('.vercelignore').split(/\r?\n/);
-  for (const x of ['tests', 'package.json', 'scripts', 'CLAUDE.md']) assert.ok(ign.includes(x), '.vercelignore sem ' + x);
+  for (const x of ['tests', 'package.json', 'scripts', 'CLAUDE.md', 'docs']) assert.ok(ign.includes(x), '.vercelignore sem ' + x);
 });
