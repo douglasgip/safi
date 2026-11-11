@@ -47,7 +47,7 @@ test('conselho: o aviso entra na faixa de avisos da tela', () => {
 
 // ── Bloco "Metas e Orçamento" ───────────────────────────────────────────────
 const resumoMetas = extrairFuncao(codigo, 'resumoMetas', {});
-const resumoGastos = extrairFuncao(codigo, 'resumoGastos', {});
+const resumoCompras = extrairFuncao(codigo, 'resumoCompras', {});
 const pc = {
   'GIP|2026|7': { tem_meta: true, meta_receita: 1000, receita_bruta: 900 },
   'GIP|2026|8': { tem_meta: true, meta_receita: 1000, receita_bruta: 1100 },
@@ -71,27 +71,29 @@ test('metas no Conselho: operação sem meta não entra (não infla o atingiment
   assert.strictEqual(resumoMetas(['ViaCloset'], [{ ano: 2026, mes: 9 }], [{ ano: 2026, mes: 9 }], pc).pct, null);
 });
 
-test('orçamento no Conselho: orçado × real por grupo, só das operações com orçamento', () => {
+test('compras no Conselho: previstas × realizadas por operação, só das que têm compra prevista', () => {
   const linhas = [
-    { operacao: 'GIP', ano: 2026, mes: 9, campo: 'Despesas de Pessoal', ordem: 5, orcado: 70000, realizado: 69313, tem_orc: true },
-    { operacao: 'GIP', ano: 2026, mes: 9, campo: 'Despesas Administrativas', ordem: 2, orcado: 20000, realizado: 26873.46, tem_orc: true },
-    { operacao: 'ViaCloset', ano: 2026, mes: 9, campo: 'Despesas de Pessoal', ordem: 5, orcado: 0, realizado: 79717.53, tem_orc: false },
-    { operacao: 'GIP', ano: 2026, mes: 8, campo: 'Despesas de Pessoal', ordem: 5, orcado: 70000, realizado: 83814.73, tem_orc: true },
+    { operacao: 'GIP', ano: 2026, mes: 9, compras_previstas: 100000, compras_realizadas: 120000 },
+    { operacao: 'Exposicao', ano: 2026, mes: 9, compras_previstas: 50000, compras_realizadas: 30000 },
+    { operacao: 'ViaCloset', ano: 2026, mes: 9, compras_previstas: null, compras_realizadas: 9999 },
+    { operacao: 'GIP', ano: 2026, mes: 8, compras_previstas: 80000, compras_realizadas: 70000 },
   ];
-  const r = JSON.parse(JSON.stringify(resumoGastos(['GIP', 'ViaCloset'], [{ ano: 2026, mes: 9 }], linhas)));
-  assert.deepStrictEqual(r.com, ['GIP']);
-  assert.deepStrictEqual(r.grupos.map(x => x.campo), ['Despesas Administrativas', 'Despesas de Pessoal'], 'na ordem do DRE');
-  assert.strictEqual(r.tot.orcado, 90000);
-  assert.ok(Math.abs(r.tot.real - 96186.46) < 0.01, 'sem o real da Via Closet, que não tem orçamento');
-  const acum = resumoGastos(['GIP'], [8, 9].map(mes => ({ ano: 2026, mes })), linhas);
-  assert.strictEqual(acum.tot.orcado, 160000);
+  const r = JSON.parse(JSON.stringify(resumoCompras(['GIP', 'Exposicao', 'ViaCloset'], [{ ano: 2026, mes: 9 }], linhas)));
+  assert.deepStrictEqual(r.com, ['GIP', 'Exposicao'], 'Via Closet sem compra prevista fica de fora');
+  assert.deepStrictEqual(r.tot, { prev: 150000, real: 150000 });
+  assert.strictEqual(r.saldo, 0);
+  assert.strictEqual(r.uso, 1);
+  const acum = resumoCompras(['GIP'], [8, 9].map(mes => ({ ano: 2026, mes })), linhas);
+  assert.strictEqual(acum.tot.prev, 180000);
+  assert.strictEqual(acum.tot.real, 190000);
 });
 
 test('bloco Metas e Orçamento está na tela, no render e no PDF', () => {
   const html = ler('conselho.html');
   assert.match(html, /id="panel-mo"/);
   assert.match(codigo, /renderMetasOrc\(ops, ano, mes\)/);
-  assert.match(codigo, /rpc\('conselho_orcamento_campos'/);
+  assert.match(codigo, /from\('orcamento_mensal'\)\.select\('operacao,ano,mes,compras_previstas,compras_realizadas'\)/);
+  assert.doesNotMatch(codigo, /conselho_orcamento_campos/, 'RPC antigo (orçamento de gastos) foi apagado');
   assert.match(codigo, /id: 'metasorc'/);
   assert.match(codigo, /if \(sel\.opcoes\.metasorc\)/);
 });

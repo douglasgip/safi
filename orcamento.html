@@ -15,7 +15,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="/user-menu.js"></script>
   <script src="/sidebar.js"></script>
   <style>
@@ -49,136 +48,60 @@
     .dc-sidebar::-webkit-scrollbar { width: 8px; }
     .dc-sidebar::-webkit-scrollbar-track { background: transparent; }
     .dc-sidebar::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
-    .dc-sidebar::-webkit-scrollbar-thumb:hover { background: #7dd3fc; }
     .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
     .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
     .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
     .dc-sidebar-submenu { display: flex; flex-direction: column; }
     .dc-sidebar-sub-btn { padding-left: 44px !important; }
-    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; transition: background .15s ease, color .15s ease; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; }
     .dc-sidebar-chevron:hover { background: rgba(255,255,255,0.08); color: #f1f5f9; }
     .dc-sidebar-chevron svg { transition: transform .2s cubic-bezier(.16,1,.3,1); }
     .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
     .dc-sidebar-submenu.collapsed { display: none; }
 
     .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
-    .fe-toolbar { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+    .fe-toolbar { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
     .fe-toolbar h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
-    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .fe-toolbar-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; max-width: 640px; line-height: 1.5; }
+    .or-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .or-controls label { font-size: 10px; font-weight: 700; color: #94a3b8; letter-spacing: 1.2px; text-transform: uppercase; }
     .fe-select { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
     .fe-select:focus { outline: none; border-color: #38bdf8; }
     select option { background: #0f172a; color: #f1f5f9; }
-    .or-controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .op-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .op-btns-l { font-size: 9px; font-weight: 700; color: #e2e8f0; letter-spacing: 2px; text-transform: uppercase; }
-    .op-btn { padding: 7px 13px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: #64748b; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 7px; transition: all .18s cubic-bezier(.16,1,.3,1); }
-    .op-btn img { width: 20px; height: 20px; object-fit: cover; border-radius: 50%; flex-shrink: 0; opacity: .55; }
-    .op-btn.on { background: #18283e; border-color: rgba(255,255,255,0.15); color: #f1f5f9; box-shadow: inset 3px 0 0 var(--cor), 0 4px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.08); }
-    .op-btn.on img { opacity: 1; }
-
-    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 520px; }
-    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
-    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
-    .subtabs { display: inline-flex; gap: 4px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 3px; }
-    .subtab { padding: 7px 12px; background: transparent; border: none; border-radius: 7px; color: #64748b; font-family: Inter, sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; }
-    .subtab.active { background: rgba(255,255,255,0.08); color: #f1f5f9; }
-
-    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
-    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
-    .empty { padding: 36px 16px; text-align: center; color: #475569; font-size: 13px; }
-
+    .or-dirty { font-size: 11.5px; font-weight: 700; color: #fcd34d; display: none; }
+    .or-dirty.on { display: inline; }
     .btn-primary { padding: 11px 22px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
     .btn-primary:active { transform: translateY(2px); box-shadow: 0 1px 0 #075985; }
     .btn-primary:disabled { opacity: .6; cursor: default; }
-    .btn-ghost { padding: 11px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
-    .btn-ghost:hover { background: rgba(255,255,255,0.09); color: #f1f5f9; }
 
-    /* KPIs do período */
-    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
-    .kpi { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px 16px; }
-    .kpi-l { font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .8px; }
-    .kpi-v { font-size: 20px; font-weight: 800; color: #f8fafc; margin-top: 6px; font-variant-numeric: tabular-nums; }
-    .kpi-s { font-size: 11.5px; color: #94a3b8; margin-top: 4px; }
-    .bom { color: #4ade80 !important; } .ruim { color: #f87171 !important; } .neutro { color: #94a3b8; }
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 18px; margin-bottom: 18px; }
+    .op-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .op-head img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
+    .op-head h2 { font-size: 15px; font-weight: 800; color: #f8fafc; }
+    .op-head .op-res { margin-left: auto; font-size: 12px; color: #94a3b8; font-variant-numeric: tabular-nums; text-align: right; }
+    .op-res b { color: #f8fafc; }
 
-    .chart-box { position: relative; height: 280px; }
-
-    /* Tabela orçado × real */
-    .table-scroll { overflow: auto; -webkit-overflow-scrolling: touch; max-height: 70vh; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
-    table.an { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 980px; }
-    .an th, .an td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .an thead th { position: sticky; top: 0; z-index: 3; background: #101728; font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: right; }
-    .an thead tr.grp th { font-size: 10px; color: #7dd3fc; text-align: center; border-bottom: none; }
-    .an thead tr:nth-child(2) th { top: 29px; }
-    .an th.lbl, .an td.lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; min-width: 240px; }
-    .an thead th.lbl { z-index: 4; background: #101728; }
-    .an td { font-size: 12.5px; color: #e2e8f0; text-align: right; }
-    .an td.lbl { font-size: 12.5px; color: #cbd5e1; padding-left: 26px; }
-    .an tr.cp td { background: #0f1b30; font-weight: 800; color: #f1f5f9; }
-    .an tr.cp td.lbl { background: #10203a; padding-left: 12px; color: #7dd3fc; }
-    .an tr.tot td { background: #111a2c; font-weight: 800; color: #f8fafc; border-top: 1px solid rgba(255,255,255,0.12); }
-    .an tr.tot td.lbl { background: #131c30; padding-left: 12px; }
-    .an td.sep, .an th.sep { border-left: 1px solid rgba(255,255,255,0.08); }
-    .an .muted { color: #475569; }
-
-    /* Grade de lançamento do orçamento */
-    .or-note { background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.22); color: #93c5fd; border-radius: 12px; padding: 11px 14px; font-size: 12px; line-height: 1.55; margin-bottom: 16px; }
-    .or-num { width: 70px; padding: 10px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; text-align: right; }
-    .or-num:focus { outline: none; border-color: #38bdf8; }
-    .or-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
-    .or-bar .grow { flex: 1; }
-    .or-dirty { font-size: 11.5px; font-weight: 700; color: #fcd34d; display: none; }
-    .or-dirty.on { display: inline; }
-    .or-scroll { overflow: auto; max-height: 68vh; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
-    table.or-tbl { border-collapse: separate; border-spacing: 0; min-width: 1500px; width: 100%; }
-    .or-tbl th, .or-tbl td { padding: 4px 5px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; }
-    .or-tbl thead th { position: sticky; top: 0; z-index: 3; background: #101728; font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: right; padding: 10px 6px; }
-    .or-tbl .lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; font-size: 12px; color: #cbd5e1; min-width: 230px; max-width: 280px; overflow: hidden; text-overflow: ellipsis; padding-left: 22px; }
-    .or-tbl thead th.lbl { z-index: 4; background: #101728; text-align: left; padding-left: 12px; }
-    .or-tbl tr.cp td { background: #0f1b30; color: #7dd3fc; font-size: 11.5px; font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; padding: 8px 8px; }
-    .or-tbl tr.cp td.lbl { background: #10203a; text-align: left; padding-left: 12px; }
-    .or-tbl tr.tot td { background: #111a2c; font-weight: 800; color: #6ee7b7; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; padding: 8px 8px; }
-    .or-tbl tr.tot td.lbl { background: #131c30; text-align: left; padding-left: 12px; }
-    .or-tbl td.t { text-align: right; font-size: 12px; font-weight: 700; color: #94a3b8; font-variant-numeric: tabular-nums; padding: 4px 10px; }
-    .or-in { width: 92px; padding: 7px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
-    .or-in:focus { outline: none; border-color: #38bdf8; background: rgba(56,189,248,0.08); }
-    .or-in.chg { border-color: rgba(251,191,36,0.55); }
-    .or-in:disabled { opacity: .65; cursor: default; background: rgba(255,255,255,0.02); }
-    .or-fill { width: 26px; height: 26px; border-radius: 7px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #64748b; cursor: pointer; font-size: 12px; }
-    .or-fill:hover { color: #7dd3fc; border-color: rgba(56,189,248,0.4); }
-    .or-foot { font-size: 11px; color: #64748b; margin-top: 12px; line-height: 1.6; }
-
-    /* Metas */
-    .meta-ano { padding: 22px; }
-    .meta-top { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .meta-tit { font-size: 15px; font-weight: 800; color: #f8fafc; }
-    .meta-num { font-size: 13px; color: #94a3b8; font-variant-numeric: tabular-nums; }
-    .meta-num b { color: #f8fafc; font-size: 15px; }
-    .barra { position: relative; height: 14px; background: rgba(255,255,255,0.06); border-radius: 8px; overflow: visible; }
-    .barra-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px; background: linear-gradient(90deg, #0284c7, #38bdf8); transition: width .5s cubic-bezier(.16,1,.3,1); max-width: 100%; }
-    .barra-fill.ok { background: linear-gradient(90deg, #059669, #34d399); }
-    .barra-tempo { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #fbbf24; border-radius: 2px; }
-    .barra-leg { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 11.5px; color: #64748b; }
-    .barra-leg .tempo::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px; background: #fbbf24; margin-right: 6px; vertical-align: 0; }
-    .tri-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 18px; }
-    .tri { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-    .tri.atual { border-color: rgba(56,189,248,0.45); }
-    .tri-h { display: flex; justify-content: space-between; align-items: center; }
-    .tri-n { font-size: 13px; font-weight: 800; color: #f8fafc; }
-    .tri-m { font-size: 10.5px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; }
-    .tri label { font-size: 10.5px; font-weight: 700; color: #94a3b8; }
-    .tri .or-in { width: 100%; font-size: 13px; padding: 9px 10px; }
-    .tri-pct { font-size: 22px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; }
-    .tri-s { font-size: 11.5px; color: #94a3b8; line-height: 1.5; font-variant-numeric: tabular-nums; }
-    .mes-meta { display: flex; flex-direction: column; gap: 5px; padding: 9px 10px; border-radius: 12px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.05); }
-    .mes-meta.atual { border-color: rgba(56,189,248,0.35); }
-    .mes-h { display: flex; justify-content: space-between; align-items: baseline; }
-    .mes-p { font-size: 11px; font-weight: 800; color: #cbd5e1; font-variant-numeric: tabular-nums; }
-    .mes-r { font-size: 10.5px; color: #64748b; font-variant-numeric: tabular-nums; }
-    .barra.fina { height: 6px; }
-    .tri-tot { display: flex; flex-direction: column; gap: 8px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: 2px; }
-    .tri-tot-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 10.5px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; }
-    .tri-tot-h b { font-size: 13px; color: #f8fafc; text-transform: none; letter-spacing: 0; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .or-scroll { overflow: auto; -webkit-overflow-scrolling: touch; border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; }
+    table.bud { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 1240px; }
+    .bud th, .bud td { padding: 5px 6px; border-bottom: 1px solid rgba(255,255,255,0.04); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .bud thead th { background: #101728; font-size: 9.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: right; padding: 8px 6px; }
+    .bud thead tr.grp th { font-size: 10px; text-align: center; border-bottom: none; padding-bottom: 2px; }
+    .bud thead tr.grp th.v { color: #6ee7b7; } .bud thead tr.grp th.c { color: #fcd34d; } .bud thead tr.grp th.e { color: #7dd3fc; }
+    .bud .lbl { position: sticky; left: 0; z-index: 2; background: #0d1424; text-align: left; font-size: 12.5px; font-weight: 700; color: #cbd5e1; min-width: 86px; padding-left: 12px; }
+    .bud thead th.lbl { z-index: 3; background: #101728; }
+    .bud td { font-size: 12.5px; color: #e2e8f0; text-align: right; }
+    .bud td.sep, .bud th.sep { border-left: 1px solid rgba(255,255,255,0.08); }
+    .bud td.calc { color: #94a3b8; font-weight: 600; padding: 5px 10px; }
+    .bud td.est { color: #7dd3fc; font-weight: 700; padding: 5px 10px; }
+    .bud tr.tot td { background: #111a2c; font-weight: 800; color: #f8fafc; border-top: 1px solid rgba(255,255,255,0.12); padding: 9px 10px; }
+    .bud tr.tot td.lbl { background: #131c30; }
+    .bom { color: #4ade80 !important; } .ruim { color: #f87171 !important; } .muted { color: #475569 !important; }
+    .in { width: 108px; padding: 7px 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .in.pc { width: 78px; }
+    .in:focus { outline: none; border-color: #38bdf8; background: rgba(56,189,248,0.08); }
+    .in.chg { border-color: rgba(251,191,36,0.55); }
+    .in::placeholder { color: #475569; }
+    .or-foot { font-size: 11px; color: #64748b; margin-top: 4px; line-height: 1.6; }
 
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; box-shadow: 0 8px 32px rgba(0,0,0,0.6); z-index: 300; opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; gap: 10px; white-space: nowrap; pointer-events: none; }
     .toast.visible { opacity: 1; pointer-events: auto; }
@@ -186,9 +109,7 @@
     .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
     #or-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
 
-    @media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, 1fr); } .tri-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .tabs { max-width: none; } }
-    @media (max-width: 520px) { .kpis, .tri-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 12px; } .op-head { flex-wrap: wrap; } .op-head .op-res { margin-left: 0; text-align: left; width: 100%; } }
   </style>
 </head>
 <body>
@@ -213,73 +134,21 @@
     <div class="fe-toolbar">
       <div>
         <h1>Orçamento e Metas</h1>
-        <div class="fe-toolbar-sub">Orçamento = objetivo de <b>gasto</b> (só Gastos Operacionais). Meta = objetivo de <b>receita</b>, por mês (o trimestre e o ano somam sozinhos).</div>
+        <div class="fe-toolbar-sub">Por operação e mês: <b>vendas</b> e <b>compras</b> previstas × realizadas e o <b>estoque</b> em peças. Tudo digitado. O estoque final de um mês vira o estoque inicial do mês seguinte.</div>
       </div>
       <div class="or-controls">
-        <div class="op-btns" id="sel-ops" role="group" aria-label="Operações"><span class="op-btns-l">Operações:</span></div>
-        <select class="fe-select" id="sel-ano" aria-label="Ano"></select>
+        <label for="sel-de">De</label><select class="fe-select" id="sel-de"></select>
+        <label for="sel-ate">Até</label><select class="fe-select" id="sel-ate"></select>
+        <span class="or-dirty" id="dirty">● alterações não salvas</span>
+        <button class="btn-primary" id="btn-save" type="button">Salvar</button>
       </div>
     </div>
 
-    <div class="tabs" role="tablist">
-      <button class="tab active" id="tab-orc" type="button" data-aba="orc">Orçamento de Gastos Operacionais</button>
-      <button class="tab" id="tab-metas" type="button" data-aba="metas">Metas</button>
+    <div id="ops"></div>
+    <div class="or-foot">
+      <b>Vendas:</b> saldo = realizadas − previstas; % = realizadas ÷ previstas. <b>Compras:</b> saldo = previstas − realizadas (positivo = sobrou verba); % = saldo ÷ previstas.
+      <b>Estoque final</b> = estoque inicial − peças vendidas + peças compradas. Deixe o estoque inicial em branco para usar o final do mês anterior (aparece em cinza); digite para corrigir.
     </div>
-
-    <div class="or-note" id="nota-multi" style="display:none"></div>
-
-    <!-- ══ ORÇAMENTO DE GASTOS ══ -->
-    <section id="aba-orc">
-      <div class="or-bar">
-        <div class="subtabs">
-          <button class="subtab active" type="button" data-vis="analise">Orçado × Real</button>
-          <button class="subtab" type="button" data-vis="lancar">Lançar orçamento</button>
-        </div>
-        <span class="grow"></span>
-        <div class="or-controls" id="an-controls">
-          <select class="fe-select" id="sel-per" aria-label="Período"></select>
-        </div>
-      </div>
-
-      <div id="vis-analise">
-        <div class="kpis" id="an-kpis"></div>
-        <div class="panel">
-          <div class="panel-head">Gasto orçado × gasto real — mês a mês</div>
-          <div class="chart-box"><canvas id="ch-orc"></canvas></div>
-        </div>
-        <div class="panel">
-          <div class="panel-head" id="an-titulo">Análise vertical e horizontal</div>
-          <div class="table-scroll"><table class="an" id="an-tbl"></table></div>
-          <div class="or-foot"><b>AV</b> (análise vertical) = quanto a linha pesa no total de gastos do período. <b>AH</b> (análise horizontal) = variação contra o período anterior <span id="an-ah-ref"></span>. <b>Diferença</b> = real − orçado: positivo (vermelho) é gasto acima do orçado. <b>Real ÷ Orçado</b> acima de 100% = estourou o orçamento.</div>
-        </div>
-      </div>
-
-      <div id="vis-lancar" style="display:none">
-        <div class="panel">
-          <div class="or-bar">
-            <button class="btn-ghost" id="btn-copy" type="button" title="Preenche só as células vazias com o realizado do ano anterior, com o reajuste informado">Preencher com realizado do ano anterior</button>
-            <label class="or-controls" style="gap:6px"><span style="font-size:11px;color:#64748b;font-weight:700">Reajuste %</span><input class="or-num" id="inp-reaj" value="0" inputmode="decimal" aria-label="Reajuste percentual"></label>
-            <span class="grow"></span>
-            <span class="or-dirty" id="dirty">● alterações não salvas</span>
-            <button class="btn-primary" id="btn-save" type="button">Salvar orçamento</button>
-          </div>
-          <div class="or-scroll"><table class="or-tbl" id="or-tbl"></table></div>
-          <div class="or-foot">Uma linha para cada conta de Gastos Operacionais do DRE. Valores positivos, como nos Lançamentos. Célula vazia = sem orçamento. A seta → repete o primeiro valor preenchido da linha nos meses vazios.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══ METAS DE RECEITA ══ -->
-    <section id="aba-metas" style="display:none">
-      <div class="panel meta-ano" id="meta-ano"></div>
-      <div class="tri-grid" id="meta-tris"></div>
-      <div class="or-bar">
-        <span class="or-foot" style="margin:0">Receita realizada = Receita Operacional Bruta lançada no DRE. A marca amarela mostra quanto do período já passou: se a barra azul está antes dela, a venda está atrás do ritmo.</span>
-        <span class="grow"></span>
-        <span class="or-dirty" id="dirty-metas">● alterações não salvas</span>
-        <button class="btn-primary" id="btn-save-metas" type="button">Salvar metas</button>
-      </div>
-    </section>
   </main>
 
   <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
@@ -292,404 +161,209 @@
     SafiSidebar.mount('or', { active: 'orcamento', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
     wireSidebarToggle('or');
 
+    // Ordem do modelo (planilha BUDGET): lojas físicas primeiro, e-commerce por último.
     const OPS = [
-      { id: 'GIP',       nome: 'GIP Ecommerce',      empresas: ['EP', 'GIP'],  logo: '/public/gipecommerce_logo.png',      cor: '#ffffff' },
-      { id: 'Exposicao', nome: 'Exposição Paulista', empresas: ['Exposicao'],  logo: '/public/exposicaopaulista_logo.png', cor: '#fff115' },
-      { id: 'ViaCloset', nome: 'Via Closet',         empresas: ['ViaCloset'],  logo: '/public/viacloset_logo.png',        cor: '#d4526e' },
+      { id: 'Exposicao', nome: 'Exposição Paulista', logo: '/public/exposicaopaulista_logo.png' },
+      { id: 'ViaCloset', nome: 'Via Closet',         logo: '/public/viacloset_logo.png' },
+      { id: 'GIP',       nome: 'E-commerce (GIP)',   logo: '/public/gipecommerce_logo.png' },
     ];
+    const CAMPOS = ['estoque_inicial_pcs', 'vendas_previstas', 'vendas_realizadas', 'vendas_pcs', 'compras_previstas', 'compras_realizadas', 'compras_pcs'];
+    const PECAS = new Set(['estoque_inicial_pcs', 'vendas_pcs', 'compras_pcs']);
     const MES_CURTO = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    const MES_NOME = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
     const g = id => document.getElementById(id);
-    const fmt0 = v => (+v).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
     const brl = v => v == null ? '—' : (Math.round(v) < 0 ? '-' : '') + 'R$ ' + Math.abs(Math.round(v)).toLocaleString('pt-BR');
+    const pcs = v => v == null ? '—' : Math.round(v).toLocaleString('pt-BR');
     const pct = v => v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
     // ── Contas puras (testadas em tests/orcamento-metas.test.js) ─────────────
-    // Uma linha da análise: orçado e real do período, os do período de comparação (AH) e os totais (AV).
-    function analisarLinha(orc, real, orcAnt, realAnt, totOrc, totReal) {
-      const div = (a, b) => (b ? a / b : null);
+    const ym = (ano, mes) => ano * 100 + mes;
+    // Lista de meses de `de` até `ate` (inclusive), cada um como { ano, mes }. de/ate no formato ano*100+mes.
+    function mesesEntre(de, ate) {
+      const out = [];
+      let a = Math.floor(de / 100), m = de % 100;
+      while (a * 100 + m <= ate && out.length < 60) { out.push({ ano: a, mes: m }); m++; if (m > 12) { m = 1; a++; } }
+      return out;
+    }
+    // Vendas e compras de um mês. Campo vazio = null (não conta como zero no %).
+    function calcLinha(r) {
+      const vp = r.vendas_previstas, vr = r.vendas_realizadas, cp = r.compras_previstas, cr = r.compras_realizadas;
+      const vSaldo = vp == null && vr == null ? null : (vr || 0) - (vp || 0);
+      const cSaldo = cp == null && cr == null ? null : (cp || 0) - (cr || 0);
       return {
-        orc, real,
-        avOrc: div(orc, totOrc), avReal: div(real, totReal),
-        ahOrc: orcAnt ? (orc - orcAnt) / orcAnt : null,
-        ahReal: realAnt ? (real - realAnt) / realAnt : null,
-        dif: real - orc,
-        ating: div(real, orc),
+        vSaldo, vPct: vp ? (vr || 0) / vp : null,
+        cSaldo, cPct: cp ? cSaldo / cp : null,
       };
     }
-    // Meses do período e do período de comparação. modo 'mes': mês x mês anterior;
-    // modo 'acum': jan..mês x o mesmo intervalo do ano anterior.
-    function periodo(modo, ano, mes) {
-      if (modo === 'acum') {
-        const meses = Array.from({ length: mes }, (_, i) => ({ ano, mes: i + 1 }));
-        return { meses, ant: meses.map(p => ({ ano: ano - 1, mes: p.mes })) };
-      }
-      return { meses: [{ ano, mes }], ant: [mes === 1 ? { ano: ano - 1, mes: 12 } : { ano, mes: mes - 1 }] };
+    // Estoque em cadeia: o inicial de um mês é o digitado ou, se vazio, o final do mês anterior.
+    // final = inicial − peças vendidas + peças compradas. `porMes` = { ano*100+mes: linha }.
+    // Devolve { ano*100+mes: { ini, fim, herdado } } para cada mês de `meses`; a cadeia começa no
+    // primeiro mês lançado (mesmo que antes do período mostrado) para o inicial herdado ficar certo.
+    function encadearEstoque(porMes, meses) {
+      const out = {};
+      if (!meses.length) return out;
+      const chaves = Object.keys(porMes).map(Number).filter(k => porMes[k] && porMes[k].estoque_inicial_pcs != null);
+      const ultimo = ym(meses[meses.length - 1].ano, meses[meses.length - 1].mes);
+      const primeiro = Math.min(ym(meses[0].ano, meses[0].mes), ...(chaves.length ? chaves : [Infinity]));
+      let anterior = null;
+      mesesEntre(primeiro, ultimo).forEach(p => {
+        const k = ym(p.ano, p.mes), r = porMes[k] || {};
+        const digitado = r.estoque_inicial_pcs != null;
+        const ini = digitado ? r.estoque_inicial_pcs : anterior;
+        const mov = (r.compras_pcs || 0) - (r.vendas_pcs || 0);
+        const fim = ini == null ? null : ini + mov;   // sem estoque inicial não dá para saber o final
+        out[k] = { ini, fim, herdado: !digitado && ini != null };
+        anterior = fim;
+      });
+      return out;
     }
-    const trimestreDoMes = mes => Math.ceil(mes / 3);
-    // Filtro de operações (igual ao DRE): clicar liga/desliga; a última selecionada não pode sair.
-    // Devolve sempre na ordem de OPS_ORDEM.
-    function alternarOperacao(atuais, op, ordem) {
-      const tem = atuais.includes(op);
-      if (tem && atuais.length === 1) return atuais.slice();
-      const novo = tem ? atuais.filter(x => x !== op) : atuais.concat(op);
-      return ordem.filter(x => novo.includes(x));
+    // Total do período: soma R$ e peças; estoque inicial = do primeiro mês, final = do último.
+    function totalPeriodo(linhas, estoque, meses) {
+      const t = {};
+      CAMPOS.filter(c => c !== 'estoque_inicial_pcs').forEach(c => {
+        const vs = linhas.map(r => r[c]).filter(v => v != null);
+        t[c] = vs.length ? vs.reduce((a, b) => a + b, 0) : null;
+      });
+      const e0 = estoque[ym(meses[0].ano, meses[0].mes)], e1 = estoque[ym(meses[meses.length - 1].ano, meses[meses.length - 1].mes)];
+      return { ...t, ...calcLinha(t), ini: e0 ? e0.ini : null, fim: e1 ? e1.fim : null };
     }
-    // Soma das metas dos meses informados (mês -> valor); null se nenhum deles tem meta lançada.
-    function somaMetas(metas, meses) {
-      let t = 0, tem = false;
-      meses.forEach(m => { if (metas[m] != null) { t += metas[m]; tem = true; } });
-      return tem ? t : null;
-    }
-    // Progresso de uma meta: % atingido (sem teto, pode passar de 100%) e quanto falta (nunca negativo).
-    function progressoMeta(meta, real) {
-      if (!meta) return { pct: null, falta: null };
-      return { pct: real / meta, falta: Math.max(0, meta - real) };
-    }
-    // Fração do período (ano ou trimestre) já decorrida em `hoje`: 0 antes de começar, 1 depois de acabar.
-    function fracaoDecorrida(ano, trimestre, hoje) {
-      const ini = trimestre ? new Date(ano, (trimestre - 1) * 3, 1) : new Date(ano, 0, 1);
-      const fim = trimestre ? new Date(ano, trimestre * 3, 1) : new Date(ano + 1, 0, 1);
-      return Math.min(1, Math.max(0, (hoje - ini) / (fim - ini)));
+    // Peças: só dígitos (aceita "1.250"); vazio = null.
+    function lerPecas(txt) {
+      const s = String(txt == null ? '' : txt).replace(/\D/g, '');
+      return s === '' ? null : parseInt(s, 10);
     }
 
     // ── Estado ──────────────────────────────────────────────────────────────
-    let campos = [];       // campos ativos de Gastos Operacionais
-    let subs = [];         // subcampos ativos desses campos (linhas do orçamento)
-    let subCampo = {};     // subcampo_id -> campo_id (todos)
-    let campoClasse = {};  // campo_id -> chave da classe
-    let vals = {}, orig = {};          // orçamento: "subId|mes" -> valor
-    let real = {};                     // gastos reais: "ano|mes|subId" -> valor
-    let receita = {};                  // receita bruta real: "ano|mes" -> valor
-    let metas = {}, metasOrig = {};    // mês -> valor
-    let sel = { ops: ['GIP'], ano: new Date().getFullYear() };
-    // Lançar só com UMA operação selecionada; com 2 ou 3 a tela soma tudo e fica só para consulta.
-    const editavel = () => sel.ops.length === 1;
-    const nomeOps = () => sel.ops.map(id => OPS.find(o => o.id === id).nome).join(' + ');
-    let aba = 'orc', vis = 'analise', chart = null;
+    let dados = {}, orig = {};   // "op|ano*100+mes" -> { campo: valor }
+    let periodoSel = { de: 0, ate: 0 };
+    const kk = (op, k) => op + '|' + k;
+    const igual = (a, b) => CAMPOS.every(c => (a ? a[c] : null) == (b ? b[c] : null));
+    const pendentes = () => [...new Set([...Object.keys(dados), ...Object.keys(orig)])].filter(x => !igual(dados[x], orig[x]));
 
-    const k = (sid, m) => sid + '|' + m;
-    const kr = (a, m, sid) => a + '|' + m + '|' + sid;
-    function dirtyCount(a, b) { let n = 0; new Set([...Object.keys(a), ...Object.keys(b)]).forEach(x => { if (a[x] !== b[x]) n++; }); return n; }
-
-    async function fetchAll(build) {
-      const out = []; const step = 1000;
-      for (let from = 0; ; from += step) {
-        const { data, error } = await build().range(from, from + step - 1);
+    async function carregar() {
+      const out = [];
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await sb.from('orcamento_mensal').select('operacao,ano,mes,' + CAMPOS.join(',')).order('id').range(from, from + 999);
         if (error) throw error;
         out.push(...data);
-        if (data.length < step) break;
+        if (data.length < 1000) break;
       }
-      return out;
+      dados = {};
+      out.forEach(r => { const o = {}; CAMPOS.forEach(c => { o[c] = r[c] == null ? null : +r[c]; }); dados[kk(r.operacao, ym(r.ano, r.mes))] = o; });
+      orig = JSON.parse(JSON.stringify(dados));
     }
 
-    async function carregarEstrutura() {
-      const [cl, cp, sc] = await Promise.all([
-        sb.from('lancamentos_classes').select('id,chave'),
-        sb.from('lancamentos_campos').select('id,nome,chave,classe_id,ordem,ativo').order('ordem'),
-        fetchAll(() => sb.from('lancamentos_subcampos').select('id,nome,campo_id,ordem,ativo').order('ordem').order('id')),
-      ]);
-      if (cl.error || cp.error) throw (cl.error || cp.error);
-      const chaveDe = Object.fromEntries(cl.data.map(c => [c.id, c.chave]));
-      cp.data.forEach(c => { campoClasse[c.id] = chaveDe[c.classe_id]; });
-      sc.forEach(s => { subCampo[s.id] = s.campo_id; });
-      campos = cp.data.filter(c => c.ativo && chaveDe[c.classe_id] === 'gastos_operacionais');
-      const ids = new Set(campos.map(c => c.id));
-      subs = sc.filter(s => s.ativo && ids.has(s.campo_id));
+    function porMesDe(op) {
+      const m = {};
+      Object.keys(dados).forEach(x => { const [o, k] = x.split('|'); if (o === op) m[+k] = dados[x]; });
+      return m;
     }
 
-    async function carregarDados() {
-      const empresas = sel.ops.flatMap(id => OPS.find(o => o.id === id).empresas);
-      const [orcRows, metaRows, valRows] = await Promise.all([
-        fetchAll(() => sb.from('orcamento_gastos').select('subcampo_id,mes,valor').in('operacao', sel.ops).eq('ano', sel.ano).order('id')),
-        fetchAll(() => sb.from('metas_receita').select('mes,valor').in('operacao', sel.ops).eq('ano', sel.ano).order('id')),
-        fetchAll(() => sb.from('lancamentos_valores').select('subcampo_id,ano,mes,valor').in('ano', [sel.ano - 1, sel.ano]).in('empresa_id', empresas).order('id')),
-      ]);
-      // Com mais de uma operação, orçamento e metas são a soma delas.
-      vals = {};
-      orcRows.forEach(r => { vals[k(r.subcampo_id, r.mes)] = (vals[k(r.subcampo_id, r.mes)] || 0) + (+r.valor); });
-      orig = { ...vals };
-      metas = {};
-      metaRows.forEach(r => { metas[r.mes] = (metas[r.mes] || 0) + (+r.valor); });
-      metasOrig = { ...metas };
-      real = {}; receita = {};
-      valRows.forEach(r => {
-        const ch = campoClasse[subCampo[r.subcampo_id]];
-        if (ch === 'gastos_operacionais') real[kr(r.ano, r.mes, r.subcampo_id)] = (real[kr(r.ano, r.mes, r.subcampo_id)] || 0) + (+r.valor);
-        else if (ch === 'receita_bruta') receita[r.ano + '|' + r.mes] = (receita[r.ano + '|' + r.mes] || 0) + (+r.valor);
+    function celula(op, k, campo, v, extra) {
+      const ehPc = PECAS.has(campo);
+      const txt = v == null ? '' : (ehPc ? Math.round(v).toLocaleString('pt-BR') : numberToMoneyMasked(v));
+      return '<input class="in' + (ehPc ? ' pc' : ' rs') + '" data-op="' + op + '" data-k="' + k + '" data-c="' + campo + '" value="' + txt + '" inputmode="' + (ehPc ? 'numeric' : 'decimal') + '"' + (extra || '') + '>';
+    }
+    const corSaldo = v => v == null ? 'muted' : v > 0 ? 'bom' : v < 0 ? 'ruim' : '';
+
+    function renderOp(op, meses) {
+      const porMes = porMesDe(op.id);
+      const est = encadearEstoque(porMes, meses);
+      const linhas = meses.map(p => porMes[ym(p.ano, p.mes)] || {});
+      const tot = totalPeriodo(linhas, est, meses);
+      let h = '<div class="panel"><div class="op-head"><img src="' + op.logo + '" alt=""><h2>' + esc(op.nome) + '</h2>' +
+        '<div class="op-res">Vendas: <b>' + brl(tot.vendas_realizadas) + '</b> de ' + brl(tot.vendas_previstas) + ' (' + pct(tot.vPct) + ') · Compras: <b>' + brl(tot.compras_realizadas) + '</b> de ' + brl(tot.compras_previstas) + '</div></div>' +
+        '<div class="or-scroll"><table class="bud"><thead>' +
+        '<tr class="grp"><th class="lbl"></th><th class="sep e">Estoque</th><th class="sep v" colspan="5">Vendas</th><th class="sep c" colspan="5">Compras</th><th class="sep e">Estoque</th></tr>' +
+        '<tr><th class="lbl">Mês</th><th class="sep">Inicial (pçs)</th><th class="sep">Previstas R$</th><th>Realizadas R$</th><th>Saldo</th><th>%</th><th>Peças</th>' +
+        '<th class="sep">Previstas R$</th><th>Realizadas R$</th><th>Saldo</th><th>%</th><th>Peças</th><th class="sep">Final (pçs)</th></tr></thead><tbody>';
+      meses.forEach((p, i) => {
+        const k = ym(p.ano, p.mes), r = linhas[i], c = calcLinha(r), e = est[k] || {};
+        const ph = e.herdado ? ' placeholder="' + pcs(e.ini) + '" title="Herdado do estoque final do mês anterior"' : ' placeholder="—"';
+        h += '<tr><td class="lbl">' + MES_CURTO[p.mes - 1] + '/' + String(p.ano).slice(2) + '</td>' +
+          '<td class="sep">' + celula(op.id, k, 'estoque_inicial_pcs', r.estoque_inicial_pcs, ph) + '</td>' +
+          '<td class="sep">' + celula(op.id, k, 'vendas_previstas', r.vendas_previstas) + '</td><td>' + celula(op.id, k, 'vendas_realizadas', r.vendas_realizadas) + '</td>' +
+          '<td class="calc ' + corSaldo(c.vSaldo) + '" data-s="v">' + brl(c.vSaldo) + '</td><td class="calc" data-s="vp">' + pct(c.vPct) + '</td>' +
+          '<td>' + celula(op.id, k, 'vendas_pcs', r.vendas_pcs) + '</td>' +
+          '<td class="sep">' + celula(op.id, k, 'compras_previstas', r.compras_previstas) + '</td><td>' + celula(op.id, k, 'compras_realizadas', r.compras_realizadas) + '</td>' +
+          '<td class="calc ' + corSaldo(c.cSaldo) + '">' + brl(c.cSaldo) + '</td><td class="calc">' + pct(c.cPct) + '</td>' +
+          '<td>' + celula(op.id, k, 'compras_pcs', r.compras_pcs) + '</td>' +
+          '<td class="sep est">' + pcs(e.fim) + '</td></tr>';
       });
+      h += '<tr class="tot"><td class="lbl">Total</td><td class="sep">' + pcs(tot.ini) + '</td>' +
+        '<td class="sep">' + brl(tot.vendas_previstas) + '</td><td>' + brl(tot.vendas_realizadas) + '</td><td class="' + corSaldo(tot.vSaldo) + '">' + brl(tot.vSaldo) + '</td><td>' + pct(tot.vPct) + '</td><td>' + pcs(tot.vendas_pcs) + '</td>' +
+        '<td class="sep">' + brl(tot.compras_previstas) + '</td><td>' + brl(tot.compras_realizadas) + '</td><td class="' + corSaldo(tot.cSaldo) + '">' + brl(tot.cSaldo) + '</td><td>' + pct(tot.cPct) + '</td><td>' + pcs(tot.compras_pcs) + '</td>' +
+        '<td class="sep">' + pcs(tot.fim) + '</td></tr></tbody></table></div></div>';
+      return h;
     }
 
-    // Último mês do ano com gasto real lançado (para abrir a análise nele).
-    function ultimoMesComReal(ano) {
-      for (let m = 12; m >= 1; m--) if (subs.some(s => real[kr(ano, m, s.id)])) return m;
-      return new Date().getFullYear() === ano ? new Date().getMonth() + 1 : 12;
+    function render() {
+      const meses = mesesEntre(periodoSel.de, periodoSel.ate);
+      if (!meses.length) { g('ops').innerHTML = '<div class="panel" style="color:#64748b">Escolha um período válido ("De" antes de "Até").</div>'; return; }
+      const foco = document.activeElement && document.activeElement.dataset && document.activeElement.dataset.c ? document.activeElement.dataset : null;
+      g('ops').innerHTML = OPS.map(op => renderOp(op, meses)).join('');
+      g('ops').querySelectorAll('.in.rs').forEach(el => attachMoneyMask(el));
+      marcarAlterados();
+      if (foco) { const el = g('ops').querySelector('.in[data-op="' + foco.op + '"][data-k="' + foco.k + '"][data-c="' + foco.c + '"]'); if (el) el.focus(); }
     }
-    function preencherPeriodos() {
-      const m0 = ultimoMesComReal(sel.ano);
-      const atual = g('sel-per').value;
-      g('sel-per').innerHTML =
-        '<optgroup label="Mês">' + MES_NOME.map((n, i) => '<option value="mes|' + (i + 1) + '">' + n[0].toUpperCase() + n.slice(1) + '</option>').join('') + '</optgroup>' +
-        '<optgroup label="Acumulado no ano">' + MES_NOME.map((n, i) => '<option value="acum|' + (i + 1) + '">Jan até ' + MES_CURTO[i] + '</option>').join('') + '</optgroup>';
-      g('sel-per').value = atual && g('sel-per').querySelector('option[value="' + atual + '"]') ? atual : 'mes|' + m0;
-    }
-
-    // ── Orçado × Real ───────────────────────────────────────────────────────
-    const somaOrc = (sid, meses) => meses.reduce((a, p) => a + (p.ano === sel.ano ? (vals[k(sid, p.mes)] || 0) : 0), 0);
-    const somaReal = (sid, meses) => meses.reduce((a, p) => a + (real[kr(p.ano, p.mes, sid)] || 0), 0);
-    // Orçado do período de comparação: só existe se for do mesmo ano (o orçamento carregado é o do ano escolhido).
-    const somaOrcAnt = (sid, meses) => meses.every(p => p.ano === sel.ano) ? somaOrc(sid, meses) : 0;
-
-    function renderAnalise() {
-      const [modo, mesTxt] = g('sel-per').value.split('|');
-      const mes = +mesTxt;
-      const per = periodo(modo, sel.ano, mes);
-      const linhas = subs.map(s => ({ s, o: somaOrc(s.id, per.meses), r: somaReal(s.id, per.meses), oa: somaOrcAnt(s.id, per.ant), ra: somaReal(s.id, per.ant) }));
-      const tot = linhas.reduce((a, l) => ({ o: a.o + l.o, r: a.r + l.r, oa: a.oa + l.oa, ra: a.ra + l.ra }), { o: 0, r: 0, oa: 0, ra: 0 });
-      const rotPer = modo === 'acum' ? 'janeiro a ' + MES_NOME[mes - 1] + ' de ' + sel.ano : MES_NOME[mes - 1] + ' de ' + sel.ano;
-      g('an-titulo').textContent = 'Análise vertical e horizontal — ' + rotPer;
-      g('an-ah-ref').textContent = modo === 'acum' ? '(mesmo período de ' + (sel.ano - 1) + ')' : '(mês anterior)';
-
-      const totA = analisarLinha(tot.o, tot.r, tot.oa, tot.ra, tot.o, tot.r);
-      const recPer = per.meses.reduce((a, p) => a + (receita[p.ano + '|' + p.mes] || 0), 0);
-      g('an-kpis').innerHTML = [
-        { l: 'Gasto orçado', v: brl(tot.o), s: tot.o ? '' : 'sem orçamento lançado' },
-        { l: 'Gasto real', v: brl(tot.r), s: recPer ? pct(tot.r / recPer) + ' do faturamento' : '' },
-        { l: 'Diferença', v: (totA.dif > 0 ? '+' : '') + brl(totA.dif), s: tot.o ? (totA.dif > 0 ? 'acima do orçado' : 'dentro do orçado') : '', cls: tot.o ? (totA.dif > 0 ? 'ruim' : 'bom') : '' },
-        { l: 'Real ÷ Orçado', v: pct(totA.ating), s: tot.o ? (totA.ating > 1 ? 'estourou o orçamento' : 'do orçamento usado') : '—', cls: tot.o ? (totA.ating > 1 ? 'ruim' : 'bom') : '' },
-      ].map(x => '<div class="kpi"><div class="kpi-l">' + x.l + '</div><div class="kpi-v ' + (x.cls || '') + '">' + x.v + '</div><div class="kpi-s">' + x.s + '</div></div>').join('');
-
-      const linhaHtml = (nome, a, cls) => {
-        const ah = v => v == null ? '<span class="muted">—</span>' : '<span class="' + (v > 0 ? 'ruim' : v < 0 ? 'bom' : 'neutro') + '">' + (v > 0 ? '+' : '') + pct(v) + '</span>';
-        const vazio = !a.orc && !a.real;
-        return '<tr class="' + (cls || '') + '"><td class="lbl">' + esc(nome) + '</td>' +
-          '<td class="sep">' + (a.orc ? brl(a.orc) : '<span class="muted">—</span>') + '</td><td>' + (a.orc ? pct(a.avOrc) : '<span class="muted">—</span>') + '</td><td>' + ah(a.ahOrc) + '</td>' +
-          '<td class="sep">' + (a.real ? brl(a.real) : '<span class="muted">—</span>') + '</td><td>' + (a.real ? pct(a.avReal) : '<span class="muted">—</span>') + '</td><td>' + ah(a.ahReal) + '</td>' +
-          '<td class="sep ' + (vazio || !a.orc ? 'muted' : a.dif > 0 ? 'ruim' : a.dif < 0 ? 'bom' : 'neutro') + '">' + (vazio ? '—' : (a.dif > 0 ? '+' : '') + brl(a.dif)) + '</td>' +
-          '<td class="' + (!a.orc ? 'muted' : a.ating > 1 ? 'ruim' : 'bom') + '">' + pct(a.ating) + '</td></tr>';
-      };
-      let h = '<thead><tr class="grp"><th class="lbl"></th><th class="sep" colspan="3">Orçado</th><th class="sep" colspan="3">Real</th><th class="sep" colspan="2">Orçado × Real</th></tr>' +
-        '<tr><th class="lbl">Conta</th><th class="sep">R$</th><th>AV</th><th>AH</th><th class="sep">R$</th><th>AV</th><th>AH</th><th class="sep">Diferença</th><th>Real ÷ Orçado</th></tr></thead><tbody>';
-      campos.forEach(c => {
-        const ls = linhas.filter(l => l.s.campo_id === c.id);
-        if (!ls.length) return;
-        const t = ls.reduce((a, l) => ({ o: a.o + l.o, r: a.r + l.r, oa: a.oa + l.oa, ra: a.ra + l.ra }), { o: 0, r: 0, oa: 0, ra: 0 });
-        h += linhaHtml(c.nome, analisarLinha(t.o, t.r, t.oa, t.ra, tot.o, tot.r), 'cp');
-        ls.forEach(l => { h += linhaHtml(l.s.nome, analisarLinha(l.o, l.r, l.oa, l.ra, tot.o, tot.r)); });
+    function marcarAlterados() {
+      g('ops').querySelectorAll('.in').forEach(el => {
+        const x = kk(el.dataset.op, el.dataset.k), c = el.dataset.c;
+        el.classList.toggle('chg', ((dados[x] || {})[c] ?? null) !== ((orig[x] || {})[c] ?? null));
       });
-      h += linhaHtml('Total de Gastos Operacionais', totA, 'tot');
-      g('an-tbl').innerHTML = h + '</tbody>';
-      renderGrafico(mes);
+      g('dirty').classList.toggle('on', pendentes().length > 0);
     }
 
-    function renderGrafico(mesSel) {
-      const orcM = [], realM = [];
-      for (let m = 1; m <= 12; m++) {
-        let o = 0, r = 0, temO = false;
-        subs.forEach(s => { const v = vals[k(s.id, m)]; if (v != null) { o += v; temO = true; } r += real[kr(sel.ano, m, s.id)] || 0; });
-        orcM.push(temO ? o : null); realM.push(r || null);
-      }
-      if (chart) chart.destroy();
-      chart = new Chart(g('ch-orc'), {
-        type: 'bar',
-        data: { labels: MES_CURTO, datasets: [
-          { label: 'Orçado', data: orcM, backgroundColor: MES_CURTO.map((_, i) => i + 1 === mesSel ? 'rgba(251,191,36,0.85)' : 'rgba(251,191,36,0.45)'), borderRadius: 4 },
-          { label: 'Real', data: realM, backgroundColor: MES_CURTO.map((_, i) => i + 1 === mesSel ? 'rgba(56,189,248,0.95)' : 'rgba(56,189,248,0.5)'), borderRadius: 4 },
-        ] },
-        options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-          plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } },
-            tooltip: { callbacks: { label: c => c.dataset.label + ': ' + brl(c.parsed.y), afterBody: it => { const o = orcM[it[0].dataIndex], r = realM[it[0].dataIndex]; return o && r ? 'Real ÷ Orçado: ' + pct(r / o) : ''; } } } },
-          scales: { x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false } },
-            y: { ticks: { color: '#64748b', callback: v => Math.abs(v) >= 1e3 ? Math.round(v / 1e3) + ' mil' : v }, grid: { color: 'rgba(255,255,255,0.06)' } } } },
-      });
-    }
-
-    // ── Lançar orçamento (grade 12 meses) ───────────────────────────────────
-    function renderGrade() {
-      let h = '<thead><tr><th class="lbl">Conta</th>' + MES_CURTO.map(m => '<th>' + m + '</th>').join('') + '<th>Total</th><th></th></tr></thead><tbody>';
-      campos.forEach(c => {
-        const ls = subs.filter(s => s.campo_id === c.id);
-        if (!ls.length) return;
-        h += '<tr class="cp"><td class="lbl">' + esc(c.nome) + '</td>' + Array.from({ length: 13 }, (_, i) => '<td data-cp="' + c.id + '|' + (i + 1) + '"></td>').join('') + '<td></td></tr>';
-        ls.forEach(s => {
-          h += '<tr><td class="lbl" title="' + esc(s.nome) + '">' + esc(s.nome) + '</td>';
-          for (let m = 1; m <= 12; m++) {
-            const v = vals[k(s.id, m)];
-            h += '<td><input class="or-in"' + (editavel() ? '' : ' disabled') + ' data-sub="' + s.id + '" data-mes="' + m + '" value="' + (v == null ? '' : numberToMoneyMasked(v)) + '" placeholder="—" aria-label="' + esc(s.nome) + ' ' + MES_CURTO[m - 1] + '"></td>';
-          }
-          h += '<td class="t" data-tot="' + s.id + '"></td><td><button type="button" class="or-fill"' + (editavel() ? '' : ' style="display:none"') + ' data-fill="' + s.id + '" title="Repetir o primeiro valor nos meses vazios">→</button></td></tr>';
-        });
-      });
-      h += '<tr class="tot"><td class="lbl">Total de Gastos Operacionais</td>' + Array.from({ length: 13 }, (_, i) => '<td data-total="' + (i + 1) + '"></td>').join('') + '<td></td></tr>';
-      g('or-tbl').innerHTML = h + '</tbody>';
-      g('or-tbl').querySelectorAll('.or-in').forEach(el => attachMoneyMask(el));
-      recalc();
-    }
-    function recalc() {
-      const porCampo = {}, total = Array(13).fill(0);
-      subs.forEach(s => {
-        let t = 0;
-        for (let m = 1; m <= 12; m++) {
-          const v = vals[k(s.id, m)]; if (v == null) continue;
-          t += v; total[m - 1] += v; total[12] += v;
-          const pc = (porCampo[s.campo_id] = porCampo[s.campo_id] || Array(13).fill(0));
-          pc[m - 1] += v; pc[12] += v;
-        }
-        const el = document.querySelector('[data-tot="' + s.id + '"]'); if (el) el.textContent = t ? fmt0(t) : '';
-      });
-      document.querySelectorAll('[data-cp]').forEach(el => { const [cid, i] = el.dataset.cp.split('|'); const v = (porCampo[cid] || [])[+i - 1]; el.textContent = v ? fmt0(v) : ''; });
-      document.querySelectorAll('[data-total]').forEach(el => { const v = total[+el.dataset.total - 1]; el.textContent = v ? fmt0(v) : ''; });
-      document.querySelectorAll('.or-in').forEach(el => { const key = k(el.dataset.sub, el.dataset.mes); el.classList.toggle('chg', vals[key] !== orig[key]); });
-      g('dirty').classList.toggle('on', dirtyCount(vals, orig) > 0);
-    }
-    g('or-tbl').addEventListener('input', e => {
-      const el = e.target.closest('.or-in'); if (!el) return;
-      const n = moneyToNumber(el.value), key = k(el.dataset.sub, el.dataset.mes);
-      if (n == null) delete vals[key]; else vals[key] = n;
-      recalc();
+    // Grava o valor ao sair do campo e redesenha (saldo, %, estoque em cadeia e totais).
+    g('ops').addEventListener('change', e => {
+      const el = e.target.closest('.in'); if (!el) return;
+      const x = kk(el.dataset.op, el.dataset.k), c = el.dataset.c;
+      const v = PECAS.has(c) ? lerPecas(el.value) : moneyToNumber(el.value);
+      const r = dados[x] || (dados[x] = Object.fromEntries(CAMPOS.map(f => [f, null])));
+      r[c] = v;
+      setTimeout(render, 0);   // depois que o foco já foi para o próximo campo
     });
-    g('or-tbl').addEventListener('click', e => {
-      const b = e.target.closest('[data-fill]'); if (!b) return;
-      const sid = b.dataset.fill;
-      let first = null;
-      for (let m = 1; m <= 12 && first == null; m++) if (vals[k(sid, m)] != null) first = vals[k(sid, m)];
-      if (first == null) return showToast('Preencha ao menos um mês da linha primeiro.', 'red');
-      for (let m = 1; m <= 12; m++) if (vals[k(sid, m)] == null) { vals[k(sid, m)] = first; const el = document.querySelector('.or-in[data-sub="' + sid + '"][data-mes="' + m + '"]'); if (el) el.value = numberToMoneyMasked(first); }
-      recalc();
-    });
-    g('btn-copy').addEventListener('click', () => {
-      const reaj = 1 + ((moneyToNumber(g('inp-reaj').value) || 0) / 100);
-      let n = 0;
-      subs.forEach(s => { for (let m = 1; m <= 12; m++) { const r = real[kr(sel.ano - 1, m, s.id)]; if (r && vals[k(s.id, m)] == null) { vals[k(s.id, m)] = Math.round(r * reaj * 100) / 100; n++; } } });
-      renderGrade();
-      showToast(n ? n + ' células preenchidas com o realizado de ' + (sel.ano - 1) + '. Revise e salve.' : 'Nada a preencher: sem realizado em ' + (sel.ano - 1) + ' ou células já preenchidas.', n ? 'green' : 'red');
-    });
+
     g('btn-save').addEventListener('click', async () => {
-      if (!editavel()) return;
-      const upserts = [], dels = {};
-      new Set([...Object.keys(vals), ...Object.keys(orig)]).forEach(key => {
-        if (vals[key] === orig[key]) return;
-        const [sid, m] = key.split('|');
-        if (vals[key] == null) (dels[m] = dels[m] || []).push(sid);
-        else upserts.push({ operacao: sel.ops[0], ano: sel.ano, mes: +m, subcampo_id: sid, valor: vals[key] });
+      const lista = pendentes();
+      if (!lista.length) return showToast('Nenhuma alteração para salvar.', 'green');
+      const ups = [], dels = [];
+      lista.forEach(x => {
+        const [op, k] = x.split('|'), r = dados[x] || {};
+        const linha = { operacao: op, ano: Math.floor(+k / 100), mes: +k % 100 };
+        if (CAMPOS.every(c => r[c] == null)) dels.push(linha);
+        else ups.push({ ...linha, ...Object.fromEntries(CAMPOS.map(c => [c, r[c] ?? null])) });
       });
-      if (!upserts.length && !Object.keys(dels).length) return showToast('Nenhuma alteração para salvar.', 'green');
       const btn = g('btn-save'); btn.disabled = true; btn.textContent = 'Salvando…';
       try {
-        if (upserts.length) { const { error } = await sb.from('orcamento_gastos').upsert(upserts, { onConflict: 'operacao,ano,mes,subcampo_id' }); if (error) throw error; }
-        for (const m of Object.keys(dels)) { const { error } = await sb.from('orcamento_gastos').delete().eq('operacao', sel.ops[0]).eq('ano', sel.ano).eq('mes', +m).in('subcampo_id', dels[m]); if (error) throw error; }
-        orig = { ...vals }; recalc();
+        if (ups.length) { const { error } = await sb.from('orcamento_mensal').upsert(ups, { onConflict: 'operacao,ano,mes' }); if (error) throw error; }
+        for (const d of dels) { const { error } = await sb.from('orcamento_mensal').delete().eq('operacao', d.operacao).eq('ano', d.ano).eq('mes', d.mes); if (error) throw error; }
+        orig = JSON.parse(JSON.stringify(dados));
+        marcarAlterados();
         showToast('Orçamento salvo.', 'green');
       } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
-      btn.disabled = false; btn.textContent = 'Salvar orçamento';
+      btn.disabled = false; btn.textContent = 'Salvar';
     });
 
-    // ── Metas de receita (lançadas por mês; trimestre e ano são a soma dos meses) ──
-    const mesesDoTri = t => [1, 2, 3].map(i => (t - 1) * 3 + i);
-    const receitaMes = m => receita[sel.ano + '|' + m] || 0;
-    const receitaTri = t => mesesDoTri(t).reduce((a, m) => a + receitaMes(m), 0);
-    function barraHtml(p, tempo, fina) {
-      const w = p.pct == null ? 0 : Math.min(100, p.pct * 100);
-      return '<div class="barra' + (fina ? ' fina' : '') + '"><div class="barra-fill' + (p.pct >= 1 ? ' ok' : '') + '" style="width:' + w + '%"></div>' +
-        (tempo > 0 && tempo < 1 ? '<div class="barra-tempo" style="left:calc(' + (tempo * 100) + '% - 1px)" title="Quanto do período já passou"></div>' : '') + '</div>';
+    function preencherPeriodos() {
+      const y = new Date().getFullYear(), opts = [];
+      mesesEntre(ym(y - 1, 1), ym(y + 1, 12)).forEach(p => opts.push('<option value="' + ym(p.ano, p.mes) + '">' + MES_CURTO[p.mes - 1] + '/' + p.ano + '</option>'));
+      g('sel-de').innerHTML = opts.join(''); g('sel-ate').innerHTML = opts.join('');
+      // Padrão do modelo: a estação de setembro a março.
+      const hoje = new Date(), m = hoje.getMonth() + 1;
+      const ini = m >= 9 ? hoje.getFullYear() : hoje.getFullYear() - 1;
+      periodoSel = { de: ym(ini, 9), ate: ym(ini + 1, 3) };
+      try { const s = JSON.parse(localStorage.getItem('safi-orc-periodo') || 'null'); if (s && s.de && s.ate) periodoSel = s; } catch (e) {}
+      if (!g('sel-de').querySelector('option[value="' + periodoSel.de + '"]') || !g('sel-ate').querySelector('option[value="' + periodoSel.ate + '"]')) periodoSel = { de: ym(ini, 9), ate: ym(ini + 1, 3) };
+      g('sel-de').value = periodoSel.de; g('sel-ate').value = periodoSel.ate;
     }
-    function renderMetas() {
-      const hoje = new Date();
-      const metaAno = somaMetas(metas, Array.from({ length: 12 }, (_, i) => i + 1));
-      const realAno = [1, 2, 3, 4].reduce((a, t) => a + receitaTri(t), 0);
-      const pA = progressoMeta(metaAno, realAno), tA = fracaoDecorrida(sel.ano, 0, hoje);
-      const nomeOp = nomeOps();
-      g('meta-ano').innerHTML = '<div class="meta-top"><div class="meta-tit">Meta anual ' + sel.ano + ' — ' + esc(nomeOp) + '</div>' +
-        '<div class="meta-num"><b>' + brl(realAno) + '</b> de ' + (metaAno ? brl(metaAno) : 'meta não definida') + (pA.pct != null ? ' · <b>' + pct(pA.pct) + '</b>' : '') + '</div></div>' +
-        barraHtml(pA, tA) +
-        '<div class="barra-leg"><span>' + (pA.pct == null ? 'Defina a meta de cada mês abaixo — trimestre e ano somam sozinhos.' : pA.falta ? 'Faltam ' + brl(pA.falta) + ' para bater a meta do ano.' : 'Meta do ano batida!') + '</span>' +
-        (tA > 0 && tA < 1 ? '<span class="tempo">' + pct(tA) + ' do ano já passou</span>' : '') + '</div>';
-
-      const triAtual = hoje.getFullYear() === sel.ano ? trimestreDoMes(hoje.getMonth() + 1) : 0;
-      const mesAtual = hoje.getFullYear() === sel.ano ? hoje.getMonth() + 1 : 0;
-      g('meta-tris').innerHTML = [1, 2, 3, 4].map(t => {
-        const meta = somaMetas(metas, mesesDoTri(t)), r = receitaTri(t), p = progressoMeta(meta, r), tt = fracaoDecorrida(sel.ano, t, hoje);
-        const meses = mesesDoTri(t).map(m => {
-          const pm = progressoMeta(metas[m], receitaMes(m));
-          return '<div class="mes-meta' + (m === mesAtual ? ' atual' : '') + '"><div class="mes-h"><label for="meta-' + m + '">' + MES_NOME[m - 1][0].toUpperCase() + MES_NOME[m - 1].slice(1) + '</label>' +
-            '<span class="mes-p">' + (pm.pct == null ? '' : pct(pm.pct)) + '</span></div>' +
-            '<input class="or-in"' + (editavel() ? '' : ' disabled') + ' id="meta-' + m + '" data-mes="' + m + '" value="' + (metas[m] == null ? '' : numberToMoneyMasked(metas[m])) + '" placeholder="—" aria-label="Meta de ' + MES_NOME[m - 1] + '">' +
-            barraHtml(pm, 0, true) + '<div class="mes-r">Realizado: ' + brl(receitaMes(m)) + '</div></div>';
-        }).join('');
-        return '<div class="tri' + (t === triAtual ? ' atual' : '') + '"><div class="tri-h"><span class="tri-n">' + t + 'º trimestre</span><span class="tri-m">' + MES_CURTO[(t - 1) * 3] + '–' + MES_CURTO[(t - 1) * 3 + 2] + '</span></div>' +
-          meses +
-          '<div class="tri-tot"><div class="tri-tot-h"><span>Meta do trimestre</span><b>' + (meta == null ? '—' : brl(meta)) + '</b></div>' +
-          '<div class="tri-pct">' + (p.pct == null ? '—' : pct(p.pct)) + '</div>' + barraHtml(p, tt) +
-          '<div class="tri-s">Realizado: ' + brl(r) + (p.pct == null ? '' : '<br>' + (p.falta ? 'Faltam ' + brl(p.falta) : 'Meta batida')) + (tt > 0 && tt < 1 ? '<br>' + pct(tt) + ' do trimestre já passou' : '') + '</div></div></div>';
-      }).join('');
-      g('meta-tris').querySelectorAll('.or-in').forEach(el => { attachMoneyMask(el); el.classList.toggle('chg', metas[el.dataset.mes] !== metasOrig[el.dataset.mes]); });
-      g('dirty-metas').classList.toggle('on', dirtyCount(metas, metasOrig) > 0);
-    }
-    g('meta-tris').addEventListener('change', e => {
-      const el = e.target.closest('[data-mes]'); if (!el) return;
-      const n = moneyToNumber(el.value);
-      if (n == null) delete metas[el.dataset.mes]; else metas[el.dataset.mes] = n;
-      // Redesenha depois que o foco já foi para o próximo campo, e devolve o foco a ele.
-      setTimeout(() => { const foco = document.activeElement && document.activeElement.id; renderMetas(); if (foco && g(foco)) g(foco).focus(); }, 0);
-    });
-    g('btn-save-metas').addEventListener('click', async () => {
-      if (!editavel()) return;
-      const ups = [], dels = [];
-      for (let m = 1; m <= 12; m++) { if (metas[m] === metasOrig[m]) continue; if (metas[m] == null) dels.push(m); else ups.push({ operacao: sel.ops[0], ano: sel.ano, mes: m, valor: metas[m] }); }
-      if (!ups.length && !dels.length) return showToast('Nenhuma alteração para salvar.', 'green');
-      const btn = g('btn-save-metas'); btn.disabled = true; btn.textContent = 'Salvando…';
-      try {
-        if (ups.length) { const { error } = await sb.from('metas_receita').upsert(ups, { onConflict: 'operacao,ano,mes' }); if (error) throw error; }
-        if (dels.length) { const { error } = await sb.from('metas_receita').delete().eq('operacao', sel.ops[0]).eq('ano', sel.ano).in('mes', dels); if (error) throw error; }
-        metasOrig = { ...metas }; renderMetas();
-        showToast('Metas salvas.', 'green');
-      } catch (err) { showToast('Erro ao salvar: ' + err.message, 'red'); }
-      btn.disabled = false; btn.textContent = 'Salvar metas';
-    });
-
-    // ── Navegação ───────────────────────────────────────────────────────────
-    function renderOps() {
-      g('sel-ops').innerHTML = '<span class="op-btns-l">Operações:</span>' + OPS.map(o => '<button type="button" class="op-btn' + (sel.ops.includes(o.id) ? ' on' : '') + '" data-op="' + o.id + '" style="--cor:' + o.cor + '" aria-pressed="' + sel.ops.includes(o.id) + '"><img src="' + o.logo + '" alt="">' + esc(o.nome) + '</button>').join('');
-      const nota = g('nota-multi');
-      nota.style.display = editavel() ? 'none' : '';
-      nota.innerHTML = editavel() ? '' : 'Mostrando a <b>soma</b> de ' + esc(nomeOps()) + '. Para lançar ou alterar orçamento e metas, deixe <b>só uma operação</b> selecionada.';
-      ['btn-save', 'btn-save-metas', 'btn-copy'].forEach(id => { g(id).style.display = editavel() ? '' : 'none'; });
-      g('inp-reaj').closest('label').style.display = editavel() ? '' : 'none';
-    }
-    function render() {
-      renderOps();
-      g('aba-orc').style.display = aba === 'orc' ? '' : 'none';
-      g('aba-metas').style.display = aba === 'metas' ? '' : 'none';
-      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.aba === aba));
-      document.querySelectorAll('.subtab').forEach(t => t.classList.toggle('active', t.dataset.vis === vis));
-      g('vis-analise').style.display = vis === 'analise' ? '' : 'none';
-      g('vis-lancar').style.display = vis === 'lancar' ? '' : 'none';
-      g('an-controls').style.display = vis === 'analise' ? '' : 'none';
-      if (aba === 'metas') renderMetas();
-      else if (vis === 'analise') renderAnalise();
-      else renderGrade();
-    }
-    const temPendencia = () => dirtyCount(vals, orig) > 0 || dirtyCount(metas, metasOrig) > 0;
-    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => { aba = t.dataset.aba; try { localStorage.setItem('safi-orc-aba', aba); } catch (e) {} render(); }));
-    document.querySelectorAll('.subtab').forEach(t => t.addEventListener('click', () => { vis = t.dataset.vis; render(); }));
-    g('sel-per').addEventListener('change', renderAnalise);
-
-    async function trocar(ops) {
-      const ano = +g('sel-ano').value;
-      if (temPendencia() && !confirm('Há alterações não salvas. Descartar e trocar?')) { g('sel-ano').value = sel.ano; return; }
-      sel = { ops: ops || sel.ops, ano };
-      try { localStorage.setItem('safi-orc-ops', JSON.stringify(sel.ops)); } catch (e) {}
-      try { await carregarDados(); preencherPeriodos(); render(); } catch (err) { showToast('Erro ao carregar: ' + err.message, 'red'); }
-    }
-    g('sel-ops').addEventListener('click', e => {
-      const b = e.target.closest('[data-op]'); if (!b) return;
-      const novo = alternarOperacao(sel.ops, b.dataset.op, OPS.map(o => o.id));
-      if (novo.join() !== sel.ops.join()) trocar(novo);
-    });
-    g('sel-ano').addEventListener('change', () => trocar());
-    window.addEventListener('beforeunload', e => { if (temPendencia()) { e.preventDefault(); e.returnValue = ''; } });
+    ['sel-de', 'sel-ate'].forEach(id => g(id).addEventListener('change', () => {
+      periodoSel = { de: +g('sel-de').value, ate: +g('sel-ate').value };
+      try { localStorage.setItem('safi-orc-periodo', JSON.stringify(periodoSel)); } catch (e) {}
+      render();
+    }));
+    window.addEventListener('beforeunload', e => { if (pendentes().length) { e.preventDefault(); e.returnValue = ''; } });
 
     async function init() {
       const { data } = await sb.auth.getSession();
@@ -698,13 +372,7 @@
       const prof = (rows && rows[0]) || null;
       if (!prof || !(prof.is_admin || prof.can_orcamento === true)) return window.location.replace('/');
       SafiSidebar.apply('or', prof, { email: data.session.user.email, sb });
-
-      const y = new Date().getFullYear();
-      g('sel-ano').innerHTML = [y - 1, y, y + 1].map(a => '<option value="' + a + '"' + (a === y ? ' selected' : '') + '>' + a + '</option>').join('');
-      sel = { ops: [OPS[0].id], ano: y };
-      try { const salvo = JSON.parse(localStorage.getItem('safi-orc-ops') || 'null'); if (Array.isArray(salvo)) { const ok = OPS.map(o => o.id).filter(id => salvo.includes(id)); if (ok.length) sel.ops = ok; } } catch (e) {}
-      try { const a = localStorage.getItem('safi-orc-aba'); if (a === 'orc' || a === 'metas') aba = a; } catch (e) {}
-      try { await carregarEstrutura(); await carregarDados(); }
+      try { await carregar(); }
       catch (err) { g('or-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
       g('or-loading').style.display = 'none';
       g('or-main').style.display = 'block';
