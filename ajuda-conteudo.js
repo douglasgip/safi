@@ -201,19 +201,19 @@ window.SAFI_AJUDA = { telas: {
   },
 
   conselho: {
-    titulo: 'Painel do Conselho', versao: 7,
+    titulo: 'Painel do Conselho', versao: 8,
     resumo: 'Visão consolidada para o conselho: <b>Faturamento, Receita Líquida, Margem de Contribuição, Gastos Operacionais, EBITDA e Resultado Líquido</b>, com comparativos, evolução de 12 meses, ponte do EBITDA, a <b>cascata de rentabilidade e custos</b> (Margem Bruta, CMV, pessoal, despesas financeiras, tudo em R$ e % do faturamento) e indicadores de Pessoas (admissões, desligamentos, turnover, produtividade por funcionário).',
     passos: [
       { t: 'Escolha mês e operação', d: 'Nos filtros do topo. O mês padrão é o mais recente com dados.' },
       { t: 'Escolha a base de comparação', d: '<b>Mês anterior</b>, <b>mesmo mês do ano anterior</b>, <b>média dos 12 meses</b> ou <b>melhor mês</b> (por EBITDA) dos últimos 12.' },
-      { t: 'Leia os indicadores', d: 'Cada cartão mostra o valor, a variação (verde = melhor, vermelho = pior) e, quando lançados em Orçamento e Metas, o atingimento da <b>meta</b> no Faturamento (a meta é a venda prevista).' },
-      { t: 'Acompanhe metas e orçamento', d: 'O bloco <b>Metas e Orçamento</b> mostra o progresso da meta de vendas (venda prevista no Orçamento × faturamento do DRE) no mês, no trimestre e no ano (a marca amarela é quanto do período já passou) e as compras previstas × realizadas por operação, no mês e no acumulado do ano. Só entram as operações que têm valores lançados em Orçamento e Metas.' },
+      { t: 'Leia os indicadores', d: 'Cada cartão mostra o valor, a variação (verde = melhor, vermelho = pior) e, quando lançados em Budget, o atingimento da <b>meta</b> no Faturamento (a meta é a venda prevista).' },
+      { t: 'Acompanhe metas e orçamento', d: 'O bloco <b>Metas e Orçamento</b> mostra o progresso da meta de vendas (venda prevista no Budget × faturamento do DRE) no mês, no trimestre e no ano (a marca amarela é quanto do período já passou) e as compras previstas × realizadas por operação, no mês e no acumulado do ano. Só entram as operações que têm valores lançados em Budget.' },
       { t: 'Entenda o que mudou', d: 'A <b>ponte do EBITDA</b> mostra quanto cada linha (receita, deduções, custos, gastos) somou ou subtraiu entre a base e o mês.' },
       { t: 'Veja onde o dinheiro fica', d: 'A tabela <b>Rentabilidade e custos</b> desce do Faturamento até o Resultado Líquido, mostrando cada linha em R$, em % do faturamento e a variação em pontos percentuais contra a base.' },
       { t: 'Acompanhe Pessoas', d: 'Admissões, desligamentos e turnover do mês, calculados a partir de quem entra e sai da tela de Funcionários, mais o faturamento e a margem de contribuição por funcionário.' },
     ],
     dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Percentuais são sobre o Faturamento.', 'O "× Meta" só aparece para as operações com venda prevista lançada no mês; se for parcial, a tela avisa quais.', 'A faixa "Ações do conselho" leva às decisões pendentes e vencidas.', 'Pessoas só tem dado a partir de <b>set/2026</b> — antes disso o SAFI não registrava admissão/desligamento, e não há como reconstruir.'],
-    naoFaz: ['Não é onde se lança nada — os números vêm dos Lançamentos, do Orçamento e Metas e de Funcionários.', 'Não considera depreciação (o DRE do grupo não tem).'],
+    naoFaz: ['Não é onde se lança nada — os números vêm dos Lançamentos, do Budget e de Funcionários.', 'Não considera depreciação (o DRE do grupo não tem).'],
     termos: [
       { t: 'EBITDA', d: 'Resultado Líquido + Despesas Financeiras + IR e CSLL. Retiradas de Sócios continuam como despesa.' },
       { t: 'Gastos Operacionais', d: 'Nos indicadores e na ponte, sem Despesas Financeiras e IR/CSLL.' },
@@ -224,11 +224,11 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Produtividade por funcionário', d: 'Valor do mês ÷ quadro atual de funcionários. Em meses antigos é uma aproximação, porque o SAFI não guarda o quadro de época.' },
     ],
     quemVe: 'Quem tem acesso ao DRE, limitado às operações liberadas — Pessoas segue a mesma regra (não depende do acesso a Funcionários).',
-    dados: 'Lançamentos (realizado) e Orçamento e Metas (vendas previstas e compras); ações vêm de Reuniões e Decisões; Pessoas vem de criar/excluir em Funcionários.',
+    dados: 'Lançamentos (realizado) e Budget (vendas previstas e compras); ações vêm de Reuniões e Decisões; Pessoas vem de criar/excluir em Funcionários.',
     tour: [
       { sel: '.co-filters', t: 'Filtros', d: 'Mês, base de comparação (mês anterior, ano anterior, média ou melhor mês) e operação.' },
       { sel: '#kpis', t: 'Indicadores', d: 'Valor do mês, variação contra a base e, havendo meta ou orçamento lançado, o atingimento (meta no Faturamento, orçado nos Gastos Operacionais).' },
-      { sel: '#panel-mo', t: 'Metas e Orçamento', d: 'Meta de receita (mês, trimestre e ano) e gastos operacionais orçado × real por grupo.' },
+      { sel: '#panel-mo', t: 'Metas e Orçamento', d: 'Meta de vendas (mês, trimestre e ano) e compras previstas × realizadas por operação.' },
       { sel: '.co-row > .panel:nth-child(1)', t: 'Evolução de 12 meses', d: 'Faturamento em barras e EBITDA em linha (com a meta de faturamento tracejada, se houver).' },
       { sel: '.co-row > .panel:nth-child(2)', t: 'Ponte do EBITDA', d: 'Mostra o que explica a diferença de EBITDA entre a base e o mês: receita, deduções, custos e gastos.' },
       { sel: '#panel-rentab', t: 'Rentabilidade e custos', d: 'Desce do Faturamento até o Resultado Líquido: cada linha em R$, em % do faturamento e a variação em pontos percentuais contra a base (custo que sobe aparece em vermelho).' },
@@ -239,7 +239,7 @@ window.SAFI_AJUDA = { telas: {
   },
 
   orcamento: {
-    titulo: 'Orçamento e Metas', versao: 4,
+    titulo: 'Budget', versao: 5,
     resumo: 'Planilha de orçamento por operação (Exposição Paulista, Via Closet e E-commerce), mês a mês: <b>estoque inicial</b> em peças, <b>vendas</b> previstas × realizadas e <b>compras</b> previstas × realizadas, em R$ e peças. O <b>estoque final</b> de cada mês é calculado e vira o estoque inicial do mês seguinte. Tudo é digitado.',
     passos: [
       { t: 'Escolha o período', d: 'Em <b>De</b> e <b>Até</b> no topo (o padrão é a estação de setembro a março).' },
@@ -250,7 +250,7 @@ window.SAFI_AJUDA = { telas: {
     dicas: ['Vendas: saldo positivo (verde) = vendeu mais que o previsto.', 'Compras: saldo positivo (verde) = comprou menos que o previsto (sobrou verba); o % é o quanto sobrou da verba.', 'A linha <b>Total</b> soma o período; o estoque do total é o inicial do primeiro mês e o final do último.'],
     naoFaz: ['Não puxa nada do DRE nem dos Lançamentos — vendas e compras realizadas também são digitadas aqui (por enquanto).', 'Não orça gastos operacionais.'],
     termos: [{ t: 'Estoque final', d: 'Estoque inicial − peças vendidas + peças compradas.' }, { t: '% das compras', d: '(Previstas − realizadas) ÷ previstas.' }],
-    quemVe: 'Quem tem a permissão Orçamento e Metas (no Admin). O Painel do Conselho lê as vendas previstas (como meta do faturamento) e as compras para quem tem acesso ao DRE da operação.',
+    quemVe: 'Quem tem a permissão Budget (no Admin). O Painel do Conselho lê as vendas previstas (como meta do faturamento) e as compras para quem tem acesso ao DRE da operação.',
     dados: 'Tudo digitado nesta tela.',
     tour: [
       { sel: '.or-controls', t: 'Período e salvar', d: 'Escolha de qual mês a qual mês ver, e salve as alterações.' },

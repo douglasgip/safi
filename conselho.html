@@ -302,7 +302,7 @@
     <div class="co-foot">
       Receita Líquida = Faturamento − Deduções · Margem de Contribuição = Receita Líquida − Custos Variáveis · Resultado Líquido = Margem − Gastos Operacionais ·
       <b>EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL</b> (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento.
-      "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. <b>Meta</b> (receita, lançada mês a mês) e <b>Orçado</b> (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo.
+      "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. <b>Meta</b> (venda prevista, lançada mês a mês) vem da tela Budget e aparece quando lançada para todas as operações do escopo.
       <br><b>Rentabilidade e custos:</b> Margem Bruta = Receita Líquida − CMV · Despesas variáveis = custos variáveis (CMV + demais) · Despesas fixas = gastos operacionais · Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros · variação em pontos percentuais (p.p.) do % sobre o faturamento.
       <b>Produtividade:</b> valor do mês ÷ quadro atual de funcionários (o SAFI não guarda o quadro de meses passados, então em meses antigos é uma aproximação).
     </div>
@@ -360,7 +360,7 @@
       });
       return tem ? snap(acc) : null;
     }
-    // Tela Orçamento e Metas: a venda prevista de cada mês é a meta de faturamento.
+    // Tela Budget: a venda prevista de cada mês é a meta de faturamento.
     // Cada comparativo só vale quando TODAS as operações do escopo têm o valor lançado no mês.
     const opsCom = (campo, ops, ano, mes) => ops.filter(op => { const r = porChave[op + '|' + ano + '|' + mes]; return r && r[campo]; });
     function orcado(ops, ano, mes) {
@@ -391,8 +391,8 @@
       return { s: best.s, rot: MES_CURTO[best.mes - 1] + '/' + best.ano };
     }
 
-    // ── Metas e Orçamento (tela Orçamento e Metas) ──────────────────────────
-    let orcCompras = [];  // linhas de orcamento_mensal (compras previstas × realizadas, digitadas na tela Orçamento e Metas)
+    // ── Metas e Orçamento (tela Budget) ──────────────────────────
+    let orcCompras = [];  // linhas de orcamento_mensal (compras previstas × realizadas, digitadas na tela Budget)
     // Meses de jan..mês ou do trimestre do mês (sempre do mesmo ano).
     const mesesAte = (ano, mes) => Array.from({ length: mes }, (_, i) => ({ ano, mes: i + 1 }));
     const mesesDoTrimestre = (ano, mes) => { const t0 = Math.floor((mes - 1) / 3) * 3; return [1, 2, 3].map(i => ({ ano, mes: t0 + i })); };
@@ -443,7 +443,7 @@
       const D = dadosMetasOrc(ops, ano, mes);
       const temMeta = D.metas[2].r.com.length > 0;
       let h = '<div class="mo-sub">Meta de vendas × faturamento do DRE</div>';
-      if (!temMeta) h += '<div class="mo-vazio">Nenhuma venda prevista lançada para ' + ano + '. Lance em <a href="/orcamento">Orçamento e Metas</a> (coluna Vendas previstas).</div>';
+      if (!temMeta) h += '<div class="mo-vazio">Nenhuma venda prevista lançada para ' + ano + '. Lance em <a href="/orcamento">Budget</a> (coluna Vendas previstas).</div>';
       else {
         D.metas.forEach(x => {
           const r = x.r;
@@ -456,7 +456,7 @@
       g('mo-metas').innerHTML = h;
 
       let t = '<div class="mo-sub">Compras — previstas × realizadas</div>';
-      if (!D.cAcum.com.length) t += '<div class="mo-vazio">Nenhuma compra prevista lançada para ' + ano + '. Lance em <a href="/orcamento">Orçamento e Metas</a> (coluna Compras previstas).</div>';
+      if (!D.cAcum.com.length) t += '<div class="mo-vazio">Nenhuma compra prevista lançada para ' + ano + '. Lance em <a href="/orcamento">Budget</a> (coluna Compras previstas).</div>';
       else {
         const mapaMes = Object.fromEntries(D.cMes.porOp.map(x => [x.op, x]));
         const uso = (p, r) => p ? '<span class="' + (r > p ? 'mo-ruim' : 'mo-bom') + '">' + pct(r / p) + '</span>' : '<span class="muted">—</span>';
@@ -467,7 +467,7 @@
           '<tr><th class="l">Operação</th><th class="sep">Previstas</th><th>Realizadas</th><th>% usado</th><th class="sep">Previstas</th><th>Realizadas</th><th>% usado</th></tr></thead><tbody>' +
           D.cAcum.porOp.map(x => lin(OP_NOME[x.op] || x.op, mapaMes[x.op] || { prev: 0, real: 0 }, x)).join('') +
           (D.cAcum.porOp.length > 1 ? lin('Total', D.cMes.tot, D.cAcum.tot, 'tot') : '') + '</tbody></table></div>';
-        t += '<div class="mo-obs">% usado acima de 100% (vermelho) = comprou mais que o previsto. Valores digitados na tela Orçamento e Metas.</div>';
+        t += '<div class="mo-obs">% usado acima de 100% (vermelho) = comprou mais que o previsto. Valores digitados na tela Budget.</div>';
       }
       g('mo-gastos').innerHTML = t;
     }
@@ -766,7 +766,7 @@
         colunas: [{ h: 'Mês', larg: 1 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem de contribuição', al: 'right', larg: 1.4 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'Meta de faturamento', al: 'right', larg: 1.2 }], linhas: serie });
       const notas = (U.msgs || []).join(' ');
       blocos.push({ tipo: 'nota', opcao: 'notas', texto: (notas ? 'Avisos da tela: ' + notas + ' ' : '') +
-        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Meta" (receita, lançada mês a mês) e "Orçado" (gastos operacionais) vêm da tela Orçamento e Metas e aparecem quando lançados para todas as operações do escopo. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
+        'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Meta" (receita, lançada mês a mês) e "Orçado" (gastos operacionais) vêm da tela Budget e aparecem quando lançados para todas as operações do escopo. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
       const ctx = itens.map(it => '- ' + it.l + ': ' + it.v + ' | ' + it.linhas.map(l => l.t).join(' | ')).join('\n');
       return { blocos, subtitulo: MESES[U.mes - 1] + ' / ' + U.ano + '  -  ' + nomeOps, contextoIA: ctx };
     }

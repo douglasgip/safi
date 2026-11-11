@@ -38,7 +38,7 @@
     resumo: { label: 'Resumo Contábil', href: '/resumocontabil', can: function (p) { return p.is_admin || p.can_resumo !== false; } },
     conselho: { label: 'Painel do Conselho', href: '/conselho', can: function (p) { return p.is_admin || p.can_dre !== false; } },
     reunioes: { label: 'Reuniões e Decisões', href: '/reunioes', can: function (p) { return p.is_admin || p.can_reunioes === true || p.can_reunioes_editar === true; } },
-    orcamento: { label: 'Orçamento e Metas', href: '/orcamento', can: function (p) { return p.is_admin || p.can_orcamento === true; } },
+    orcamento: { label: 'Budget', href: '/orcamento', can: function (p) { return p.is_admin || p.can_orcamento === true; } },
     tesouraria: { label: 'Tesouraria', href: '/tesouraria', can: function (p) { return p.is_admin || p.can_tesouraria === true; } },
     dre: { label: 'DRE', href: '/dre', can: function (p) { return p.is_admin || p.can_dre !== false; } },
     lancamentos: { label: 'Lançamentos', href: '/lancamentos', sub: true, can: function (p) { return p.is_admin || p.can_lancamentos === true; } },

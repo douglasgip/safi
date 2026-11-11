@@ -1,5 +1,5 @@
 'use strict';
-// Orçamento e Metas (reformulado em 2026-11-11, modelo "BUDGET"): por operação e mês, estoque inicial em peças,
+// Budget (reformulado em 2026-11-11, modelo "BUDGET"): por operação e mês, estoque inicial em peças,
 // vendas e compras previstas × realizadas (R$ e peças), tudo digitado; estoque final em cadeia.
 const test = require('node:test');
 const assert = require('node:assert');
@@ -125,4 +125,16 @@ test('GerônIA: lê o orçamento novo com o estoque encadeado igual à tela', ()
   const src = ler('_ds/geronia-chat_index.ts');
   assert.match(src, /from\('orcamento_mensal'\)/);
   assert.doesNotMatch(src, /ORÇAMENTO DE GASTOS|tem_orc_gastos/, 'orçamento de gastos não existe mais');
+});
+
+test('a tela se chama "Budget" no menu, na Home, no Admin, na ajuda e no GerônIA', () => {
+  assert.match(ler('sidebar.js'), /orcamento: \{ label: 'Budget'/);
+  assert.match(ler('index.html'), /<div class="dash-card-title">Budget<\/div>/);
+  assert.match(ler('admin.html'), /<div class="perm-name">Budget<\/div>/);
+  assert.match(ler('ajuda-conteudo.js'), /titulo: 'Budget'/);
+  assert.match(ler('_ds/geronia-chat_index.ts'), /l\.push\('Budget'\)/);
+  assert.match(html, /<h1>Budget<\/h1>/);
+  for (const f of ['sidebar.js', 'index.html', 'admin.html', 'ajuda-conteudo.js', 'orcamento.html', 'conselho.html', '_ds/geronia-chat_index.ts']) {
+    assert.doesNotMatch(ler(f), /Orçamento e Metas/, f + ' ainda usa o nome antigo');
+  }
 });
