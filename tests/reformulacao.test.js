@@ -71,3 +71,15 @@ test('textos de ajuda e telas não citam mais as telas retiradas', () => {
   }
   assert.deepStrictEqual(achados, []);
 });
+
+test('manual do GerônIA: toda tela da ajuda tem endereço e setor (senão sai "rota , setor ")', () => {
+  const vm = require('node:vm');
+  const ajudaJs = ler('ajuda.js');
+  const ini = ajudaJs.indexOf('var ROTAS = {');
+  const fim = ajudaJs.indexOf('};', ini);
+  const ROTAS = vm.runInNewContext('(' + ajudaJs.slice(ini + 'var ROTAS = '.length, fim + 1) + ')');
+  const ctx = { window: {} };
+  vm.runInNewContext(ler('ajuda-conteudo.js'), ctx);
+  const faltando = Object.keys(ctx.window.SAFI_AJUDA.telas).filter(k => !ROTAS[k]);
+  assert.deepStrictEqual(faltando, []);
+});
