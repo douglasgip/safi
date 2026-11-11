@@ -128,89 +128,6 @@ window.SAFI_AJUDA = { telas: {
     ],
   },
 
-  fluxocaixa: {
-    titulo: 'Fluxo de Caixa', versao: 6,
-    resumo: 'O <b>Fluxo de Caixa</b> tem duas abas: <b>Contas a Pagar</b> (todo pedido lançado que ainda não teve baixa, já com o desconto) e <b>Contas a Receber</b> (as vendas do grupo — ainda em definição de como entram no SAFI).',
-    passos: [
-      { t: 'Contas a Pagar: veja o que falta pagar', d: 'Cada pedido aparece aqui assim que é lançado em Pedidos, com o valor a pagar (valor do pedido menos o desconto), ordenado pela previsão de chegada.' },
-      { t: 'Filtre por mês', d: 'O seletor <b>Mês da previsão de chegada</b> mostra só os pedidos daquele mês. A empresa só paga quando a mercadoria chega, então o pedido entra no mês da <b>previsão de chegada</b>, não no mês em que foi lançado. "Todos os meses" (padrão) mostra tudo, sem esconder nada vencido.' },
-      { t: 'Contas a Pagar: dê baixa', d: 'Quem tem a permissão <b>Dar baixa</b> usa o botão da coluna <b>Ação</b> — o pedido sai da lista (entende-se que foi pago). A baixa também pode ser dada na tela de Pedidos.' },
-      { t: 'Contas a Receber: em definição', d: 'Vai representar as vendas do grupo. Por enquanto essa aba só mostra um aviso, até formularmos como isso entra no SAFI.' },
-    ],
-    dicas: ['O total a pagar e quantos pedidos estão com a previsão de chegada vencida aparecem acima da tabela (respeitando o mês filtrado).', 'Pedido com previsão de chegada anterior a hoje aparece em vermelho, mesmo filtrando por outro mês.'],
-    naoFaz: ['Contas a Receber ainda não traz dados — só o aviso de que está em definição.', 'Não cadastra pedidos — isso é na tela de Pedidos.'],
-    quemVe: 'Quem tem a permissão Fluxo de Caixa; os pedidos exibidos dependem das empresas liberadas em Pedidos. O botão de baixa só aparece pra quem pode dar baixa.',
-    dados: 'Contas a Pagar vem de Pedidos (sem baixa). Contas a Receber ainda não tem fonte de dados definida.',
-    tour: [
-      { sel: '#fc-tabs', t: 'Duas abas', d: '<b>Contas a Pagar</b> (funciona hoje) e <b>Contas a Receber</b> (em definição, ligada às vendas do grupo).' },
-      { sel: '#cap-panel', t: 'Contas a Pagar', d: 'Os pedidos lançados que ainda não tiveram baixa, com o valor já descontado.' },
-      { sel: '#cap-filters', t: 'Mês da previsão de chegada', d: 'Filtra pelo mês em que a mercadoria deve chegar (é quando se paga). "Todos os meses" mostra tudo.' },
-      { sel: '#cap-tbody', t: 'Pedidos a pagar', d: 'Empresa, fornecedor, comprador(a), valor a pagar e previsão de chegada. A baixa tira o pedido daqui.' },
-    ],
-  },
-
-  despfixas: {
-    titulo: 'Despesas Fixas', versao: 1,
-    resumo: 'As <b>Despesas Fixas</b> são contas recorrentes (honorários, assinaturas, sistemas…). Você cadastra uma vez e todo mês ela entra sozinha em <b>Conferir Mês</b> para ser confirmada.',
-    passos: [
-      { t: 'Cadastre a despesa', d: 'Em <b>Gerenciar Despesas</b> → <b>Nova Despesa Fixa</b>: nome, empresa, CNPJ, dia de vencimento e valor padrão.' },
-      { t: 'Confira o mês', d: 'Em <b>Conferir Mês</b>, escolha mês/ano e lance o <b>valor pago</b> e a <b>data</b> de cada despesa.' },
-      { t: 'Trate as divergências', d: 'Se o valor pago difere do previsto, a linha fica <b>Divergente</b> e precisa do crivo de alguém (reajuste ou erro?).' },
-    ],
-    dicas: ['Ajustar o previsto na conferência vale <b>só para aquele mês</b> — não muda o padrão da despesa.', 'Remover uma despesa a tira da lista, mas o histórico permanece.'],
-    naoFaz: ['Não paga nada — só registra e confere.', 'Não é a conciliação de pedidos (aqui quem cadastra costuma conferir).'],
-    termos: [{ t: 'Pendente', d: 'Ainda sem valor pago informado.' }, { t: 'Pago conforme previsto', d: 'Valor pago igual ao previsto.' }, { t: 'Divergente', d: 'Valor pago diferente do previsto.' }],
-    quemVe: 'Quem tem a permissão Despesas Fixas, empresa por empresa.',
-    dados: 'Cadastro próprio (despesas e lançamentos mensais).',
-    tour: [
-      { sel: '.mode-tab[data-mode="conferir"]', t: 'Dois modos', d: '<b>Conferir Mês</b> para lançar o que foi pago; <b>Gerenciar Despesas</b> para cadastrar e editar as recorrentes.' },
-      { sel: '.summary-row', t: 'Resumo do mês', d: 'Quantidade, previsto, pago, pendentes e divergentes de relance.' },
-      { sel: '#conf-tbody', t: 'Lista do mês', d: 'Clique em uma linha para informar o valor pago e a data. Divergências ficam destacadas.' },
-      { sel: '#btn-new-despesa', clicar: '.mode-tab[data-mode="gerenciar"]', voltar: '.mode-tab[data-mode="conferir"]', t: 'Nova despesa fixa', d: 'Cadastre uma vez; ela entra sozinha todo mês em Conferir Mês.' },
-    ],
-  },
-
-  pedidos: {
-    titulo: 'Pedidos', versao: 4,
-    resumo: 'Em <b>Pedidos</b>, quem compra lança o que foi comprado. O pedido entra na hora no <b>Fluxo de Caixa</b> como a pagar e sai de lá quando a Lorena dá <b>baixa</b> (quando lança a NF no SETA).',
-    passos: [
-      { t: 'Lance o pedido', d: '<b>Novo Pedido</b>: empresa, CNPJ, fornecedor, valor do pedido, desconto concedido, quantidade de peças e previsão de chegada. Quem lançou é registrado automaticamente (a pessoa logada).' },
-      { t: 'Use o autocompletar', d: 'O campo fornecedor sugere o que já foi usado — escreva uma vez e ele aparece nas próximas. Se digitar com outra grafia, o SAFI usa a que já existe.' },
-      { t: 'Escolha como digitar o desconto', d: 'O botão <b>R$ / %</b> ao lado do campo troca a forma de digitar — em reais ou em percentual do valor do pedido. O SAFI sempre guarda o valor final em reais.' },
-      { t: 'Acompanhe', d: 'Filtre por empresa, comprador(a), status e período da previsão de chegada. <b>Previsão vencida</b> fica em vermelho.' },
-      { t: 'Dê baixa', d: 'Quem tem a permissão (a Lorena) vê o botão <b>Dar baixa</b> e pode informar o nº da NF lançada no SETA. O pedido sai do Fluxo de Caixa.' },
-    ],
-    dicas: ['O olho (👁) mostra tudo do pedido: comprador(a), valores, previsão, quando foi lançado e quem deu baixa.', 'Pedido baixado não pode mais ser editado nem removido — se precisar, desfaça a baixa antes.', 'Os campos são informativos: não existe mais conferência de valor real nem parcelas.'],
-    naoFaz: ['Não paga fornecedor — a baixa só registra que o pagamento aconteceu.', 'Não mostra empresas que não foram liberadas para você.'],
-    termos: [{ t: 'CNPJ', d: 'Razão social usada na compra (Guilherme, Juliane, Isa ou EP).' }, { t: 'Valor a pagar', d: 'Valor do pedido menos o desconto concedido — é o que entra no Fluxo de Caixa.' }, { t: 'Baixa', d: 'Marca o pedido como resolvido (NF lançada no SETA / pago). Fica registrado quem deu e quando.' }],
-    quemVe: 'Quem tem a permissão Pedidos, empresa por empresa. Lançar e dar baixa são permissões separadas — dar baixa vem desligado e o admin libera pra quem precisa.',
-    dados: 'Cadastro próprio; alimenta o Fluxo de Caixa (Contas a Pagar), o alerta de previsão vencida no Fechamento do Mês e o GerônIA.',
-    tour: [
-      { sel: '#summary-row', t: 'Resumo', d: 'Quantos pedidos, quanto falta pagar, quantos aguardam baixa, quantos estão com a previsão vencida e quantos já foram baixados.' },
-      { sel: '#f-search', t: 'Filtros', d: 'Busque por fornecedor ou comprador(a); filtre por empresa, comprador(a), status e período da previsão de chegada.' },
-      { sel: '#btn-new-ped', t: 'Novo pedido', d: 'Lança o pedido — ele já entra no Fluxo de Caixa como a pagar. O desconto pode ser digitado em R$ ou em %.' },
-      { sel: '#ped-tbody', t: 'Lista de pedidos', d: 'Veja tudo pelo olho, edite e — se tiver a permissão — dê baixa.' },
-    ],
-  },
-
-  conciliacao: {
-    titulo: 'Conciliação', versao: 2,
-    resumo: 'A <b>Conciliação</b> compara o valor <b>previsto</b> das Despesas Fixas com o valor <b>pago</b> de verdade e destaca as diferenças.',
-    passos: [
-      { t: 'Escolha empresa, mês e ano', d: 'Nos filtros do topo.' },
-      { t: 'Veja as divergências', d: 'Os cartões de resumo mostram quantas despesas foram conferidas, quantas divergem e a diferença em R$.' },
-      { t: 'Filtre só o que diverge', d: 'Marque <b>Só divergências</b> para focar no que precisa de atenção.' },
-    ],
-    dicas: ['Divergência não é necessariamente erro: pode ser reajuste. Ela só pede que alguém confirme.', 'Pedidos saíram da Conciliação em set/2026: o pedido virou só informativo (sem valor real a comparar).'],
-    naoFaz: ['Não corrige os valores — a correção é feita em Despesas Fixas.'],
-    quemVe: 'Quem tem acesso a Despesas Fixas, empresa por empresa.',
-    dados: 'Despesas Fixas (previsto × pago).',
-    tour: [
-      { sel: '#section-despesas', t: 'Despesas Fixas', d: 'Compara previsto × pago mês a mês, por empresa.' },
-      { sel: '#desp-f-so-divergencias', t: 'Só divergências', d: 'Esconde o que está batendo para você focar no que precisa de atenção.' },
-    ],
-  },
-
   calcimport: {
     titulo: 'Calculadora de Importação', versao: 1,
     resumo: 'A calculadora estima o <b>custo real de desembarque</b> (landed cost) de um produto ou container importado — somando frete, seguro, impostos (II, IPI, PIS, COFINS, ICMS) e despesas do processo — para você decidir, antes de comprar, se vale a pena.',
@@ -343,29 +260,6 @@ window.SAFI_AJUDA = { telas: {
       { sel: '#an-tbl', t: 'Análise vertical e horizontal', d: 'Por conta: orçado e real com AV e AH, diferença e real ÷ orçado.' },
     ],
   },
-  fechamento: {
-    titulo: 'Fechamento do Mês', versao: 3,
-    resumo: 'Aprove e <b>trave</b> cada mês por operação. Mês travado não aceita mais edição nos Lançamentos. Tudo fica registrado em log, com o motivo quando o mês é reaberto — ou quando é travado com pendências.',
-    passos: [
-      { t: 'Escolha o mês', d: 'No seletor do topo. Cada operação tem o seu próprio status.' },
-      { t: 'Rode as conferências', d: 'Na aba <b>Conferências</b>, veja os alertas automáticos (ex.: despesas fixas sem pagamento, pedidos com previsão de chegada vencida e ainda sem baixa).' },
-      { t: 'Aprove e trave', d: 'Passe de <b>Aberto → Aprovado → Travado</b> pelo cartão da operação.' },
-      { t: 'Reabra só com motivo', d: 'Voltar um status exige um <b>motivo</b> (mín. 5 caracteres), que fica no <b>Histórico</b>.' },
-    ],
-    dicas: ['<b>Aprovado</b> ainda permite editar; só <b>Travado</b> bloqueia.', 'Se a operação ainda tem conferência com alerta, <b>travar exige motivo</b> — assim dá pra travar mesmo assim, mas fica registrado por quê.', 'A aba Histórico traz também a trilha de quem alterou cada Lançamento.', 'A matriz dos últimos 12 meses dá a visão geral — clique num mês para abri-lo.'],
-    naoFaz: ['Não corrige os números — apenas controla se eles ainda podem ser editados.'],
-    termos: [{ t: 'Aberto', d: 'Editável.' }, { t: 'Aprovado', d: 'Revisado, mas ainda editável.' }, { t: 'Travado', d: 'Bloqueado para edição no banco de dados.' }],
-    quemVe: 'Quem tem a permissão Fechar Mês (Aldemar, Guilherme e o admin).',
-    dados: 'Status próprios; conferências calculadas a partir de Pedidos, Despesas Fixas e Lançamentos.',
-    tour: [
-      { sel: '#sel-periodo', t: 'Mês de referência', d: 'Todos os cartões e conferências seguem este mês.' },
-      { sel: '#op-grid', t: 'Uma operação por cartão', d: 'Veja o status, os alertas e aprove ou trave cada operação.' },
-      { sel: '#matrix', t: 'Últimos 12 meses', d: 'Visão geral de todos os meses. Clique numa célula para abrir aquele mês.' },
-      { sel: '#chk-list', clicar: '.tab[data-tab="conferencias"]', voltar: '.tab[data-tab="fechamento"]', t: 'Conferências', d: 'Alertas automáticos antes de fechar: pendências em despesas fixas, pedidos e mais.' },
-      { sel: '#tbl-log', clicar: '.tab[data-tab="historico"]', t: 'Histórico', d: 'Quem fechou, travou ou reabriu — e por quê — além da trilha de alterações dos Lançamentos.' },
-    ],
-  },
-
   reunioes: {
     titulo: 'Reuniões e Decisões', versao: 2,
     resumo: 'Registre as <b>reuniões</b> (pauta e ata) e acompanhe o que ficou decidido: <b>quem faz, até quando e em que pé está</b> cada ação.',
@@ -388,34 +282,6 @@ window.SAFI_AJUDA = { telas: {
     ],
   },
 
-  produtos: {
-    titulo: 'Produtos & Estoque', versao: 1,
-    resumo: 'Acompanhe <b>estoque, giro, cobertura, valor médio de venda e sazonalidade</b> por produto (SKU). Os dados entram por <b>planilha</b> exportada do Tiny/Olist ou do Seta.',
-    passos: [
-      { t: 'Importe o estoque', d: 'Na aba <b>Importar dados</b>, envie a planilha de cadastro/posição de estoque de uma operação. O sistema reconhece as colunas e você confere a prévia.' },
-      { t: 'Importe as vendas', d: 'Envie as vendas por produto (data, quantidade e valor). Meses completos: os meses do arquivo <b>substituem</b> os já gravados.' },
-      { t: 'Analise', d: 'Em <b>Visão geral</b>, veja valor em estoque, cobertura, itens sem giro e em ruptura, e filtre por fornecedor, categoria e situação.' },
-      { t: 'Veja a sazonalidade', d: 'Em <b>Sazonalidade</b>, o índice mostra quais meses vendem acima ou abaixo da média (por fornecedor, categoria ou SKU).' },
-    ],
-    dicas: ['Cobertura, giro e valor médio de venda só aparecem depois que as vendas forem importadas.', 'Com menos de 12 meses de histórico, o índice sazonal é provisório.', 'Arquivos CSV podem estar em UTF-8 ou Windows-1252, com separador vírgula, ponto e vírgula ou tab.'],
-    naoFaz: ['Não se conecta sozinho ao Tiny/Olist ou ao Seta (por enquanto, importação por planilha).', 'O "prazo médio de estocagem" real exigiria histórico de entradas — aqui usamos a cobertura.'],
-    termos: [
-      { t: 'Cobertura (dias)', d: 'Estoque ÷ média diária de vendas dos últimos 3 meses.' },
-      { t: 'Sem giro', d: 'Tem estoque, mas não vendeu nos últimos 3 meses.' },
-      { t: 'Ruptura', d: 'Estoque zerado em produto que vem vendendo.' },
-      { t: 'Valor médio de venda', d: 'Receita ÷ unidades vendidas nos últimos 12 meses.' },
-    ],
-    quemVe: 'Quem tem a permissão Produtos & Estoque.',
-    dados: 'Planilhas importadas nesta tela (Tiny/Olist e Seta).',
-    tour: [
-      { sel: '#sel-op', t: 'Operação', d: 'Veja todas as operações ou uma só.' },
-      { sel: '#kpis', t: 'Indicadores', d: 'SKUs, unidades e valor em estoque, cobertura média, itens sem giro (com o valor parado) e rupturas.' },
-      { sel: '#tbl-prod', t: 'Lista de produtos', d: 'Custo, venda, margem, estoque, vendas dos 3 últimos meses, cobertura e valor médio de venda.' },
-      { sel: '#s-forn', clicar: '#tabs [data-tab="saz"]', voltar: '#tabs [data-tab="geral"]', t: 'Sazonalidade', d: 'Escolha fornecedor, categoria ou SKU e veja o índice de cada mês do ano.' },
-      { sel: '#e-file', clicar: '#tabs [data-tab="imp"]', t: 'Importar dados', d: 'Envie a planilha de estoque e a de vendas. As colunas são reconhecidas sozinhas e você confere a prévia antes de importar.' },
-    ],
-  },
-
   tesouraria: {
     titulo: 'Tesouraria', versao: 4,
     resumo: 'Duas abas: <b>Cheques</b> (controle dos cheques emitidos, igual à planilha: registro, CNPJ, titular, nº, valor, fornecedor, compensação e OK) e <b>Caixa</b> (cada <b>saque ou sangria</b> entregue a um portador, dividido entre as lojas, com os gastos lançados um a um; saldo final = valor enviado − gastos).',
@@ -430,20 +296,6 @@ window.SAFI_AJUDA = { telas: {
     naoFaz: ['Não tem relação com Despesas Fixas — são módulos independentes.', 'Não lança nada no DRE: o rateio entre lojas é só o controle da tesouraria.'],
     quemVe: 'Quem tem a permissão Tesouraria.',
     dados: 'Cadastro próprio, lançamento por lançamento.',
-  },
-
-  planoorc: {
-    titulo: 'Plano Orçamentário', versao: 1,
-    resumo: 'Meta <b>trimestral</b> de vendas e compras por categoria de produto (roupa), só para <b>Exposição Paulista e Via Closet</b>.',
-    passos: [
-      { t: 'Escolha operação, trimestre e ano', d: 'Nos seletores do topo.' },
-      { t: 'Preencha a grade', d: 'Por categoria (Masculino, Jeans, Feminino Plus…): estoque, previsto e realizado de vendas e de compras (em R$ e em peças), e o saldo final de estoque.' },
-      { t: 'Salve', d: '<b>Salvar plano</b> grava só as células alteradas (borda âmbar até salvar).' },
-    ],
-    dicas: ['Deixe em branco o que não tiver meta ou valor ainda — célula vazia não é zero.', 'Trocar de operação/trimestre/ano com alterações não salvas pede confirmação.'],
-    naoFaz: ['Previsto e Realizado são digitados à mão — ainda não puxa de Pedidos nem de Produtos.', 'Não vale para o GIP (e-commerce) — só as duas lojas físicas.'],
-    quemVe: 'Quem tem a permissão Plano Orçamentário.',
-    dados: 'Digitado nesta tela.',
   },
 
   admin: {

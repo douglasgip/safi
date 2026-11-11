@@ -422,9 +422,7 @@
   var ROTAS = {
     home: ['/', 'Visão Geral'], geronia: ['/geronia', 'Visão Geral'], conselho: ['/conselho', 'Conselho'], reunioes: ['/reunioes', 'Conselho'],
     dre: ['/dre', 'Financeiro'], lancamentos: ['/lancamentos', 'Financeiro (submenu do DRE)'], orcamento: ['/orcamento', 'Financeiro'],
-    fluxocaixa: ['/fluxo-caixa', 'Financeiro'], despfixas: ['/despesas-fixas', 'Financeiro'], resumo: ['/resumocontabil', 'Contábil'],
-    fechamento: ['/fechamento', 'Contábil'], pedidos: ['/pedidos', 'Compras'], conciliacao: ['/conciliacao', 'Compras'],
-    produtos: ['/produtos', 'Compras'], calcimport: ['/calculadora-importacao', 'Compras'], funcionarios: ['/funcionarios', 'Pessoal'],
+    resumo: ['/resumocontabil', 'Contábil'], calcimport: ['/calculadora-importacao', 'Compras'], funcionarios: ['/funcionarios', 'Pessoal'],
     mapasoc: ['/mapa-societario', 'Gestão'], admin: ['/admin', 'Gestão']
   };
   function plano(h) { return String(h == null ? '' : h).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim(); }

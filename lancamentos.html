@@ -774,19 +774,16 @@
         if (ctxGrade.empresa) { selE.value = ctxGrade.empresa; selA.value = ctxGrade.ano; }
         return;
       }
-      let rows, fech;
+      let rows;
       try {
-        [rows, fech] = await Promise.all([
-          buscarTodos(() => sb.from('lancamentos_valores').select('subcampo_id,mes,valor').eq('empresa_id', empresa).eq('ano', ano)),
-          sb.from('fechamentos').select('mes,status').eq('operacao', operacaoDeEmpresa(empresa)).eq('ano', ano),
-        ]);
+        rows = await buscarTodos(() => sb.from('lancamentos_valores').select('subcampo_id,mes,valor').eq('empresa_id', empresa).eq('ano', ano));
       } catch (err) {
         showToast('Não foi possível carregar os lançamentos: ' + (err.message || err), 'red');
         return;   // não desenha uma grade vazia (parecia "sem dados") — nada é alterado
       }
       vals = {}; orig = {};
       rows.forEach(v => { const k = kv(v.subcampo_id, v.mes), n = +v.valor || 0; vals[k] = n; orig[k] = n; });
-      mesesTravados = new Set(((fech && fech.data) || []).filter(f => f.status === 'travado').map(f => f.mes));
+      mesesTravados = new Set();   // a tela Fechamento do Mês foi retirada (2026-11-11): nenhum mês fica travado
       ctxGrade = { empresa, ano };
       renderGrade();
       carregarCreditosTributarios(empresa);

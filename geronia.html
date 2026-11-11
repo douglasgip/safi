@@ -739,11 +739,7 @@
     function dominioDaPergunta(t){
       t = (t || '').toLowerCase();
       if (/funcion[aá]ri|colaborador|admiss|desligamento|anivers[aá]ri/.test(t)) return 'os dados de funcionários';
-      if (/pedido|fornecedor|comprador|centro de custo/.test(t)) return 'os pedidos';
-      if (/despesa|conta.?a.?pagar|fluxo de caixa/.test(t)) return 'as despesas e o fluxo de caixa';
       if (/reuni[aã]o|a[cç][aã]o|decis[aã]o|ata\b/.test(t)) return 'reuniões e decisões';
-      if (/produto|estoque|sku|giro|ruptura|cobertura/.test(t)) return 'produtos e estoque';
-      if (/fechamento|travad|aprovad/.test(t)) return 'o fechamento do mês';
       if (/dre|faturamento|receita|margem|resultado|ebitda|lucro|or[cç]ament/.test(t)) return 'o financeiro';
       return 'os dados do painel';
     }

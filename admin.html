@@ -700,123 +700,6 @@
           </div>
         </div>
 
-        <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-            <div>
-              <div class="perm-name">Pedidos</div>
-              <div style="font-size:10.5px;color:#64748b;margin-top:2px">Pedidos dos(as) comprador(a)s aos fornecedores (entram no Fluxo de Caixa até a baixa) — visível por padrão só pra ninguém</div>
-            </div>
-            <div class="toggle-wrap" id="toggle-pedidos">
-              <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('pedidos', true)">Sim</button>
-              <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('pedidos', false)">Não</button>
-            </div>
-          </div>
-
-          <div class="dre-ops" id="pedidos-ops" style="display:none">
-            <div class="dre-ops-label">Empresas visíveis em Pedidos</div>
-
-            <div class="perm-row">
-              <div class="perm-name">GIP Ecommerce</div>
-              <div class="toggle-wrap" id="toggle-ped-epgip">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-epgip', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-epgip', false)">Não</button>
-              </div>
-            </div>
-
-            <div class="perm-row">
-              <div class="perm-name">Exposição Paulista</div>
-              <div class="toggle-wrap" id="toggle-ped-exposicao">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-exposicao', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-exposicao', false)">Não</button>
-              </div>
-            </div>
-
-            <div class="perm-row">
-              <div class="perm-name">Via Closet</div>
-              <div class="toggle-wrap" id="toggle-ped-viacloset">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-viacloset', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-viacloset', false)">Não</button>
-              </div>
-            </div>
-
-            <div class="dre-ops-label" style="margin-top:4px">Papel em Pedidos</div>
-
-            <div class="perm-row">
-              <div>
-                <div class="perm-name">Pode lançar pedidos (comprador(a))</div>
-                <div style="font-size:10.5px;color:#64748b;margin-top:2px">Cadastra, edita e remove pedidos — visível por padrão pra quem tem acesso a Pedidos</div>
-              </div>
-              <div class="toggle-wrap" id="toggle-ped-lancar">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-lancar', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-lancar', false)">Não</button>
-              </div>
-            </div>
-
-            <div class="perm-row">
-              <div>
-                <div class="perm-name">Pode dar baixa em pedidos</div>
-                <div style="font-size:10.5px;color:#64748b;margin-top:2px">Dá baixa quando lança a NF no SETA — o pedido sai do Fluxo de Caixa. Desligado por padrão</div>
-              </div>
-              <div class="toggle-wrap" id="toggle-ped-baixar">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('ped-baixar', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('ped-baixar', false)">Não</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
-          <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
-            <div>
-              <div class="perm-name">Despesas Fixas</div>
-              <div style="font-size:10.5px;color:#64748b;margin-top:2px">Honorários, assinaturas e sistemas recorrentes, com conciliação de valor previsto x pago — visível por padrão só pra ninguém</div>
-            </div>
-            <div class="toggle-wrap" id="toggle-despfixas">
-              <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('despfixas', true)">Sim</button>
-              <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('despfixas', false)">Não</button>
-            </div>
-          </div>
-
-          <div class="dre-ops" id="despfixas-ops" style="display:none">
-            <div class="dre-ops-label">Empresas visíveis em Despesas Fixas</div>
-
-            <div class="perm-row">
-              <div class="perm-name">GIP Ecommerce</div>
-              <div class="toggle-wrap" id="toggle-df-epgip">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('df-epgip', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('df-epgip', false)">Não</button>
-              </div>
-            </div>
-
-            <div class="perm-row">
-              <div class="perm-name">Exposição Paulista</div>
-              <div class="toggle-wrap" id="toggle-df-exposicao">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('df-exposicao', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('df-exposicao', false)">Não</button>
-              </div>
-            </div>
-
-            <div class="perm-row">
-              <div class="perm-name">Via Closet</div>
-              <div class="toggle-wrap" id="toggle-df-viacloset">
-                <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('df-viacloset', true)">Sim</button>
-                <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('df-viacloset', false)">Não</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="perm-row">
-          <div>
-            <div class="perm-name">Fluxo de Caixa</div>
-            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Contas a pagar e a receber do grupo — visível por padrão só pra ninguém</div>
-          </div>
-          <div class="toggle-wrap" id="toggle-fluxocaixa">
-            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('fluxocaixa', true)">Sim</button>
-            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('fluxocaixa', false)">Não</button>
-          </div>
-        </div>
-
         <div class="perm-row">
           <div>
             <div class="perm-name">Calculadora de Importação</div>
@@ -825,17 +708,6 @@
           <div class="toggle-wrap" id="toggle-calcimport">
             <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('calcimport', true)">Sim</button>
             <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('calcimport', false)">Não</button>
-          </div>
-        </div>
-
-        <div class="perm-row">
-          <div>
-            <div class="perm-name">Fechamento do Mês</div>
-            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Aprovar, travar e destravar meses (com registro em log), ver conferências e a trilha de alterações — visível por padrão só pra ninguém</div>
-          </div>
-          <div class="toggle-wrap" id="toggle-fechamento">
-            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('fechamento', true)">Sim</button>
-            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('fechamento', false)">Não</button>
           </div>
         </div>
 
@@ -863,19 +735,8 @@
 
         <div class="perm-row">
           <div>
-            <div class="perm-name">Produtos &amp; Estoque</div>
-            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Ver custos, estoque, giro e sazonalidade por SKU e importar as planilhas — visível por padrão só pra ninguém</div>
-          </div>
-          <div class="toggle-wrap" id="toggle-produtos">
-            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('produtos', true)">Sim</button>
-            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('produtos', false)">Não</button>
-          </div>
-        </div>
-
-        <div class="perm-row">
-          <div>
             <div class="perm-name">Orçamento e Metas</div>
-            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Lançar o orçamento de gastos operacionais e as metas de receita por operação (o Painel do Conselho só lê) — visível por padrão só pra ninguém</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Lançar o orçamento de vendas, compras e estoque por operação — visível por padrão só pra ninguém</div>
           </div>
           <div class="toggle-wrap" id="toggle-orcamento">
             <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('orcamento', true)">Sim</button>
@@ -891,17 +752,6 @@
           <div class="toggle-wrap" id="toggle-tesouraria">
             <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('tesouraria', true)">Sim</button>
             <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('tesouraria', false)">Não</button>
-          </div>
-        </div>
-
-        <div class="perm-row">
-          <div>
-            <div class="perm-name">Plano Orçamentário</div>
-            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Meta trimestral de vendas e compras por categoria de produto (Exposição/Via Closet) — visível por padrão só pra ninguém</div>
-          </div>
-          <div class="toggle-wrap" id="toggle-planoorc">
-            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('planoorc', true)">Sim</button>
-            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('planoorc', false)">Não</button>
           </div>
         </div>
 
@@ -993,7 +843,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 let currentSession = null;
 let deleteTarget   = null;
-const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, pedidos: false, 'ped-epgip': false, 'ped-exposicao': false, 'ped-viacloset': false, 'ped-lancar': true, 'ped-baixar': false, despfixas: false, 'df-epgip': false, 'df-exposicao': false, 'df-viacloset': false, fluxocaixa: false, lancamentos: false, 'lanc-ep': false, 'lanc-gip': false, 'lanc-exposicao': false, 'lanc-viacloset': false };
+const toggleState  = { resumo: true, dre: true, epgip: true, exposicao: true, viacloset: true, mapasoc: false, funcionarios: false, 'func-epgip': false, 'func-exposicao': false, 'func-viacloset': false, lancamentos: false, 'lanc-ep': false, 'lanc-gip': false, 'lanc-exposicao': false, 'lanc-viacloset': false };
 
 // ── Notificações: quem exportou PDF, quando e para quê ──
 const TELA_NOME = { conselho: 'Painel do Conselho', dre: 'DRE', resumo: 'Resumo Contábil' };
@@ -1201,16 +1051,10 @@ const ACCESS_DOMAINS = [
   u => u.can_dre !== false,
   u => u.can_mapa_societario === true,
   u => u.can_funcionarios === true,
-  u => u.can_pedidos === true,
-  u => u.can_despesas_fixas === true,
-  u => u.can_fluxo_caixa === true,
   u => u.can_lancamentos === true,
   u => u.can_calc_importacao === true,
-  u => u.can_fechar_mes === true,
   u => u.can_orcamento === true,
   u => u.can_tesouraria === true,
-  u => u.can_plano_orcamentario === true,
-  u => u.can_produtos === true,
   u => u.can_reunioes === true || u.can_reunioes_editar === true,
 ];
 function computeAccessPct(u) {
@@ -1298,12 +1142,6 @@ function setToggle(key, val) {
   if (key === 'funcionarios') {
     document.getElementById('funcionarios-ops').style.display = val ? 'block' : 'none';
   }
-  if (key === 'pedidos') {
-    document.getElementById('pedidos-ops').style.display = val ? 'block' : 'none';
-  }
-  if (key === 'despfixas') {
-    document.getElementById('despfixas-ops').style.display = val ? 'block' : 'none';
-  }
   if (key === 'lancamentos') {
     document.getElementById('lancamentos-ops').style.display = val ? 'block' : 'none';
   }
@@ -1323,8 +1161,7 @@ function openCreateModal() {
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
   setToggle('mfa', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','pedidos','ped-epgip','ped-exposicao','ped-viacloset','ped-baixar','despfixas','df-epgip','df-exposicao','df-viacloset','fluxocaixa','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','fechamento','orcamento','tesouraria','planoorc','reunioes','reunioes-editar','produtos'].forEach(k => setToggle(k, false));
-  setToggle('ped-lancar', true);
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','orcamento','tesouraria','reunioes','reunioes-editar'].forEach(k => setToggle(k, false));
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-email').focus();
@@ -1357,24 +1194,9 @@ function openEditModal(u) {
   setToggle('func-epgip',      !!u.funcionarios_epgip);
   setToggle('func-exposicao',  !!u.funcionarios_exposicao);
   setToggle('func-viacloset',  !!u.funcionarios_viacloset);
-  setToggle('pedidos',         !!u.can_pedidos);
-  setToggle('ped-epgip',       !!u.pedidos_epgip);
-  setToggle('ped-exposicao',   !!u.pedidos_exposicao);
-  setToggle('ped-viacloset',   !!u.pedidos_viacloset);
-  // Lançar/Conferir são opt-out (null = liberado) — !== false preserva esse default.
-  setToggle('ped-lancar',      u.pedidos_pode_lancar   !== false);
-  setToggle('ped-baixar',      u.pedidos_pode_baixar === true);
-  setToggle('despfixas',       !!u.can_despesas_fixas);
-  setToggle('df-epgip',        !!u.despesas_fixas_epgip);
-  setToggle('df-exposicao',    !!u.despesas_fixas_exposicao);
-  setToggle('df-viacloset',    !!u.despesas_fixas_viacloset);
-  setToggle('fluxocaixa',      !!u.can_fluxo_caixa);
   setToggle('calcimport',      !!u.can_calc_importacao);
-  setToggle('fechamento',      !!u.can_fechar_mes);
   setToggle('orcamento',       !!u.can_orcamento);
   setToggle('tesouraria',      !!u.can_tesouraria);
-  setToggle('planoorc',        !!u.can_plano_orcamentario);
-  setToggle('produtos',        !!u.can_produtos);
   setToggle('reunioes',        !!u.can_reunioes);
   setToggle('reunioes-editar', !!u.can_reunioes_editar);
   setToggle('lancamentos',       !!u.can_lancamentos);
@@ -1423,23 +1245,9 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     funcionarios_epgip:     toggleState['func-epgip'],
     funcionarios_exposicao: toggleState['func-exposicao'],
     funcionarios_viacloset: toggleState['func-viacloset'],
-    can_pedidos:       toggleState.pedidos,
-    pedidos_epgip:     toggleState['ped-epgip'],
-    pedidos_exposicao: toggleState['ped-exposicao'],
-    pedidos_viacloset: toggleState['ped-viacloset'],
-    pedidos_pode_lancar:    toggleState['ped-lancar'],
-    pedidos_pode_baixar:    toggleState['ped-baixar'],
-    can_despesas_fixas: toggleState.despfixas,
-    despesas_fixas_epgip: toggleState['df-epgip'],
-    despesas_fixas_exposicao: toggleState['df-exposicao'],
-    despesas_fixas_viacloset: toggleState['df-viacloset'],
-    can_fluxo_caixa: toggleState.fluxocaixa,
     can_calc_importacao: toggleState.calcimport,
-    can_fechar_mes: toggleState.fechamento,
     can_orcamento: toggleState.orcamento,
     can_tesouraria: toggleState.tesouraria,
-    can_plano_orcamentario: toggleState.planoorc,
-    can_produtos: toggleState.produtos,
     can_reunioes: toggleState.reunioes,
     can_reunioes_editar: toggleState['reunioes-editar'],
     can_lancamentos:       toggleState.lancamentos,
