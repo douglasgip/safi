@@ -59,3 +59,15 @@ test('Lançamentos: sem Fechamento do Mês, nenhum mês fica travado', () => {
 test('GerônIA só lista funcionários ativos', () => {
   assert.match(ler('_ds/geronia-chat_index.ts'), /from\('funcionarios'\)[^\n]*\.eq\('status', 'ativo'\)/);
 });
+
+test('textos de ajuda e telas não citam mais as telas retiradas', () => {
+  const NOMES = /Fechamento do Mês|Despesas Fixas|Fluxo de Caixa|Conciliação|Produtos &(amp;)? Estoque|Plano Orçamentário|\bPedidos\b|\bpedidos\b/;
+  const achados = [];
+  for (const f of ['ajuda-conteudo.js', ...TELAS]) {
+    // comentários de código podem citar a história; o que conta é o texto que a pessoa vê
+    const s = ler(f).split(/\r?\n/).filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l) && !/\/\/ .*retirada/.test(l)).join('\n');
+    const m = s.match(NOMES);
+    if (m) achados.push(f + ': ' + m[0]);
+  }
+  assert.deepStrictEqual(achados, []);
+});

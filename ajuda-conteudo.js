@@ -8,7 +8,7 @@
 window.SAFI_AJUDA = { telas: {
 
   home: {
-    titulo: 'Home', versao: 1,
+    titulo: 'Home', versao: 2,
     resumo: 'A <b>Home</b> é a porta de entrada do SAFI: mostra o resumo do mês e leva você para cada tela, organizadas por <b>setor</b>. Só aparece o que o seu acesso libera.',
     passos: [
       { t: 'Veja o resumo do mês', d: 'Para quem tem acesso ao DRE ou ao Resumo Contábil, a faixa de indicadores no topo mostra os números do período. Use as setas <b>‹ ›</b> para trocar de mês.' },
@@ -22,16 +22,16 @@ window.SAFI_AJUDA = { telas: {
     dados: 'Resumo do mês vem do DRE consolidado (Lançamentos).',
     tour: [
       { sel: '#kpi-bar', t: 'Resumo do mês', d: 'Os números-chave do período. Troque de mês com as setas <b>‹ ›</b>.' },
-      { sel: '.card-geronia', t: 'GerônIA', d: 'Seu conselheiro de IA. Pergunte sobre resultados, pedidos, despesas ou como usar qualquer tela do SAFI.' },
+      { sel: '.card-geronia', t: 'GerônIA', d: 'Seu conselheiro de IA. Pergunte sobre resultados, orçamento, funcionários ou como usar qualquer tela do SAFI.' },
       { sel: '.dash-section', t: 'Telas por setor', d: 'Cada cartão abre uma tela. Eles seguem os mesmos setores da barra lateral.' },
     ],
   },
 
   geronia: {
-    titulo: 'GerônIA', versao: 1,
-    resumo: 'O <b>GerônIA</b> é o conselheiro de inteligência do Grupo Sacoman. Ele lê os dados que <b>o seu acesso permite</b> (DRE, pedidos, despesas, funcionários, orçamento, reuniões, produtos…) e também conhece <b>como usar cada tela do SAFI</b>.',
+    titulo: 'GerônIA', versao: 2,
+    resumo: 'O <b>GerônIA</b> é o conselheiro de inteligência do Grupo Sacoman. Ele lê os dados que <b>o seu acesso permite</b> (DRE, indicadores do conselho, orçamento, funcionários, reuniões…) e também conhece <b>como usar cada tela do SAFI</b>.',
     passos: [
-      { t: 'Faça uma pergunta', d: 'Escreva no campo de baixo, em linguagem normal. Ex.: <b>"Como está o EBITDA de agosto?"</b> ou <b>"Como faço para travar um mês?"</b>.' },
+      { t: 'Faça uma pergunta', d: 'Escreva no campo de baixo, em linguagem normal. Ex.: <b>"Como está o EBITDA de agosto?"</b> ou <b>"Como lanço o orçamento de compras?"</b>.' },
       { t: 'Use as sugestões', d: 'Ao fim de cada resposta ele sugere próximas perguntas — clique para enviar direto.' },
       { t: 'Escolha o modelo', d: '<b>Pleno</b> é rápido; <b>Sênior</b> pensa mais e é melhor para análises longas ou listas grandes.' },
       { t: 'Organize por conversas', d: 'Cada assunto vira uma conversa (menu ☰ à esquerda). Ele só lembra o que foi dito na conversa atual.' },
@@ -72,7 +72,7 @@ window.SAFI_AJUDA = { telas: {
   },
 
   dre: {
-    titulo: 'DRE', versao: 4,
+    titulo: 'DRE', versao: 5,
     resumo: 'O <b>DRE</b> (Demonstrativo de Resultados) apresenta faturamento, deduções, custos, margem de contribuição e resultado do período — por operação ou consolidado — com comparativos e gráficos.',
     passos: [
       { t: 'Defina o período', d: 'Escolha o mês inicial e o final no topo. Tudo na tela segue esse intervalo.' },
@@ -81,7 +81,7 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Compare períodos', d: 'O botão <b>Comparar</b> abre o painel A × B para confrontar dois períodos ou operações, com as diferenças.' },
       { t: 'Abra o detalhe', d: 'Na tabela do DRE, <b>AV%</b> é a participação vertical e <b>AH%</b> a variação em relação ao mês anterior. <b>Lançamentos Detalhados</b> mostra a composição linha a linha.' },
     ],
-    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Os números vêm dos Lançamentos: se algo não bate, confira lá (e se o mês está travado).', 'Nos gráficos você pode arrastar para comparar períodos.', 'O EBITDA do grupo = Resultado Líquido + Despesas Financeiras + IR e CSLL — está no Painel do Conselho.', 'A linha <b>Créditos Tributários atuais</b>, quando aparece no fim da tabela (hoje só na EP), é só informativa — não entra em nenhuma conta do DRE. Mostra o total; clique nela para ver a quebra em ICMS, PIS e COFINS.'],
+    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Os números vêm dos Lançamentos: se algo não bate, confira lá.', 'Nos gráficos você pode arrastar para comparar períodos.', 'O EBITDA do grupo = Resultado Líquido + Despesas Financeiras + IR e CSLL — está no Painel do Conselho.', 'A linha <b>Créditos Tributários atuais</b>, quando aparece no fim da tabela (hoje só na EP), é só informativa — não entra em nenhuma conta do DRE. Mostra o total; clique nela para ver a quebra em ICMS, PIS e COFINS.'],
     naoFaz: ['Não é onde se lança — os valores entram em <b>Lançamentos</b>.', 'Não calcula depreciação (o DRE do grupo não tem essa linha).'],
     termos: [
       { t: 'Margem de Contribuição', d: 'Receita líquida menos custos variáveis: o que sobra para cobrir os gastos operacionais.' },
@@ -103,26 +103,26 @@ window.SAFI_AJUDA = { telas: {
   },
 
   lancamentos: {
-    titulo: 'Lançamentos', versao: 5,
+    titulo: 'Lançamentos', versao: 6,
     resumo: 'Em <b>Lançamentos</b> você alimenta o DRE numa <b>grade de contas × 12 meses</b> (o mesmo padrão da tela de Orçamento): escolhe a empresa e o ano e preenche mês a mês. Também mantém a estrutura de contas e o Resumo Contábil.',
     passos: [
       { t: 'Escolha empresa e ano', d: 'A grade mostra os <b>12 meses de uma vez</b>. Só aparecem as empresas que você pode lançar.' },
       { t: 'Preencha os valores', d: 'Cada linha é uma conta (campo ou subcampo) e cada coluna, um mês. As linhas alternam de tom para você não se perder. <b>Enter</b> ou <b>↓</b> desce na mesma coluna; <b>Tab</b> vai para o mês seguinte.' },
       { t: 'Cole da planilha ou importe', d: 'Copie um bloco no Excel, clique na primeira célula e cole (<b>Ctrl+V</b>): linhas e meses são preenchidos de uma vez. Ou use <b>Baixar modelo</b> e <b>Importar planilha</b>.' },
       { t: 'Confira os totais', d: 'Totais por campo, classe e mês — e as linhas de <b>Receita Líquida, Margem e Resultado</b> — atualizam enquanto você digita. A última coluna é o total do ano.' },
-      { t: 'Salve', d: '<b>Salvar Lançamentos</b> grava <b>apenas as células que você mudou</b> (elas ficam com borda âmbar até salvar). O DRE é atualizado sozinho e a alteração fica na trilha de auditoria (<b>Fechamento do Mês → aba Histórico</b>, para quem tem acesso ao Fechamento).' },
+      { t: 'Salve', d: '<b>Salvar Lançamentos</b> grava <b>apenas as células que você mudou</b> (elas ficam com borda âmbar até salvar). O DRE é atualizado sozinho e a alteração fica registrada (quem mudou o quê).' },
     ],
-    dicas: ['Mês <b>Travado</b> no Fechamento aparece com 🔒 e a coluna fica bloqueada — peça a quem fecha para destravar (fica registrado).', 'Mês <b>Aprovado</b> ainda aceita edição; só o Travado bloqueia.', 'Célula em branco ao colar ou importar <b>não apaga</b> o que já existe. Para zerar um valor, digite 0 (ou apague a célula e salve).', 'Se trocar de empresa ou ano com alterações não salvas, o SAFI pergunta antes de descartar.', 'A aba <b>Gerenciar Estrutura</b> permite criar/ordenar classes, campos e subcampos; a aba <b>Resumo Contábil</b> guarda entrada, saída, despesa, estoque e alíquota do mês.', 'Ao escolher a empresa <b>EP</b>, aparece embaixo da grade o bloco <b>Créditos Tributários atuais</b> — ICMS, PIS e COFINS separados, com o total somado ao vivo. É informativo (não por mês/ano) e não entra em nenhum cálculo do DRE.'],
+    dicas: ['Célula em branco ao colar ou importar <b>não apaga</b> o que já existe. Para zerar um valor, digite 0 (ou apague a célula e salve).', 'Se trocar de empresa ou ano com alterações não salvas, o SAFI pergunta antes de descartar.', 'A aba <b>Gerenciar Estrutura</b> permite criar/ordenar classes, campos e subcampos; a aba <b>Resumo Contábil</b> guarda entrada, saída, despesa, estoque e alíquota do mês.', 'Ao escolher a empresa <b>EP</b>, aparece embaixo da grade o bloco <b>Créditos Tributários atuais</b> — ICMS, PIS e COFINS separados, com o total somado ao vivo. É informativo (não por mês/ano) e não entra em nenhum cálculo do DRE.'],
     naoFaz: ['Não substitui a contabilidade oficial.', 'Não aparece o que você não tem liberação para lançar.'],
-    termos: [{ t: 'Classe / campo / subcampo', d: 'Hierarquia das contas do DRE (ex.: Custos Variáveis → Frete → Frete Pago).' }, { t: 'Travado', d: 'Mês fechado: bloqueado para edição no banco de dados.' }, { t: 'Célula alterada', d: 'Valor mudado na tela e ainda não salvo (borda âmbar).' }],
+    termos: [{ t: 'Classe / campo / subcampo', d: 'Hierarquia das contas do DRE (ex.: Custos Variáveis → Frete → Frete Pago).' }, { t: 'Célula alterada', d: 'Valor mudado na tela e ainda não salvo (borda âmbar).' }],
     quemVe: 'Quem tem a permissão Lançamentos, empresa por empresa.',
     dados: 'Digitados aqui, colados da planilha ou importados; alimentam DRE, Resumo Contábil, Painel do Conselho e GerônIA.',
     tour: [
       { sel: '#tab-lancar', t: 'Três abas', d: '<b>Lançar DRE</b> (valores do ano), <b>Gerenciar Estrutura</b> (contas) e <b>Resumo Contábil</b>.' },
       { sel: '#entry-filters', t: 'Empresa e ano', d: 'Escolha o que vai lançar. Aqui ficam também <b>Baixar modelo</b>, <b>Importar planilha</b> e o botão <b>Salvar</b>.' },
-      { sel: '#entry-tree', t: 'A grade', d: 'Contas nas linhas, meses nas colunas — igual ao Orçamento. Linhas em tons alternados, totais por campo e por classe, e o resultado calculado ao vivo. Meses travados aparecem com 🔒.' },
+      { sel: '#entry-tree', t: 'A grade', d: 'Contas nas linhas, meses nas colunas — igual ao Orçamento. Linhas em tons alternados, totais por campo e por classe, e o resultado calculado ao vivo.' },
       { sel: '.lc-in:not(:disabled)', t: 'Cada célula', d: 'Digite o valor do mês. <b>Enter</b> desce, <b>Tab</b> avança, e você pode <b>colar um bloco</b> copiado do Excel. Células alteradas ficam com borda âmbar.' },
-      { sel: '#btn-save-valores', t: 'Salvar', d: 'Grava só o que você alterou (o número aparece no botão), atualiza o DRE e registra quem mudou o quê. Para consultar esse registro, quem tem acesso ao Fechamento do Mês vai em <b>Fechamento do Mês → Histórico</b>.' },
+      { sel: '#btn-save-valores', t: 'Salvar', d: 'Grava só o que você alterou (o número aparece no botão), atualiza o DRE e registra quem mudou o quê.' },
       { sel: '#manage-tree', clicar: '#tab-gerenciar', voltar: '#tab-lancar', t: 'Gerenciar Estrutura', d: 'Crie, renomeie, exclua e <b>arraste para reordenar</b> classes, campos e subcampos do DRE. A lista segue o mesmo formato da grade de lançamento, e a ordem definida aqui vale para a grade e para o modelo de planilha.' },
       { sel: '#view-resumo', clicar: '#tab-resumo', t: 'Resumo Contábil', d: 'Informe entrada, saída, despesa, estoque, alíquota e RBT12 do mês — alimenta a tela de Resumo Contábil.' },
     ],
@@ -212,7 +212,7 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Veja onde o dinheiro fica', d: 'A tabela <b>Rentabilidade e custos</b> desce do Faturamento até o Resultado Líquido, mostrando cada linha em R$, em % do faturamento e a variação em pontos percentuais contra a base.' },
       { t: 'Acompanhe Pessoas', d: 'Admissões, desligamentos e turnover do mês, calculados a partir de quem entra e sai da tela de Funcionários, mais o faturamento e a margem de contribuição por funcionário.' },
     ],
-    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Percentuais são sobre o Faturamento.', 'O "× Orçado" só aparece para as operações com meta lançada no mês; se for parcial, a tela avisa quais.', 'A faixa "Ações do conselho" leva às decisões pendentes e vencidas.', 'Pessoas só tem dado a partir de <b>set/2026</b> — antes disso o SAFI não registrava admissão/desligamento, e não há como reconstruir.'],
+    dicas: ['O botão <b>Gerar PDF</b> (no topo) cria um arquivo A4 com os filtros atuais: você escolhe vertical ou horizontal, marca o que incluir (até um resumo do GerônIA) e informa a <b>finalidade</b>.', 'Percentuais são sobre o Faturamento.', 'O "× Meta" só aparece para as operações com venda prevista lançada no mês; se for parcial, a tela avisa quais.', 'A faixa "Ações do conselho" leva às decisões pendentes e vencidas.', 'Pessoas só tem dado a partir de <b>set/2026</b> — antes disso o SAFI não registrava admissão/desligamento, e não há como reconstruir.'],
     naoFaz: ['Não é onde se lança nada — os números vêm dos Lançamentos, do Orçamento e Metas e de Funcionários.', 'Não considera depreciação (o DRE do grupo não tem).'],
     termos: [
       { t: 'EBITDA', d: 'Resultado Líquido + Despesas Financeiras + IR e CSLL. Retiradas de Sócios continuam como despesa.' },
@@ -280,7 +280,7 @@ window.SAFI_AJUDA = { telas: {
   },
 
   tesouraria: {
-    titulo: 'Tesouraria', versao: 4,
+    titulo: 'Tesouraria', versao: 5,
     resumo: 'Duas abas: <b>Cheques</b> (controle dos cheques emitidos, igual à planilha: registro, CNPJ, titular, nº, valor, fornecedor, compensação e OK) e <b>Caixa</b> (cada <b>saque ou sangria</b> entregue a um portador, dividido entre as lojas, com os gastos lançados um a um; saldo final = valor enviado − gastos).',
     passos: [
       { t: 'Cheques: lance e acompanhe', d: 'Aba <b>Cheques</b> → <b>+ Novo cheque</b>. Para uma sequência da mesma compra use <b>Salvar e adicionar outro</b> (mantém titular, fornecedor e valor, e soma 1 no número). Clique no selo da coluna <b>OK?</b> para marcar o cheque como compensado.' },
@@ -289,18 +289,18 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Lance os gastos', d: '<b>+ Adicionar gasto</b>: valor, categoria (escreva livremente — as já usadas e Viagem, Hospedagem, Refeição, Locomoção e Outros aparecem como sugestão) e se foi em <b>Dinheiro</b> ou <b>Pix</b>. Um gasto por linha.' },
       { t: 'Confira o saldo final', d: 'O <b>saldo final</b> (valor enviado − gastos em dinheiro) é calculado na hora. Gasto em <b>Pix</b> não desconta do saldo, porque sai da conta da empresa e não do dinheiro com o portador. Os cartões do topo somam o saldo de cada portador.' },
     ],
-    dicas: ['<b>Vencido</b> = passou da data de compensação e ainda não tem OK (fica em vermelho, com contador na aba).', 'Titular, fornecedor e portador são texto livre, mas os já usados aparecem como sugestão ao digitar (igual Pedidos).', 'O CNPJ do cheque usa as mesmas opções de Pedidos (Guilherme, Juliane, Isa, EP).', 'Clique numa linha para editar ou excluir.'],
-    naoFaz: ['Não tem relação com Despesas Fixas — são módulos independentes.', 'Não lança nada no DRE: o rateio entre lojas é só o controle da tesouraria.'],
+    dicas: ['<b>Vencido</b> = passou da data de compensação e ainda não tem OK (fica em vermelho, com contador na aba).', 'Titular, fornecedor e portador são texto livre, mas os já usados aparecem como sugestão ao digitar.', 'O CNPJ do cheque: Guilherme, Juliane, Isa ou EP.', 'Clique numa linha para editar ou excluir.'],
+    naoFaz: ['Não lança nada no DRE: o rateio entre lojas é só o controle da tesouraria.'],
     quemVe: 'Quem tem a permissão Tesouraria.',
     dados: 'Cadastro próprio, lançamento por lançamento.',
   },
 
   admin: {
-    titulo: 'Gestão de Acessos', versao: 3,
+    titulo: 'Gestão de Acessos', versao: 4,
     resumo: 'Aqui o admin cria usuários, define <b>exatamente o que cada um pode ver e fazer</b> no SAFI — tela por tela e, em vários casos, empresa por empresa — e acompanha quem está usando o sistema.',
     passos: [
       { t: 'Crie o usuário', d: '<b>Novo Usuário</b>: nome, cargo, e-mail e senha inicial.' },
-      { t: 'Defina os acessos', d: 'Ligue ou desligue cada área (DRE, Lançamentos, Pedidos, Fechamento, Orçamento, Reuniões, Produtos…) e, quando houver, as empresas liberadas.' },
+      { t: 'Defina os acessos', d: 'Ligue ou desligue cada área (DRE, Lançamentos, Orçamento, Tesouraria, Reuniões, Funcionários…) e, quando houver, as empresas liberadas.' },
       { t: 'Acompanhe a lista', d: 'A barra de cada usuário mostra o percentual de áreas liberadas.' },
     ],
     dicas: ['<b>Resumo Contábil e DRE</b> vêm liberados por padrão; as demais áreas começam desligadas.', 'A GerônIA respeita as mesmas permissões ao responder.', '"Usuários online" considera alguém online se o navegador mandou sinal nos últimos 2 minutos — só conta enquanto a aba está em primeiro plano.'],
