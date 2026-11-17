@@ -103,6 +103,21 @@
     .toast-dot { width: 8px; height: 8px; border-radius: 50%; } .toast-dot.green { background: #34d399; } .toast-dot.red { background: #f87171; }
     #bi-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
 
+    /* filtros */
+    .filtros { display: flex; flex-wrap: wrap; gap: 14px 18px; align-items: flex-end; margin-bottom: 18px; padding: 14px 16px; border-radius: 16px; background: rgba(15,23,42,0.6); border: 1px solid rgba(255,255,255,0.07); }
+    .f-grp { display: flex; flex-direction: column; gap: 6px; }
+    .f-lbl { font-size: 9.5px; font-weight: 700; color: #94a3b8; letter-spacing: 1.2px; text-transform: uppercase; }
+    .f-row { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+    .in-data { padding: 9px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; }
+    .in-data:focus { outline: none; border-color: #38bdf8; }
+    .chip { padding: 7px 10px; min-width: 40px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: #64748b; font-family: Inter, sans-serif; font-size: 12px; font-weight: 700; border-radius: 8px; cursor: pointer; }
+    .chip.on { background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.45); color: #7dd3fc; }
+    .chip.todos { color: #94a3b8; }
+    .f-resumo { font-size: 11.5px; color: #64748b; margin: -8px 0 16px 2px; }
+    .delta { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.05); }
+    .delta.up { color: #4ade80; } .delta.down { color: #f87171; }
+    .cmp { font-size: 11px; color: #64748b; margin-top: 4px; }
+
     @media (max-width: 1000px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 12px; } }
     @media (max-width: 520px) { .kpis { grid-template-columns: 1fr; } }
@@ -131,24 +146,29 @@
         <h1>BI das Lojas</h1>
         <div class="fe-toolbar-sub">KPIs diários de cada operação: faturamento × meta, margem, ticket médio, peças por atendimento e quantidade de vendas.</div>
       </div>
-      <div class="controls">
-        <div class="op-btns" id="sel-ops" role="group" aria-label="Operação"></div>
-        <select class="fe-select" id="sel-mes" aria-label="Mês"></select>
+    </div>
+
+    <div class="filtros">
+      <div class="f-grp"><span class="f-lbl">Operações</span><div class="op-btns" id="sel-ops" role="group" aria-label="Operações"></div></div>
+      <div class="f-grp"><span class="f-lbl">Período</span>
+        <div class="f-row">
+          <select class="fe-select" id="sel-per" aria-label="Atalho de período">
+            <option value="hoje">Hoje</option><option value="ontem">Ontem</option><option value="semana">Esta semana</option><option value="semana_ant">Semana passada</option>
+            <option value="mes">Este mês</option><option value="mes_ant">Mês passado</option><option value="ano">Este ano</option><option value="livre">Personalizado</option>
+          </select>
+          <input type="date" class="in-data" id="dt-de" aria-label="De"><span style="color:#64748b;font-size:12px">até</span><input type="date" class="in-data" id="dt-ate" aria-label="Até">
+        </div>
+      </div>
+      <div class="f-grp"><span class="f-lbl">Dia da semana</span><div class="f-row" id="sel-dias" role="group" aria-label="Dias da semana"></div></div>
+      <div class="f-grp"><span class="f-lbl">Comparar com</span>
+        <select class="fe-select" id="sel-cmp" aria-label="Comparar com">
+          <option value="">Não comparar</option><option value="anterior">Período anterior (mesmo tamanho)</option><option value="mes">Mesmo período do mês anterior</option><option value="ano">Mesmo período do ano anterior</option>
+        </select>
       </div>
     </div>
+    <div class="f-resumo" id="f-resumo"></div>
 
     <div class="kpis" id="kpis"></div>
-
-    <div class="panel" id="panel-meta">
-      <div class="panel-head">Meta do mês</div>
-      <div class="meta-form">
-        <div><label for="in-meta">Meta de faturamento (R$)</label><input class="in" id="in-meta" inputmode="decimal" placeholder="0,00"></div>
-        <div><label for="in-dias">Dias de funcionamento</label><input class="in dias" id="in-dias" inputmode="numeric"></div>
-        <div class="meta-dia" id="meta-dia"></div>
-        <button class="btn-primary" id="btn-meta" type="button">Salvar meta</button>
-      </div>
-      <div class="note" id="meta-nota"></div>
-    </div>
 
     <div class="panel">
       <div class="panel-head">Faturamento por dia × meta diária</div>
@@ -156,9 +176,27 @@
     </div>
 
     <div class="panel">
+      <div class="panel-head">Por dia da semana (média por dia)</div>
+      <div class="table-scroll"><table class="tb" id="tb-sem"></table></div>
+    </div>
+
+    <div class="panel">
       <div class="panel-head" id="tb-titulo">Dia a dia</div>
       <div class="table-scroll"><table class="tb" id="tb"></table></div>
-      <div class="note">Ticket médio e peças por atendimento do total são ponderados pelas vendas de cada dia (faturamento ÷ vendas), não a média simples dos dias. Atingimento do dia = faturamento ÷ meta diária.</div>
+      <div class="note">Com mais de uma operação, cada dia soma as operações escolhidas. Ticket médio e peças por atendimento são ponderados pelas vendas (faturamento ÷ vendas), não a média simples dos dias. Atingimento do dia = faturamento ÷ meta diária.</div>
+    </div>
+
+    <div class="panel" id="panel-meta">
+      <div class="panel-head">Meta do mês</div>
+      <div class="meta-form">
+        <div><label for="mt-op">Operação</label><select class="fe-select" id="mt-op"></select></div>
+        <div><label for="mt-mes">Mês</label><select class="fe-select" id="mt-mes"></select></div>
+        <div><label for="in-meta">Meta de faturamento (R$)</label><input class="in" id="in-meta" inputmode="decimal" placeholder="0,00"></div>
+        <div><label for="in-dias">Dias de funcionamento</label><input class="in dias" id="in-dias" inputmode="numeric"></div>
+        <div class="meta-dia" id="meta-dia"></div>
+        <button class="btn-primary" id="btn-meta" type="button">Salvar meta</button>
+      </div>
+      <div class="note" id="meta-nota"></div>
     </div>
   </main>
 
@@ -177,153 +215,296 @@
       { id: 'ViaCloset', nome: 'Via Closet', logo: '/public/viacloset_logo.png', loja: true },
       { id: 'GIP', nome: 'E-commerce', logo: '/public/gipecommerce_logo.png', loja: false },
     ];
+    const LOJA = { Exposicao: true, ViaCloset: true, GIP: false };
     const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
     const DIAS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+    const DIAS_CURTO = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+    const ORDEM_SEMANA = [1, 2, 3, 4, 5, 6, 0];
     const g = id => document.getElementById(id);
     const brl = v => v == null ? '—' : 'R$ ' + (+v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const brl0 = v => v == null ? '—' : 'R$ ' + Math.round(v).toLocaleString('pt-BR');
     const pct = v => v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
     const n2 = v => v == null || !isFinite(v) ? '—' : (+v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const n0 = v => v == null ? '—' : Math.round(v).toLocaleString('pt-BR');
+    const fmtD = iso => iso.slice(8, 10) + '/' + iso.slice(5, 7) + '/' + iso.slice(0, 4);
     function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
 
     // ── Contas puras (testadas em tests/bi.test.js) ─────────────────────────
+    // Datas em texto ISO (aaaa-mm-dd), sem fuso: tudo ao meio-dia local.
+    const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    const dt = s => new Date(s + 'T12:00:00');
+    const somaDias = (s, n) => { const d = dt(s); d.setDate(d.getDate() + n); return iso(d); };
     // Dias de funcionamento padrão do mês: lojas físicas de segunda a sábado; e-commerce todos os dias.
-    // (Feriados ficam por conta de quem lança a meta: o campo é editável.)
     function diasPadrao(ano, mes, loja) {
       const total = new Date(ano, mes, 0).getDate();
       let n = 0;
       for (let d = 1; d <= total; d++) if (!loja || new Date(ano, mes - 1, d).getDay() !== 0) n++;
       return n;
     }
+    // Atalhos de período a partir de `hoje` (ISO). Semana começa na segunda.
+    function periodoPreset(p, hoje) {
+      const h = dt(hoje), a = h.getFullYear(), m = h.getMonth();
+      const segunda = somaDias(hoje, -((h.getDay() + 6) % 7));
+      if (p === 'hoje') return { de: hoje, ate: hoje };
+      if (p === 'ontem') { const o = somaDias(hoje, -1); return { de: o, ate: o }; }
+      if (p === 'semana') return { de: segunda, ate: somaDias(segunda, 6) };
+      if (p === 'semana_ant') return { de: somaDias(segunda, -7), ate: somaDias(segunda, -1) };
+      if (p === 'mes_ant') return { de: iso(new Date(a, m - 1, 1)), ate: iso(new Date(a, m, 0)) };
+      if (p === 'ano') return { de: a + '-01-01', ate: a + '-12-31' };
+      return { de: iso(new Date(a, m, 1)), ate: iso(new Date(a, m + 1, 0)) };   // 'mes'
+    }
+    // Desloca uma data em meses (ou anos), segurando o dia no fim do mês (31/03 − 1 mês = 28 ou 29/02).
+    function deslocaMeses(s, n) {
+      const a = +s.slice(0, 4), m = +s.slice(5, 7) - 1 + n, d = +s.slice(8, 10);
+      const ult = new Date(a, m + 1, 0).getDate();
+      return iso(new Date(a, m, Math.min(d, ult)));
+    }
+    // Período de comparação: 'anterior' = mesmo número de dias logo antes; 'mes'/'ano' = mesmas datas um mês/ano antes.
+    function periodoComparacao(modo, de, ate) {
+      if (modo === 'anterior') { const n = Math.round((dt(ate) - dt(de)) / 864e5) + 1; return { de: somaDias(de, -n), ate: somaDias(de, -1) }; }
+      if (modo === 'mes') return { de: deslocaMeses(de, -1), ate: deslocaMeses(ate, -1) };
+      if (modo === 'ano') return { de: deslocaMeses(de, -12), ate: deslocaMeses(ate, -12) };
+      return null;
+    }
     // Vendas (atendimentos) de um dia: a quantidade lançada ou, sem ela, faturamento ÷ ticket médio.
     function vendasDoDia(r) {
       if (r.qtd_vendas != null && +r.qtd_vendas > 0) return +r.qtd_vendas;
       return r.ticket_medio ? +r.faturamento / +r.ticket_medio : null;
     }
-    // Resumo do mês: somas e médias PONDERADAS pelas vendas (não a média simples dos dias).
-    // meta = meta do mês; dias = dias de funcionamento; diasCorridos = dias já trabalhados (com venda) — base do ritmo e da projeção.
-    function resumoMes(linhas, meta, dias, diasCorridos) {
-      const soma = f => linhas.reduce((a, r) => a + (+r[f] || 0), 0);
-      const fat = soma('faturamento');
+    // Totais de um conjunto de linhas: somas e médias PONDERADAS pelas vendas (não a média simples dos dias).
+    function totais(linhas) {
+      const fat = linhas.reduce((a, r) => a + (+r.faturamento || 0), 0);
       const comMargem = linhas.filter(r => r.margem != null);
       const margem = comMargem.length ? comMargem.reduce((a, r) => a + +r.margem, 0) : null;
-      let vendas = 0, temVendas = false, pecas = 0, temPecas = false, fatComVendas = 0;
+      let vendas = 0, temVendas = false, fatComVendas = 0, pecas = 0, vendasPecas = 0;
       linhas.forEach(r => {
         const v = vendasDoDia(r); if (v == null) return;
         vendas += v; temVendas = true; fatComVendas += +r.faturamento || 0;
-        if (r.pecas_atendimento != null) { pecas += v * +r.pecas_atendimento; temPecas = true; }
+        if (r.pecas_atendimento != null) { pecas += v * +r.pecas_atendimento; vendasPecas += v; }
       });
-      const metaDia = meta && dias ? meta / dias : null;
-      const ritmo = metaDia && diasCorridos ? fat / (metaDia * diasCorridos) : null;
-      const projecao = diasCorridos && dias ? fat / diasCorridos * dias : null;
       return {
-        fat, meta: meta || null, ating: meta ? fat / meta : null, metaDia, ritmo, projecao,
-        margem, margemPct: margem != null && fat ? margem / fat : null,
-        vendas: temVendas ? vendas : null,
-        ticket: temVendas && vendas ? fatComVendas / vendas : null,
-        pecasAtend: temPecas && vendas ? pecas / vendas : null,
-        diasComVenda: linhas.filter(r => +r.faturamento > 0).length,
+        fat, margem, margemPct: margem != null && fat ? margem / fat : null,
+        vendas: temVendas ? vendas : null, ticket: temVendas && vendas ? fatComVendas / vendas : null,
+        pecasAtend: vendasPecas ? pecas / vendasPecas : null,
       };
     }
+    // Meta do período: a meta de cada mês vale por igual em cada dia em que a loja abriria (seg–sáb nas lojas,
+    // todos no e-commerce) — o mês inteiro dá exatamente a meta. `metaMes(op, ano, mes)` → { meta, dias } | null.
+    // esperadoTrabalhado = meta diária (meta ÷ dias de funcionamento) somada nos dias que TIVERAM venda (base do ritmo).
+    function metaDoPeriodo(ops, de, ate, diasSemana, metaMes, diasComVenda) {
+      let meta = 0, temMeta = false, semMeta = new Set(), comMeta = new Set(), esperado = 0, linhaDia = {};
+      for (let s = de; s <= ate; s = somaDias(s, 1)) {
+        const d = dt(s), wd = d.getDay();
+        if (diasSemana && !diasSemana.includes(wd)) continue;
+        for (const op of ops) {
+          const mm = metaMes(op, d.getFullYear(), d.getMonth() + 1);
+          if (!mm || !mm.meta) { semMeta.add(op); continue; }
+          temMeta = true; comMeta.add(op + '|' + s.slice(0, 7));
+          const abre = !LOJA[op] || wd !== 0;
+          if (abre) { const v = mm.meta / diasPadrao(d.getFullYear(), d.getMonth() + 1, LOJA[op]); meta += v; }
+          if (diasComVenda && diasComVenda.has(op + '|' + s)) { const md = mm.meta / mm.dias; esperado += md; linhaDia[s] = (linhaDia[s] || 0) + md; }
+        }
+      }
+      for (const k of comMeta) semMeta.delete(k.split('|')[0]);
+      return { meta: temMeta ? meta : null, esperado: temMeta ? esperado : null, semMeta: [...semMeta], comMeta, linhaDia };
+    }
+    // Faturamento que entra na comparação com a meta: só das operações/meses que TÊM meta lançada
+    // (somar a venda de quem não tem meta inflaria o atingimento).
+    function fatComMeta(linhas, comMeta) {
+      return linhas.reduce((a, r) => a + (comMeta.has(r.operacao + '|' + r.data.slice(0, 7)) ? +r.faturamento || 0 : 0), 0);
+    }
+    // Soma as operações por dia (uma linha por data), recalculando ticket e peças ponderados.
+    function porDia(linhas) {
+      const m = {};
+      linhas.forEach(r => { (m[r.data] = m[r.data] || []).push(r); });
+      return Object.keys(m).sort().map(data => {
+        const t = totais(m[data]);
+        return { data, faturamento: t.fat, margem: t.margem, ticket_medio: t.ticket, pecas_atendimento: t.pecasAtend, qtd_vendas: t.vendas };
+      });
+    }
+    // Média por dia da semana: número de dias com venda, faturamento médio por dia e ticket ponderado.
+    function porDiaDaSemana(diasAgregados) {
+      const out = {};
+      diasAgregados.forEach(r => {
+        if (!(+r.faturamento > 0)) return;
+        const wd = dt(r.data).getDay();
+        (out[wd] = out[wd] || []).push(r);
+      });
+      return ORDEM_SEMANA.filter(wd => out[wd]).map(wd => {
+        const t = totais(out[wd]);
+        return { wd, dias: out[wd].length, fatMedio: t.fat / out[wd].length, ticket: t.ticket, pecasAtend: t.pecasAtend, margemPct: t.margemPct };
+      });
+    }
+    const variacao = (atual, antes) => (atual == null || antes == null || !antes) ? null : atual / antes - 1;
+
     // ── Estado ──────────────────────────────────────────────────────────────
-    let linhas = [], metas = [], prof = null, opSel = 'Exposicao', mesSel = null, chart = null;
-    const opInfo = id => OPS.find(o => o.id === id);
-    const metaDe = (op, ano, mes) => metas.find(m => m.operacao === op && m.ano === ano && m.mes === mes) || null;
+    let linhas = [], metas = [], prof = null, chart = null, opsPermitidas = [];
+    let F = { ops: [], preset: 'mes', de: '', ate: '', dias: [0, 1, 2, 3, 4, 5, 6], cmp: '' };
+    const metaMes = (op, ano, mes) => { const m = metas.find(x => x.operacao === op && x.ano === ano && x.mes === mes); return m ? { meta: +m.meta, dias: m.dias_funcionamento } : null; };
+    const hojeIso = () => iso(new Date());
 
     async function carregar() {
       const [k, m] = await Promise.all([
-        sb.from('bi_kpi_diario').select('operacao,data,faturamento,margem,ticket_medio,pecas_atendimento,qtd_vendas').order('data').range(0, 9999),
+        sb.from('bi_kpi_diario').select('operacao,data,faturamento,margem,ticket_medio,pecas_atendimento,qtd_vendas').order('data').range(0, 49999),
         sb.from('bi_meta_mensal').select('operacao,ano,mes,meta,dias_funcionamento'),
       ]);
       if (k.error) throw k.error; if (m.error) throw m.error;
-      linhas = k.data || []; metas = (m.data || []).map(x => ({ ...x, meta: +x.meta }));
+      linhas = k.data || []; metas = m.data || [];
+    }
+    const filtrar = (de, ate) => linhas.filter(r => F.ops.includes(r.operacao) && r.data >= de && r.data <= ate && F.dias.includes(dt(r.data).getDay()));
+    function calcular(de, ate) {
+      const ls = filtrar(de, ate);
+      const t = totais(ls);
+      const comVenda = new Set(ls.filter(r => +r.faturamento > 0).map(r => r.operacao + '|' + r.data));
+      const diasSem = F.dias.length === 7 ? null : F.dias;
+      const mp = metaDoPeriodo(F.ops, de, ate, diasSem, metaMes, comVenda);
+      // Projeção: só quando o período é um mês inteiro, sem filtro de dia da semana.
+      let projecao = null;
+      const mesInteiro = de.slice(8) === '01' && ate === iso(new Date(+de.slice(0, 4), +de.slice(5, 7), 0)) && !diasSem;
+      if (mesInteiro && t.fat) {
+        const a = +de.slice(0, 4), m = +de.slice(5, 7);
+        projecao = F.ops.reduce((acc, op) => {
+          const lo = ls.filter(r => r.operacao === op && +r.faturamento > 0); if (!lo.length) return acc;
+          const mm = metaMes(op, a, m), diasF = mm ? mm.dias : diasPadrao(a, m, LOJA[op]);
+          return acc + lo.reduce((x, r) => x + +r.faturamento, 0) / lo.length * diasF;
+        }, 0);
+      }
+      const fm = fatComMeta(ls, mp.comMeta);
+      return { ls, t, mp, projecao, fatMeta: fm, ating: mp.meta ? fm / mp.meta : null, ritmo: mp.esperado ? fm / mp.esperado : null, diasVenda: new Set(ls.filter(r => +r.faturamento > 0).map(r => r.data)).size };
     }
 
     function render() {
-      const [ano, mes] = mesSel.split('-').map(Number);
-      const op = opInfo(opSel);
-      const doMes = linhas.filter(r => r.operacao === opSel && r.data.startsWith(mesSel)).sort((a, b) => a.data < b.data ? -1 : 1);
-      const mt = metaDe(opSel, ano, mes);
-      const dias = mt ? mt.dias_funcionamento : diasPadrao(ano, mes, op.loja);
-      // Dias já trabalhados = dias com venda lançada (feriado com a loja fechada não conta contra o ritmo).
-      const corridos = doMes.filter(r => +r.faturamento > 0).length;
-      const R = resumoMes(doMes, mt ? mt.meta : null, dias, corridos);
+      const A = calcular(F.de, F.ate);
+      const pc = F.cmp ? periodoComparacao(F.cmp, F.de, F.ate) : null;
+      const B = pc ? calcular(pc.de, pc.ate) : null;
+      const soLojas = F.ops.every(op => LOJA[op]);
+      const nomes = F.ops.map(op => OPS.find(o => o.id === op).nome).join(' + ');
+      g('f-resumo').textContent = nomes + ' · ' + fmtD(F.de) + ' a ' + fmtD(F.ate) + (F.dias.length < 7 ? ' · só ' + ORDEM_SEMANA.filter(d => F.dias.includes(d)).map(d => DIAS_CURTO[d]).join(', ') : '') +
+        (pc ? ' · comparando com ' + fmtD(pc.de) + ' a ' + fmtD(pc.ate) : '') + (A.mp.semMeta.length && A.mp.meta != null ? ' · sem meta lançada: ' + A.mp.semMeta.map(op => OPS.find(o => o.id === op).nome).join(', ') : '');
 
-      const barra = (p, tempo) => '<div class="barra"><div class="barra-fill' + (p >= 1 ? ' ok' : '') + '" style="width:' + Math.min(100, (p || 0) * 100) + '%"></div>' +
-        (tempo > 0 && tempo < 1 ? '<div class="barra-tempo" style="left:calc(' + tempo * 100 + '% - 1px)" title="Quanto do mês já passou"></div>' : '') + '</div>';
-      const tempo = dias ? Math.min(1, corridos / dias) : 0;
-      g('kpis').innerHTML = [
-        { l: 'Faturamento', v: brl0(R.fat), s: R.meta ? pct(R.ating) + ' da meta de ' + brl0(R.meta) + barra(R.ating, tempo) : 'sem meta lançada para o mês', cls: '' },
-        { l: 'Ritmo × meta', v: pct(R.ritmo), s: R.ritmo == null ? 'precisa da meta do mês' : (R.ritmo >= 1 ? 'acima' : 'abaixo') + ' do esperado para ' + corridos + ' de ' + dias + ' dias', cls: R.ritmo == null ? '' : R.ritmo >= 1 ? 'bom' : 'ruim' },
-        { l: 'Projeção do mês', v: brl0(R.projecao), s: R.projecao == null ? '—' : 'no ritmo atual' + (R.meta ? ' · ' + pct(R.projecao / R.meta) + ' da meta' : ''), cls: '' },
-        { l: 'Margem', v: brl0(R.margem), s: R.margemPct == null ? '—' : pct(R.margemPct) + ' do faturamento', cls: '' },
-        { l: 'Ticket médio', v: brl(R.ticket), s: R.vendas == null ? '—' : n0(R.vendas) + ' vendas no mês', cls: '' },
-        { l: op.loja ? 'Peças por atendimento' : 'Qtd. de vendas', v: op.loja ? n2(R.pecasAtend) : n0(R.vendas), s: op.loja ? 'média ponderada pelas vendas' : 'vendas no mês', cls: '' },
-      ].map(x => '<div class="kpi"><div class="kpi-l">' + x.l + '</div><div class="kpi-v ' + x.cls + '">' + x.v + '</div><div class="kpi-s">' + x.s + '</div></div>').join('');
-
-      // meta
-      const podeMeta = !!(prof.is_admin || prof.can_orcamento);
-      g('in-meta').value = mt ? numberToMoneyMasked(mt.meta) : '';
-      g('in-dias').value = dias;
-      g('in-meta').disabled = g('in-dias').disabled = !podeMeta;
-      g('btn-meta').style.display = podeMeta ? '' : 'none';
-      atualizarMetaDia();
-      g('meta-nota').textContent = (podeMeta ? '' : 'Só quem tem a permissão Budget altera a meta. ') + 'Dias de funcionamento: o padrão é ' + diasPadrao(ano, mes, op.loja) + ' (' + (op.loja ? 'segunda a sábado' : 'todos os dias') + '); tire os feriados em que a loja fecha.';
+      const hoje = hojeIso();
+      const total = Math.round((dt(F.ate) - dt(F.de)) / 864e5) + 1;
+      const passado = hoje < F.de ? 0 : hoje > F.ate ? total : Math.round((dt(hoje) - dt(F.de)) / 864e5) + 1;
+      const tempo = passado / total;
+      const barra = p => '<div class="barra"><div class="barra-fill' + (p >= 1 ? ' ok' : '') + '" style="width:' + Math.min(100, (p || 0) * 100) + '%"></div>' +
+        (tempo > 0 && tempo < 1 ? '<div class="barra-tempo" style="left:calc(' + tempo * 100 + '% - 1px)" title="Quanto do período já passou"></div>' : '') + '</div>';
+      const dlt = (a, b, inverso) => { const v = variacao(a, b); if (v == null) return ''; const bom = inverso ? v < 0 : v > 0; return '<span class="delta ' + (Math.abs(v) < 0.0005 ? '' : bom ? 'up' : 'down') + '">' + (v > 0 ? '+' : '') + pct(v) + '</span>'; };
+      const cmpTxt = (txt) => B ? '<div class="cmp">antes: ' + txt + '</div>' : '';
+      const kp = [
+        { l: 'Faturamento', v: brl0(A.t.fat) + (B ? dlt(A.t.fat, B.t.fat) : ''), s: (A.mp.meta ? pct(A.ating) + ' da meta de ' + brl0(A.mp.meta) + (A.mp.semMeta.length ? ' (só ' + brl0(A.fatMeta) + ' das operações com meta)' : '') + barra(A.ating) : 'sem meta lançada para o período') + cmpTxt(brl0(B && B.t.fat)) },
+        { l: 'Ritmo × meta', v: pct(A.ritmo), cls: A.ritmo == null ? '' : A.ritmo >= 1 ? 'bom' : 'ruim', s: A.ritmo == null ? 'precisa da meta do mês' : (A.ritmo >= 1 ? 'acima' : 'abaixo') + ' do esperado para os ' + A.diasVenda + ' dias com venda' + cmpTxt(pct(B && B.ritmo)) },
+        A.projecao != null
+          ? { l: 'Projeção do mês', v: brl0(A.projecao), s: 'no ritmo atual' + (A.mp.meta && !A.mp.semMeta.length ? ' · ' + pct(A.projecao / A.mp.meta) + ' da meta' : '') }
+          : { l: 'Dias com venda', v: n0(A.diasVenda), s: 'no período escolhido (a projeção aparece com um mês inteiro)' + cmpTxt(n0(B && B.diasVenda)) },
+        { l: 'Margem', v: brl0(A.t.margem) + (B ? dlt(A.t.margem, B.t.margem) : ''), s: (A.t.margemPct == null ? '—' : pct(A.t.margemPct) + ' do faturamento') + cmpTxt(pct(B && B.t.margemPct)) },
+        { l: 'Ticket médio', v: brl(A.t.ticket) + (B ? dlt(A.t.ticket, B.t.ticket) : ''), s: (A.t.vendas == null ? '—' : n0(A.t.vendas) + ' vendas') + cmpTxt(brl(B && B.t.ticket)) },
+        soLojas || !F.ops.some(op => LOJA[op])
+          ? (soLojas ? { l: 'Peças por atendimento', v: n2(A.t.pecasAtend) + (B ? dlt(A.t.pecasAtend, B.t.pecasAtend) : ''), s: 'média ponderada pelas vendas' + cmpTxt(n2(B && B.t.pecasAtend)) }
+                     : { l: 'Qtd. de vendas', v: n0(A.t.vendas) + (B ? dlt(A.t.vendas, B.t.vendas) : ''), s: 'no período' + cmpTxt(n0(B && B.t.vendas)) })
+          : { l: 'Peças por atendimento (lojas)', v: n2(A.t.pecasAtend) + (B ? dlt(A.t.pecasAtend, B.t.pecasAtend) : ''), s: 'só das lojas físicas — o e-commerce não tem' + cmpTxt(n2(B && B.t.pecasAtend)) },
+      ];
+      g('kpis').innerHTML = kp.map(x => '<div class="kpi"><div class="kpi-l">' + x.l + '</div><div class="kpi-v ' + (x.cls || '') + '">' + x.v + '</div><div class="kpi-s">' + x.s + '</div></div>').join('');
 
       // gráfico
-      const metaDia = R.metaDia;
+      const dias = porDia(A.ls);
       if (chart) chart.destroy();
+      const temMetaDia = Object.keys(A.mp.linhaDia).length > 0;
       chart = new Chart(g('ch-dia'), {
-        data: { labels: doMes.map(r => r.data.slice(8, 10) + '/' + r.data.slice(5, 7)), datasets: [
-          { type: 'bar', label: 'Faturamento', data: doMes.map(r => +r.faturamento), backgroundColor: doMes.map(r => metaDia && +r.faturamento >= metaDia ? 'rgba(52,211,153,0.75)' : 'rgba(56,189,248,0.7)'), borderRadius: 4 },
-          ...(metaDia ? [{ type: 'line', label: 'Meta diária', data: doMes.map(() => metaDia), borderColor: '#fbbf24', borderDash: [5, 4], pointRadius: 0, borderWidth: 2 }] : []),
+        data: { labels: dias.map(r => r.data.slice(8, 10) + '/' + r.data.slice(5, 7)), datasets: [
+          { type: 'bar', label: 'Faturamento', data: dias.map(r => r.faturamento), backgroundColor: dias.map(r => A.mp.linhaDia[r.data] && r.faturamento >= A.mp.linhaDia[r.data] ? 'rgba(52,211,153,0.75)' : 'rgba(56,189,248,0.7)'), borderRadius: 4 },
+          ...(temMetaDia ? [{ type: 'line', label: 'Meta diária', data: dias.map(r => A.mp.linhaDia[r.data] || null), borderColor: '#fbbf24', borderDash: [5, 4], pointRadius: 0, borderWidth: 2, spanGaps: true }] : []),
         ] },
         options: { responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
           plugins: { legend: { labels: { color: '#94a3b8', boxWidth: 12, font: { size: 11 } } }, tooltip: { callbacks: { label: c => c.dataset.label + ': ' + brl(c.parsed.y) } } },
           scales: { x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: '#64748b', callback: v => v >= 1e3 ? Math.round(v / 1e3) + ' mil' : v }, grid: { color: 'rgba(255,255,255,0.06)' } } } },
       });
 
-      // tabela
-      g('tb-titulo').textContent = 'Dia a dia — ' + op.nome + ' — ' + MESES[mes - 1] + '/' + ano;
-      const cab = '<thead><tr><th class="l">Data</th><th class="l">Dia</th><th>Faturamento</th><th>Meta diária</th><th>Atingimento</th><th>Margem</th><th>Margem %</th><th>Ticket médio</th>' + (op.loja ? '<th>Pçs/atend.</th>' : '') + '<th>Qtd. vendas</th></tr></thead>';
-      if (!doMes.length) { g('tb').innerHTML = cab + '<tbody><tr><td colspan="10"><div class="empty">Sem dados deste mês ainda.</div></td></tr></tbody>'; return; }
-      g('tb').innerHTML = cab + '<tbody>' + doMes.map(r => {
-        const d = new Date(r.data + 'T12:00:00'), at = metaDia ? +r.faturamento / metaDia : null, v = vendasDoDia(r);
-        return '<tr><td class="l">' + r.data.slice(8, 10) + '/' + r.data.slice(5, 7) + '</td><td class="l">' + DIAS[d.getDay()] + '</td>' +
-          '<td>' + brl(r.faturamento) + '</td><td>' + brl(metaDia) + '</td><td class="' + (at == null ? 'muted' : at >= 1 ? 'bom' : 'ruim') + '">' + pct(at) + '</td>' +
-          '<td>' + brl(r.margem) + '</td><td>' + pct(r.margem != null && +r.faturamento ? r.margem / r.faturamento : null) + '</td>' +
-          '<td>' + brl(r.ticket_medio) + '</td>' + (op.loja ? '<td>' + n2(r.pecas_atendimento) + '</td>' : '') + '<td>' + n0(v) + '</td></tr>';
+      // por dia da semana
+      const sem = porDiaDaSemana(dias);
+      const temPecas = F.ops.some(op => LOJA[op]);
+      g('tb-sem').innerHTML = '<thead><tr><th class="l">Dia</th><th>Dias com venda</th><th>Faturamento médio/dia</th><th>Margem %</th><th>Ticket médio</th>' + (temPecas ? '<th>Pçs/atend.</th>' : '') + '</tr></thead><tbody>' +
+        (sem.length ? sem.map(x => '<tr><td class="l">' + DIAS[x.wd] + '</td><td>' + x.dias + '</td><td>' + brl(x.fatMedio) + '</td><td>' + pct(x.margemPct) + '</td><td>' + brl(x.ticket) + '</td>' + (temPecas ? '<td>' + n2(x.pecasAtend) + '</td>' : '') + '</tr>').join('')
+          : '<tr><td colspan="6"><div class="empty">Sem vendas no período.</div></td></tr>') + '</tbody>';
+
+      // dia a dia
+      g('tb-titulo').textContent = 'Dia a dia — ' + nomes;
+      const cab = '<thead><tr><th class="l">Data</th><th class="l">Dia</th><th>Faturamento</th><th>Meta diária</th><th>Atingimento</th><th>Margem</th><th>Margem %</th><th>Ticket médio</th>' + (temPecas ? '<th>Pçs/atend.</th>' : '') + '<th>Qtd. vendas</th></tr></thead>';
+      if (!dias.length) { g('tb').innerHTML = cab + '<tbody><tr><td colspan="10"><div class="empty">Sem dados neste período.</div></td></tr></tbody>'; return; }
+      g('tb').innerHTML = cab + '<tbody>' + dias.map(r => {
+        const md = A.mp.linhaDia[r.data] || null, at = md ? r.faturamento / md : null;
+        return '<tr><td class="l">' + r.data.slice(8, 10) + '/' + r.data.slice(5, 7) + '</td><td class="l">' + DIAS[dt(r.data).getDay()] + '</td>' +
+          '<td>' + brl(r.faturamento) + '</td><td>' + brl(md) + '</td><td class="' + (at == null ? 'muted' : at >= 1 ? 'bom' : 'ruim') + '">' + pct(at) + '</td>' +
+          '<td>' + brl(r.margem) + '</td><td>' + pct(r.margem != null && r.faturamento ? r.margem / r.faturamento : null) + '</td>' +
+          '<td>' + brl(r.ticket_medio) + '</td>' + (temPecas ? '<td>' + n2(r.pecas_atendimento) + '</td>' : '') + '<td>' + n0(r.qtd_vendas) + '</td></tr>';
       }).join('') +
-        '<tr class="tot"><td class="l">Total</td><td class="l">' + R.diasComVenda + ' dias</td><td>' + brl(R.fat) + '</td><td>' + brl(R.meta) + '</td><td class="' + (R.ating == null ? '' : R.ating >= 1 ? 'bom' : '') + '">' + pct(R.ating) + '</td>' +
-        '<td>' + brl(R.margem) + '</td><td>' + pct(R.margemPct) + '</td><td>' + brl(R.ticket) + '</td>' + (op.loja ? '<td>' + n2(R.pecasAtend) + '</td>' : '') + '<td>' + n0(R.vendas) + '</td></tr></tbody>';
+        '<tr class="tot"><td class="l">Total</td><td class="l">' + A.diasVenda + ' dias</td><td>' + brl(A.t.fat) + '</td><td>' + brl(A.mp.meta) + '</td><td>' + pct(A.ating) + '</td>' +
+        '<td>' + brl(A.t.margem) + '</td><td>' + pct(A.t.margemPct) + '</td><td>' + brl(A.t.ticket) + '</td>' + (temPecas ? '<td>' + n2(A.t.pecasAtend) + '</td>' : '') + '<td>' + n0(A.t.vendas) + '</td></tr></tbody>';
     }
 
+    // ── Filtros ─────────────────────────────────────────────────────────────
+    function salvarFiltros() { try { localStorage.setItem('safi-bi-filtros', JSON.stringify(F)); } catch (e) {} }
+    function aplicarPreset() { if (F.preset !== 'livre') { const p = periodoPreset(F.preset, hojeIso()); F.de = p.de; F.ate = p.ate; } g('dt-de').value = F.de; g('dt-ate').value = F.ate; g('sel-per').value = F.preset; }
+    function renderFiltros() {
+      g('sel-ops').innerHTML = OPS.filter(o => opsPermitidas.includes(o.id)).map(o => '<button type="button" class="op-btn' + (F.ops.includes(o.id) ? ' on' : '') + '" data-op="' + o.id + '" aria-pressed="' + F.ops.includes(o.id) + '"><img src="' + o.logo + '" alt="">' + esc(o.nome) + '</button>').join('');
+      g('sel-dias').innerHTML = ORDEM_SEMANA.map(d => '<button type="button" class="chip' + (F.dias.includes(d) ? ' on' : '') + '" data-dia="' + d + '" aria-pressed="' + F.dias.includes(d) + '">' + DIAS_CURTO[d] + '</button>').join('') +
+        '<button type="button" class="chip todos" data-dia="todos" title="Marcar todos os dias">Todos</button>';
+      g('sel-cmp').value = F.cmp;
+    }
+    const atualizar = () => { salvarFiltros(); renderFiltros(); render(); };
+    g('sel-ops').addEventListener('click', e => {
+      const b = e.target.closest('[data-op]'); if (!b) return;
+      const op = b.dataset.op, tem = F.ops.includes(op);
+      if (tem && F.ops.length === 1) return;   // a última operação não sai
+      F.ops = OPS.map(o => o.id).filter(id => id === op ? !tem : F.ops.includes(id));
+      atualizar();
+    });
+    g('sel-dias').addEventListener('click', e => {
+      const b = e.target.closest('[data-dia]'); if (!b) return;
+      if (b.dataset.dia === 'todos') F.dias = [0, 1, 2, 3, 4, 5, 6];
+      else { const d = +b.dataset.dia; if (F.dias.includes(d)) { if (F.dias.length > 1) F.dias = F.dias.filter(x => x !== d); } else F.dias = F.dias.concat(d); }
+      atualizar();
+    });
+    g('sel-per').addEventListener('change', () => { F.preset = g('sel-per').value; if (F.preset === 'livre' && !F.de) aplicarPreset(); aplicarPreset(); atualizar(); });
+    ['dt-de', 'dt-ate'].forEach(id => g(id).addEventListener('change', () => {
+      if (!g('dt-de').value || !g('dt-ate').value) return;
+      F.preset = 'livre'; F.de = g('dt-de').value; F.ate = g('dt-ate').value;
+      if (F.de > F.ate) { const x = F.de; F.de = F.ate; F.ate = x; }
+      aplicarPreset(); atualizar();
+    }));
+    g('sel-cmp').addEventListener('change', () => { F.cmp = g('sel-cmp').value; atualizar(); });
+
+    // ── Meta do mês (quadro próprio) ────────────────────────────────────────
+    function renderMeta() {
+      const op = g('mt-op').value, [ano, mes] = g('mt-mes').value.split('-').map(Number);
+      const mm = metaMes(op, ano, mes), padrao = diasPadrao(ano, mes, LOJA[op]);
+      const podeMeta = !!(prof.is_admin || prof.can_orcamento);
+      g('in-meta').value = mm ? numberToMoneyMasked(mm.meta) : '';
+      g('in-dias').value = mm ? mm.dias : padrao;
+      g('in-meta').disabled = g('in-dias').disabled = !podeMeta;
+      g('btn-meta').style.display = podeMeta ? '' : 'none';
+      atualizarMetaDia();
+      g('meta-nota').textContent = (podeMeta ? '' : 'Só quem tem a permissão Budget altera a meta. ') + 'Dias de funcionamento: o padrão é ' + padrao + ' (' + (LOJA[op] ? 'segunda a sábado' : 'todos os dias') + '); tire os feriados em que a loja fecha.';
+    }
     function atualizarMetaDia() {
       const m = moneyToNumber(g('in-meta').value), d = parseInt(g('in-dias').value, 10);
       g('meta-dia').innerHTML = m && d ? 'Meta diária: <b>' + brl(m / d) + '</b>' : '';
     }
     g('in-meta').addEventListener('input', atualizarMetaDia);
     g('in-dias').addEventListener('input', atualizarMetaDia);
+    g('mt-op').addEventListener('change', renderMeta);
+    g('mt-mes').addEventListener('change', renderMeta);
     g('btn-meta').addEventListener('click', async () => {
-      const [ano, mes] = mesSel.split('-').map(Number);
+      const op = g('mt-op').value, [ano, mes] = g('mt-mes').value.split('-').map(Number);
       const meta = moneyToNumber(g('in-meta').value), dias = parseInt(g('in-dias').value, 10);
       if (meta == null || meta < 0) return showToast('Informe a meta do mês.', 'red');
       if (!(dias >= 1 && dias <= 31)) return showToast('Dias de funcionamento entre 1 e 31.', 'red');
       const btn = g('btn-meta'); btn.disabled = true;
-      const { error } = await sb.from('bi_meta_mensal').upsert({ operacao: opSel, ano, mes, meta, dias_funcionamento: dias }, { onConflict: 'operacao,ano,mes' });
+      const { error } = await sb.from('bi_meta_mensal').upsert({ operacao: op, ano, mes, meta, dias_funcionamento: dias }, { onConflict: 'operacao,ano,mes' });
       btn.disabled = false;
       if (error) return showToast('Erro ao salvar: ' + error.message, 'red');
-      await carregar(); render();
+      await carregar(); renderMeta(); render();
       showToast('Meta salva.', 'green');
     });
-
-    function renderOps() {
-      g('sel-ops').innerHTML = OPS.filter(o => opsPermitidas.includes(o.id)).map(o => '<button type="button" class="op-btn' + (o.id === opSel ? ' on' : '') + '" data-op="' + o.id + '" aria-pressed="' + (o.id === opSel) + '"><img src="' + o.logo + '" alt="">' + esc(o.nome) + '</button>').join('');
-    }
-    let opsPermitidas = [];
-    g('sel-ops').addEventListener('click', e => { const b = e.target.closest('[data-op]'); if (!b) return; opSel = b.dataset.op; try { localStorage.setItem('safi-bi-op', opSel); } catch (x) {} renderOps(); render(); });
-    g('sel-mes').addEventListener('change', () => { mesSel = g('sel-mes').value; render(); });
 
     async function init() {
       const { data } = await sb.auth.getSession();
@@ -334,21 +515,33 @@
       SafiSidebar.apply('bi', prof, { email: data.session.user.email, sb });
       attachMoneyMask(g('in-meta'));
       try { await carregar(); } catch (err) { g('bi-loading').textContent = 'Erro ao carregar: ' + err.message; return; }
-      // Operações visíveis = as que o banco devolveu (a regra de acesso é a mesma do DRE).
       const flag = { Exposicao: 'dre_exposicao', ViaCloset: 'dre_viacloset', GIP: 'dre_epgip' };
       opsPermitidas = OPS.map(o => o.id).filter(id => prof.is_admin || prof[flag[id]] !== false);
       if (!opsPermitidas.length) { g('bi-loading').textContent = 'Seu acesso não libera nenhuma operação.'; return; }
-      try { const s = localStorage.getItem('safi-bi-op'); if (opsPermitidas.includes(s)) opSel = s; } catch (x) {}
-      if (!opsPermitidas.includes(opSel)) opSel = opsPermitidas[0];
-      const hoje = new Date(), atual = hoje.getFullYear() + '-' + String(hoje.getMonth() + 1).padStart(2, '0');
-      const meses = [...new Set(linhas.map(r => r.data.slice(0, 7)).concat(atual))].sort().reverse();
-      g('sel-mes').innerHTML = meses.map(m => '<option value="' + m + '">' + MESES[+m.slice(5) - 1] + '/' + m.slice(0, 4) + '</option>').join('');
-      mesSel = meses.includes(atual) ? atual : meses[0];
-      g('sel-mes').value = mesSel;
+
+      // filtros salvos (por pessoa, neste navegador)
+      F.ops = [opsPermitidas[0]];
+      try {
+        const s = JSON.parse(localStorage.getItem('safi-bi-filtros') || 'null');
+        if (s) {
+          const ops = (s.ops || []).filter(x => opsPermitidas.includes(x)); if (ops.length) F.ops = ops;
+          if (s.preset) F.preset = s.preset; if (s.de) F.de = s.de; if (s.ate) F.ate = s.ate;
+          if (Array.isArray(s.dias) && s.dias.length) F.dias = s.dias; F.cmp = s.cmp || '';
+        }
+      } catch (e) {}
+      if (F.preset === 'livre' && !(F.de && F.ate)) F.preset = 'mes';
+      aplicarPreset();
+
+      // quadro da meta: operações permitidas × meses com dado (+ atual e o próximo)
+      g('mt-op').innerHTML = OPS.filter(o => opsPermitidas.includes(o.id)).map(o => '<option value="' + o.id + '">' + esc(o.nome) + '</option>').join('');
+      const h = new Date(), atual = iso(h).slice(0, 7), prox = iso(new Date(h.getFullYear(), h.getMonth() + 1, 1)).slice(0, 7);
+      const meses = [...new Set(linhas.map(r => r.data.slice(0, 7)).concat(metas.map(m => m.ano + '-' + String(m.mes).padStart(2, '0')), atual, prox))].sort().reverse();
+      g('mt-mes').innerHTML = meses.map(m => '<option value="' + m + '">' + MESES[+m.slice(5) - 1] + '/' + m.slice(0, 4) + '</option>').join('');
+      g('mt-mes').value = atual; g('mt-op').value = F.ops[0];
+
       g('bi-loading').style.display = 'none';
       g('bi-main').style.display = 'block';
-      renderOps();
-      render();
+      renderFiltros(); renderMeta(); render();
     }
     init();
   </script>
