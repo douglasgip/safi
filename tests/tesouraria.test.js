@@ -82,15 +82,83 @@ test('caixa: campo de categoria é de escrever (com sugestões), não uma lista 
   assert.match(codigo, /attachAutocomplete\(el, sugestoesCategoria\)/);
 });
 
-test('caixa: formulário tem Saque/Sangria, lojas do rateio, gastos com categoria e Dinheiro/Pix', () => {
+test('viagem: formulário tem compradora, dinheiro entregue, troco, lojas do rateio e gastos Dinheiro/Pix', () => {
   const html = ler('tesouraria.html');
-  assert.match(html, /data-tipo="saque"[^>]*>Saque</);
-  assert.match(html, /data-tipo="sangria">Sangria</);
+  assert.match(html, /id="ts-valor"/);
+  assert.match(html, /id="ts-devolvido"/);
   assert.match(html, /id="ts-lojas"/);
   assert.match(html, /id="ts-add-gasto"/);
-  assert.match(codigo, /\['viagem', 'Viagem'\], \['hospedagem', 'Hospedagem'\], \['refeicao', 'Refeição'\], \['locomocao', 'Locomoção'\], \['outros', 'Outros'\]/);
+  assert.ok(codigo.includes("['viagem', 'Viagem'], ['hospedagem', 'Hospedagem'], ['refeicao', 'Refeição'], ['locomocao', 'Locomoção'], ['outros', 'Outros']"));
   assert.match(codigo, /data-forma="dinheiro"/);
   assert.match(codigo, /data-forma="pix"/);
-  assert.doesNotMatch(html, /id="ts-entrada"|id="ts-rat-exp"/, 'campos do modelo antigo saíram');
-  assert.match(codigo, /attachAutocomplete\(g\('ts-portador'\), \(\) => distintosPortadores\(\)\)/, 'portador se alimenta dos nomes já usados');
+  assert.doesNotMatch(html, /id="ts-tipo"/, 'saque/sangria saíram da viagem (agora são do Caixa)');
+  assert.ok(codigo.includes("attachAutocomplete(g('ts-portador'), () => distintosPortadores())"), 'compradora se alimenta dos nomes já usados');
+});
+
+// ── Tesouraria v2 (2026-11-17, reunião com o Guilherme): Caixa = só dinheiro físico; Viagens ─────────
+test('viagem: troco devolvido sai do que está com a compradora; total da viagem soma dinheiro + Pix', () => {
+  const f = funcoesCaixa();
+  const gastos = [{ valor: 1000, forma: 'dinheiro' }, { valor: 400, forma: 'pix' }];
+  assert.strictEqual(f.saldoFinal(3000, gastos, 1500), 500, '3.000 entregue − 1.000 em dinheiro − 1.500 de troco');
+  assert.strictEqual(f.saldoFinal(3000, gastos), 2000, 'sem troco informado');
+  assert.strictEqual(f.totalGastos(gastos), 1400, 'o Pix entra no total da viagem');
+});
+
+test('viagem: o rateio entre lojas divide o TOTAL da viagem (dinheiro + Pix)', () => {
+  assert.match(codigo, /dividirRateio\(totalViagem\(r\.gastos\), r\.rateio_ops \|\| \[\]\)/);
+  assert.match(codigo, /dividirRateio\(totalViagem\(gastosForm\), lojasSel\)/);
+});
+
+function caixa() {
+  const vm = require('node:vm');
+  const m = /const TIPOS_CAIXA = [\s\S]*?\n    const saldoCaixa = [^\n]*\n/.exec(codigo);
+  assert.ok(m, 'regras do caixa não encontradas');
+  const ctx = vm.createContext({});
+  vm.runInContext(m[0] + 'globalThis.f = { extratoCaixa, saldoCaixa, TIPOS_CAIXA };', ctx);
+  return ctx.f;
+}
+
+test('caixa: saque, sangria, outra entrada e troca (pix → dinheiro) ENTRAM; saída sai', () => {
+  const { saldoCaixa } = caixa();
+  const movs = [
+    { data: '2026-11-01', tipo: 'saque', valor: 5000 },
+    { data: '2026-11-02', tipo: 'sangria', valor: 1200, loja: 'Exposicao' },
+    { data: '2026-11-03', tipo: 'entrada', valor: 300 },
+    { data: '2026-11-04', tipo: 'troca', valor: 500 },
+    { data: '2026-11-05', tipo: 'saida', valor: 1000 },
+  ];
+  assert.strictEqual(saldoCaixa(movs, []), 6000);
+});
+
+test('caixa: dinheiro entregue à viagem sai, troco devolvido volta, Pix da viagem não mexe', () => {
+  const { saldoCaixa, extratoCaixa } = caixa();
+  const movs = [{ data: '2026-11-01', tipo: 'saque', valor: 10000 }];
+  const viagens = [{ id: 'v1', data: '2026-11-10', portador: 'Renata', valor_enviado: 6000, devolvido: 800, gastos: [{ valor: 5200, forma: 'dinheiro' }, { valor: 3000, forma: 'pix' }] }];
+  assert.strictEqual(saldoCaixa(movs, viagens), 4800, '10.000 − 6.000 entregue + 800 de troco; os 3.000 em Pix não entram');
+  const e = JSON.parse(JSON.stringify(extratoCaixa(movs, viagens)));
+  assert.deepStrictEqual(e.map(x => [x.tipo, x.valor, x.saldo]), [['saque', 10000, 10000], ['viagem', -6000, 4000], ['devolucao', 800, 4800]]);
+  assert.strictEqual(saldoCaixa([], []), 0);
+});
+
+test('caixa: extrato em ordem de data, com saldo acumulado linha a linha', () => {
+  const { extratoCaixa } = caixa();
+  const e = JSON.parse(JSON.stringify(extratoCaixa([
+    { data: '2026-11-05', tipo: 'saida', valor: 100, created_at: 'b' },
+    { data: '2026-11-01', tipo: 'saque', valor: 1000, created_at: 'a' },
+  ], [])));
+  assert.deepStrictEqual(e.map(x => x.saldo), [1000, 900]);
+});
+
+test('cheque: campo "Cheque para" no formulário, na tabela e no que é gravado', () => {
+  const html = ler('tesouraria.html');
+  assert.match(html, /<label for="ch-para">Cheque para<\/label><input type="date" id="ch-para">/);
+  assert.match(codigo, /<th>Cheque para<\/th>/);
+  assert.match(codigo, /cheque_para: g\('ch-para'\)\.value \|\| null/);
+});
+
+test('abas: Cheques, Caixa e Viagens; o Caixa mostra o total de dinheiro físico', () => {
+  const html = ler('tesouraria.html');
+  for (const t of ['cheques', 'caixa', 'viagens']) assert.match(html, new RegExp('data-tab="' + t + '"'));
+  assert.match(html, /Dinheiro físico em caixa<\/div>/);
+  assert.match(codigo, /from\('tesouraria_caixa'\)/);
 });

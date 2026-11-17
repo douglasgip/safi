@@ -6,6 +6,12 @@
       "runtimeExecutable": "npx",
       "runtimeArgs": ["serve", "-l", "5050", "."],
       "port": 5050
+    },
+    {
+      "name": "cgs-demo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:\\Users\\COMPUTADOR\\Documents\\Code Projects\\CGS", "run", "demo"],
+      "port": 3000
     }
   ]
 }
