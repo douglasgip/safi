@@ -238,6 +238,21 @@ window.SAFI_AJUDA = { telas: {
     ],
   },
 
+  bi: {
+    titulo: 'BI das Lojas', versao: 1,
+    resumo: 'Os <b>KPIs do dia a dia</b> de cada operação (Exposição Paulista, Via Closet e E-commerce): faturamento × meta, ritmo e projeção do mês, margem, ticket médio, peças por atendimento e quantidade de vendas. Espelha a planilha "KPI\'s Lojas" do Guilherme.',
+    passos: [
+      { t: 'Escolha operação e mês', d: 'Nos botões e no seletor do topo.' },
+      { t: 'Leia os cartões', d: '<b>Faturamento</b> com o atingimento da meta do mês (a marca amarela é quanto do mês já passou), <b>Ritmo</b> (o faturado contra o esperado até agora), <b>Projeção</b> do mês no ritmo atual, <b>Margem</b>, <b>Ticket médio</b> e <b>Peças por atendimento</b>.' },
+      { t: 'Lance a meta do mês', d: 'Em <b>Meta do mês</b>: o valor e os <b>dias de funcionamento</b> (o padrão é segunda a sábado nas lojas e todos os dias no e-commerce — tire os feriados). A meta diária é a divisão dos dois.' },
+      { t: 'Confira dia a dia', d: 'O gráfico mostra o faturamento de cada dia contra a meta diária (verde = bateu). A tabela repete a planilha, com o total do mês.' },
+    ],
+    dicas: ['O ritmo e a projeção consideram só os dias que tiveram venda: feriado com a loja fechada não conta contra.', 'Ticket médio e peças por atendimento do mês são ponderados pelas vendas de cada dia (faturamento ÷ vendas), não a média simples dos dias.'],
+    naoFaz: ['Os números do dia ainda não são digitados na tela: vêm da planilha do Guilherme e, em breve, de uma automação que lê o Seta.', 'Não substitui o DRE: é o acompanhamento diário das vendas.'],
+    termos: [{ t: 'Atingimento', d: 'Faturamento ÷ meta.' }, { t: 'Ritmo', d: 'Faturamento ÷ (meta diária × dias já trabalhados). Acima de 100% = à frente da meta.' }, { t: 'Projeção', d: 'Faturamento ÷ dias trabalhados × dias de funcionamento do mês.' }],
+    quemVe: 'Quem tem acesso ao DRE, limitado às operações liberadas. A meta só é alterada por quem tem a permissão Budget.',
+    dados: 'Planilha KPI\'s Lojas (carga inicial) e, depois, automação a partir do Seta; meta digitada aqui.',
+  },
   orcamento: {
     titulo: 'Budget', versao: 5,
     resumo: 'Planilha de orçamento por operação (Exposição Paulista, Via Closet e E-commerce), mês a mês: <b>estoque inicial</b> em peças, <b>vendas</b> previstas × realizadas e <b>compras</b> previstas × realizadas, em R$ e peças. O <b>estoque final</b> de cada mês é calculado e vira o estoque inicial do mês seguinte. Tudo é digitado.',

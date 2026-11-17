@@ -24,6 +24,7 @@
     calcimport: SVG('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><line x1="6" y1="11" x2="6" y2="11.01"/><line x1="18" y1="11" x2="18" y2="11.01"/>'),
     conselho: SVG('<rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/>'),
     reunioes: SVG('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/>'),
+    bi: SVG('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.2"/>'),
     orcamento: SVG('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'),
     tesouraria: SVG('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>'),
     admin: SVG('<circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/>'),
@@ -38,6 +39,7 @@
     resumo: { label: 'Resumo Contábil', href: '/resumocontabil', can: function (p) { return p.is_admin || p.can_resumo !== false; } },
     conselho: { label: 'Painel do Conselho', href: '/conselho', can: function (p) { return p.is_admin || p.can_dre !== false; } },
     reunioes: { label: 'Reuniões e Decisões', href: '/reunioes', can: function (p) { return p.is_admin || p.can_reunioes === true || p.can_reunioes_editar === true; } },
+    bi: { label: 'BI das Lojas', href: '/bi', can: function (p) { return p.is_admin || p.can_dre !== false; } },
     orcamento: { label: 'Budget', href: '/orcamento', can: function (p) { return p.is_admin || p.can_orcamento === true; } },
     tesouraria: { label: 'Tesouraria', href: '/tesouraria', can: function (p) { return p.is_admin || p.can_tesouraria === true; } },
     dre: { label: 'DRE', href: '/dre', can: function (p) { return p.is_admin || p.can_dre !== false; } },
@@ -51,7 +53,7 @@
   var SECTIONS = [
     { id: 'geral', label: 'Visão Geral', items: ['home', 'geronia'] },
     { id: 'conselho', label: 'Conselho', items: ['conselho', 'reunioes'] },
-    { id: 'financeiro', label: 'Financeiro', items: ['dre', 'orcamento', 'tesouraria'] },
+    { id: 'financeiro', label: 'Financeiro', items: ['dre', 'bi', 'orcamento', 'tesouraria'] },
     { id: 'contabil', label: 'Contábil', items: ['resumo'] },
     { id: 'compras', label: 'Compras', items: ['calcimport'] },
     { id: 'pessoal', label: 'Pessoal', items: ['funcionarios'] },
@@ -61,7 +63,7 @@
   var PATH_TO_KEY = {
     '/': 'home', '/resumocontabil': 'resumo', '/dre': 'dre', '/lancamentos': 'lancamentos',
     '/geronia': 'geronia', '/mapa-societario': 'mapasoc', '/funcionarios': 'funcionarios',
-    '/conselho': 'conselho', '/reunioes': 'reunioes', '/orcamento': 'orcamento', '/calculadora-importacao': 'calcimport',
+    '/conselho': 'conselho', '/reunioes': 'reunioes', '/orcamento': 'orcamento', '/bi': 'bi', '/calculadora-importacao': 'calcimport',
     '/tesouraria': 'tesouraria'
   };
 

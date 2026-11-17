@@ -13,6 +13,7 @@
     { "source": "/calculadora-importacao", "destination": "/calculadora-importacao.html" },
     { "source": "/conselho", "destination": "/conselho.html" },
     { "source": "/orcamento", "destination": "/orcamento.html" },
+    { "source": "/bi", "destination": "/bi.html" },
     { "source": "/tesouraria", "destination": "/tesouraria.html" },
     { "source": "/reunioes", "destination": "/reunioes.html" },
     { "source": "/geraudio", "destination": "/geraudio.html" }
