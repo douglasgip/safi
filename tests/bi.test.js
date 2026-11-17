@@ -142,3 +142,10 @@ test('atingimento com operação SEM meta: o faturamento dela não entra na cont
   assert.ok(r.comMeta.has('Exposicao|2026-11') && !r.comMeta.has('GIP|2026-11'));
   perto(fatComMeta(ls, r.comMeta), 47307.78, 0.01);   // só a Exposição; os R$ 39.897,89 do e-commerce ficam fora
 });
+
+test('cartões com nomes específicos: a meta atingida tem cartão próprio, em destaque (não some no rodapé do faturamento)', () => {
+  for (const nome of ['Faturamento no período', 'Meta atingida', 'Ritmo até hoje', 'Projeção para o fim do mês', 'Margem de contribuição', 'Ticket médio', 'Vendas no período'])
+    assert.ok(codigo.includes("l: '" + nome + "'"), 'falta o cartão "' + nome + '"');
+  assert.doesNotMatch(codigo, /l: 'Ritmo × meta'/, 'nome antigo, que confundia com o atingimento');
+  assert.ok(codigo.includes("'<div class=\"kpi' + (x.d ? ' destaque' : '')"), 'a linha de cima (faturamento, meta, ritmo, projeção) é destacada');
+});

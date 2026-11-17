@@ -65,7 +65,10 @@
     .op-btn.on { background: #18283e; border-color: rgba(56,189,248,0.4); color: #f1f5f9; }
     .op-btn.on img { opacity: 1; }
 
-    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 18px; }
+    .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .kpi.destaque { border-color: rgba(56,189,248,0.25); background: linear-gradient(160deg, rgba(14,40,66,0.85), rgba(15,23,42,0.8)); }
+    .kpi.destaque .kpi-v { font-size: 30px; letter-spacing: -0.5px; }
+    .kpi.destaque .kpi-l { color: #7dd3fc; }
     .kpi { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 15px 17px; }
     .kpi-l { font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .8px; }
     .kpi-v { font-size: 22px; font-weight: 800; color: #f8fafc; margin-top: 6px; font-variant-numeric: tabular-nums; }
@@ -390,20 +393,29 @@
         (tempo > 0 && tempo < 1 ? '<div class="barra-tempo" style="left:calc(' + tempo * 100 + '% - 1px)" title="Quanto do período já passou"></div>' : '') + '</div>';
       const dlt = (a, b, inverso) => { const v = variacao(a, b); if (v == null) return ''; const bom = inverso ? v < 0 : v > 0; return '<span class="delta ' + (Math.abs(v) < 0.0005 ? '' : bom ? 'up' : 'down') + '">' + (v > 0 ? '+' : '') + pct(v) + '</span>'; };
       const cmpTxt = (txt) => B ? '<div class="cmp">antes: ' + txt + '</div>' : '';
+      const soEcom = !F.ops.some(op => LOJA[op]);
+      const falta = A.mp.meta ? Math.max(0, A.mp.meta - A.fatMeta) : null;
+      const avisoSemMeta = A.mp.semMeta.length && A.mp.meta ? '<div class="cmp">sem meta: ' + A.mp.semMeta.map(op => OPS.find(o => o.id === op).nome).join(', ') + ' (fora da conta)</div>' : '';
       const kp = [
-        { l: 'Faturamento', v: brl0(A.t.fat) + (B ? dlt(A.t.fat, B.t.fat) : ''), s: (A.mp.meta ? pct(A.ating) + ' da meta de ' + brl0(A.mp.meta) + (A.mp.semMeta.length ? ' (só ' + brl0(A.fatMeta) + ' das operações com meta)' : '') + barra(A.ating) : 'sem meta lançada para o período') + cmpTxt(brl0(B && B.t.fat)) },
-        { l: 'Ritmo × meta', v: pct(A.ritmo), cls: A.ritmo == null ? '' : A.ritmo >= 1 ? 'bom' : 'ruim', s: A.ritmo == null ? 'precisa da meta do mês' : (A.ritmo >= 1 ? 'acima' : 'abaixo') + ' do esperado para os ' + A.diasVenda + ' dias com venda' + cmpTxt(pct(B && B.ritmo)) },
+        // linha de cima, em destaque: quanto vendeu, quanto da meta já bateu, se está no ritmo e onde deve fechar
+        { d: 1, l: 'Faturamento no período', v: brl0(A.t.fat) + (B ? dlt(A.t.fat, B.t.fat) : ''), s: A.diasVenda + (A.diasVenda === 1 ? ' dia' : ' dias') + ' com venda' + cmpTxt(brl0(B && B.t.fat)) },
+        A.mp.meta
+          ? { d: 1, l: 'Meta atingida', v: pct(A.ating), cls: A.ating >= 1 ? 'bom' : '', s: brl0(A.fatMeta) + ' de ' + brl0(A.mp.meta) + (falta ? ' · faltam ' + brl0(falta) : ' · meta batida!') + barra(A.ating) + avisoSemMeta }
+          : { d: 1, l: 'Meta atingida', v: '—', s: 'sem meta lançada para o período — lance no quadro "Meta do mês", no fim da tela' },
+        { d: 1, l: 'Ritmo até hoje', v: pct(A.ritmo), cls: A.ritmo == null ? '' : A.ritmo >= 1 ? 'bom' : 'ruim',
+          s: A.ritmo == null ? 'precisa da meta do mês' : 'vendeu ' + brl0(A.fatMeta) + '; o esperado para ' + A.diasVenda + (A.diasVenda === 1 ? ' dia trabalhado' : ' dias trabalhados') + ' era ' + brl0(A.mp.esperado) + ' — ' + (A.ritmo >= 1 ? 'à frente' : 'atrás') + ' da meta' + cmpTxt(pct(B && B.ritmo)) },
         A.projecao != null
-          ? { l: 'Projeção do mês', v: brl0(A.projecao), s: 'no ritmo atual' + (A.mp.meta && !A.mp.semMeta.length ? ' · ' + pct(A.projecao / A.mp.meta) + ' da meta' : '') }
-          : { l: 'Dias com venda', v: n0(A.diasVenda), s: 'no período escolhido (a projeção aparece com um mês inteiro)' + cmpTxt(n0(B && B.diasVenda)) },
-        { l: 'Margem', v: brl0(A.t.margem) + (B ? dlt(A.t.margem, B.t.margem) : ''), s: (A.t.margemPct == null ? '—' : pct(A.t.margemPct) + ' do faturamento') + cmpTxt(pct(B && B.t.margemPct)) },
-        { l: 'Ticket médio', v: brl(A.t.ticket) + (B ? dlt(A.t.ticket, B.t.ticket) : ''), s: (A.t.vendas == null ? '—' : n0(A.t.vendas) + ' vendas') + cmpTxt(brl(B && B.t.ticket)) },
-        soLojas || !F.ops.some(op => LOJA[op])
-          ? (soLojas ? { l: 'Peças por atendimento', v: n2(A.t.pecasAtend) + (B ? dlt(A.t.pecasAtend, B.t.pecasAtend) : ''), s: 'média ponderada pelas vendas' + cmpTxt(n2(B && B.t.pecasAtend)) }
-                     : { l: 'Qtd. de vendas', v: n0(A.t.vendas) + (B ? dlt(A.t.vendas, B.t.vendas) : ''), s: 'no período' + cmpTxt(n0(B && B.t.vendas)) })
-          : { l: 'Peças por atendimento (lojas)', v: n2(A.t.pecasAtend) + (B ? dlt(A.t.pecasAtend, B.t.pecasAtend) : ''), s: 'só das lojas físicas — o e-commerce não tem' + cmpTxt(n2(B && B.t.pecasAtend)) },
+          ? { d: 1, l: 'Projeção para o fim do mês', v: brl0(A.projecao), cls: A.mp.meta && !A.mp.semMeta.length ? (A.projecao >= A.mp.meta ? 'bom' : 'ruim') : '', s: 'se mantiver a média de venda dos dias trabalhados' + (A.mp.meta && !A.mp.semMeta.length ? ' · ' + pct(A.projecao / A.mp.meta) + ' da meta' : '') }
+          : { d: 1, l: 'Projeção para o fim do mês', v: '—', s: 'aparece quando o período é um mês inteiro (sem filtro de dia da semana)' },
+        // linha de baixo: qualidade da venda
+        { l: 'Margem de contribuição', v: brl0(A.t.margem) + (B ? dlt(A.t.margem, B.t.margem) : ''), s: (A.t.margemPct == null ? '—' : pct(A.t.margemPct) + ' do faturamento') + cmpTxt(pct(B && B.t.margemPct)) },
+        { l: 'Ticket médio', v: brl(A.t.ticket) + (B ? dlt(A.t.ticket, B.t.ticket) : ''), s: 'faturamento ÷ vendas' + cmpTxt(brl(B && B.t.ticket)) },
+        soEcom
+          ? { l: 'Dias com venda', v: n0(A.diasVenda), s: 'no período escolhido' + cmpTxt(n0(B && B.diasVenda)) }
+          : { l: soLojas ? 'Peças por atendimento' : 'Peças por atendimento (lojas)', v: n2(A.t.pecasAtend) + (B ? dlt(A.t.pecasAtend, B.t.pecasAtend) : ''), s: (soLojas ? 'média ponderada pelas vendas' : 'só das lojas físicas — o e-commerce não tem') + cmpTxt(n2(B && B.t.pecasAtend)) },
+        { l: 'Vendas no período', v: n0(A.t.vendas) + (B ? dlt(A.t.vendas, B.t.vendas) : ''), s: (soEcom ? 'vendas do site e dos marketplaces' : soLojas ? 'atendimentos (cupons)' : 'atendimentos das lojas + vendas do e-commerce') + cmpTxt(n0(B && B.t.vendas)) },
       ];
-      g('kpis').innerHTML = kp.map(x => '<div class="kpi"><div class="kpi-l">' + x.l + '</div><div class="kpi-v ' + (x.cls || '') + '">' + x.v + '</div><div class="kpi-s">' + x.s + '</div></div>').join('');
+      g('kpis').innerHTML = kp.map(x => '<div class="kpi' + (x.d ? ' destaque' : '') + '"><div class="kpi-l">' + x.l + '</div><div class="kpi-v ' + (x.cls || '') + '">' + x.v + '</div><div class="kpi-s">' + x.s + '</div></div>').join('');
 
       // gráfico
       const dias = porDia(A.ls);
