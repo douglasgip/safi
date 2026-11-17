@@ -63,7 +63,8 @@ test('GerônIA só lista funcionários ativos', () => {
 test('textos de ajuda e telas não citam mais as telas retiradas', () => {
   const NOMES = /Fechamento do Mês|Despesas Fixas|Fluxo de Caixa|Conciliação|Produtos &(amp;)? Estoque|Plano Orçamentário|\bPedidos\b|\bpedidos\b/;
   const achados = [];
-  for (const f of ['ajuda-conteudo.js', ...TELAS]) {
+  // telas temp-*.html são cópia fiel das planilhas do Aldemar ("Pedidos a faturar", "Despesas Fixas" são linhas delas)
+  for (const f of ['ajuda-conteudo.js', ...TELAS.filter(t => !t.startsWith('temp-'))]) {
     // comentários de código podem citar a história; o que conta é o texto que a pessoa vê
     const s = ler(f).split(/\r?\n/).filter(l => !/^\s*(\/\/|\*|\/\*)/.test(l) && !/\/\/ .*retirada/.test(l)).join('\n');
     const m = s.match(NOMES);

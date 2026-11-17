@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Fluxo Pedido Compras (Expo)</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+    .bg { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%), radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%), linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #tc-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #tc-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+    #tc-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    .tp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .tp-top h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .tp-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .tp-selo { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 5px; }
+    .card.hi { border-color: rgba(56,189,248,0.4); background: linear-gradient(160deg, rgba(14,50,80,0.75), rgba(15,23,42,0.75)); }
+    .card-l { font-size: 10px; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase; color: #64748b; }
+    .card-v { font-size: 22px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; letter-spacing: -0.4px; }
+    .card-s { font-size: 11.5px; color: #94a3b8; }
+    .neg { color: #fca5a5 !important; } .pos { color: #6ee7b7 !important; } .muted { color: #475569 !important; }
+    .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.t { width: 100%; border-collapse: collapse; }
+    .t th { text-align: left; padding: 9px 10px; font-size: 9.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; background: rgba(8,11,20,0.35); }
+    .t td { padding: 8px 10px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .t .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .t tr.grp th { color: #7dd3fc; text-align: center; border-bottom: none; }
+    .t tr.tot td { font-weight: 800; color: #f8fafc; background: rgba(56,189,248,0.07); border-top: 1px solid rgba(255,255,255,0.1); }
+    .t tr.sec td { font-weight: 800; color: #7dd3fc; background: rgba(255,255,255,0.03); font-size: 11px; letter-spacing: .6px; text-transform: uppercase; }
+    .t tr.memo td { color: #94a3b8; font-style: italic; }
+    .t .sep { border-left: 1px solid rgba(255,255,255,0.08); }
+    .nota { font-size: 11.5px; color: #94a3b8; line-height: 1.6; margin-top: 10px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 640px; flex-wrap: wrap; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .sel { padding: 9px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; color-scheme: dark; }
+    select option { background: #0f172a; }
+    .barras { display: flex; align-items: flex-end; gap: 10px; height: 190px; padding-top: 16px; }
+    .barra { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 6px; min-width: 0; }
+    .barra-col { width: 100%; max-width: 64px; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #38bdf8, #0369a1); min-height: 2px; }
+    .barra-v { font-size: 10.5px; font-weight: 700; color: #cbd5e1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .barra-m { font-size: 10px; font-weight: 700; color: #64748b; letter-spacing: .5px; }
+    .t-ped { min-width: 1250px; }
+    .t-ped td:first-child { font-weight: 700; color: #f1f5f9; white-space: nowrap; }
+    .seg { display: inline-block; padding: 2px 8px; border-radius: 6px; background: rgba(56,189,248,0.1); color: #7dd3fc; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+    .filtro { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: 12px; color: #94a3b8; }
+    .seg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+    .seg-item { padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); }
+    .seg-item b { display: block; font-size: 15px; color: #f8fafc; font-variant-numeric: tabular-nums; margin-top: 3px; }
+    .seg-item span { font-size: 10.5px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="grid-overlay"></div>
+  <div class="dc-sidebar-backdrop" id="tc-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="tc-sidebar"></aside>
+  <header class="header">
+    <div class="header-brand">
+      <button id="tc-hamburger" aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Fluxo Pedido Compras (Expo)</div>
+    </div>
+  </header>
+  <div id="tc-loading">Carregando…</div>
+  <main class="main" id="tc-main" style="display:none">
+    <div class="tp-top">
+      <div><h1>Fluxo Pedido Compras (Expo)</h1><div class="tp-sub">Pedidos de compra em aberto da Exposição Paulista e quanto vence em cada mês. Cópia da planilha "FLUXO PEDIDO COMPRAS - (EXPO)".</div></div>
+      <span class="tp-selo">Temporária · só apresentação</span>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div class="panel"><div class="panel-head">Vencimentos por mês — saldo de pedidos em aberto</div><div class="barras" id="barras"></div></div>
+    <div class="panel"><div class="panel-head">Por segmento — total dos pedidos abertos</div><div class="seg-grid" id="segs"></div></div>
+    <div class="panel"><div class="panel-head">Pedidos abertos — Exposição Paulista</div>
+      <div class="filtro"><label for="f-seg">Segmento</label><select class="sel" id="f-seg"></select><span id="f-info"></span></div>
+      <div class="scroll"><table class="t t-ped" id="tb"></table></div>
+      <div class="nota">"Vencimento no mês" = parcelas de cada pedido conforme o prazo de pagamento. Saldo de pedidos em aberto = pedidos abertos − NFs já lançadas.</div></div>
+  </main>
+  <script>
+    // TELA TEMPORÁRIA (apresentação do Aldemar): os números estão escritos aqui dentro, copiados da planilha/documento.
+    // Não lê nem grava nada no banco — o supabase só confere o login. Será excluída depois.
+    const sb = supabase.createClient('https://ujsoqyhkebasszwtexmp.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c');
+    SafiSidebar.mount('tc', { active: 'tmp_pedidos', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('tc');
+    const g = id => document.getElementById(id);
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function brl(v, casas) { if (v == null || v === '') return ''; const c = casas == null ? 0 : casas; const n = Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: c, maximumFractionDigits: c }); return (v < 0 ? '-' : '') + 'R$ ' + n; }
+    const MESES = ['NOV', 'DEZ', 'JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN'];
+    // [fornecedor, segmento, entrega (nº de série do Excel), CNPJ, total, prazo, {índice do mês: valor}]
+    const PED = [
+      ['HOAHI', 'LANGERIE', 46346, 'ISA CONFEÇÕES', 10071.9, '30/60', { 1: 5035.95, 2: 5035.95 }],
+      ['BRESSAN', 'LANGERIE', 46356, 'ISA CONFEÇÕES', 11243.22, '40/45/50/55/60/65/70/75/80', { 2: 6246.23, 3: 4996.99 }],
+      ['CORPO NU', 'LANGERIE', 46346, 'ISA CONFEÇÕES', 11047, '10/20/30', { 0: 3682.35, 1: 7364 }],
+      ['CORPO NU', 'LANGERIE', 46388, 'ISA CONFEÇÕES', 7402.59, '10/20/30', { 2: 4909, 3: 2454.9 }],
+      ['CORPO NU (DUDA)', 'LANGERIE', 46346, 'ISA CONFEÇÕES', 2620.86, '10/20/30', { 0: 873.33, 1: 1746.66 }],
+      ['CYGILE', 'LANGERIE', 46341, 'ISA CONFEÇÕES', 12223.9, '30/60/90/120', { 0: 3039, 1: 3039, 2: 3039, 3: 3039 }],
+      ['MASH', 'LANGERIE', 46353, 'GUILHERME', 7543.68, '14/21/28', { 1: 7543.68 }],
+      ['LUPO (MEIAS)', 'LANGERIE', 46346, 'GUILHERME', 10444.44, '14/21/28', { 1: 10444.44 }],
+      ['ZEE RUCCI (CUECA)', 'LANGERIE', 46338, 'GUILHERME', 7001.31, '60/75/90', { 2: 4667.54, 3: 2333.77 }],
+      ['KYLY', 'INFANTIL', 46355, 'ISA CONFEÇÕES', 1419.64, '30 DIAS', { 1: 1419.64 }],
+      ['HAVE FUN', 'INFANTIL', 46346, 'ISA CONFEÇÕES', 4056.52, '30/60', { 1: 2028.26, 2: 2028.26 }],
+      ['KYLY', 'INFANTIL', 46340, 'ISA CONFEÇÕES', 8462.87, '30 DIAS', { 1: 8462.87 }],
+      ['KYLY', 'INFANTIL', 46340, 'ISA CONFEÇÕES', 8571.65, '30 DIAS', { 1: 8571.65 }],
+      ['OGOCHI', 'MASCULINO', 46356, 'ISA CONFEÇÕES', 9499.37, '30/45/60/75/90', { 1: 1899.87, 2: 3799.74, 3: 3799.74 }],
+      ['SEA SURF', 'FEM/MASC', 46315, 'ISA CONFEÇÕES', 11411.69, '60/90/120/150', { 1: 2852.93, 2: 2852.92, 3: 2852.92, 4: 2852.92 }],
+      ['SEA SURF', 'FEM/MASC', 46315, 'ISA CONFEÇÕES', 1363.44, '60/90/120/150', { 1: 340.86, 2: 340.86, 3: 340.86, 4: 340.86 }],
+      ['ORACON', 'MASCULINO', 46337, 'GUILHERME', 7017.45, '20/30/40', { 1: 7017.45 }],
+      ['CAUÃ E VALENTINA', 'INFANTIL', 46326, 'ISA CONFEÇÕES', 11702.02, '30/60', { 1: 5851.01, 2: 5851.01 }],
+      ['TRICK NICK', 'INFANTIL', 46346, 'ISA CONFEÇÕES', 7372.85, '56/84/112/140/168/196', { 2: 1228.66, 3: 1228.66, 4: 1228.66, 5: 1228.66, 6: 1228.66, 7: 1228.66 }],
+      ['THREE HANDS', 'FEM/INF', 46037, 'GUILHERME', 6216.29, '20/22/24/26/28/30', { 3: 6216.29 }],
+      ['THREE HANDS', 'FEM/INF', 46052, 'GUILHERME', 12154.67, '20/22/24/26/28/30', { 3: 10128.9, 4: 2025.77 }],
+      ['PITT', 'MASCULINO', 46346, 'GUILHERME', 7455.26, '30 DIAS', { 1: 7455.26 }],
+      ['GALANTEADOR', 'MASCULINO', 46357, 'ISA CONFEÇÕES', 10630, '10/15/20/25/30', { 1: 10630 }],
+      ['GALANTEADOR', 'MASCULINO', 46371, 'ISA CONFEÇÕES', 24766, '10/15/20/25/30', { 1: 9906.64, 2: 14859.6 }],
+      ['DISTINTO', 'FEMININO', 46346, 'ISA CONFEÇÕES', 1924.27, '30 DIAS', { 1: 1924.27 }],
+      ['ADIZZA', 'FEMININO', 46346, 'ISA CONFEÇÕES', 3703.07, '30 DIAS', { 1: 3703.07 }],
+      ['MAR QUENTE', 'MASCULINO', 46346, 'GUILHERME', 11113, '60/75/90/105/120', { 2: 2222.6, 3: 4445.2, 4: 4445.2 }],
+    ];
+    const NFS = [['KYLY', 'INFANTIL', 46326, 'GUILHERME', 2345.11, '', { 1: 2345.11 }]];
+    const data = n => { const d = new Date(Date.UTC(1899, 11, 30) + n * 86400000); return String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear(); };
+    const porMes = ls => MESES.map((_, i) => ls.reduce((a, p) => a + (p[6][i] || 0), 0));
+    const totalDe = ls => ls.reduce((a, p) => a + p[4], 0);
+    function render(seg) {
+      const ls = seg ? PED.filter(p => p[1].trim() === seg) : PED;
+      const nfs = seg ? NFS.filter(p => p[1].trim() === seg) : NFS;
+      const mP = porMes(ls), mN = porMes(nfs), tP = totalDe(ls), tN = totalDe(nfs);
+      const cel = (v, i) => '<td class="r' + (i === 0 ? ' sep' : '') + '">' + (v ? brl(v, 2) : '') + '</td>';
+      const lin = p => '<tr><td>' + esc(p[0]) + '</td><td><span class="seg">' + esc(p[1]) + '</span></td><td class="r">' + data(p[2]) + '</td><td>' + esc(p[3]) + '</td><td class="r">' + brl(p[4], 2) + '</td><td>' + esc(p[5]) + '</td>' + MESES.map((_, i) => cel(p[6][i], i)).join('') + '</tr>';
+      const tot = (rot, t, m, cls) => '<tr class="' + cls + '"><td colspan="4">' + rot + '</td><td class="r">' + brl(t, 2) + '</td><td></td>' + m.map((v, i) => '<td class="r' + (i === 0 ? ' sep' : '') + '">' + brl(v, 2) + '</td>').join('') + '</tr>';
+      g('tb').innerHTML = '<thead><tr class="grp"><th colspan="6"></th><th colspan="8" class="sep">Vencimento no mês</th></tr><tr><th>Fornecedor</th><th>Segmento</th><th class="r">Data da entrega</th><th>CNPJ</th><th class="r">Total pedido</th><th>Prazo de pagamento</th>' +
+        MESES.map((m, i) => '<th class="r' + (i === 0 ? ' sep' : '') + '">' + m + '</th>').join('') + '</tr></thead><tbody>' +
+        tot('Pedidos abertos', tP, mP, 'tot') + ls.map(lin).join('') +
+        (nfs.length ? tot('NFs lançadas — vencimento em cada mês', tN, mN, 'tot') + nfs.map(lin).join('') : '') +
+        tot('Saldo de pedidos em aberto', tP - tN, mP.map((v, i) => v - mN[i]), 'tot') + '</tbody>';
+      g('f-info').textContent = ls.length + (ls.length === 1 ? ' pedido' : ' pedidos');
+    }
+    function montar() {
+      const mP = porMes(PED), mN = porMes(NFS), tP = totalDe(PED), tN = totalDe(NFS), saldo = mP.map((v, i) => v - mN[i]);
+      const maior = saldo.indexOf(Math.max(...saldo));
+      const card = (l, v, s, hi) => '<div class="card' + (hi ? ' hi' : '') + '"><div class="card-l">' + l + '</div><div class="card-v">' + v + '</div><div class="card-s">' + s + '</div></div>';
+      g('cards').innerHTML = card('Pedidos abertos', brl(tP, 2), PED.length + ' pedidos de ' + new Set(PED.map(p => p[0].replace(/\s*\(.*\)/, ''))).size + ' fornecedores') +
+        card('NFs já lançadas', brl(tN, 2), 'descontadas do saldo') +
+        card('Saldo de pedidos em aberto', brl(tP - tN, 2), 'a pagar de NOV a JUN', true) +
+        card('Mês mais pesado', MESES[maior], brl(saldo[maior], 2) + ' vencendo');
+      const max = Math.max(...saldo);
+      g('barras').innerHTML = saldo.map((v, i) => '<div class="barra"><div class="barra-v">' + (v >= 1000 ? Math.round(v / 1000).toLocaleString('pt-BR') + ' mil' : brl(v)) + '</div><div class="barra-col" style="height:' + (max ? Math.max(1, v / max * 140) : 0) + 'px" title="' + MESES[i] + ': ' + brl(v, 2) + '"></div><div class="barra-m">' + MESES[i] + '</div></div>').join('');
+      const segs = {}; PED.forEach(p => { const s = p[1].trim(); segs[s] = (segs[s] || 0) + p[4]; });
+      g('segs').innerHTML = Object.entries(segs).sort((a, b) => b[1] - a[1]).map(([s, v]) => '<div class="seg-item"><span>' + esc(s) + '</span><b>' + brl(v) + '</b><span style="text-transform:none;letter-spacing:0;font-weight:600">' + (v / tP * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '% do total</span></div>').join('');
+      g('f-seg').innerHTML = '<option value="">Todos</option>' + Object.keys(segs).sort().map(s => '<option>' + esc(s) + '</option>').join('');
+      g('f-seg').addEventListener('change', () => render(g('f-seg').value));
+      render('');
+    }
+    (async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (rows && rows[0]) || null;
+      if (!prof || !(prof.is_admin || prof.can_dre !== false)) return window.location.replace('/');
+      SafiSidebar.apply('tc', prof, { email: data.session.user.email, sb });
+      montar();
+      g('tc-loading').style.display = 'none';
+      g('tc-main').style.display = 'block';
+    })();
+  </script>
+</body>
+</html>
