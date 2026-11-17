@@ -17,7 +17,7 @@ for (const pagina of paginas) {
   });
 }
 
-for (const arq of ['sidebar.js', 'ajuda.js', 'ajuda-conteudo.js', 'pdf.js', 'pdf-dc.js', 'user-menu.js', 'support.js']) {
+for (const arq of ['sidebar.js', 'ajuda.js', 'ajuda-conteudo.js', 'pdf.js', 'pdf-dc.js', 'user-menu.js', 'support.js', 'conselho-indicadores.js']) {
   test(`sintaxe de ${arq}`, () => {
     assert.doesNotThrow(() => new vm.Script(ler(arq), { filename: arq }));
   });

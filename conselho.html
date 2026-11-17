@@ -217,6 +217,44 @@
     #tbl-rentab tr td.up-bad, #tbl-rentab tr td.dn-bad { color: #fca5a5; }
     #tbl-rentab tr td.neutro { color: #94a3b8; }
     #co-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    /* Indicadores do conselho (modelo do Aldemar) */
+    .ind-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .ind-head .panel-head { margin-bottom: 0; }
+    .ind-aviso { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d; border-radius: 12px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .ind-resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .ind-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .ind-v { font-size: 20px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; }
+    .ind-s { font-size: 11px; color: #64748b; }
+    .ind-chave { background: rgba(56,189,248,0.07); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; padding: 12px 14px; font-size: 12.5px; line-height: 1.6; color: #cbd5e1; margin-bottom: 6px; }
+    .ind-chave span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 4px; }
+    .ind-chave b { color: #f8fafc; }
+    .ind-sec { font-size: 12px; font-weight: 800; color: #f8fafc; margin: 20px 0 8px; }
+    .ind-sec span { font-weight: 600; color: #64748b; }
+    .ind-etapas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .ind-etapa { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 12px 14px; }
+    .ind-et-t { font-size: 12px; font-weight: 800; color: #7dd3fc; }
+    .ind-et-f { font-size: 11px; color: #94a3b8; margin: 2px 0 8px; }
+    .ind-et-o { font-size: 11px; color: #94a3b8; margin-top: 8px; line-height: 1.5; }
+    table.ind-tbl { width: 100%; border-collapse: collapse; }
+    .ind-tbl td { font-size: 12px; color: #cbd5e1; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .ind-tbl td.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 10px; }
+    .ind-tbl tr.tot td { font-weight: 800; color: #f8fafc; border-bottom: none; }
+    table.ind-pilar { min-width: 640px; }
+    .ind-pilar td:first-child { font-weight: 700; color: #f1f5f9; width: 24%; }
+    .ind-pilar td.num { width: 22%; }
+    .ind-como { color: #94a3b8 !important; font-size: 12px !important; }
+    .ind-falta { color: #fbbf24 !important; font-size: 12px !important; }
+    .ind-faixas { display: flex; flex-direction: column; gap: 6px; }
+    .ind-faixa { display: grid; grid-template-columns: 90px 1fr 38px; gap: 6px; }
+    .ind-faixa .fe-select { cursor: text; width: 100%; }
+    .ind-faixa .btn-ghost { padding: 0; }
+    .ind-form { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .ind-form .field input { width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; }
+    .ind-form .full { grid-column: 1 / -1; }
+    .ind-add { margin-top: 6px; font-size: 11.5px; padding: 6px 10px; }
+    #ind-modal .modal-card { max-width: 640px; }
+    @media (max-width: 1000px) { .ind-etapas { grid-template-columns: 1fr; } }
+    @media (max-width: 600px) { .ind-form { grid-template-columns: 1fr; } }
     @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .co-row { grid-template-columns: 1fr; } .mo-grid { grid-template-columns: 1fr; } }
     @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .kpi-grid { grid-template-columns: 1fr; } .kpi-v { font-size: 22px; } }
 
@@ -294,6 +332,14 @@
       <div class="kpi-grid" id="kpis-pessoas"></div>
     </div>
 
+    <div class="panel" id="panel-ind">
+      <div class="ind-head">
+        <div class="panel-head">Indicadores do conselho — <span id="ind-periodo"></span></div>
+        <button class="btn-ghost" id="ind-btn-bal" style="display:none">Lançar balanço</button>
+      </div>
+      <div id="ind-corpo"></div>
+    </div>
+
     <div class="panel" id="panel-ops">
       <div class="panel-head">Por operação — <span id="ops-periodo"></span></div>
       <div class="table-scroll" style="max-height:none"><table class="tbl" id="tbl-ops"></table></div>
@@ -308,10 +354,41 @@
     </div>
   </main>
 
+  <div class="modal-overlay" id="ind-modal">
+    <div class="modal-card">
+      <div class="modal-title">Balanço da data-base</div>
+      <div class="modal-sub">Normalmente trimestral (31/03, 30/06, 30/09, 31/12). Com ele o painel calcula PME, PMR, PMP, ciclo, NCG, liquidez e estrutura de capital. Lance também o balanço de abertura do ano (31/12 do ano anterior, só o estoque já basta) para o estoque médio e a geração de caixa.</div>
+      <div class="ind-form">
+        <div class="field"><label for="ind-b-op">Operação</label><select class="fe-select" id="ind-b-op" style="width:100%"></select></div>
+        <div class="field"><label for="ind-b-data">Data-base</label><input type="date" id="ind-b-data"></div>
+        <div class="field full" id="ind-b-status" style="font-size:11.5px;color:#7dd3fc"></div>
+        <div class="field"><label for="ind-b-estoque_custo">Estoque a custo</label><input id="ind-b-estoque_custo" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-estoque_venda">Estoque a preço de venda</label><input id="ind-b-estoque_venda" inputmode="decimal"></div>
+        <div class="field full"><label>Clientes a receber, por prazo em dias (se só tiver o total e o prazo médio, use uma linha)</label><div class="ind-faixas" id="ind-b-clientes"></div><button type="button" class="btn-ghost ind-add" id="ind-b-add-clientes">+ prazo</button></div>
+        <div class="field full"><label>Fornecedores a pagar, por prazo em dias</label><div class="ind-faixas" id="ind-b-fornecedores"></div><button type="button" class="btn-ghost ind-add" id="ind-b-add-fornecedores">+ prazo</button></div>
+        <div class="field"><label for="ind-b-emprestimos_cp">Empréstimos de curto prazo (até 12 meses)</label><input id="ind-b-emprestimos_cp" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-emprestimos_lp">Empréstimos de longo prazo</label><input id="ind-b-emprestimos_lp" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-caixa">Caixa, bancos e saldos a liberar</label><input id="ind-b-caixa" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-pl">Patrimônio líquido</label><input id="ind-b-pl" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-limite_estoque">Limite de estoque (diretoria)</label><input id="ind-b-limite_estoque" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-credito_vencido">Crediário: saldo vencido e não pago</label><input id="ind-b-credito_vencido" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-credito_perdas">Crediário: baixado como perda no trimestre</label><input id="ind-b-credito_perdas" inputmode="decimal"></div>
+        <div class="field"><label for="ind-b-credito_recuperado">Crediário: recuperado no trimestre</label><input id="ind-b-credito_recuperado" inputmode="decimal"></div>
+        <div class="field full"><label for="ind-b-obs">Observação</label><textarea id="ind-b-obs" style="min-height:60px"></textarea></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="ind-b-cancel">Cancelar</button>
+        <button class="btn-ghost" id="ind-b-del" style="display:none;color:#fca5a5">Excluir</button>
+        <button class="btn-primary" id="ind-b-save">Salvar balanço</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast"><span class="toast-dot" id="toast-dot"></span><span id="toast-msg"></span></div>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="/pdf.js"></script>
+  <script src="/conselho-indicadores.js"></script>
   <script>
     const SUPABASE_URL  = 'https://ujsoqyhkebasszwtexmp.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
@@ -648,6 +725,7 @@
       renderOps(ano, mes, modo);
       renderRentab(cur, base, ano, mes);
       renderPessoas(ops, ano, mes, cur);
+      try { renderIndicadores(ops, ano, mes); } catch (e) { g('ind-corpo').innerHTML = '<div class="empty">Erro ao montar os indicadores: ' + esc(e.message) + '</div>'; }
     }
 
     // ── Pessoas e produtividade do mês selecionado ───────────────────────────
@@ -736,6 +814,7 @@
         if (pp.itens.length) blocos.push({ tipo: 'kpis', opcao: 'pessoas', titulo: 'Pessoas e produtividade - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')',
           itens: pp.itens.map(it => ({ l: it.l, v: it.v, linhas: it.sub ? [{ t: it.sub }] : [], barra: it.hi ? [2, 132, 199] : null })) });
       }
+      if (sel.opcoes.indicadores) indBlocosPdf(nomeOps).forEach(b => blocos.push(b));
       const imgs = [];
       if (sel.opcoes.graficos) {
         const a = SafiPdf.imgDeCanvas(g('ch-evol')); if (a) imgs.push({ t: 'Evolução - últimos 12 meses (faturamento e EBITDA)', url: a.url, ratio: a.ratio, png: a.png, dados: a.dados });
@@ -801,6 +880,7 @@
       opsVisiveis = ['GIP', 'Exposicao', 'ViaCloset'].filter(op => dados.some(r => r.operacao === op));
       try { const oc = await sb.from('orcamento_mensal').select('operacao,ano,mes,compras_previstas,compras_realizadas').gte('ano', y - 1).lte('ano', y + 1); orcCompras = oc.data || []; } catch (e) { orcCompras = []; }
       try { await carregarPessoas(); } catch (e) { /* painel de Pessoas é opcional — resto da tela segue normal */ }
+      try { await indCarregar(y); } catch (e) { /* indicadores do conselho: sem eles o resto da tela segue */ }
     }
 
     function montarFiltros() {
@@ -832,12 +912,15 @@
       const prof = (rows && rows[0]) || null;
       if (!prof || !(prof.is_admin || prof.can_dre !== false)) return window.location.replace('/');
       SafiSidebar.apply('co', prof, { email: data.session.user.email, sb });
+      indPodeEditar = !!prof.is_admin;   // só admin lança o balanço (a RLS também barra os demais)
+      indLigarModal();
       SafiPdf.iniciar({ chave: 'conselho', titulo: 'Painel do Conselho', sb, profile: prof, accent: '#38bdf8',
         opcoes: [
           { id: 'kpis', label: 'Indicadores (Faturamento, MC, EBITDA, resultado…)' },
           { id: 'metasorc', label: 'Metas e Orçamento (meta de vendas e compras previstas × realizadas)' },
           { id: 'rentab', label: 'Rentabilidade e custos (R$ e % do faturamento)' },
           { id: 'pessoas', label: 'Pessoas e produtividade (turnover, faturamento por funcionário)', dica: 'Admissões, desligamentos e turnover só existem a partir de Set/2026, quando o SAFI passou a registrar esses eventos.' },
+          { id: 'indicadores', label: 'Indicadores do conselho (6 pilares, prazos, NCG, liquidez)', dica: 'Prazos, capital e estoque usam o último balanço lançado.' },
           { id: 'graficos', label: 'Gráficos (evolução de 12 meses e ponte do EBITDA)' },
           { id: 'ops', label: 'Tabela por operação', dica: 'Só existe quando o filtro é "Todas as operações".' },
           { id: 'serie', label: 'Série mensal em tabela (12 meses)' },
