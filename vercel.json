@@ -14,6 +14,7 @@
     { "source": "/conselho", "destination": "/conselho.html" },
     { "source": "/orcamento", "destination": "/orcamento.html" },
     { "source": "/bi", "destination": "/bi.html" },
+    { "source": "/cascata", "destination": "/cascata.html" },
     { "source": "/temp-fluxo-financeiro", "destination": "/temp-fluxo-financeiro.html" },
     { "source": "/temp-fluxo-pedidos", "destination": "/temp-fluxo-pedidos.html" },
     { "source": "/temp-templates", "destination": "/temp-templates.html" },

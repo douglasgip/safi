@@ -27,6 +27,7 @@
     bi: SVG('<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/><circle cx="19" cy="8" r="1.2"/>'),
     orcamento: SVG('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'),
     tesouraria: SVG('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>'),
+    cascata: SVG('<path d="M4 4h16"/><path d="M7 9h13"/><path d="M10 14h10"/><path d="M13 19h7"/>', 14),
     tmp_fluxo: SVG('<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>'),
     tmp_pedidos: SVG('<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
     tmp_templates: SVG('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>'),
@@ -46,6 +47,7 @@
     orcamento: { label: 'Budget', href: '/orcamento', can: function (p) { return p.is_admin || p.can_orcamento === true; } },
     tesouraria: { label: 'Tesouraria', href: '/tesouraria', can: function (p) { return p.is_admin || p.can_tesouraria === true; } },
     dre: { label: 'DRE', href: '/dre', can: function (p) { return p.is_admin || p.can_dre !== false; } },
+    cascata: { label: 'Cascata de Lucratividade', href: '/cascata', sub: true, can: function (p) { return p.is_admin || p.can_dre !== false; } },
     lancamentos: { label: 'Lançamentos', href: '/lancamentos', sub: true, can: function (p) { return p.is_admin || p.can_lancamentos === true; } },
     calcimport: { label: 'Calculadora de Importação', href: '/calculadora-importacao', can: function (p) { return p.is_admin || p.can_calc_importacao === true; } },
     funcionarios: { label: 'Funcionários', href: '/funcionarios', can: function (p) { return p.is_admin || p.can_funcionarios === true; } },
@@ -72,7 +74,7 @@
     '/': 'home', '/resumocontabil': 'resumo', '/dre': 'dre', '/lancamentos': 'lancamentos',
     '/geronia': 'geronia', '/mapa-societario': 'mapasoc', '/funcionarios': 'funcionarios',
     '/conselho': 'conselho', '/reunioes': 'reunioes', '/orcamento': 'orcamento', '/bi': 'bi', '/calculadora-importacao': 'calcimport',
-    '/tesouraria': 'tesouraria',
+    '/tesouraria': 'tesouraria', '/cascata': 'cascata',
     '/temp-fluxo-financeiro': 'tmp_fluxo', '/temp-fluxo-pedidos': 'tmp_pedidos', '/temp-templates': 'tmp_templates'
   };
 
@@ -96,7 +98,7 @@
       '.sb-sec-body{display:grid;grid-template-rows:1fr;opacity:1;visibility:visible;transition:grid-template-rows .38s cubic-bezier(.4,0,.2,1),opacity .3s ease,visibility 0s}' +
       '.sb-sec-inner{min-height:0;overflow:hidden;display:flex;flex-direction:column;gap:4px}' +
       '.sb-sec.collapsed .sb-sec-body{grid-template-rows:0fr;opacity:0;visibility:hidden;transition:grid-template-rows .38s cubic-bezier(.4,0,.2,1),opacity .22s ease,visibility 0s linear .38s}' +
-      '.dc-sidebar-submenu{overflow:hidden;max-height:80px;opacity:1;transition:max-height .34s cubic-bezier(.4,0,.2,1),opacity .25s ease}' +
+      '.dc-sidebar-submenu{overflow:hidden;max-height:140px;opacity:1;transition:max-height .34s cubic-bezier(.4,0,.2,1),opacity .25s ease}' +
       '.dc-sidebar-submenu.collapsed{display:flex !important;max-height:0;opacity:0;pointer-events:none}' +
       '@media (prefers-reduced-motion:reduce){.sb-sec-body,.sb-sec.collapsed .sb-sec-body,.sb-sec-h svg,.dc-sidebar-submenu{transition:none}}';
     document.head.appendChild(st);
@@ -108,13 +110,13 @@
     return '<a href="' + it.href + '" id="' + prefix + '-sidebar-' + key + '" class="' + cls + '" style="display:none">' + ICONS[key] + it.label + '</a>';
   }
 
-  // DRE + Lançamentos: linha do DRE com seta que recolhe o submenu de Lançamentos.
+  // DRE + submenu (Cascata de Lucratividade e Lançamentos): linha do DRE com seta que recolhe o submenu.
   function dreGroupHtml(prefix, active) {
     return '<div id="' + prefix + '-sidebar-dre-row" class="dc-sidebar-group-row" style="display:none">' +
       '<a href="/dre" id="' + prefix + '-sidebar-dre" class="dc-sidebar-nav-btn' + (active === 'dre' ? ' active' : '') + '" style="flex:1">' + ICONS.dre + 'DRE</a>' +
-      '<button type="button" id="' + prefix + '-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir Lançamentos" aria-expanded="true" style="display:none">' + ICONS.chevron + '</button>' +
+      '<button type="button" id="' + prefix + '-sidebar-dre-toggle" class="dc-sidebar-chevron" aria-label="Recolher/expandir o submenu do DRE" aria-expanded="true" style="display:none">' + ICONS.chevron + '</button>' +
       '</div>' +
-      '<div class="dc-sidebar-submenu" id="' + prefix + '-sidebar-dre-submenu">' + itemHtml(prefix, 'lancamentos', active) + '</div>';
+      '<div class="dc-sidebar-submenu" id="' + prefix + '-sidebar-dre-submenu">' + itemHtml(prefix, 'cascata', active) + itemHtml(prefix, 'lancamentos', active) + '</div>';
   }
 
   function sectionHtml(prefix, sec, active) {
@@ -217,8 +219,8 @@
       if (key === 'dre') show('dre-row');
       else show(key);
     });
-    // A seta do DRE só existe se o usuário tem Lançamentos.
-    if (ITEMS.lancamentos.can(profile) && ITEMS.dre.can(profile)) show('dre-toggle');
+    // A seta do DRE só existe se o usuário vê algum item do submenu (Cascata ou Lançamentos).
+    if (ITEMS.dre.can(profile) && (ITEMS.lancamentos.can(profile) || ITEMS.cascata.can(profile))) show('dre-toggle');
 
     // Setor só aparece se sobrar algum item visível dentro dele.
     root.querySelectorAll('.sb-sec').forEach(function (sec) {

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Cascata de Lucratividade</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="apple-touch-icon" href="/public/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080b14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+    .bg { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%), radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%), linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #dp-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #dp-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+    #dp-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .top h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .sub { font-size: 12.5px; color: #64748b; margin-top: 3px; max-width: 760px; line-height: 1.5; }
+    .filtros { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .filtros .f { display: flex; flex-direction: column; gap: 4px; }
+    .filtros label { font-size: 9.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; }
+    .sel { padding: 10px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; color-scheme: dark; }
+    select option { background: #0f172a; }
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 6px; }
+    .panel-sub { font-size: 12px; color: #94a3b8; margin-bottom: 14px; line-height: 1.5; }
+    .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.t { width: 100%; border-collapse: collapse; }
+    .t th { text-align: right; padding: 9px 10px; font-size: 9.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
+    .t th.l, .t td.l { text-align: left; }
+    .t td { padding: 7px 10px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .t td.l { white-space: normal; min-width: 220px; }
+    .t tr.grp th { color: #7dd3fc; text-align: center; border-bottom: none; padding-bottom: 0; }
+    .t .sep { border-left: 1px solid rgba(255,255,255,0.08); }
+    .t td.pc { color: #94a3b8; font-size: 11.5px; }
+    .t tr.fat td { font-weight: 800; color: #f8fafc; background: rgba(56,189,248,0.08); }
+    .t tr.cls td { font-weight: 800; color: #cbd5e1; background: rgba(255,255,255,0.03); }
+    .t tr.cmp td.l { padding-left: 26px; color: #cbd5e1; }
+    .t tr.res td { font-weight: 800; color: #f8fafc; background: rgba(52,211,153,0.07); border-top: 1px solid rgba(255,255,255,0.1); }
+    .t tr.res td.neg, .t td.neg { color: #fca5a5; }
+    .t td.pos { color: #6ee7b7; }
+    .regra { display: inline-block; margin-left: 8px; padding: 1px 6px; border-radius: 5px; font-size: 9.5px; font-weight: 700; letter-spacing: .3px; vertical-align: 1px; }
+    .regra.pct { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .regra.media { background: rgba(251,191,36,0.12); color: #fcd34d; }
+    .t-in { min-width: 520px; }
+    .t-in input { width: 150px; padding: 8px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; text-align: right; color-scheme: dark; }
+    .t-in input:disabled { opacity: .7; }
+    .acoes { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+    .btn { padding: 10px 16px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-g { padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .status { font-size: 11.5px; color: #94a3b8; }
+    .status b { color: #6ee7b7; }
+    .aviso { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d; border-radius: 12px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 14px; }
+    .vazio { padding: 18px 14px; border: 1px dashed rgba(255,255,255,0.12); border-radius: 12px; color: #64748b; font-size: 12.5px; line-height: 1.5; }
+    .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+    .toast.visible { opacity: 1; }
+    .toast.red { border-color: rgba(248,113,113,0.5); } .toast.green { border-color: rgba(52,211,153,0.5); }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="grid-overlay"></div>
+  <div class="dc-sidebar-backdrop" id="dp-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="dp-sidebar"></aside>
+  <header class="header">
+    <div class="header-brand">
+      <button id="dp-hamburger" aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Cascata de Lucratividade</div>
+    </div>
+  </header>
+  <div id="dp-loading">Carregando…</div>
+  <main class="main" id="dp-main" style="display:none">
+    <div class="top">
+      <div>
+        <h1>Cascata de Lucratividade</h1>
+        <div class="sub">DRE em cascata com valores e índices. Com o faturamento projetado de cada mês, o SAFI projeta as demais linhas do DRE: <b>deduções e custos variáveis</b> pelo % do faturamento do período-base, <b>gastos operacionais</b> pela média mensal do período-base.</div>
+      </div>
+      <div class="filtros">
+        <div class="f"><label for="sel-ano">Ano</label><select class="sel" id="sel-ano"></select></div>
+        <div class="f"><label for="sel-op">Operação</label><select class="sel" id="sel-op"></select></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Faturamento projetado</span><span class="status" id="st-cong"></span></div>
+      <div class="panel-sub">Ao salvar, a projeção fica <b>congelada</b> com o DRE do período-base daquele momento — é ela que será comparada com o realizado.</div>
+      <div class="scroll"><table class="t t-in" id="tb-in"></table></div>
+      <div class="acoes" id="acoes-in"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Tabela 1 · DRE em cascata — realizado <span id="t1-per"></span></span></div>
+      <div class="panel-sub">Valores do DRE (Lançamentos) e o índice de cada linha sobre o faturamento.</div>
+      <div class="scroll"><table class="t" id="tb1"></table></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Tabela 2 · Exercício <span class="t2-ano"></span> — realizado + projetado</span></div>
+      <div class="panel-sub">Base para o Budget do ano seguinte. <span class="regra pct">% fat.</span> = proporcional ao faturamento · <span class="regra media">média</span> = média mensal do período-base.</div>
+      <div id="t2-aviso"></div>
+      <div class="scroll"><table class="t" id="tb2"></table></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>Tabela 3 · Previsto × realizado</span></div>
+      <div class="panel-sub">Assim que o DRE de um mês projetado é lançado, a projeção congelada é comparada com o realizado, linha a linha.</div>
+      <div id="t3"></div>
+    </div>
+  </main>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://ujsoqyhkebasszwtexmp.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    SafiSidebar.mount('dp', { active: 'cascata', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('dp');
+
+    const OPS = ['Exposicao', 'ViaCloset', 'GIP'];
+    const OP_NOME = { Exposicao: 'Exposição Paulista', ViaCloset: 'Via Closet', GIP: 'E-commerce (GIP)' };
+    const MES_C = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const g = id => document.getElementById(id);
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    const brl = v => v == null || !isFinite(v) ? '—' : (Math.round(v) < 0 ? '-' : '') + 'R$ ' + Math.abs(Math.round(v)).toLocaleString('pt-BR');
+    const pct = v => v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
+    const rotMes = (ano, m) => MES_C[m - 1] + '/' + String(ano).slice(2);
+    const rotPer = (de, ate) => MES_C[de % 100 - 1] + (de === ate ? '' : '–' + MES_C[ate % 100 - 1]) + '/' + Math.floor(ate / 100);
+
+    // ── Regras (funções puras, cobertas por tests/dre-projecao.test.js) ──────────────
+    // Classe do DRE → como a linha é projetada: 'fat' = é o próprio faturamento; 'pct' = % do faturamento; 'media' = média mensal.
+    function regraDaClasse(classe) {
+      if (/receita operacional bruta/i.test(classe)) return 'fat';
+      if (/dedu|custos vari/i.test(classe)) return 'pct';
+      return 'media';
+    }
+    // Soma as linhas do DRE de UMA operação num período (aaaamm de..ate).
+    // Devolve { fat, n (meses com faturamento), itens: { 'classe|campo': { classe, cOrd, campo, kOrd, regra, valor } } }
+    function baseDe(rows, op, de, ate) {
+      const out = { fat: 0, n: 0, itens: {} }, meses = new Set();
+      rows.forEach(r => {
+        const p = r.ano * 100 + r.mes;
+        if (r.operacao !== op || p < de || p > ate) return;
+        const regra = regraDaClasse(r.classe), v = +r.valor || 0;
+        if (regra === 'fat') { out.fat += v; if (v) meses.add(p); return; }
+        const k = r.classe + '|' + r.campo;
+        const it = out.itens[k] || (out.itens[k] = { classe: r.classe, cOrd: r.classe_ordem, campo: r.campo, kOrd: r.campo_ordem, regra, valor: 0 });
+        it.valor += v;
+      });
+      out.n = meses.size;
+      return out;
+    }
+    // Projeta um mês: deduções e custos variáveis = (linha ÷ faturamento da base) × faturamento projetado;
+    // gastos operacionais = linha da base ÷ nº de meses da base.
+    function projetar(base, fatProj) {
+      const itens = {};
+      Object.entries(base.itens).forEach(([k, it]) => {
+        const valor = it.regra === 'pct' ? (base.fat ? it.valor / base.fat * fatProj : 0) : (base.n ? it.valor / base.n : 0);
+        itens[k] = { ...it, valor };
+      });
+      return { fat: fatProj, itens };
+    }
+    // Soma colunas (operações ou meses) linha a linha.
+    function somarColunas(cols) {
+      const out = { fat: 0, itens: {} };
+      cols.forEach(c => {
+        if (!c) return;
+        out.fat += c.fat;
+        Object.entries(c.itens).forEach(([k, it]) => { const o = out.itens[k] || (out.itens[k] = { ...it, valor: 0 }); o.valor += it.valor; });
+      });
+      return out;
+    }
+    // Totais da cascata: Receita Líquida, Margem de Contribuição e Resultado Líquido.
+    function totais(col) {
+      const t = { fat: col.fat, ded: 0, cv: 0, go: 0 };
+      Object.values(col.itens).forEach(it => {
+        if (/dedu/i.test(it.classe)) t.ded += it.valor; else if (/custos vari/i.test(it.classe)) t.cv += it.valor; else t.go += it.valor;
+      });
+      t.rl = t.fat - t.ded; t.mc = t.rl - t.cv; t.res = t.mc - t.go;
+      return t;
+    }
+    // Projeção congelada → coluna (o jsonb salvo vira o mesmo formato de projetar()).
+    function colunaDoCongelado(row) {
+      const itens = {};
+      (row.linhas || []).forEach(l => { itens[l.classe + '|' + l.campo] = { classe: l.classe, cOrd: l.cOrd, campo: l.campo, kOrd: l.kOrd, regra: l.regra, valor: +l.valor || 0 }; });
+      return { fat: +row.faturamento || 0, itens };
+    }
+    function linhasParaCongelar(col) {
+      return Object.values(col.itens).map(it => ({ classe: it.classe, cOrd: it.cOrd, campo: it.campo, kOrd: it.kOrd, regra: it.regra, valor: Math.round(it.valor * 100) / 100 }));
+    }
+
+    // ── Estado ─────────────────────────────────────────────────────────────
+    let ROWS = [], PROJ = [], podeEditar = false, opsVis = [];
+
+    async function carregar(ano) {
+      const [a, b] = await Promise.all([
+        sb.rpc('dre_campos_mensal', { p_de: (ano - 1) * 100 + 1, p_ate: ano * 100 + 12 }),
+        sb.from('dre_projecao').select('*').eq('ano', ano),
+      ]);
+      if (a.error) throw a.error;
+      ROWS = a.data || []; PROJ = b.data || [];
+    }
+    const opsSel = () => g('sel-op').value === 'todas' ? opsVis : [g('sel-op').value];
+    const fatReal = (op, ano, m) => baseDe(ROWS, op, ano * 100 + m, ano * 100 + m).fat;
+    const temReal = (ops, ano, m) => ops.some(op => fatReal(op, ano, m) > 0);
+    const projDe = (op, ano, m) => PROJ.find(p => p.operacao === op && p.ano === ano && p.mes === m);
+    const mesesProj = (ano) => [...new Set(PROJ.filter(p => p.ano === ano).map(p => p.mes))].sort((a, b) => a - b);
+    // Período-base padrão: de janeiro até o último mês com DRE antes do 1º mês projetado.
+    function basePadrao(ops, ano) {
+      const mp = mesesProj(ano); const lim = mp.length ? mp[0] - 1 : 12;
+      let ate = 0; for (let m = 1; m <= lim; m++) if (temReal(ops, ano, m)) ate = m;
+      return ate ? { de: ano * 100 + 1, ate: ano * 100 + ate } : null;
+    }
+    // Coluna projetada de um mês para as operações: congelada se existir, senão calculada agora.
+    function colProjetada(ops, ano, m) {
+      const cols = ops.map(op => {
+        const p = projDe(op, ano, m); if (!p) return null;
+        if (p.linhas) return colunaDoCongelado(p);
+        const b = p.base_de && p.base_ate ? { de: p.base_de, ate: p.base_ate } : basePadrao([op], ano);
+        return b ? projetar(baseDe(ROWS, op, b.de, b.ate), +p.faturamento) : null;
+      });
+      return cols.some(Boolean) ? somarColunas(cols) : null;
+    }
+    const colReal = (ops, ano, de, ate) => somarColunas(ops.map(op => baseDe(ROWS, op, ano * 100 + de, ano * 100 + ate)));
+
+    // ── Cascata (render) ─────────────────────────────────────────────────────
+    // cols = [{ titulo, col, pct (mostra % ), regra (mostra a regra) }]
+    function cascataHtml(cols, opts) {
+      const o = opts || {};
+      const chaves = {}; cols.forEach(c => Object.entries(c.col.itens).forEach(([k, it]) => { if (!chaves[k]) chaves[k] = it; }));
+      const lista = Object.entries(chaves).filter(([k]) => cols.some(c => Math.abs((c.col.itens[k] || {}).valor || 0) >= 0.5))
+        .sort((a, b) => a[1].cOrd - b[1].cOrd || a[1].kOrd - b[1].kOrd || a[1].campo.localeCompare(b[1].campo));
+      const classes = []; lista.forEach(([k, it]) => { let c = classes.find(x => x.nome === it.classe); if (!c) classes.push(c = { nome: it.classe, ord: it.cOrd, ks: [] }); c.ks.push(k); });
+      const T = cols.map(c => totais(c.col));
+      const num = (v, fat, i, cls) => '<td class="' + (i ? 'sep ' : 'sep ') + (cls || '') + (v < 0 ? ' neg' : '') + '">' + brl(v) + '</td>' + (cols[i].pct === false ? '' : '<td class="pc">' + (fat ? pct(v / fat) : '—') + '</td>');
+      const linha = (rot, vals, trCls, extra) => '<tr class="' + trCls + '"><td class="l">' + rot + (extra || '') + '</td>' + vals.map((v, i) => num(v, cols[i].col.fat, i)).join('') + '</tr>';
+      let h = '<thead><tr><th class="l">Linha do DRE</th>' + cols.map(c => '<th class="sep">' + c.titulo + '</th>' + (c.pct === false ? '' : '<th>%</th>')).join('') + '</tr></thead><tbody>';
+      h += linha('Faturamento (receita bruta)', T.map(t => t.fat), 'fat');
+      const depois = { ded: ['(=) Receita Líquida', 'rl'], cv: ['(=) Margem de Contribuição', 'mc'], go: ['(=) Resultado Líquido', 'res'] };
+      classes.sort((a, b) => a.ord - b.ord).forEach(c => {
+        const tipo = /dedu/i.test(c.nome) ? 'ded' : /custos vari/i.test(c.nome) ? 'cv' : 'go';
+        h += linha(esc(c.nome.replace(/^\(-\)\s*/, '(−) ')), T.map(t => t[tipo]), 'cls');
+        c.ks.forEach(k => {
+          const it = chaves[k];
+          const tag = o.regra ? (it.regra === 'pct' ? '<span class="regra pct">% fat.</span>' : '<span class="regra media">média</span>') : '';
+          h += linha(esc(it.campo), cols.map(cc => (cc.col.itens[k] || {}).valor || 0), 'cmp', tag);
+        });
+        h += linha(depois[tipo][0], T.map(t => t[depois[tipo][1]]), 'res');
+      });
+      return h + '</tbody>';
+    }
+
+    // ── Telas ────────────────────────────────────────────────────────────────
+    function renderEntrada(ano) {
+      const mp = mesesProj(ano);
+      const cong = PROJ.filter(p => p.ano === ano && p.linhas);
+      g('st-cong').innerHTML = !PROJ.some(p => p.ano === ano) ? '' : cong.length === PROJ.filter(p => p.ano === ano).length
+        ? 'Congelada em <b>' + new Date(cong[0].congelado_em).toLocaleDateString('pt-BR') + '</b> · base ' + rotPer(cong[0].base_de, cong[0].base_ate)
+        : 'Ainda não congelada — os números abaixo são recalculados com o DRE atual';
+      if (!mp.length) { g('tb-in').innerHTML = '<tr><td class="l"><div class="vazio">Nenhum faturamento projetado para ' + ano + '.</div></td></tr>'; }
+      else {
+        g('tb-in').innerHTML = '<thead><tr><th class="l">Operação</th>' + mp.map(m => '<th>' + rotMes(ano, m) + '</th>').join('') + '</tr></thead><tbody>' +
+          opsVis.map(op => '<tr><td class="l">' + OP_NOME[op] + '</td>' + mp.map(m => { const p = projDe(op, ano, m); return '<td><input data-op="' + op + '" data-mes="' + m + '" value="' + (p ? numberToMoneyMasked(+p.faturamento) : '') + '"' + (podeEditar ? '' : ' disabled') + ' aria-label="Faturamento projetado ' + OP_NOME[op] + ' ' + rotMes(ano, m) + '"></td>'; }).join('') + '</tr>').join('') + '</tbody>';
+        g('tb-in').querySelectorAll('input').forEach(el => attachMoneyMask(el));
+      }
+      const b = basePadrao(opsVis, ano);
+      g('acoes-in').innerHTML = podeEditar ? '<button class="btn" id="btn-salvar">Salvar e congelar projeção</button>' +
+        '<select class="sel" id="sel-novo-mes"><option value="">+ mês projetado…</option>' + Array.from({ length: 12 }, (_, i) => i + 1).filter(m => !mp.includes(m)).map(m => '<option value="' + m + '">' + rotMes(ano, m) + '</option>').join('') + '</select>' +
+        '<span class="status">Base dos % e médias: ' + (b ? rotPer(b.de, b.ate) : '—') + '</span>' : '<span class="status">Só quem tem acesso a Lançamentos altera o faturamento projetado.</span>';
+      if (podeEditar) {
+        g('btn-salvar').addEventListener('click', () => salvar(ano));
+        g('sel-novo-mes').addEventListener('change', e => {
+          const m = +e.target.value; if (!m) return;
+          opsVis.forEach(op => PROJ.push({ operacao: op, ano, mes: m, faturamento: 0, linhas: null, _novo: true }));
+          render();
+        });
+      }
+    }
+    async function salvar(ano) {
+      const linhas = [];
+      const b = basePadrao(opsVis, ano);
+      if (!b) return toast('Sem DRE no período-base para calcular a projeção.', 'red');
+      for (const el of g('tb-in').querySelectorAll('input')) {
+        const op = el.dataset.op, m = +el.dataset.mes, fat = moneyToNumber(el.value);
+        if (fat == null) continue;
+        if (temReal([op], ano, m)) { const p = projDe(op, ano, m); if (p && p.linhas && +p.faturamento === fat) continue; }   // mês já realizado: não refaz a projeção congelada
+        const col = projetar(baseDe(ROWS, op, b.de, b.ate), fat);
+        linhas.push({ operacao: op, ano, mes: m, faturamento: fat, base_de: b.de, base_ate: b.ate, linhas: linhasParaCongelar(col), congelado_em: new Date().toISOString(), atualizado_em: new Date().toISOString() });
+      }
+      if (!linhas.length) return toast('Nada para salvar.', 'green');
+      const { error } = await sb.from('dre_projecao').upsert(linhas, { onConflict: 'operacao,ano,mes' });
+      if (error) return toast('Erro ao salvar: ' + error.message, 'red');
+      await carregar(ano); toast('Projeção salva e congelada.', 'green'); render();
+    }
+
+    function render() {
+      const ano = +g('sel-ano').value, ops = opsSel();
+      renderEntrada(ano);
+      const b = basePadrao(ops, ano);
+      // Tabela 1 — realizado do período-base (valores e índices)
+      if (!b) { g('tb1').innerHTML = '<tr><td class="l"><div class="vazio">Sem DRE lançado em ' + ano + '.</div></td></tr>'; g('t1-per').textContent = ''; }
+      else {
+        g('t1-per').textContent = rotPer(b.de, b.ate);
+        const real = colReal(ops, ano, b.de % 100, b.ate % 100), n = b.ate % 100 - b.de % 100 + 1;
+        const media = { fat: real.fat / n, itens: Object.fromEntries(Object.entries(real.itens).map(([k, it]) => [k, { ...it, valor: it.valor / n }])) };
+        g('tb1').innerHTML = cascataHtml([{ titulo: 'Realizado ' + rotPer(b.de, b.ate), col: real }, { titulo: 'Média mensal', col: media }]);
+      }
+      // Tabela 2 — exercício: meses realizados + meses projetados (o que ainda não tem DRE)
+      document.querySelectorAll('.t2-ano').forEach(e => { e.textContent = ano; });
+      const mp = mesesProj(ano);
+      let ultimoReal = 0; for (let m = 1; m <= 12; m++) if (temReal(ops, ano, m)) ultimoReal = m;
+      const pendentes = mp.filter(m => m > ultimoReal);
+      const cols = [];
+      if (ultimoReal) cols.push({ titulo: 'Realizado ' + rotPer(ano * 100 + 1, ano * 100 + ultimoReal), col: colReal(ops, ano, 1, ultimoReal) });
+      pendentes.forEach(m => { const c = colProjetada(ops, ano, m); if (c) cols.push({ titulo: rotMes(ano, m) + ' projetado', col: c }); });
+      const faltam = Array.from({ length: 12 }, (_, i) => i + 1).filter(m => m > ultimoReal && !pendentes.includes(m));
+      g('t2-aviso').innerHTML = faltam.length ? '<div class="aviso">Sem realizado nem projeção para ' + faltam.map(m => MES_C[m - 1]).join(', ') + ' — o exercício fica incompleto.</div>' : '';
+      if (cols.length) cols.push({ titulo: 'Exercício ' + ano, col: somarColunas(cols.map(c => c.col)) });
+      g('tb2').innerHTML = cols.length ? cascataHtml(cols, { regra: pendentes.length > 0 }) : '';
+      // Tabela 3 — previsto × realizado dos meses projetados que já têm DRE
+      const fechados = mp.filter(m => temReal(ops, ano, m));
+      g('t3').innerHTML = !fechados.length ? '<div class="vazio">' + (mp.length ? 'Nenhum mês projetado tem DRE lançado ainda (' + mp.map(m => rotMes(ano, m)).join(', ') + '). Quando o DRE for lançado, a comparação aparece aqui.' : 'Nenhum mês projetado em ' + ano + '.') + '</div>'
+        : fechados.map(m => {
+          const prev = colProjetada(ops, ano, m), real = colReal(ops, ano, m, m);
+          if (!prev) return '';
+          const dif = { fat: real.fat - prev.fat, itens: {} };
+          new Set([...Object.keys(prev.itens), ...Object.keys(real.itens)]).forEach(k => { const it = prev.itens[k] || real.itens[k]; dif.itens[k] = { ...it, valor: ((real.itens[k] || {}).valor || 0) - ((prev.itens[k] || {}).valor || 0) }; });
+          return '<div class="panel-head" style="margin-top:6px"><span>' + rotMes(ano, m) + '</span></div><div class="scroll"><table class="t">' +
+            cascataHtml([{ titulo: 'Previsto', col: prev }, { titulo: 'Realizado', col: real }, { titulo: 'Diferença', col: dif, pct: false }]) + '</table></div>';
+        }).join('');
+    }
+
+    function toast(msg, cor) { const t = g('toast'); t.textContent = msg; t.className = 'toast visible ' + (cor || 'green'); clearTimeout(toast._t); toast._t = setTimeout(() => { t.className = 'toast'; }, 3200); }
+
+    (async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      const prof = (rows && rows[0]) || null;
+      if (!prof || !(prof.is_admin || prof.can_dre !== false)) return window.location.replace('/');
+      SafiSidebar.apply('dp', prof, { email: data.session.user.email, sb });
+      podeEditar = !!(prof.is_admin || prof.can_lancamentos);
+      const anoAtual = new Date().getFullYear();
+      g('sel-ano').innerHTML = [anoAtual + 1, anoAtual, anoAtual - 1].map(a => '<option' + (a === anoAtual ? ' selected' : '') + '>' + a + '</option>').join('');
+      try { await carregar(anoAtual); } catch (e) { g('dp-loading').textContent = 'Erro ao carregar: ' + e.message; return; }
+      opsVis = OPS.filter(op => ROWS.some(r => r.operacao === op));
+      if (!opsVis.length) opsVis = OPS.slice();
+      g('sel-op').innerHTML = (opsVis.length > 1 ? '<option value="todas">Consolidado</option>' : '') + opsVis.map(op => '<option value="' + op + '">' + OP_NOME[op] + '</option>').join('');
+      g('sel-op').addEventListener('change', render);
+      g('sel-ano').addEventListener('change', async () => { try { await carregar(+g('sel-ano').value); } catch (e) { return toast('Erro ao carregar: ' + e.message, 'red'); } render(); });
+      g('dp-loading').style.display = 'none';
+      g('dp-main').style.display = 'block';
+      render();
+    })();
+  </script>
+</body>
+</html>

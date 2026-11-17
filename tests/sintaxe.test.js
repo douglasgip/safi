@@ -23,6 +23,48 @@ for (const arq of ['sidebar.js', 'ajuda.js', 'ajuda-conteudo.js', 'pdf.js', 'pdf
   });
 }
 
+// Regressão (17/11/2026, Cascata): "const esc" na tela + "function esc" no user-menu.js = SyntaxError
+// "Identifier already declared" e tela em branco — o teste de sintaxe acima olha cada script sozinho e não pega.
+// Regra do navegador: o mesmo nome de topo em dois scripts da página só pode se os dois forem function/var.
+function nomesDeTopo(codigo) {
+  const linhas = codigo.split(/\r?\n/).filter(l => l.trim() && !/^\s*(\/\/|\*|\/\*)/.test(l));
+  const ind = Math.min(...linhas.map(l => l.match(/^\s*/)[0].length));
+  const out = [];
+  for (const l of linhas) {
+    if (l.match(/^\s*/)[0].length !== ind) continue;
+    const m = /^\s*(?:async\s+)?(function|var|let|const|class)\s+([A-Za-z_$][\w$]*)/.exec(l);
+    if (m) out.push({ nome: m[2], tipo: m[1] });
+  }
+  return out;
+}
+function conflitosDaPagina(html) {
+  const decl = new Map(), conflitos = [];
+  scriptsDaPagina(html).forEach((s, i) => {
+    let codigo = s.codigo, origem = 'script ' + i;
+    if (s.src) {
+      const arq = s.src.replace(/^\//, '');
+      if (/^https?:/.test(s.src) || !fs.existsSync(caminho(arq))) return;
+      codigo = ler(arq); origem = arq;
+    }
+    if (!codigo.trim()) return;
+    for (const d of nomesDeTopo(codigo)) {
+      const ant = decl.get(d.nome);
+      if (ant && ant.origem !== origem && (/let|const|class/.test(d.tipo) || /let|const|class/.test(ant.tipo))) conflitos.push(d.nome + ' (' + ant.origem + ' e ' + origem + ')');
+      if (!ant) decl.set(d.nome, { ...d, origem });
+    }
+  });
+  return conflitos;
+}
+for (const pagina of paginas) {
+  test(`nomes de topo de ${pagina} não colidem com os scripts compartilhados`, () => {
+    assert.deepStrictEqual(conflitosDaPagina(ler(pagina)), []);
+  });
+}
+test('o detector de colisão pega "const esc" numa tela que carrega o user-menu.js', () => {
+  const html = '<script src="/user-menu.js"></script><script>\n    const esc = s => s;\n    const ok = 1;\n</script>';
+  assert.deepStrictEqual(conflitosDaPagina(html), ['esc (user-menu.js e script 1)']);
+});
+
 test('vercel.json é JSON válido', () => {
   assert.doesNotThrow(() => JSON.parse(ler('vercel.json')));
 });

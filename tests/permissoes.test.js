@@ -32,7 +32,7 @@ const home = ler('index.html');
 const ajuda = ler('ajuda-conteudo.js');
 const SEM_CARD = new Set(['home', 'geronia']);
 // Lançamentos é aberto pelo alternador do DRE, não tem linha própria no menu.
-const FORA_DO_MENU = new Set(['lancamentos']);
+const FORA_DO_MENU = new Set(['lancamentos', 'cascata']);
 // Telas temporárias (setor "Temporária", só para apresentação): ficam no menu, mas sem card na Home nem ajuda.
 const TEMPORARIAS = new Set(Object.keys(ITEMS).filter(k => ITEMS[k].temp));
 

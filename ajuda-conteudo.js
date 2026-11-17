@@ -240,6 +240,22 @@ window.SAFI_AJUDA = { telas: {
     ],
   },
 
+  cascata: {
+    titulo: 'Cascata de Lucratividade', versao: 1,
+    resumo: 'O DRE <b>em cascata</b>, com o valor e o <b>índice</b> (% do faturamento) de cada linha, e a <b>projeção</b> dos próximos meses a partir do faturamento previsto — para fechar a visão do exercício e servir de base para o Budget do ano seguinte. Depois, compara o <b>previsto × realizado</b> mês a mês.',
+    passos: [
+      { t: 'Escolha ano e operação', d: 'Exposição Paulista, Via Closet, E-commerce (GIP) ou o Consolidado (soma das três, cada uma projetada com os próprios índices).' },
+      { t: 'Informe o faturamento projetado', d: 'No quadro do topo, por operação e mês. Para projetar outro mês, use <b>+ mês projetado</b>. Clique em <b>Salvar e congelar projeção</b>: o SAFI calcula as linhas com o DRE do período-base daquele momento e guarda — é essa projeção que será comparada com o realizado.' },
+      { t: 'Tabela 1 — realizado', d: 'O DRE do período-base (de janeiro até o último mês lançado antes da projeção), com R$, % do faturamento e a média mensal.' },
+      { t: 'Tabela 2 — exercício', d: 'Meses realizados + meses projetados = o ano inteiro, com R$ e %. Cada linha projetada mostra a regra usada.' },
+      { t: 'Tabela 3 — previsto × realizado', d: 'Quando o DRE de um mês projetado é lançado, aparece a comparação linha a linha (previsto, realizado e diferença).' },
+    ],
+    dicas: ['<b>Deduções e custos variáveis</b> (impostos, taxas, CMV, frete, comissões...) seguem o % do faturamento do período-base: faturou mais, sobem junto.', '<b>Gastos operacionais</b> (pessoal, ocupação, administrativas, retiradas...) usam a média mensal do período-base: não acompanham o faturamento.', 'Mês que já tem DRE lançado entra no exercício como realizado, e a projeção dele vai para a Tabela 3.'],
+    naoFaz: ['Não altera o DRE nem o Budget: o faturamento projetado é guardado só aqui.', 'Não projeta sazonalidade de custos (ex.: 13º salário em dezembro) — a média mensal é a mesma para todo mês.'],
+    termos: [{ t: 'Índice', d: 'Valor da linha ÷ faturamento do mesmo período.' }, { t: 'Período-base', d: 'Meses realizados usados para calcular os índices e as médias (ex.: jan–out/2026).' }, { t: 'Congelar', d: 'Guardar a projeção como estava no dia do salvamento, para a comparação com o realizado não mudar se o DRE da base for corrigido depois.' }],
+    quemVe: 'Quem tem acesso ao DRE, limitado às operações liberadas. O faturamento projetado só é alterado por quem tem acesso a Lançamentos.',
+    dados: 'DRE (Lançamentos) e o faturamento projetado digitado nesta tela.',
+  },
   bi: {
     titulo: 'BI das Lojas', versao: 5,
     resumo: 'Os <b>KPIs do dia a dia</b> de cada operação (Exposição Paulista, Via Closet e E-commerce): faturamento × meta, ritmo e projeção do mês, margem, ticket médio, peças por atendimento e quantidade de vendas. Espelha a planilha "KPI\'s Lojas" do Guilherme.',
