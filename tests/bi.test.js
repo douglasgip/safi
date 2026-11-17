@@ -181,3 +181,25 @@ test('cartões com nomes específicos: a meta atingida tem cartão próprio, em 
   assert.doesNotMatch(codigo, /l: 'Ritmo × meta'/, 'nome antigo, que confundia com o atingimento');
   assert.ok(codigo.includes("'<div class=\"kpi' + (x.d ? ' destaque' : '')"), 'a linha de cima (faturamento, meta, ritmo, projeção) é destacada');
 });
+
+test('semanas do mês (segunda a domingo, só os dias do mês) — base do "Distribuir" semanal', () => {
+  const semanasDoMes = extrairFuncao(codigo, 'semanasDoMes', { iso });
+  const s = j(semanasDoMes(2026, 11));
+  assert.strictEqual(s.length, 6);
+  assert.deepStrictEqual(s[0], ['2026-11-01'], '01/11/2026 é domingo: a 1ª semana do mês tem um dia só');
+  assert.deepStrictEqual(s[1], ['2026-11-02', '2026-11-03', '2026-11-04', '2026-11-05', '2026-11-06', '2026-11-07', '2026-11-08']);
+  assert.deepStrictEqual(s[5], ['2026-11-30']);
+});
+
+test('distribuir uma semana: divide entre os dias em que a loja abre naquela semana e não mexe nas outras', () => {
+  const distribuirMeta = extrairFuncao(codigo, 'distribuirMeta', {});
+  const semanasDoMes = extrairFuncao(codigo, 'semanasDoMes', { iso });
+  const diasAbertos = extrairFuncao(codigo, 'diasAbertos', { iso });
+  const abertos = new Set(diasAbertos(2026, 11, true));
+  const semana = semanasDoMes(2026, 11)[4].filter(d => abertos.has(d));   // 23 a 28/11 (sem o domingo 29)
+  assert.strictEqual(semana.length, 6);
+  const d = distribuirMeta(120000, semana);
+  assert.strictEqual(d['2026-11-27'], 20000);
+  assert.strictEqual(d['2026-11-29'], undefined);
+  assert.match(codigo, /data-semana=/, 'cada linha do calendário tem o campo da semana');
+});

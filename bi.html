@@ -89,13 +89,22 @@
     .in:focus { outline: none; border-color: #38bdf8; }
     .meta-dia { font-size: 12.5px; color: #94a3b8; padding-bottom: 10px; }
     .meta-dia b { color: #f8fafc; }
-    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-top: 14px; }
+    .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)) minmax(150px, 1.2fr); gap: 5px; margin-top: 14px; }
+    .cal-w { display: flex; flex-direction: column; gap: 4px; padding: 7px; border-radius: 10px; background: rgba(56,189,248,0.06); border: 1px solid rgba(56,189,248,0.22); }
+    .cal-w .cal-n { color: #7dd3fc; display: flex; justify-content: space-between; gap: 6px; }
+    .cal-w .cal-n b { color: #f8fafc; font-variant-numeric: tabular-nums; }
+    .cal-w-row { display: flex; gap: 4px; }
+    .cal-w input { flex: 1; min-width: 0; padding: 6px 6px; background: rgba(255,255,255,0.05); border: 1px solid rgba(56,189,248,0.3); border-radius: 7px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .cal-w input:focus { outline: none; border-color: #38bdf8; }
+    .cal-w input::placeholder { color: #64748b; }
+    .cal-w button { padding: 0 8px; border-radius: 7px; border: 1px solid rgba(56,189,248,0.45); background: rgba(56,189,248,0.14); color: #7dd3fc; font-family: Inter, sans-serif; font-size: 11px; font-weight: 800; cursor: pointer; }
+    .cal-w button:hover { background: rgba(56,189,248,0.25); }
     .cal-h { font-size: 10px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .6px; text-align: center; padding-bottom: 2px; }
-    .cal-d { display: flex; flex-direction: column; gap: 4px; padding: 7px; border-radius: 10px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); }
+    .cal-d { display: flex; flex-direction: column; gap: 4px; padding: 6px 5px; min-width: 0; border-radius: 10px; background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06); }
     .cal-d.vazio { background: transparent; border-color: transparent; }
     .cal-d.dom { opacity: .7; }
     .cal-n { font-size: 11px; font-weight: 800; color: #94a3b8; }
-    .cal-d input { width: 100%; padding: 6px 7px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
+    .cal-d input { width: 100%; min-width: 0; padding: 6px 4px; letter-spacing: -0.2px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 7px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; }
     .cal-d input:focus { outline: none; border-color: #38bdf8; }
     .cal-d input.chg { border-color: rgba(251,191,36,0.6); }
     .cal-d input::placeholder { color: #475569; }
@@ -104,7 +113,7 @@
     .or-dirty { font-size: 11.5px; font-weight: 700; color: #fcd34d; display: none; } .or-dirty.on { display: inline; }
     .btn-ghost { padding: 10px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
     .btn-ghost:hover { background: rgba(255,255,255,0.09); }
-    @media (max-width: 700px) { .cal { grid-template-columns: repeat(2, 1fr); } .cal-h, .cal-d.vazio { display: none; } }
+    @media (max-width: 700px) { .cal { grid-template-columns: repeat(2, 1fr); } .cal-h, .cal-d.vazio { display: none; } .cal-w { grid-column: 1 / -1; } }
     .btn-primary { padding: 10px 20px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
     .btn-primary:disabled { opacity: .6; cursor: default; }
     .note { font-size: 11.5px; color: #64748b; margin-top: 10px; line-height: 1.6; }
@@ -316,6 +325,18 @@
     function diasAbertos(ano, mes, loja) {
       const out = [], total = new Date(ano, mes, 0).getDate();
       for (let d = 1; d <= total; d++) { const x = new Date(ano, mes - 1, d); if (!loja || x.getDay() !== 0) out.push(iso(x)); }
+      return out;
+    }
+    // Semanas do mês, de segunda a domingo, só com os dias do próprio mês (a 1ª e a última podem ser curtas).
+    function semanasDoMes(ano, mes) {
+      const out = [], total = new Date(ano, mes, 0).getDate();
+      let atual = [];
+      for (let d = 1; d <= total; d++) {
+        const x = new Date(ano, mes - 1, d);
+        atual.push(iso(x));
+        if (x.getDay() === 0) { out.push(atual); atual = []; }
+      }
+      if (atual.length) out.push(atual);
       return out;
     }
     // Divide um total igualmente entre as datas, em centavos; a sobra de centavo vai para os primeiros dias.
@@ -538,18 +559,23 @@
       for (let d = 1; d <= total; d++) { const s = iso(new Date(ano, mes - 1, d)); const v = metaDia(op, s); if (v != null) metaOrig[s] = v; }
       metaEdit = { ...metaOrig };
       const pode = podeMeta();
-      const vazio = (new Date(ano, mes - 1, 1).getDay() + 6) % 7;   // semana começa na segunda
-      let h = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map(x => '<div class="cal-h">' + x + '</div>').join('');
-      for (let i = 0; i < vazio; i++) h += '<div class="cal-d vazio"></div>';
-      for (let d = 1; d <= total; d++) {
-        const s = iso(new Date(ano, mes - 1, d)), wd = new Date(ano, mes - 1, d).getDay();
-        h += '<div class="cal-d' + (wd === 0 ? ' dom' : '') + '"><span class="cal-n">' + String(d).padStart(2, '0') + ' · ' + DIAS_CURTO[wd] + '</span>' +
-          '<input data-dia="' + s + '" inputmode="decimal" placeholder="sem meta" value="' + (metaEdit[s] != null ? numberToMoneyMasked(metaEdit[s]) : '') + '"' + (pode ? '' : ' disabled') + ' aria-label="Meta de ' + d + '/' + mes + '"></div>';
-      }
+      let h = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom', 'Semana'].map(x => '<div class="cal-h">' + x + '</div>').join('');
+      semanasDoMes(ano, mes).forEach((sem, i) => {
+        const pos = d => (dt(d).getDay() + 6) % 7;   // 0 = segunda
+        for (let k = 0; k < pos(sem[0]); k++) h += '<div class="cal-d vazio"></div>';
+        sem.forEach(s => {
+          const wd = dt(s).getDay(), d = +s.slice(8);
+          h += '<div class="cal-d' + (wd === 0 ? ' dom' : '') + '"><span class="cal-n">' + String(d).padStart(2, '0') + ' · ' + DIAS_CURTO[wd] + '</span>' +
+            '<input data-dia="' + s + '" inputmode="decimal" placeholder="sem meta" value="' + (metaEdit[s] != null ? numberToMoneyMasked(metaEdit[s]) : '') + '"' + (pode ? '' : ' disabled') + ' aria-label="Meta de ' + d + '/' + mes + '"></div>';
+        });
+        for (let k = pos(sem[sem.length - 1]) + 1; k < 7; k++) h += '<div class="cal-d vazio"></div>';
+        h += '<div class="cal-w"><span class="cal-n">' + (i + 1) + 'ª semana <b data-tot-semana="' + i + '"></b></span>' +
+          (pode ? '<div class="cal-w-row"><input data-semana="' + i + '" inputmode="decimal" placeholder="R$ da semana" aria-label="Meta da ' + (i + 1) + 'ª semana"><button type="button" data-dist-semana="' + i + '" title="Divide igualmente entre os dias em que a loja abre nesta semana">Distribuir</button></div>' : '') + '</div>';
+      });
       g('cal').innerHTML = h;
       g('cal').querySelectorAll('input').forEach(el => attachMoneyMask(el));
       ['mt-dist', 'btn-dist', 'btn-meta'].forEach(id => { g(id).style.display = pode ? '' : 'none'; });
-      g('meta-nota').textContent = (pode ? '' : 'Só quem tem a permissão Budget altera as metas. ') + 'Deixe em branco os dias sem meta (feriado, loja fechada). "Distribuir pelos dias" divide um valor igualmente entre os dias em que a loja abre (' + (LOJA[op] ? 'segunda a sábado' : 'todos os dias') + ') — depois ajuste os dias especiais, como a Black Friday.';
+      g('meta-nota').textContent = (pode ? '' : 'Só quem tem a permissão Budget altera as metas. ') + 'Deixe em branco os dias sem meta (feriado, loja fechada). "Distribuir pelos dias" divide a meta do mês, e o "Distribuir" de cada semana divide o valor da semana, igualmente entre os dias em que a loja abre (' + (LOJA[op] ? 'segunda a sábado' : 'todos os dias') + ') — depois ajuste os dias especiais, como a Black Friday.';
       atualizarTotalMeta();
     }
     function atualizarTotalMeta() {
@@ -558,8 +584,29 @@
       g('mt-ndias').textContent = vals.length ? vals.length + (vals.length === 1 ? ' dia com meta' : ' dias com meta') : '';
       const sujo = Object.keys({ ...metaEdit, ...metaOrig }).filter(k => metaEdit[k] !== metaOrig[k]);
       g('mt-dirty').classList.toggle('on', sujo.length > 0);
-      g('cal').querySelectorAll('input').forEach(el => el.classList.toggle('chg', metaEdit[el.dataset.dia] !== metaOrig[el.dataset.dia]));
+      g('cal').querySelectorAll('input[data-dia]').forEach(el => el.classList.toggle('chg', metaEdit[el.dataset.dia] !== metaOrig[el.dataset.dia]));
+      const [ano, mes] = g('mt-mes').value.split('-').map(Number);
+      semanasDoMes(ano, mes).forEach((sem, i) => {
+        const el = g('cal').querySelector('[data-tot-semana="' + i + '"]'); if (!el) return;
+        const v = sem.filter(d => metaEdit[d] != null);
+        el.textContent = v.length ? brl0(v.reduce((a, d) => a + metaEdit[d], 0)) : '';
+      });
     }
+    g('cal').addEventListener('click', e => {
+      const b = e.target.closest('[data-dist-semana]'); if (!b) return;
+      const i = +b.dataset.distSemana;
+      const total = moneyToNumber(g('cal').querySelector('input[data-semana="' + i + '"]').value);
+      if (!(total > 0)) return showToast('Informe o valor da semana para distribuir.', 'red');
+      const op = g('mt-op').value, [ano, mes] = g('mt-mes').value.split('-').map(Number);
+      const abertos = new Set(diasAbertos(ano, mes, LOJA[op]));
+      const sem = semanasDoMes(ano, mes)[i], dias = sem.filter(d => abertos.has(d));
+      if (!dias.length) return showToast('Nesta semana a loja não abre (só domingo).', 'red');
+      const dist = distribuirMeta(total, dias);
+      sem.forEach(d => { if (dist[d] != null) metaEdit[d] = dist[d]; else delete metaEdit[d]; });
+      sem.forEach(d => { const el = g('cal').querySelector('input[data-dia="' + d + '"]'); if (el) el.value = metaEdit[d] != null ? numberToMoneyMasked(metaEdit[d]) : ''; });
+      atualizarTotalMeta();
+      showToast((i + 1) + 'ª semana distribuída em ' + dias.length + (dias.length === 1 ? ' dia' : ' dias') + '. Ajuste se quiser e clique em Salvar metas.', 'green');
+    });
     g('cal').addEventListener('input', e => {
       const el = e.target.closest('input[data-dia]'); if (!el) return;
       const v = moneyToNumber(el.value);
