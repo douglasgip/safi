@@ -134,7 +134,7 @@ test('ligação na tela: painel, botão de balanço, script e opção do PDF', (
   assert.match(html, /id="panel-ind"/);
   assert.match(html, /id="ind-modal"/);
   const codigo = scriptsDaPagina(html).map(s => s.codigo).join('\n');
-  assert.match(codigo, /renderIndicadores\(ops, ano, mes\)/);
+  assert.match(codigo, /renderIndicadores\(ops, meses, rot\)/);
   assert.match(codigo, /indCarregar\(y\)/);
   assert.match(codigo, /id: 'indicadores'/);
   assert.match(codigo, /indPodeEditar = !!prof\.is_admin/);

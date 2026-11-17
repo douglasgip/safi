@@ -91,7 +91,7 @@ test('compras no Conselho: previstas × realizadas por operação, só das que t
 test('bloco Metas e Orçamento está na tela, no render e no PDF', () => {
   const html = ler('conselho.html');
   assert.match(html, /id="panel-mo"/);
-  assert.match(codigo, /renderMetasOrc\(ops, ano, mes\)/);
+  assert.match(codigo, /renderMetasOrc\(ops, ano, mes, meses, rot\)/);
   assert.match(codigo, /from\('orcamento_mensal'\)\.select\('operacao,ano,mes,compras_previstas,compras_realizadas'\)/);
   assert.doesNotMatch(codigo, /conselho_orcamento_campos/, 'RPC antigo (orçamento de gastos) foi apagado');
   assert.match(codigo, /id: 'metasorc'/);

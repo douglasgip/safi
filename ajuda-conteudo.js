@@ -201,11 +201,11 @@ window.SAFI_AJUDA = { telas: {
   },
 
   conselho: {
-    titulo: 'Painel do Conselho', versao: 9,
+    titulo: 'Painel do Conselho', versao: 10,
     resumo: 'Visão consolidada para o conselho: <b>Faturamento, Receita Líquida, Margem de Contribuição, Gastos Operacionais, EBITDA e Resultado Líquido</b>, com comparativos, evolução de 12 meses, ponte do EBITDA, a <b>cascata de rentabilidade e custos</b> (Margem Bruta, CMV, pessoal, despesas financeiras, tudo em R$ e % do faturamento) e indicadores de Pessoas (admissões, desligamentos, turnover, produtividade por funcionário). Traz também os <b>Indicadores do conselho</b> nos 6 pilares (PME, ciclo financeiro, NCG, liquidez, estrutura de capital, financiamento do estoque...), calculados com o DRE e o balanço lançado a cada trimestre.',
     passos: [
-      { t: 'Escolha mês e operação', d: 'Nos filtros do topo. O mês padrão é o mais recente com dados.' },
-      { t: 'Escolha a base de comparação', d: '<b>Mês anterior</b>, <b>mesmo mês do ano anterior</b>, <b>média dos 12 meses</b> ou <b>melhor mês</b> (por EBITDA) dos últimos 12.' },
+      { t: 'Escolha o período e a operação', d: 'Em <b>Período</b>: um mês, <b>acumulado do ano (YTD)</b>, trimestre até o mês, últimos 3 ou 12 meses, ano inteiro ou <b>meses específicos</b> (marque quantos quiser, até de anos diferentes). Todo o painel soma os meses escolhidos. O mês padrão é o mais recente com dados.' },
+      { t: 'Escolha a base de comparação', d: 'Com um mês: <b>mês anterior</b>, <b>mesmo mês do ano anterior</b>, <b>média dos 12 meses</b> ou <b>melhor mês</b> (por EBITDA) dos últimos 12. Com mais de um mês: <b>período anterior</b> do mesmo tamanho ou <b>mesmo período do ano anterior</b>.' },
       { t: 'Leia os indicadores', d: 'Cada cartão mostra o valor, a variação (verde = melhor, vermelho = pior) e, quando lançados em Budget, o atingimento da <b>meta</b> no Faturamento (a meta é a venda prevista).' },
       { t: 'Acompanhe metas e orçamento', d: 'O bloco <b>Metas e Orçamento</b> mostra o progresso da meta de vendas (venda prevista no Budget × faturamento do DRE) no mês, no trimestre e no ano (a marca amarela é quanto do período já passou) e as compras previstas × realizadas por operação, no mês e no acumulado do ano. Só entram as operações que têm valores lançados em Budget.' },
       { t: 'Entenda o que mudou', d: 'A <b>ponte do EBITDA</b> mostra quanto cada linha (receita, deduções, custos, gastos) somou ou subtraiu entre a base e o mês.' },

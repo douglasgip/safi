@@ -217,6 +217,17 @@
     #tbl-rentab tr td.up-bad, #tbl-rentab tr td.dn-bad { color: #fca5a5; }
     #tbl-rentab tr td.neutro { color: #94a3b8; }
     #co-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    /* Filtro de período: meses específicos */
+    .co-esp-wrap { position: relative; }
+    .co-esp { display: none; position: absolute; right: 0; top: calc(100% + 6px); z-index: 150; width: 300px; max-height: 360px; overflow-y: auto; background: rgba(12,16,30,0.98); border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 12px; box-shadow: 0 18px 40px rgba(0,0,0,0.6); }
+    .co-esp.open { display: block; }
+    .co-esp-ano { font-size: 10.5px; font-weight: 800; letter-spacing: 1px; color: #7dd3fc; margin: 6px 0 6px; }
+    .co-esp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px; }
+    .co-esp-grid label { display: flex; align-items: center; justify-content: center; gap: 4px; padding: 7px 0; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); font-size: 12px; font-weight: 700; color: #94a3b8; cursor: pointer; }
+    .co-esp-grid input { display: none; }
+    .co-esp-grid label.on { background: rgba(56,189,248,0.16); border-color: rgba(56,189,248,0.45); color: #e0f2fe; }
+    .co-esp-acoes { display: flex; gap: 8px; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 10px; }
+    .co-esp-acoes button { padding: 7px 10px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 11.5px; font-weight: 700; cursor: pointer; }
     /* Indicadores do conselho (modelo do Aldemar) */
     .ind-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
     .ind-head .panel-head { margin-bottom: 0; }
@@ -285,7 +296,18 @@
         <div class="fe-toolbar-sub" id="co-sub">Visão consolidada do resultado, com comparativos e EBITDA.</div>
       </div>
       <div class="co-filters">
-        <div class="f"><label for="sel-mes">Mês</label><select class="fe-select" id="sel-mes"></select></div>
+        <div class="f"><label for="sel-per">Período</label>
+          <select class="fe-select" id="sel-per">
+            <option value="mes">Um mês</option>
+            <option value="ytd">Acumulado do ano (YTD)</option>
+            <option value="tri">Trimestre até o mês</option>
+            <option value="u3">Últimos 3 meses</option>
+            <option value="u12">Últimos 12 meses</option>
+            <option value="ano">Ano inteiro</option>
+            <option value="esp">Meses específicos…</option>
+          </select></div>
+        <div class="f" id="f-mes"><label for="sel-mes" id="lbl-mes">Mês</label><select class="fe-select" id="sel-mes"></select></div>
+        <div class="f co-esp-wrap" id="f-esp" style="display:none"><label for="btn-esp">Meses</label><button type="button" class="fe-select" id="btn-esp"></button><div class="co-esp" id="co-esp"></div></div>
         <div class="f"><label for="sel-cmp">Comparar com</label>
           <select class="fe-select" id="sel-cmp">
             <option value="anterior">Mês anterior</option>
@@ -427,7 +449,7 @@
     const zero = () => ({ rb: 0, ded: 0, cv: 0, go: 0, df: 0, ir: 0, cmv: 0, pessoal: 0 });
     function somar(a, b) { Object.keys(a).forEach(x => { a[x] += (b[x] || 0); }); return a; }
 
-    function realizado(ops, ano, mes) {
+    function brutoDoMes(ops, ano, mes) {
       const acc = zero(); let tem = false;
       ops.forEach(op => {
         const r = porChave[op + '|' + ano + '|' + mes]; if (!r) return;
@@ -435,7 +457,51 @@
         somar(acc, { rb: +r.receita_bruta, ded: +r.deducoes, cv: +r.custos_variaveis, go: +r.gastos_operacionais, df: +r.desp_financeiras, ir: +r.ir_csll, cmv: +d.cmv || 0, pessoal: +d.pessoal || 0 });
         if (+r.receita_bruta || +r.custos_variaveis || +r.gastos_operacionais) tem = true;
       });
+      return { acc, tem };
+    }
+    function realizado(ops, ano, mes) { const b = brutoDoMes(ops, ano, mes); return b.tem ? snap(b.acc) : null; }
+
+    // ── Período do filtro: um mês, YTD, trimestre, últimos 3/12, ano inteiro ou meses específicos ──
+    // Sempre uma lista ordenada de { ano, mes }; tudo no painel soma os meses dessa lista.
+    const idxM = p => p.ano * 12 + p.mes - 1;
+    const deIdx = i => ({ ano: Math.floor(i / 12), mes: (i % 12) + 1 });
+    function mesesDoPeriodo(tipo, ano, mes, esp) {
+      const ate = idxM({ ano, mes });
+      const faixa = de => { const out = []; for (let i = de; i <= ate; i++) out.push(deIdx(i)); return out; };
+      if (tipo === 'ytd') return faixa(idxM({ ano, mes: 1 }));
+      if (tipo === 'tri') return faixa(idxM({ ano, mes: Math.floor((mes - 1) / 3) * 3 + 1 }));
+      if (tipo === 'u3') return faixa(ate - 2);
+      if (tipo === 'u12') return faixa(ate - 11);
+      if (tipo === 'ano') return Array.from({ length: 12 }, (_, i) => ({ ano, mes: i + 1 }));
+      if (tipo === 'esp') { const v = [...new Set((esp || []).map(idxM))].sort((a, b) => a - b).map(deIdx); return v.length ? v : [{ ano, mes }]; }
+      return [{ ano, mes }];
+    }
+    // Período anterior do mesmo tamanho (do 1º ao último mês escolhido), logo antes dele.
+    function periodoAnterior(meses) { const span = idxM(meses[meses.length - 1]) - idxM(meses[0]) + 1; return meses.map(p => deIdx(idxM(p) - span)); }
+    function periodoAnoAnterior(meses) { return meses.map(p => ({ ano: p.ano - 1, mes: p.mes })); }
+    function rotuloPeriodo(meses) {
+      const n = meses.length, a = meses[0], b = meses[n - 1], r = p => MES_CURTO[p.mes - 1] + '/' + p.ano;
+      if (n === 1) return r(a);
+      if (idxM(b) - idxM(a) + 1 === n) return a.ano === b.ano ? MES_CURTO[a.mes - 1] + '–' + r(b) : r(a) + '–' + r(b);
+      const anos = [...new Set(meses.map(p => p.ano))];
+      return anos.length === 1 ? meses.map(p => MES_CURTO[p.mes - 1]).join(', ') + '/' + anos[0] : meses.map(r).join(', ');
+    }
+    function realizadoP(ops, meses) {
+      const acc = zero(); let tem = false;
+      meses.forEach(p => { const b = brutoDoMes(ops, p.ano, p.mes); if (b.tem) { somar(acc, b.acc); tem = true; } });
       return tem ? snap(acc) : null;
+    }
+    // Meta do período = soma das metas dos meses; só existe se TODOS os meses têm meta para todas as operações.
+    function orcadoP(ops, meses) {
+      if (meses.length === 1) return orcado(ops, meses[0].ano, meses[0].mes);
+      let rb = 0;
+      for (const p of meses) { const o = orcado(ops, p.ano, p.mes); if (!o || o.rb == null) return null; rb += o.rb; }
+      return { rb, opex: null };
+    }
+    function baseDeP(modo, ops, meses) {
+      if (meses.length === 1) return baseDe(modo, ops, meses[0].ano, meses[0].mes);
+      const p = modo === 'ano' ? periodoAnoAnterior(meses) : periodoAnterior(meses);
+      const s = realizadoP(ops, p); return s ? { s, rot: rotuloPeriodo(p) } : null;
     }
     // Tela Budget: a venda prevista de cada mês é a meta de faturamento.
     // Cada comparativo só vale quando TODAS as operações do escopo têm o valor lançado no mês.
@@ -483,7 +549,8 @@
         if (!rs.length) return;
         com.push(op);
         meta += rs.reduce((a, r) => a + (+r.meta_receita || 0), 0);
-        real += mesesReal.reduce((a, p) => { const r = porChave[op + '|' + p.ano + '|' + p.mes]; return a + (r ? +r.receita_bruta || 0 : 0); }, 0);
+        // só os meses COM meta entram no realizado (senão a venda de meses sem meta infla o atingimento)
+        real += mesesReal.reduce((a, p) => { const r = porChave[op + '|' + p.ano + '|' + p.mes]; return a + (r && r.tem_meta ? +r.receita_bruta || 0 : 0); }, 0);
       });
       return { meta, real, com, pct: meta ? real / meta : null, falta: Math.max(0, meta - real) };
     }
@@ -507,17 +574,18 @@
     }
     const nomesOps = ops => ops.map(o => OP_NOME[o] || o).join(' + ');
     // Tudo que o bloco mostra (também usado pelo PDF).
-    function dadosMetasOrc(ops, ano, mes) {
+    function dadosMetasOrc(ops, ano, mes, meses, rot) {
+      const per = meses && meses.length > 1;
       const metas = [
-        { l: 'Mês', rot: MESES[mes - 1], r: resumoMetas(ops, [{ ano, mes }], [{ ano, mes }], porChave), tempo: 1 },
+        per ? { l: 'Período', rot, r: resumoMetas(ops, meses, meses, porChave), tempo: 1 } : { l: 'Mês', rot: MESES[mes - 1], r: resumoMetas(ops, [{ ano, mes }], [{ ano, mes }], porChave), tempo: 1 },
         { l: 'Trimestre', rot: Math.ceil(mes / 3) + 'º trimestre', r: resumoMetas(ops, mesesDoTrimestre(ano, mes), mesesDoTrimestre(ano, mes).filter(p => p.mes <= mes), porChave), tempo: (((mes - 1) % 3) + 1) / 3 },
         { l: 'Ano', rot: String(ano), r: resumoMetas(ops, mesesDoAno(ano), mesesAte(ano, mes), porChave), tempo: mes / 12 },
       ];
-      return { metas, cMes: resumoCompras(ops, [{ ano, mes }], orcCompras), cAcum: resumoCompras(ops, mesesAte(ano, mes), orcCompras) };
+      return { metas, cMes: resumoCompras(ops, meses || [{ ano, mes }], orcCompras), cAcum: resumoCompras(ops, mesesAte(ano, mes), orcCompras), rotMes: rot || MES_CURTO[mes - 1] + '/' + ano };
     }
-    function renderMetasOrc(ops, ano, mes) {
-      g('mo-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
-      const D = dadosMetasOrc(ops, ano, mes);
+    function renderMetasOrc(ops, ano, mes, meses, rot) {
+      g('mo-periodo').textContent = rot || MESES[mes - 1] + ' / ' + ano;
+      const D = dadosMetasOrc(ops, ano, mes, meses, rot);
       const temMeta = D.metas[2].r.com.length > 0;
       let h = '<div class="mo-sub">Meta de vendas × faturamento do DRE</div>';
       if (!temMeta) h += '<div class="mo-vazio">Nenhuma venda prevista lançada para ' + ano + '. Lance em <a href="/orcamento">Budget</a> (coluna Vendas previstas).</div>';
@@ -540,7 +608,7 @@
         const lin = (nome, m, a, cls) => '<tr class="' + (cls || '') + '"><td class="l">' + esc(nome) + '</td>' +
           '<td class="sep">' + (m.prev ? brl(m.prev) : '—') + '</td><td>' + brl(m.real) + '</td><td>' + uso(m.prev, m.real) + '</td>' +
           '<td class="sep">' + (a.prev ? brl(a.prev) : '—') + '</td><td>' + brl(a.real) + '</td><td>' + uso(a.prev, a.real) + '</td></tr>';
-        t += '<div class="table-scroll" style="max-height:none"><table class="mo-tbl"><thead><tr class="grp"><th class="l"></th><th class="sep" colspan="3">' + MES_CURTO[mes - 1] + '/' + ano + '</th><th class="sep" colspan="3">Jan–' + MES_CURTO[mes - 1] + '</th></tr>' +
+        t += '<div class="table-scroll" style="max-height:none"><table class="mo-tbl"><thead><tr class="grp"><th class="l"></th><th class="sep" colspan="3">' + D.rotMes + '</th><th class="sep" colspan="3">Jan–' + MES_CURTO[mes - 1] + '</th></tr>' +
           '<tr><th class="l">Operação</th><th class="sep">Previstas</th><th>Realizadas</th><th>% usado</th><th class="sep">Previstas</th><th>Realizadas</th><th>% usado</th></tr></thead><tbody>' +
           D.cAcum.porOp.map(x => lin(OP_NOME[x.op] || x.op, mapaMes[x.op] || { prev: 0, real: 0 }, x)).join('') +
           (D.cAcum.porOp.length > 1 ? lin('Total', D.cMes.tot, D.cAcum.tot, 'tot') : '') + '</tbody></table></div>';
@@ -637,10 +705,10 @@
     }
 
     // ── Tabela por operação ─────────────────────────────────────────────────
-    function renderOps(ano, mes, modo) {
-      g('ops-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
-      const linhas = opsVisiveis.map(op => ({ op, cur: realizado([op], ano, mes), base: baseDe(modo, [op], ano, mes), orc: orcado([op], ano, mes) })).filter(x => x.cur);
-      const tot = { cur: realizado(opsVisiveis, ano, mes), base: baseDe(modo, opsVisiveis, ano, mes), orc: orcado(opsVisiveis, ano, mes) };
+    function renderOps(meses, rot, modo) {
+      g('ops-periodo').textContent = rot;
+      const linhas = opsVisiveis.map(op => ({ op, cur: realizadoP([op], meses), base: baseDeP(modo, [op], meses), orc: orcadoP([op], meses) })).filter(x => x.cur);
+      const tot = { cur: realizadoP(opsVisiveis, meses), base: baseDeP(modo, opsVisiveis, meses), orc: orcadoP(opsVisiveis, meses) };
       const linha = (nome, x, cls) => {
         const d = x.base ? x.cur.ebitda - x.base.s.ebitda : null;
         return '<tr class="' + (cls || '') + '"><td>' + esc(nome) + '</td><td class="num">' + brl(x.cur.rb) + '</td><td class="num">' + pct(x.cur.mcPct) + '</td><td class="num">' + brl(x.cur.ebitda) + '</td><td class="num">' + pct(x.cur.ebitdaPct) + '</td><td class="num">' + brl(x.cur.res) + '</td>' +
@@ -678,8 +746,8 @@
       const bom = row.custo ? pp < 0 : pp > 0;
       return { txt: (pp > 0 ? '▲ ' : '▼ ') + Math.abs(pp).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' p.p.', cor: bom ? 'up-good' : 'dn-bad', pp };
     }
-    function renderRentab(cur, base, ano, mes) {
-      g('rentab-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
+    function renderRentab(cur, base, rot) {
+      g('rentab-periodo').textContent = rot;
       const semDetalhe = !cur.cmv && !cur.pessoal;
       g('tbl-rentab').innerHTML = '<thead><tr><th>Indicador</th><th class="r">R$</th><th class="r">% do faturamento</th><th class="r">' + (base ? 'vs ' + esc(base.rot) : 'Variação') + '</th></tr></thead><tbody>' +
         RENT.map(row => {
@@ -694,38 +762,60 @@
     // EBITDA e Resultado Líquido só diferem se houver Despesas Financeiras ou IR e CSLL lançados.
     function avisoEbitdaIgual(cur) {
       if (!cur || cur.df || cur.ir) return null;
-      return "EBITDA igual ao Resultado Líquido: não há Despesas Financeiras lançadas neste mês (o IR e a CSLL do Simples já estão dentro do DAS e não são separados).";
+      return "EBITDA igual ao Resultado Líquido: não há Despesas Financeiras lançadas no período (o IR e a CSLL do Simples já estão dentro do DAS e não são separados).";
     }
 
+    // Período escolhido nos filtros. ano/mes = último mês do período (referência de trimestre, ano e gráfico de 12 meses).
+    let espSel = [];
+    function periodoSel() {
+      const mesSel = g('sel-mes').value; if (!mesSel) return null;
+      const [a, m] = mesSel.split('-').map(Number);
+      const tipo = g('sel-per').value;
+      const meses = mesesDoPeriodo(tipo, a, m, espSel);
+      const ult = meses[meses.length - 1];
+      return { tipo, meses, ano: ult.ano, mes: ult.mes, rot: rotuloPeriodo(meses) };
+    }
+    // Comparação: com mais de um mês, "anterior" = período anterior do mesmo tamanho; média/melhor de 12 só para um mês.
+    function atualizarCmp(multi) {
+      const sel = g('sel-cmp');
+      sel.querySelector('[value="anterior"]').textContent = multi ? 'Período anterior (mesmo nº de meses)' : 'Mês anterior';
+      sel.querySelector('[value="ano"]').textContent = multi ? 'Mesmo período do ano anterior' : 'Mesmo mês do ano anterior';
+      ['media12', 'melhor12'].forEach(v => { sel.querySelector('[value="' + v + '"]').disabled = multi; });
+      if (multi && /12$/.test(sel.value)) sel.value = 'anterior';
+      CMP_LABEL.anterior = multi ? 'período anterior' : 'mês anterior';
+      CMP_LABEL.ano = multi ? 'mesmo período do ano anterior' : 'mesmo mês do ano anterior';
+    }
     function render() {
-      const mesSel = g('sel-mes').value; if (!mesSel) return;
-      const [ano, mes] = mesSel.split('-').map(Number);
+      const P = periodoSel(); if (!P) return;
+      const { ano, mes, meses, rot } = P;
+      atualizarCmp(meses.length > 1);
       const modo = g('sel-cmp').value;
       const opSel = g('sel-op').value;
       const ops = opSel === 'todas' ? opsVisiveis : [opSel];
-      const cur = realizado(ops, ano, mes);
-      if (!cur) { g('kpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Sem dados para este mês.</div>'; return; }
-      const base = baseDe(modo, ops, ano, mes);
-      const orc = orcado(ops, ano, mes);
+      const cur = realizadoP(ops, meses);
+      if (!cur) { g('kpis').innerHTML = '<div class="empty" style="grid-column:1/-1">Sem dados para este período.</div>'; return; }
+      const base = baseDeP(modo, ops, meses);
+      const orc = orcadoP(ops, meses);
       const note = g('co-note');
       const msgs = [];
       const avisoEb = avisoEbitdaIgual(cur); if (avisoEb) msgs.push(avisoEb);
       if (!base) msgs.push('Sem dados para o comparativo "' + CMP_LABEL[modo] + '" — escolha outra base.');
-      [['tem_meta', 'Meta de vendas']].forEach(([campo, nome]) => {
+      if (meses.length === 1) [['tem_meta', 'Meta de vendas']].forEach(([campo, nome]) => {
         const com = opsCom(campo, ops, ano, mes);
         if (com.length && com.length < ops.length) msgs.push(nome + ' lançado só para ' + com.map(o => OP_NOME[o] || o).join(' + ') + ' neste mês — o comparativo do conjunto não é mostrado; escolha a operação.');
       });
       note.textContent = msgs.join(' '); note.classList.toggle('on', msgs.length > 0);
-      ULTIMO = { ops, ano, mes, modo, opSel, cur, base, orc, msgs };
+      ULTIMO = { ops, ano, mes, meses, rot, modo, opSel, cur, base, orc, msgs };
+      g('co-sub').textContent = 'Visão consolidada do resultado — ' + rot + (meses.length > 1 ? ' (' + meses.length + ' meses somados)' : '') + ', com comparativos e EBITDA.';
       renderKpis(cur, base, orc);
-      renderMetasOrc(ops, ano, mes);
+      renderMetasOrc(ops, ano, mes, meses, rot);
       renderEvolucao(ops, ano, mes);
       renderPonte(cur, base);
       g('panel-ops').style.display = opSel === 'todas' && opsVisiveis.length > 1 ? '' : 'none';
-      renderOps(ano, mes, modo);
-      renderRentab(cur, base, ano, mes);
-      renderPessoas(ops, ano, mes, cur);
-      try { renderIndicadores(ops, ano, mes); } catch (e) { g('ind-corpo').innerHTML = '<div class="empty">Erro ao montar os indicadores: ' + esc(e.message) + '</div>'; }
+      renderOps(meses, rot, modo);
+      renderRentab(cur, base, rot);
+      renderPessoas(ops, meses, rot, cur);
+      try { renderIndicadores(ops, meses, rot); } catch (e) { g('ind-corpo').innerHTML = '<div class="empty">Erro ao montar os indicadores: ' + esc(e.message) + '</div>'; }
     }
 
     // ── Pessoas e produtividade do mês selecionado ───────────────────────────
@@ -733,23 +823,27 @@
     // (não o de época) como referência — o SAFI não guarda o headcount histórico, só os eventos
     // a partir de quando o rastreamento começou. Pelo mesmo motivo, a produtividade por
     // funcionário divide o valor do mês pelo quadro atual (em meses antigos é uma aproximação).
-    function pessoasItens(ops, ano, mes, cur) {
-      let adm = 0, desl = 0, headcount = 0;
-      ops.forEach(op => {
-        const r = turnoverPorChave[op + '|' + ano + '|' + mes];
-        if (r) { adm += r.admissoes; desl += r.desligamentos; }
-        headcount += headcountPorOp[op] || 0;
-      });
+    // Período com mais de um mês: admissões e desligamentos somam o período; produtividade é a média por mês.
+    function pessoasItens(ops, meses, cur) {
+      let adm = 0, desl = 0;
+      const headcount = ops.reduce((a, op) => a + (headcountPorOp[op] || 0), 0);
+      const comT = meses.filter(p => ym(p.ano, p.mes) >= TURNOVER_DESDE);
+      comT.forEach(p => ops.forEach(op => { const r = turnoverPorChave[op + '|' + p.ano + '|' + p.mes]; if (r) { adm += r.admissoes; desl += r.desligamentos; } }));
+      const n = meses.length;
       const q = 'quadro atual: ' + headcount + (headcount === 1 ? ' pessoa' : ' pessoas');
-      const temTurn = ym(ano, mes) >= TURNOVER_DESDE;
+      const temTurn = comT.length > 0;
       const itens = [];
-      if (temTurn) itens.push({ l: 'Admissões', v: String(adm) }, { l: 'Desligamentos', v: String(desl) }, { l: 'Turnover', v: headcount ? pct(((adm + desl) / 2) / headcount) : '—', sub: q, hi: true });
-      if (headcount && cur) itens.push({ l: 'Faturamento por funcionário', v: brl(cur.rb / headcount), sub: q }, { l: 'Margem de contribuição por funcionário', v: brl(cur.mc / headcount), sub: q });
+      const desde = comT.length < n ? ' · conta só ' + rotuloPeriodo(comT) : '';
+      if (temTurn) itens.push({ l: 'Admissões', v: String(adm) }, { l: 'Desligamentos', v: String(desl) }, { l: n > 1 ? 'Turnover no período' : 'Turnover', v: headcount ? pct(((adm + desl) / 2) / headcount) : '—', sub: q + desde, hi: true });
+      if (headcount && cur) {
+        const sub = q + (n > 1 ? ' · média por mês' : '');
+        itens.push({ l: 'Faturamento por funcionário', v: brl(cur.rb / n / headcount), sub }, { l: 'Margem de contribuição por funcionário', v: brl(cur.mc / n / headcount), sub });
+      }
       return { itens, temTurn };
     }
-    function renderPessoas(ops, ano, mes, cur) {
-      g('pessoas-periodo').textContent = MESES[mes - 1] + ' / ' + ano;
-      const { itens, temTurn } = pessoasItens(ops, ano, mes, cur);
+    function renderPessoas(ops, meses, rot, cur) {
+      g('pessoas-periodo').textContent = rot;
+      const { itens, temTurn } = pessoasItens(ops, meses, cur);
       const card = it => '<div class="kpi' + (it.hi ? ' hi' : '') + '"><div class="kpi-l">' + it.l + '</div><div class="kpi-v">' + it.v + '</div>' + (it.sub ? '<div class="kpi-sub">' + it.sub + '</div>' : '') + '</div>';
       g('kpis-pessoas').innerHTML = itens.map(card).join('') +
         (temTurn ? '' : '<div class="empty" style="grid-column:1/-1;padding:10px 16px">O SAFI passou a registrar admissões e desligamentos em 23/09/2026 — não há como reconstruir meses anteriores a esse.</div>');
@@ -762,7 +856,7 @@
     function pdfFiltros() {
       if (!ULTIMO) return [];
       const opTxt = ULTIMO.opSel === 'todas' ? 'Todas as operações (' + opsVisiveis.map(o => OP_NOME[o]).join(', ') + ')' : OP_NOME[ULTIMO.opSel];
-      return [['Mês', MESES[ULTIMO.mes - 1] + ' / ' + ULTIMO.ano], ['Comparar com', CMP_LABEL[ULTIMO.modo]], ['Operação', opTxt]];
+      return [['Período', ULTIMO.rot + (ULTIMO.meses.length > 1 ? ' (' + ULTIMO.meses.length + ' meses somados)' : '')], ['Comparar com', CMP_LABEL[ULTIMO.modo]], ['Operação', opTxt]];
     }
     function kpiItens(U) {
       return KPIS.map(k => {
@@ -786,17 +880,17 @@
       const blocos = [];
       const nomeOps = U.opSel === 'todas' ? 'Todas as operações' : OP_NOME[U.opSel];
       const itens = kpiItens(U);
-      blocos.push({ tipo: 'kpis', opcao: 'kpis', titulo: 'Indicadores - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')', itens });
+      blocos.push({ tipo: 'kpis', opcao: 'kpis', titulo: 'Indicadores - ' + U.rot + ' (' + nomeOps + ')', itens });
       if (sel.opcoes.metasorc) {
-        const D = dadosMetasOrc(U.ops, U.ano, U.mes);
-        if (D.metas[2].r.com.length) blocos.push({ tipo: 'kpis', opcao: 'metasorc', titulo: 'Meta de vendas - ' + MESES[U.mes - 1] + ' / ' + U.ano + (D.metas[2].r.com.length < U.ops.length ? ' (só ' + nomesOps(D.metas[2].r.com) + ')' : ''),
+        const D = dadosMetasOrc(U.ops, U.ano, U.mes, U.meses, U.rot);
+        if (D.metas[2].r.com.length) blocos.push({ tipo: 'kpis', opcao: 'metasorc', titulo: 'Meta de vendas - ' + U.rot + (D.metas[2].r.com.length < U.ops.length ? ' (só ' + nomesOps(D.metas[2].r.com) + ')' : ''),
           itens: D.metas.map(x => ({ l: x.l + ' - ' + x.rot, v: x.r.pct == null ? '-' : pct(x.r.pct), linhas: x.r.meta ? [{ t: brlS(x.r.real) + ' de ' + brlS(x.r.meta) }, { t: x.r.falta ? 'Faltam ' + brlS(x.r.falta) : 'Meta batida', cor: x.r.falta ? null : OK }] : [{ t: 'sem meta lançada' }] })) });
         if (D.cAcum.com.length) {
           const mapaMes = Object.fromEntries(D.cMes.porOp.map(x => [x.op, x]));
           const usoT = (p, r) => p ? pct(r / p) : '-';
           const lin = (nome, m, a, k) => { const cor = {}; if (m.prev && m.real > m.prev) cor[3] = RUIM; if (a.prev && a.real > a.prev) cor[6] = RUIM; return { k, cor, c: [nome, m.prev ? brlS(m.prev) : '-', brlS(m.real), usoT(m.prev, m.real), a.prev ? brlS(a.prev) : '-', brlS(a.real), usoT(a.prev, a.real)] }; };
           blocos.push({ tipo: 'tabela', opcao: 'metasorc', titulo: 'Compras - previstas x realizadas',
-            colunas: [{ h: 'Operação', larg: 2.2 }, { h: 'Previstas ' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.1 }, { h: 'Realizadas ' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.1 }, { h: '% usado', al: 'right', larg: 0.8 }, { h: 'Previstas Jan-' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.2 }, { h: 'Realizadas Jan-' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.2 }, { h: '% usado', al: 'right', larg: 0.8 }],
+            colunas: [{ h: 'Operação', larg: 2.2 }, { h: 'Previstas ' + D.rotMes, al: 'right', larg: 1.1 }, { h: 'Realizadas ' + D.rotMes, al: 'right', larg: 1.1 }, { h: '% usado', al: 'right', larg: 0.8 }, { h: 'Previstas Jan-' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.2 }, { h: 'Realizadas Jan-' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.2 }, { h: '% usado', al: 'right', larg: 0.8 }],
             linhas: D.cAcum.porOp.map(x => lin(OP_NOME[x.op] || x.op, mapaMes[x.op] || { prev: 0, real: 0 }, x, '')).concat(D.cAcum.porOp.length > 1 ? [lin('Total', D.cMes.tot, D.cAcum.tot, 'T')] : []) });
         }
       }
@@ -806,12 +900,12 @@
           const cor = {}; if (vr && Math.abs(vr.pp) >= 0.05) cor[3] = vr.cor === 'up-good' ? OK : RUIM; if (row.k === 'sub' && v < 0) cor[1] = RUIM;
           return { k: row.k === 'sub' ? 'T' : '', cor, c: [row.l.replace(/−/g, '-'), brlS(v), pct(p), vr ? vr.txt.replace('▲', '+').replace('▼', '-') : '-'] };
         });
-        blocos.push({ tipo: 'tabela', opcao: 'rentab', titulo: 'Rentabilidade e custos - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')',
+        blocos.push({ tipo: 'tabela', opcao: 'rentab', titulo: 'Rentabilidade e custos - ' + U.rot + ' (' + nomeOps + ')',
           colunas: [{ h: 'Indicador', larg: 3 }, { h: 'R$', al: 'right', larg: 1.3 }, { h: '% do faturamento', al: 'right', larg: 1.2 }, { h: U.base ? 'vs ' + U.base.rot : 'Variação', al: 'right', larg: 1.2 }], linhas: linhasR });
       }
       if (sel.opcoes.pessoas) {
-        const pp = pessoasItens(U.ops, U.ano, U.mes, U.cur);
-        if (pp.itens.length) blocos.push({ tipo: 'kpis', opcao: 'pessoas', titulo: 'Pessoas e produtividade - ' + MESES[U.mes - 1] + ' / ' + U.ano + ' (' + nomeOps + ')',
+        const pp = pessoasItens(U.ops, U.meses, U.cur);
+        if (pp.itens.length) blocos.push({ tipo: 'kpis', opcao: 'pessoas', titulo: 'Pessoas e produtividade - ' + U.rot + ' (' + nomeOps + ')',
           itens: pp.itens.map(it => ({ l: it.l, v: it.v, linhas: it.sub ? [{ t: it.sub }] : [], barra: it.hi ? [2, 132, 199] : null })) });
       }
       if (sel.opcoes.indicadores) indBlocosPdf(nomeOps).forEach(b => blocos.push(b));
@@ -828,9 +922,9 @@
           const cor = {}; if (x.cur.ebitda < 0) cor[3] = RUIM; if (x.cur.res < 0) cor[5] = RUIM; if (d != null) cor[6] = d >= 0 ? OK : RUIM;
           linhas.push({ k, cor, c: [nome, brlS(x.cur.rb), pct(x.cur.mcPct), brlS(x.cur.ebitda), pct(x.cur.ebitdaPct), brlS(x.cur.res), d == null ? '—' : (d >= 0 ? '+' : '-') + brlS(Math.abs(d)).replace('-', ''), x.orc && x.orc.rb ? pct(x.cur.rb / x.orc.rb) : '—'] });
         };
-        opsVisiveis.forEach(op => { const cur = realizado([op], U.ano, U.mes); if (cur) mk(OP_NOME[op] || op, { cur, base: baseDe(U.modo, [op], U.ano, U.mes), orc: orcado([op], U.ano, U.mes) }); });
-        const tot = realizado(opsVisiveis, U.ano, U.mes); if (linhas.length > 1 && tot) mk('Total', { cur: tot, base: baseDe(U.modo, opsVisiveis, U.ano, U.mes), orc: orcado(opsVisiveis, U.ano, U.mes) }, 'T');
-        blocos.push({ tipo: 'tabela', opcao: 'ops', titulo: 'Por operação - ' + MESES[U.mes - 1] + ' / ' + U.ano,
+        opsVisiveis.forEach(op => { const cur = realizadoP([op], U.meses); if (cur) mk(OP_NOME[op] || op, { cur, base: baseDeP(U.modo, [op], U.meses), orc: orcadoP([op], U.meses) }); });
+        const tot = realizadoP(opsVisiveis, U.meses); if (linhas.length > 1 && tot) mk('Total', { cur: tot, base: baseDeP(U.modo, opsVisiveis, U.meses), orc: orcadoP(opsVisiveis, U.meses) }, 'T');
+        blocos.push({ tipo: 'tabela', opcao: 'ops', titulo: 'Por operação - ' + U.rot,
           colunas: [{ h: 'Operação', larg: 1.7 }, { h: 'Faturamento', al: 'right', larg: 1.3 }, { h: 'Margem contrib. %', al: 'right', larg: 1.1 }, { h: 'EBITDA', al: 'right', larg: 1.2 }, { h: 'EBITDA %', al: 'right', larg: 0.9 }, { h: 'Resultado líquido', al: 'right', larg: 1.3 }, { h: 'Var. EBITDA vs base', al: 'right', larg: 1.3 }, { h: 'Faturamento x meta', al: 'right', larg: 1.1 }], linhas });
       }
       // Série mensal (os 12 meses do gráfico, em números)
@@ -847,7 +941,7 @@
       blocos.push({ tipo: 'nota', opcao: 'notas', texto: (notas ? 'Avisos da tela: ' + notas + ' ' : '') +
         'Receita Líquida = Faturamento - Deduções. Margem de Contribuição = Receita Líquida - Custos Variáveis. Resultado Líquido = Margem - Gastos Operacionais. EBITDA = Resultado Líquido + Despesas Financeiras + IR e CSLL (o DRE não tem depreciação; Retiradas de Sócios permanecem como despesa). Percentuais sobre o Faturamento. "Gastos Operacionais" nos indicadores e na ponte não inclui Despesas Financeiras nem IR e CSLL. "Meta" (receita, lançada mês a mês) e "Orçado" (gastos operacionais) vêm da tela Budget e aparecem quando lançados para todas as operações do escopo. Rentabilidade e custos: Margem Bruta = Receita Líquida - CMV; Despesas variáveis = custos variáveis (CMV + demais); Despesas fixas = gastos operacionais; Despesas de pessoal = folha, INSS/FGTS, premiações, temporários e outros. Produtividade por funcionário = valor do mês / quadro atual de funcionários (aproximação em meses antigos).' });
       const ctx = itens.map(it => '- ' + it.l + ': ' + it.v + ' | ' + it.linhas.map(l => l.t).join(' | ')).join('\n');
-      return { blocos, subtitulo: MESES[U.mes - 1] + ' / ' + U.ano + '  -  ' + nomeOps, contextoIA: ctx };
+      return { blocos, subtitulo: U.rot + '  -  ' + nomeOps, contextoIA: ctx };
     }
 
     // Turnover/Desligamentos (Pessoas) — eventos só existem a partir de 23/09/2026, quando o
@@ -888,6 +982,38 @@
       const meses = [...new Set(dados.filter(r => +r.receita_bruta > 0).map(r => ym(r.ano, r.mes)))].sort((a, b) => b - a);
       g('sel-mes').innerHTML = meses.map(v => { const a = Math.floor(v / 100), m = v % 100; return '<option value="' + a + '-' + m + '">' + MESES[m - 1] + ' / ' + a + '</option>'; }).join('');
       ['sel-mes', 'sel-cmp', 'sel-op'].forEach(id => g(id).addEventListener('change', render));
+      // Meses específicos: grade de meses (com dados) por ano, marcando quantos quiser.
+      const porAno = {}; meses.forEach(v => { (porAno[Math.floor(v / 100)] = porAno[Math.floor(v / 100)] || []).push(v % 100); });
+      g('co-esp').innerHTML = Object.keys(porAno).sort((a, b) => b - a).map(a => '<div class="co-esp-ano">' + a + '</div><div class="co-esp-grid">' +
+        porAno[a].sort((x, y) => x - y).map(m => '<label data-v="' + a + '-' + m + '"><input type="checkbox" value="' + a + '-' + m + '">' + MES_CURTO[m - 1] + '</label>').join('') + '</div>').join('') +
+        '<div class="co-esp-acoes"><button type="button" id="esp-limpar">Limpar</button><button type="button" id="esp-ok">Fechar</button></div>';
+      const syncEsp = () => {
+        g('co-esp').querySelectorAll('label[data-v]').forEach(l => { const on = espSel.some(p => p.ano + '-' + p.mes === l.dataset.v); l.classList.toggle('on', on); l.querySelector('input').checked = on; });
+        g('btn-esp').textContent = espSel.length ? rotuloPeriodo(mesesDoPeriodo('esp', 0, 1, espSel)) : 'Escolher…';
+      };
+      g('co-esp').addEventListener('change', e => {
+        const [a, m] = e.target.value.split('-').map(Number);
+        espSel = e.target.checked ? espSel.concat({ ano: a, mes: m }) : espSel.filter(p => !(p.ano === a && p.mes === m));
+        syncEsp(); if (espSel.length) render();
+      });
+      g('co-esp').addEventListener('click', e => {
+        if (e.target.id === 'esp-limpar') { espSel = []; syncEsp(); }
+        if (e.target.id === 'esp-ok') g('co-esp').classList.remove('open');
+      });
+      g('btn-esp').addEventListener('click', e => { e.stopPropagation(); g('co-esp').classList.toggle('open'); });
+      document.addEventListener('click', e => { if (!e.target.closest('#f-esp')) g('co-esp').classList.remove('open'); });
+      g('sel-per').addEventListener('change', () => {
+        const t = g('sel-per').value;
+        g('f-mes').style.display = t === 'esp' ? 'none' : '';
+        g('f-esp').style.display = t === 'esp' ? '' : 'none';
+        g('lbl-mes').textContent = t === 'mes' ? 'Mês' : t === 'ano' ? 'Ano (do mês)' : 'Até o mês';
+        if (t === 'esp') {
+          if (!espSel.length) { const [a, m] = g('sel-mes').value.split('-').map(Number); espSel = [{ ano: a, mes: m }]; }
+          syncEsp(); g('co-esp').classList.add('open');
+        }
+        render();
+      });
+      syncEsp();
     }
 
     // Faixa com as ações do conselho (só aparece para quem tem acesso a Reuniões e Decisões — a RLS devolve vazio para os demais).
@@ -928,7 +1054,7 @@
           { id: 'ia', label: 'Resumo executivo do GerônIA', padrao: false, dica: 'Texto gerado por IA a partir dos números da tela.' },
         ],
         filtros: pdfFiltros,
-        nomeArquivo: () => 'SAFI-Painel-do-Conselho-' + (ULTIMO ? ULTIMO.ano + '-' + String(ULTIMO.mes).padStart(2, '0') + '-' + (ULTIMO.opSel === 'todas' ? 'Todas' : OP_NOME[ULTIMO.opSel].replace(/\s+/g, '')) : 'geral'),
+        nomeArquivo: () => 'SAFI-Painel-do-Conselho-' + (ULTIMO ? (ULTIMO.meses.length > 1 ? ULTIMO.rot.replace(/[^\w–-]+/g, '') + '-' : ULTIMO.ano + '-' + String(ULTIMO.mes).padStart(2, '0') + '-') + (ULTIMO.opSel === 'todas' ? 'Todas' : OP_NOME[ULTIMO.opSel].replace(/\s+/g, '')) : 'geral'),
         coletar: pdfColetar });
       try { await carregar(); }
       catch (err) { g('co-loading').textContent = 'Erro ao carregar: ' + err.message; return; }

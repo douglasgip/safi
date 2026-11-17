@@ -307,11 +307,15 @@ function indMesesDre(ops, ano, mesDe, mesAte) {
   return out;
 }
 
-function indMontar(ops, ano, mes) {
+// Meses de uma lista [{ ano, mes }] (o período do filtro do painel), somando as operações.
+function indMesesLista(ops, meses) { return meses.flatMap(p => indMesesDre(ops, p.ano, p.mes, p.mes)); }
+
+// meses = período do filtro do painel; rot = rótulo dele (ex.: "Jan–Out/2026").
+function indMontar(ops, meses, rot) {
+  const ult = meses[meses.length - 1], ano = ult.ano, mes = ult.mes;
   const fimMes = ano + '-' + String(mes).padStart(2, '0') + '-' + String(new Date(ano, mes, 0).getDate()).padStart(2, '0');
   const esc_ = indEscolherBalancos(indBalancos, ops, fimMes);
-  const dreMeses = indMesesDre(ops, ano, 1, mes);
-  const P = { dre: indSomarDre(dreMeses), nMeses: mes };
+  const P = { dre: indSomarDre(indMesesLista(ops, meses)), nMeses: meses.length };
   if (esc_.dataBase) {
     const aB = +esc_.dataBase.slice(0, 4), mB = +esc_.dataBase.slice(5, 7);
     P.dreB = indSomarDre(indMesesDre(ops, aB, 1, mB)); P.nMesesB = mB;
@@ -321,15 +325,13 @@ function indMontar(ops, ano, mes) {
   P.hc = ops.reduce((a, op) => a + (headcountPorOp[op] || 0), 0);
   P.vend = ops.reduce((a, op) => a + (indVendPorOp[op] || 0), 0);
   const opsVend = ops.filter(op => indVendPorOp[op] > 0);
-  if (opsVend.length && opsVend.length < ops.length) P.dreVend = indSomarDre(indMesesDre(opsVend, ano, 1, mes));
-  let adm = 0, desl = 0, temT = false;
-  for (let m = 1; m <= mes; m++) {
-    if (ym(ano, m) < TURNOVER_DESDE) continue;
-    ops.forEach(op => { const r = turnoverPorChave[op + '|' + ano + '|' + m]; if (r) { adm += r.admissoes; desl += r.desligamentos; } });
-    temT = true;
-  }
-  if (temT) P.turn = { adm, desl };
-  const bi = indBi.filter(r => ops.includes(r.operacao) && r.data >= ano + '-01-01' && r.data <= fimMes && +r.qtd_vendas > 0);
+  if (opsVend.length && opsVend.length < ops.length) P.dreVend = indSomarDre(indMesesLista(opsVend, meses));
+  let adm = 0, desl = 0;
+  const comT = meses.filter(p => ym(p.ano, p.mes) >= TURNOVER_DESDE);
+  comT.forEach(p => ops.forEach(op => { const r = turnoverPorChave[op + '|' + p.ano + '|' + p.mes]; if (r) { adm += r.admissoes; desl += r.desligamentos; } }));
+  if (comT.length) P.turn = { adm, desl };
+  const noPeriodo = new Set(meses.map(p => p.ano + '-' + String(p.mes).padStart(2, '0')));
+  const bi = indBi.filter(r => ops.includes(r.operacao) && noPeriodo.has(String(r.data).slice(0, 7)) && +r.qtd_vendas > 0);
   if (bi.length) {
     const ds = bi.map(r => r.data).sort();
     P.ticket = { fat: bi.reduce((a, r) => a + (+r.faturamento || 0), 0), qtd: bi.reduce((a, r) => a + (+r.qtd_vendas || 0), 0), de: ds[0], ate: ds[ds.length - 1] };
@@ -340,10 +342,10 @@ function indMontar(ops, ano, mes) {
     const b = indConsolidar(esc_.porData[d]); const cli = indSomaFaixas(b.clientes), forn = indSomaFaixas(b.fornecedores);
     const pc = forn + (+b.emprestimos_cp || 0); return pc ? indData(d) + ': ' + indDec((cli + (+b.estoque_custo || 0) + (+b.caixa || 0)) / pc) : null;
   }).filter(Boolean);
-  const periodo = 'jan–' + MES_CURTO[mes - 1].toLowerCase() + '/' + ano;
+  const periodo = rot;
   const ctx = {
     periodo, periodoB: esc_.dataBase ? 'jan–' + MES_CURTO[+esc_.dataBase.slice(5, 7) - 1].toLowerCase() + '/' + esc_.dataBase.slice(0, 4) : '',
-    periodoTurn: (ym(ano, 1) < TURNOVER_DESDE ? MES_CURTO[(TURNOVER_DESDE % 100) - 1].toLowerCase() : 'jan') + '–' + MES_CURTO[mes - 1].toLowerCase() + '/' + ano,
+    periodoTurn: comT.length ? 'em ' + rotuloPeriodo(comT) : '',
     liqSerie: serie.length > 1 ? serie.join(' · ') : '',
     opsVend: P.dreVend ? opsVend.map(o => OP_NOME[o] || o).join(' + ') : '',
   };
@@ -351,8 +353,9 @@ function indMontar(ops, ano, mes) {
   return { I, ctx, dataBase: esc_.dataBase, dataIni: esc_.dataIni, periodo, opsSemBal, ops, ano, mes };
 }
 
-function renderIndicadores(ops, ano, mes) {
-  const R = indMontar(ops, ano, mes); indUltimo = R;
+function renderIndicadores(ops, meses, rot) {
+  const R = indMontar(ops, meses, rot); indUltimo = R;
+  const ano = R.ano, mes = R.mes;
   const I = R.I;
   g('ind-periodo').textContent = 'DRE ' + R.periodo + (R.dataBase ? ' · Balanço de ' + indData(R.dataBase) : ' · sem balanço lançado');
   g('ind-btn-bal').style.display = indPodeEditar ? '' : 'none';
