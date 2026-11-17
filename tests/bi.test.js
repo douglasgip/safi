@@ -20,7 +20,7 @@ const totais = extrairFuncao(codigo, 'totais', { vendasDoDia });
 const periodoPreset = extrairFuncao(codigo, 'periodoPreset', { iso, dt, somaDias });
 const deslocaMeses = extrairFuncao(codigo, 'deslocaMeses', { iso });
 const periodoComparacao = extrairFuncao(codigo, 'periodoComparacao', { dt, somaDias, deslocaMeses });
-const metaDoPeriodo = extrairFuncao(codigo, 'metaDoPeriodo', { dt, somaDias, diasPadrao, LOJA });
+const metaDoPeriodo = extrairFuncao(codigo, 'metaDoPeriodo', { dt, somaDias });
 const porDia = extrairFuncao(codigo, 'porDia', { totais });
 const porDiaDaSemana = extrairFuncao(codigo, 'porDiaDaSemana', { totais, dt, ORDEM_SEMANA });
 const j = x => JSON.parse(JSON.stringify(x));
@@ -77,34 +77,65 @@ test('comparação: período anterior do mesmo tamanho, mesmo período do mês e
   assert.strictEqual(periodoComparacao('', '2026-11-01', '2026-11-30'), null);
 });
 
-const metas = { 'Exposicao|2026|11': { meta: 411200.9, dias: 23 }, 'ViaCloset|2026|11': { meta: 411200.9, dias: 22 } };
-const metaMes = (op, a, m) => metas[op + '|' + a + '|' + m] || null;
+// Metas por DIA (como na planilha do Guilherme): Exposição 17.878,30 em 23 dias de novembro (sem 02/11, 20/11 e domingos).
+const FECHADOS = ['2026-11-02', '2026-11-20'];
+const metasDia = {};
+for (let d = 1; d <= 30; d++) {
+  const s = '2026-11-' + String(d).padStart(2, '0');
+  if (dt(s).getDay() !== 0 && !FECHADOS.includes(s)) metasDia['Exposicao|' + s] = 17878.3;
+}
+const metaDia = (op, s) => (op + '|' + s) in metasDia ? metasDia[op + '|' + s] : null;
+const semUltima = () => null;
 
-test('meta do período: o mês inteiro dá exatamente a meta; período parcial é proporcional aos dias em que a loja abre', () => {
-  perto(metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-30', null, metaMes, new Set()).meta, 411200.9, 0.01);
-  // 1ª semana de novembro (seg 02 a sáb 07 = 6 dias de loja) → 6/25 da meta
-  perto(metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-07', null, metaMes, new Set()).meta, 411200.9 * 6 / 25, 0.01);
-  // duas lojas somam
-  perto(metaDoPeriodo(['Exposicao', 'ViaCloset'], '2026-11-01', '2026-11-30', null, metaMes, new Set()).meta, 822401.8, 0.01);
+test('metas por dia: novembro da Exposição soma a meta do mês da planilha (23 dias × 17.878,30)', () => {
+  perto(metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-30', null, metaDia, semUltima).meta, 411200.9, 0.01);
+});
+
+test('meta do período é a soma das metas dos dias do período (a 1ª semana tem 5 dias com meta: 02/11 não tem)', () => {
+  perto(metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-07', null, metaDia, semUltima).meta, 17878.3 * 5, 0.01);
 });
 
 test('meta do período com filtro de dia da semana: só os sábados', () => {
-  const r = metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-30', [6], metaMes, new Set());
-  perto(r.meta, 411200.9 * 4 / 25, 0.01);   // 4 sábados em novembro/2026
+  perto(metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-30', [6], metaDia, semUltima).meta, 17878.3 * 4, 0.01);   // 4 sábados
 });
 
-test('ritmo: a meta esperada soma a meta diária (meta ÷ dias de funcionamento) só nos dias que tiveram venda', () => {
-  const comVenda = new Set(['Exposicao|2026-11-03', 'Exposicao|2026-11-04']);
-  const r = metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-30', null, metaMes, comVenda);
-  perto(r.esperado, 17878.3 * 2, 0.01);
-  perto(r.linhaDia['2026-11-03'], 17878.3, 0.01);
+test('ritmo: o esperado soma as metas dos dias até o último dia com dado (feriado sem meta não pesa)', () => {
+  const r = metaDoPeriodo(['Exposicao'], '2026-11-01', '2026-11-30', null, metaDia, op => op === 'Exposicao' ? '2026-11-04' : null);
+  perto(r.esperado, 17878.3 * 2, 0.01);   // 03 e 04/11 (02/11 não tem meta)
+  perto(r.linhaDia['2026-11-04'], 17878.3, 0.01);
+  perto(r.linhaDia['2026-11-30'], 17878.3, 0.01, 'a linha de meta do gráfico vai até o fim do período');
+});
+
+test('dia com meta diferente (ex.: Black Friday) entra com o valor dele', () => {
+  const md = (op, s) => s === '2026-11-27' ? 60000 : metaDia(op, s);
+  perto(metaDoPeriodo(['Exposicao'], '2026-11-27', '2026-11-28', null, md, semUltima).meta, 60000 + 17878.3, 0.01);
 });
 
 test('operação sem meta lançada: a meta do período é só das que têm, e a tela avisa quais faltam', () => {
-  const r = metaDoPeriodo(['Exposicao', 'GIP'], '2026-11-01', '2026-11-30', null, metaMes, new Set());
+  const r = metaDoPeriodo(['Exposicao', 'GIP'], '2026-11-01', '2026-11-30', null, metaDia, semUltima);
   perto(r.meta, 411200.9, 0.01);
   assert.deepStrictEqual(j(r.semMeta), ['GIP']);
-  assert.strictEqual(metaDoPeriodo(['GIP'], '2026-11-01', '2026-11-30', null, metaMes, new Set()).meta, null);
+  assert.strictEqual(metaDoPeriodo(['GIP'], '2026-11-01', '2026-11-30', null, metaDia, semUltima).meta, null);
+});
+
+test('distribuir a meta do mês: divide igual entre os dias escolhidos, sem perder centavo', () => {
+  const distribuirMeta = extrairFuncao(codigo, 'distribuirMeta', {});
+  const d = j(distribuirMeta(100, ['2026-11-03', '2026-11-04', '2026-11-05']));
+  assert.deepStrictEqual(d, { '2026-11-03': 33.34, '2026-11-04': 33.33, '2026-11-05': 33.33 });
+  assert.deepStrictEqual(j(distribuirMeta(100, [])), {});
+});
+
+test('dias em que a loja abre (base do distribuir): lojas de segunda a sábado, e-commerce todos', () => {
+  const diasAbertos = extrairFuncao(codigo, 'diasAbertos', { iso });
+  assert.strictEqual(diasAbertos(2026, 11, true).length, 25);
+  assert.strictEqual(diasAbertos(2026, 11, false).length, 30);
+  assert.ok(!diasAbertos(2026, 11, true).includes('2026-11-01'), '01/11/2026 é domingo');
+});
+
+test('projeção do mês com meta: o ritmo até hoje aplicado à meta do mês inteiro', () => {
+  const projecaoOp = extrairFuncao(codigo, 'projecaoOp', {});
+  perto(projecaoOp(351513.33, 196661.3, 411200.9, null), 351513.33 / 196661.3 * 411200.9, 0.01);
+  perto(projecaoOp(1000, null, null, { media: 100, dias: 30 }), 3000, 0.01, 'sem meta: média diária × dias');
 });
 
 test('várias operações: cada dia vira uma linha só, somando as operações', () => {
@@ -131,14 +162,15 @@ test('tela: filtros de operações, período, dia da semana e comparação; meta
   const html = ler('bi.html');
   for (const id of ['sel-ops', 'sel-per', 'dt-de', 'dt-ate', 'sel-dias', 'sel-cmp', 'mt-op', 'mt-mes', 'tb-sem']) assert.match(html, new RegExp('id="' + id + '"'));
   assert.match(codigo, /if \(tem && F\.ops\.length === 1\) return;/, 'a última operação não pode sair');
-  assert.match(codigo, /from\('bi_meta_mensal'\)\.upsert\(\{ operacao: op, ano, mes, meta, dias_funcionamento: dias \}, \{ onConflict: 'operacao,ano,mes' \}\)/);
-  assert.match(codigo, /const podeMeta = !!\(prof\.is_admin \|\| prof\.can_orcamento\)/);
+  assert.match(codigo, /from\('bi_meta_diaria'\)\.upsert\(ups, \{ onConflict: 'operacao,data' \}\)/);
+  assert.doesNotMatch(codigo, /bi_meta_mensal/, 'a meta mensal virou a soma das metas diárias');
+  assert.ok(codigo.includes('const podeMeta = () => !!(prof.is_admin || prof.can_orcamento);'), 'só admin ou quem tem Budget lança meta');
 });
 
 test('atingimento com operação SEM meta: o faturamento dela não entra na conta contra a meta das outras', () => {
   const fatComMeta = extrairFuncao(codigo, 'fatComMeta', {});
   const ls = expo.concat([{ operacao: 'GIP', data: '2026-11-03', faturamento: 39897.89 }]);
-  const r = metaDoPeriodo(['Exposicao', 'GIP'], '2026-11-01', '2026-11-30', null, metaMes, new Set());
+  const r = metaDoPeriodo(['Exposicao', 'GIP'], '2026-11-01', '2026-11-30', null, metaDia, semUltima);
   assert.ok(r.comMeta.has('Exposicao|2026-11') && !r.comMeta.has('GIP|2026-11'));
   perto(fatComMeta(ls, r.comMeta), 47307.78, 0.01);   // só a Exposição; os R$ 39.897,89 do e-commerce ficam fora
 });
