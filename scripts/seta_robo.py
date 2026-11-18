@@ -385,6 +385,7 @@ def mostrar(p):
 
 ESTADO = os.path.join(PASTA, 'estado.json')
 MAX_DIAS = 31  # se o robô ficar muito tempo sem rodar, busca no máximo os últimos 31 dias
+ULTIMO_DA_PLANILHA = "2026-11-15"  # a carga inicial do BI (planilha KPI's Lojas) vai até 15/11
 
 
 def ler_estado():
@@ -403,10 +404,10 @@ def gravar_estado(est):
 
 
 def dias_faltando(ultimo, hoje):
-    """Do dia seguinte ao último enviado até ONTEM. Primeira vez: só ontem."""
+    """Do dia seguinte ao último enviado até ONTEM. Primeira vez: a partir do fim da carga da planilha."""
     from datetime import timedelta
     ontem = hoje - timedelta(days=1)
-    ini = date.fromisoformat(ultimo) + timedelta(days=1) if ultimo else ontem
+    ini = date.fromisoformat(ultimo or ULTIMO_DA_PLANILHA) + timedelta(days=1)
     ini = max(ini, ontem - timedelta(days=MAX_DIAS - 1))
     out = []
     while ini <= ontem:
