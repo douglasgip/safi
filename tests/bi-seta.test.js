@@ -1,0 +1,86 @@
+'use strict';
+// Robô do Seta: ele só exporta as planilhas (Resumo das Vendas + Listagem das Vendas) e manda as linhas cruas;
+// as contas e a conferência ficam no bi-importar. Gabarito: Exposição, 17/11/2026 (conferido com o relatório e o Analytics).
+const test = require('node:test');
+const assert = require('node:assert');
+const { ler, carregarEdge } = require('./helpers/carregar');
+
+const { pegar } = carregarEdge('bi-importar');
+const kpiDasPlanilhas = pegar('kpiDasPlanilhas');
+const prepararPlanilhas = pegar('prepararPlanilhas');
+const dataDoSeta = pegar('dataDoSeta');
+const j = x => JSON.parse(JSON.stringify(x));
+const HOJE = '2026-11-18';
+const fx = JSON.parse(ler('tests/fixtures/seta_expo_20261117.json'));
+const plan = (extra = {}) => ({ operacao: 'Exposicao', data: '2026-11-17', resumo: fx.resumo, listagem: fx.listagem, ...extra });
+
+test('17/11 da Exposição: faturamento, lucro (sem o frete), vendas, ticket e P.A batem com o Seta', () => {
+  const r = j(kpiDasPlanilhas(plan(), HOJE));
+  assert.strictEqual(r.ok, true, r.motivo);
+  assert.deepStrictEqual(r.linha, {
+    operacao: 'Exposicao', data: '2026-11-17', fonte: 'automacao',
+    faturamento: 25995.93, margem: 12326, ticket_medio: 206.32, pecas_atendimento: 4.65, qtd_vendas: 126,
+  });
+});
+
+test('vendas: conta o número da venda uma vez só (venda dividida entre vendedoras) e ignora devoluções', () => {
+  const listagem = [
+    { codigo: '1', data: '17-Nov-26', total: 100 }, { codigo: '1', data: '17-Nov-26', total: 50 },
+    { codigo: '2', data: '17-Nov-26', total: -30 }, { codigo: '3', data: '17-Nov-26', total: 80 },
+  ];
+  const resumo = [{ quantidade: 5, total: 200, lucro: 90, frete: 0 }];
+  const r = j(kpiDasPlanilhas(plan({ resumo, listagem }), HOJE));
+  assert.strictEqual(r.linha.qtd_vendas, 2);
+  assert.strictEqual(r.linha.ticket_medio, 100);
+  assert.strictEqual(r.linha.pecas_atendimento, 2.5);
+});
+
+test('conferência: listagem com venda de outro dia é recusada (o filtro de data não pegou)', () => {
+  const listagem = fx.listagem.map((l, i) => i === 3 ? { ...l, data: '16-Nov-26' } : l);
+  const r = j(kpiDasPlanilhas(plan({ listagem }), HOJE));
+  assert.strictEqual(r.ok, false);
+  assert.match(r.motivo, /outro dia/);
+});
+
+test('conferência: resumo e listagem com totais diferentes são recusados (não grava número errado)', () => {
+  const resumo = fx.resumo.map((l, i) => i === 0 ? { ...l, total: l.total + 10 } : l);
+  const r = j(kpiDasPlanilhas(plan({ resumo }), HOJE));
+  assert.strictEqual(r.ok, false);
+  assert.match(r.motivo, /não batem/);
+});
+
+test('dia sem venda nenhuma não vira faturamento zero (fica de fora e é avisado)', () => {
+  const r = j(kpiDasPlanilhas(plan({ resumo: [], listagem: [] }), HOJE));
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.semVendas, true);
+});
+
+test('data do Seta: "17-Nov-26" e "17/11/2026" viram aaaa-mm-dd; lixo vira null', () => {
+  assert.strictEqual(dataDoSeta('17-Nov-26'), '2026-11-17');
+  assert.strictEqual(dataDoSeta('03-Feb-27'), '2027-02-03');
+  assert.strictEqual(dataDoSeta('17/11/2026'), '2026-11-17');
+  assert.strictEqual(dataDoSeta('2026-11-17'), '2026-11-17');
+  assert.strictEqual(dataDoSeta('ontem'), null);
+});
+
+test('lote de planilhas: as boas viram linhas; as recusadas voltam com o motivo, operação e dia', () => {
+  const r = j(prepararPlanilhas([plan(), plan({ operacao: 'Loja X' }), plan({ data: '2026-11-16' })], HOJE));
+  assert.strictEqual(r.boas.length, 1);
+  assert.deepStrictEqual(r.erros.map(e => e.linha), [2, 3]);
+  assert.match(r.erros[1].motivo, /outro dia/);
+});
+
+test('a função aceita planilhas e tem modo ensaio (calcula e devolve sem gravar)', () => {
+  const fonte = ler('_ds/bi-importar_index.ts');
+  assert.match(fonte, /corpo\?\.planilhas/);
+  assert.match(fonte, /corpo\?\.ensaio === true/);
+});
+
+test('robô do Seta: segredos só no arquivo de configuração do PC, nunca no código', () => {
+  const py = ler('scripts/seta_robo.py');
+  assert.match(py, /SAFI-robo/);
+  assert.match(py, /config\.ini/);
+  assert.doesNotMatch(py, /senha\s*=\s*['"][^'"]+['"]/i);
+  assert.doesNotMatch(py, /Bearer [A-Za-z0-9]{12,}/);
+  assert.match(py, /"planilhas"/);
+});

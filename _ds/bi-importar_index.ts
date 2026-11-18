@@ -6,6 +6,8 @@
 // POST { "linhas": [ { "operacao": "Exposicao", "data": "2026-11-16", "faturamento": 24330.78,
 //                      "margem": 11213.7, "ticket_medio": 190.08, "pecas_atendimento": 4.04, "qtd_vendas": 128 } ] }
 // Cada linha é um dia de uma operação; reenviar o mesmo dia SUBSTITUI o anterior (não duplica).
+// Ou POST { "planilhas": [ { operacao, data, resumo: [...], listagem: [...] } ], "ensaio"?: true } — o robô do Seta
+// (scripts/seta_robo.py) manda as planilhas cruas e as contas são feitas aqui (ver kpiDasPlanilhas). Ensaio não grava.
 // Resposta: { ok, recebidas, gravadas, erros: [{ linha, motivo }] } — linhas com erro não impedem as boas.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.4'
@@ -71,6 +73,61 @@ function prepararLote(linhas: unknown[], hoje: string) {
   return { boas: [...boas.values()], erros }
 }
 
+// ---------- Planilhas do Seta (robô do PC do Douglas) ----------
+// O robô só exporta, de cada loja e dia, o "01 - Resumo das Vendas" e a "02 - Listagem das Vendas" em Excel e
+// manda as linhas cruas: resumo [{ quantidade, total, lucro, frete }] e listagem [{ codigo, data, total }].
+// As contas e a conferência ficam aqui (testadas em tests/bi-seta.test.js):
+//   faturamento = Σ total do resumo · margem = Σ lucro − Σ frete (o Seta não conta frete na lucratividade)
+//   vendas = nº de vendas diferentes com total > 0 na listagem (venda dividida entre vendedoras aparece em
+//   várias linhas; devolução/troca vem negativa e não conta) · ticket = fat ÷ vendas · P.A = peças ÷ vendas.
+// Conferência: toda linha da listagem tem que ser do dia pedido e o total da listagem tem que bater com o do resumo.
+
+const MESES_EN: Record<string, string> = { jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06', jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12' }
+
+// "17-Nov-26" (como o Seta exporta), "17/11/2026" ou "2026-11-17" → "2026-11-17"; o resto → null.
+function dataDoSeta(v: unknown): string | null {
+  const s = String(v ?? '').trim()
+  let m = /^(\d{1,2})-([A-Za-z]{3})-(\d{2})$/.exec(s)
+  if (m && MESES_EN[m[2].toLowerCase()]) return '20' + m[3] + '-' + MESES_EN[m[2].toLowerCase()] + '-' + m[1].padStart(2, '0')
+  m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(s)
+  if (m) return m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0')
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : null
+}
+
+const r2 = (n: number) => Math.round(n * 100) / 100
+const brl = (n: number) => n.toFixed(2).replace('.', ',')
+
+function kpiDasPlanilhas(p: any, hoje: string): { ok: true; linha: Record<string, unknown> } | { ok: false; motivo: string; semVendas?: boolean } {
+  if (!p || typeof p !== 'object') return { ok: false, motivo: 'planilha vazia' }
+  const resumo = Array.isArray(p.resumo) ? p.resumo : null, listagem = Array.isArray(p.listagem) ? p.listagem : null
+  if (!resumo || !listagem) return { ok: false, motivo: 'faltou o resumo ou a listagem' }
+  if (!resumo.length && !listagem.length) return { ok: false, semVendas: true, motivo: 'sem vendas no dia ' + p.data }
+  const soma = (arr: any[], c: string) => arr.reduce((a, l) => a + (Number(l?.[c]) || 0), 0)
+  for (const l of listagem) {
+    const d = dataDoSeta(l?.data)
+    if (d !== p.data) return { ok: false, motivo: 'a listagem tem venda de outro dia (' + (l?.data ?? '?') + '): o filtro de data não pegou' }
+  }
+  const fat = r2(soma(resumo, 'total')), totLista = r2(soma(listagem, 'total'))
+  if (Math.abs(fat - totLista) > 0.05) return { ok: false, motivo: 'resumo (R$ ' + brl(fat) + ') e listagem (R$ ' + brl(totLista) + ') não batem' }
+  const vendas = new Set(listagem.filter((l: any) => Number(l?.total) > 0).map((l: any) => String(l.codigo))).size
+  const pecas = soma(resumo, 'quantidade')
+  return validarLinha({
+    operacao: p.operacao, data: p.data, faturamento: fat, margem: r2(soma(resumo, 'lucro') - soma(resumo, 'frete')),
+    ticket_medio: vendas ? r2(fat / vendas) : null, pecas_atendimento: vendas ? r2(pecas / vendas) : null, qtd_vendas: vendas,
+  }, hoje)
+}
+
+function prepararPlanilhas(planilhas: unknown[], hoje: string) {
+  const boas = new Map<string, Record<string, unknown>>(), erros: { linha: number; motivo: string }[] = [], semVendas: string[] = []
+  planilhas.forEach((p: any, i) => {
+    const r = kpiDasPlanilhas(p, hoje)
+    if (r.ok) boas.set(r.linha.operacao + '|' + r.linha.data, r.linha)
+    else if (r.semVendas) semVendas.push(String(p?.operacao) + ' ' + String(p?.data))
+    else erros.push({ linha: i + 1, motivo: String(p?.operacao ?? '?') + ' ' + String(p?.data ?? '?') + ': ' + r.motivo })
+  })
+  return { boas: [...boas.values()], erros, semVendas }
+}
+
 Deno.serve(async (req: Request) => {
   const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
   if (req.method !== 'POST') return json({ ok: false, erro: 'Use POST.' }, 405)
@@ -82,13 +139,17 @@ Deno.serve(async (req: Request) => {
 
   let corpo: any
   try { corpo = await req.json() } catch { return json({ ok: false, erro: 'JSON inválido.' }, 400) }
-  const linhas = Array.isArray(corpo?.linhas) ? corpo.linhas : null
-  if (!linhas) return json({ ok: false, erro: 'Envie { "linhas": [ ... ] }.' }, 400)
+  const planilhas = Array.isArray(corpo?.planilhas) ? corpo.planilhas : null
+  const linhas = planilhas || (Array.isArray(corpo?.linhas) ? corpo.linhas : null)
+  if (!linhas) return json({ ok: false, erro: 'Envie { "linhas": [ ... ] } ou { "planilhas": [ ... ] }.' }, 400)
   if (linhas.length > LIMITE_LINHAS) return json({ ok: false, erro: 'Máximo de ' + LIMITE_LINHAS + ' linhas por envio.' }, 400)
 
   // "Hoje" no horário de Brasília (o Supabase roda em UTC).
   const hoje = new Date(Date.now() - 3 * 3600_000).toISOString().slice(0, 10)
-  const { boas, erros } = prepararLote(linhas, hoje)
+  const { boas, erros, semVendas = [] } = planilhas ? prepararPlanilhas(planilhas, hoje) : prepararLote(linhas, hoje) as any
+
+  // Ensaio: calcula e devolve o que SERIA gravado, sem gravar nada (para testar o robô).
+  if (corpo?.ensaio === true) return json({ ok: true, ensaio: true, recebidas: linhas.length, gravadas: 0, linhas: boas, erros, semVendas })
 
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { autoRefreshToken: false, persistSession: false } })
   let gravadas = 0, erroBanco: string | null = null
@@ -97,7 +158,7 @@ Deno.serve(async (req: Request) => {
     const { error } = await sb.from('bi_kpi_diario').upsert(boas.map(b => ({ ...b, atualizado_em: agora })), { onConflict: 'operacao,data' })
     if (error) erroBanco = error.message; else gravadas = boas.length
   }
-  const resposta = { ok: !erroBanco, recebidas: linhas.length, gravadas, erros, ...(erroBanco ? { erro: 'Falha ao gravar: ' + erroBanco } : {}) }
+  const resposta = { ok: !erroBanco, recebidas: linhas.length, gravadas, linhas: boas, erros, semVendas, ...(erroBanco ? { erro: 'Falha ao gravar: ' + erroBanco } : {}) }
   await sb.from('bi_importacoes').insert({ recebidas: linhas.length, gravadas, erros: erros.length ? erros.slice(0, 50) : null, erro: erroBanco })
   return json(resposta, erroBanco ? 500 : 200)
 })
