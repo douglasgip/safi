@@ -266,6 +266,8 @@
     // Datas em texto ISO (aaaa-mm-dd), sem fuso: tudo ao meio-dia local.
     const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
     const dt = s => new Date(s + 'T12:00:00');
+    // Rótulo embaixo de cada barra do gráfico diário: duas linhas, "17/11" e "Ter".
+    function rotuloDia(data) { return [data.slice(8, 10) + '/' + data.slice(5, 7), DIAS_CURTO[dt(data).getDay()]]; }
     const somaDias = (s, n) => { const d = dt(s); d.setDate(d.getDate() + n); return iso(d); };
     // Dias de funcionamento padrão do mês: lojas físicas de segunda a sábado; e-commerce todos os dias.
     function diasPadrao(ano, mes, loja) {
@@ -486,7 +488,7 @@
       if (chart) chart.destroy();
       const temMetaDia = Object.keys(A.mp.linhaDia).length > 0;
       chart = new Chart(g('ch-dia'), {
-        data: { labels: dias.map(r => r.data.slice(8, 10) + '/' + r.data.slice(5, 7)), datasets: [
+        data: { labels: dias.map(r => rotuloDia(r.data)), datasets: [
           { type: 'bar', label: 'Faturamento', data: dias.map(r => r.faturamento), backgroundColor: dias.map(r => A.mp.linhaDia[r.data] && r.faturamento >= A.mp.linhaDia[r.data] ? 'rgba(52,211,153,0.75)' : 'rgba(56,189,248,0.7)'), borderRadius: 4 },
           ...(temMetaDia ? [{ type: 'line', label: 'Meta diária', data: dias.map(r => A.mp.linhaDia[r.data] || null), borderColor: '#fbbf24', borderDash: [5, 4], pointRadius: 0, borderWidth: 2, spanGaps: true }] : []),
         ] },

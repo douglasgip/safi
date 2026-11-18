@@ -203,3 +203,10 @@ test('distribuir uma semana: divide entre os dias em que a loja abre naquela sem
   assert.strictEqual(d['2026-11-29'], undefined);
   assert.match(codigo, /data-semana=/, 'cada linha do calendário tem o campo da semana');
 });
+
+test('gráfico de barras: embaixo de cada barra vai o dia e o dia da semana (para se localizar)', () => {
+  const rotuloDia = extrairFuncao(codigo, 'rotuloDia', { DIAS_CURTO: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'], dt: s => new Date(s + 'T12:00:00') });
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(rotuloDia('2026-11-17'))), ['17/11', 'Ter']);
+  assert.deepStrictEqual(JSON.parse(JSON.stringify(rotuloDia('2026-11-22'))), ['22/11', 'Dom']);
+  assert.match(codigo, /labels: dias\.map\(r => rotuloDia\(r\.data\)\)/);
+});
