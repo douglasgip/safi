@@ -81,6 +81,37 @@
     .toast { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.97); border: 1px solid rgba(255,255,255,0.12); border-radius: 12px; padding: 14px 24px; font-size: 13px; font-weight: 600; color: #f1f5f9; z-index: 300; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
     .toast.visible { opacity: 1; }
     .toast.red { border-color: rgba(248,113,113,0.5); } .toast.green { border-color: rgba(52,211,153,0.5); }
+    /* DRE Projetado – Lucratividade (simulador) */
+    .sim-abas { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .sim-aba { padding: 8px 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #94a3b8; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+    .sim-aba.on { background: rgba(56,189,248,0.14); border-color: rgba(56,189,248,0.45); color: #7dd3fc; }
+    .sim { min-width: 780px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; background: #0a1226; border-radius: 12px; padding: 3px; }
+    .sim > div { background: #0e1a33; padding: 10px 8px; text-align: center; display: flex; align-items: center; justify-content: center; flex-direction: column; min-height: 40px; }
+    .sim .h { font-size: 11.5px; font-weight: 800; letter-spacing: .4px; text-transform: uppercase; }
+    .sim .h.res { background: #d4a72c; color: #1c1400; } .sim .h.ebitda { background: #93b4f5; color: #0b1a3a; }
+    .sim .h.mc { background: #3b6fd8; color: #fff; } .sim .h.liq { background: #2b4f9e; color: #fff; } .sim .h.bruto { background: #1e3a6e; color: #fff; }
+    .sim .v { font-size: 21px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; }
+    .sim .v.neg, .sim .d.neg { color: #fca5a5; }
+    .sim .d { background: #162544; font-size: 14px; font-weight: 700; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+    .sim .lb { font-size: 10px; font-weight: 700; letter-spacing: .3px; text-transform: uppercase; color: #cbd5e1; background: #13213f; }
+    .sim .lb.fin { background: #7a2a2a; color: #fde2e2; }
+    .sim .faixa { grid-column: 1 / -1; background: #1f3a6b; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #e2e8f0; min-height: 30px; padding: 6px; }
+    .sim .pl { font-size: 10.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; color: #94a3b8; min-height: 30px; }
+    .sim .pv { font-size: 22px; font-weight: 800; color: #f8fafc; }
+    .sim .in { background: #13213f; outline: 2px solid #7ed957; outline-offset: -2px; flex-direction: row; gap: 3px; }
+    .sim .in .suf { font-size: 17px; font-weight: 800; color: #8ee86a; } .sim .in.ro .suf { color: #cbd5e1; } .sim .in .pre { font-size: 19px; font-weight: 800; color: #f8fafc; }
+    .sim .in input { width: 100%; max-width: 96px; padding: 6px 4px; background: transparent; border: none; color: #8ee86a; font-family: Inter, sans-serif; font-size: 19px; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; color-scheme: dark; }
+    .sim .in input:not(.big) { text-align: right; max-width: 80px; }
+    .sim .in input:disabled { color: #cbd5e1; }
+    .sim .in input.big { font-size: 21px; color: #f8fafc; max-width: 220px; }
+    .sim .in input:focus { outline: none; background: rgba(126,217,87,0.08); border-radius: 6px; }
+    .sim .in.ro { outline-color: rgba(255,255,255,0.12); }
+    .sim .in .nt { font-size: 10px; font-weight: 700; color: #8ee86a; text-transform: uppercase; letter-spacing: .3px; }
+    .sim .sl { font-size: 9.5px; color: #94a3b8; letter-spacing: .3px; text-transform: uppercase; min-height: 28px; }
+    .sim-graf { margin-top: 16px; }
+    .sim-graf .gt { background: #1f3a6b; border-radius: 10px 10px 0 0; padding: 8px; text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #e2e8f0; }
+    .sim-graf svg { display: block; width: 100%; min-width: 640px; height: auto; background: #0e1a33; border-radius: 0 0 10px 10px; }
+    .sim-graf .bar:hover { opacity: .85; }
     @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } }
   </style>
 </head>
@@ -106,6 +137,16 @@
         <div class="f"><label for="sel-ano">Ano</label><select class="sel" id="sel-ano"></select></div>
         <div class="f"><label for="sel-op">Operação</label><select class="sel" id="sel-op"></select></div>
       </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span>DRE Projetado – Lucratividade · <span id="sim-ano"></span></span><span class="status" id="sim-status"></span></div>
+      <div class="panel-sub" id="sim-sub"></div>
+      <div class="sim-abas" id="sim-abas" role="tablist" aria-label="Empresa"></div>
+      <div id="sim-aviso"></div>
+      <div class="scroll"><div class="sim" id="sim-grid"></div></div>
+      <div class="scroll sim-graf"><div class="gt" id="sim-gt"></div><div id="sim-svg"></div></div>
+      <div class="acoes" id="sim-acoes"></div>
     </div>
 
     <div class="panel">
@@ -215,16 +256,45 @@
       return Object.values(col.itens).map(it => ({ classe: it.classe, cOrd: it.cOrd, campo: it.campo, kOrd: it.kOrd, regra: it.regra, valor: Math.round(it.valor * 100) / 100 }));
     }
 
+    // ── DRE Projetado – Lucratividade (modelo do Aldemar) ─────────────────────
+    // Grupos: var = impostos/fretes/comissões (deduções + custos variáveis sem o CMV); cpv = CMV;
+    // cdf = custos e despesas fixas (gastos operacionais sem despesas financeiras e IR); fin = despesas financeiras + IR/CSLL.
+    function grupoSim(it) {
+      if (/dedu/i.test(it.classe)) return 'var';
+      if (/custos vari/i.test(it.classe)) return /^\s*cmv\s*$/i.test(it.campo) ? 'cpv' : 'var';
+      return /despesas financeiras|ir e csll|csll/i.test(it.campo) ? 'fin' : 'cdf';
+    }
+    // Coluna do DRE → ponto de partida da simulação: faturamento bruto e os 4 %
+    // (impostos/fretes/comissões sobre o bruto; CPV, CDF e financeiras sobre o faturamento líquido, como no modelo).
+    function simDaColuna(col) {
+      const s = { var: 0, cpv: 0, cdf: 0, fin: 0 };
+      Object.values(col.itens).forEach(it => { s[grupoSim(it)] += +it.valor || 0; });
+      const liq = col.fat - s.var;
+      return { fat: col.fat, pVar: col.fat ? s.var / col.fat : 0, pCpv: liq ? s.cpv / liq : 0, pCdf: liq ? s.cdf / liq : 0, pFin: liq ? s.fin / liq : 0 };
+    }
+    // Cascata da simulação: bruto → líquido → margem de contribuição → EBITDA → resultado líquido.
+    function simCalcular(s) {
+      const vVar = s.fat * s.pVar, liq = s.fat - vVar, cpv = liq * s.pCpv, mc = liq - cpv, cdf = liq * s.pCdf, ebitda = mc - cdf, fin = liq * s.pFin;
+      return { fat: s.fat, var: vVar, liq, cpv, mc, cdf, ebitda, fin, res: ebitda - fin };
+    }
+    // Consolidado: soma os R$ das empresas (os % saem da soma).
+    function simSomar(lista) {
+      const t = { fat: 0, var: 0, liq: 0, cpv: 0, mc: 0, cdf: 0, ebitda: 0, fin: 0, res: 0 };
+      lista.filter(Boolean).forEach(c => Object.keys(t).forEach(k => { t[k] += c[k]; }));
+      return t;
+    }
+
     // ── Estado ─────────────────────────────────────────────────────────────
-    let ROWS = [], PROJ = [], podeEditar = false, opsVis = [];
+    let ROWS = [], PROJ = [], SIM = [], SIMED = {}, podeEditar = false, opsVis = [];
 
     async function carregar(ano) {
-      const [a, b] = await Promise.all([
+      const [a, b, c] = await Promise.all([
         sb.rpc('dre_campos_mensal', { p_de: (ano - 1) * 100 + 1, p_ate: ano * 100 + 12 }),
         sb.from('dre_projecao').select('*').eq('ano', ano),
+        sb.from('dre_simulacao').select('*').eq('ano', ano + 1).then(r => r, () => ({ data: [] })),
       ]);
       if (a.error) throw a.error;
-      ROWS = a.data || []; PROJ = b.data || [];
+      ROWS = a.data || []; PROJ = b.data || []; SIM = c.data || []; SIMED = {};
     }
     const opsSel = () => g('sel-op').value === 'todas' ? opsVis : [g('sel-op').value];
     const fatReal = (op, ano, m) => baseDe(ROWS, op, ano * 100 + m, ano * 100 + m).fat;
@@ -248,6 +318,18 @@
       return cols.some(Boolean) ? somarColunas(cols) : null;
     }
     const colReal = (ops, ano, de, ate) => somarColunas(ops.map(op => baseDe(ROWS, op, ano * 100 + de, ano * 100 + ate)));
+    // Exercício do ano: meses realizados + meses projetados que ainda não têm DRE (mesma conta da Tabela 2).
+    function exercicio(ops, ano) {
+      const mp = mesesProj(ano);
+      let ultimoReal = 0; for (let m = 1; m <= 12; m++) if (temReal(ops, ano, m)) ultimoReal = m;
+      const pendentes = mp.filter(m => m > ultimoReal);
+      const cols = [];
+      if (ultimoReal) cols.push({ titulo: 'Realizado ' + rotPer(ano * 100 + 1, ano * 100 + ultimoReal), col: colReal(ops, ano, 1, ultimoReal) });
+      pendentes.forEach(m => { const c = colProjetada(ops, ano, m); if (c) cols.push({ titulo: rotMes(ano, m) + ' projetado', col: c, mes: m }); });
+      const projetados = cols.filter(c => c.mes).map(c => c.mes);
+      const faltam = Array.from({ length: 12 }, (_, i) => i + 1).filter(m => m > ultimoReal && !projetados.includes(m));
+      return { cols, ultimoReal, pendentes, projetados, faltam, total: cols.length ? somarColunas(cols.map(c => c.col)) : null };
+    }
 
     // ── Cascata (render) ─────────────────────────────────────────────────────
     // cols = [{ titulo, col, pct (mostra % ), regra (mostra a regra) }]
@@ -319,8 +401,121 @@
       await carregar(ano); toast('Projeção salva e congelada.', 'green'); render();
     }
 
+    // ── DRE Projetado – Lucratividade (painel) ───────────────────────────────
+    const pctIn = v => v == null || !isFinite(v) ? '' : (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+    function lerPct(s) {
+      const t = String(s == null ? '' : s).trim().replace('%', ''); if (!t) return null;
+      const n = parseFloat(t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t);
+      return isFinite(n) ? n / 100 : null;
+    }
+    const brlMi = v => (v / 1e6).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let simCache = {};   // op -> { ex, s } (ponto de partida = exercício do ano selecionado)
+    function simBase(op, ano) { if (!simCache[op]) { const ex = exercicio([op], ano); simCache[op] = { ex, s: ex.total ? simDaColuna(ex.total) : null }; } return simCache[op]; }
+    function simRascunho(op, ano) {
+      if (SIMED[op]) return SIMED[op];
+      const r = SIM.find(x => x.operacao === op);
+      if (r) return (SIMED[op] = { fat: +r.fat_bruto, pVar: +r.p_var, pCpv: +r.p_cpv, pCdf: +r.p_cdf, pFin: +r.p_fin });
+      const b = simBase(op, ano).s;
+      return (SIMED[op] = b ? { ...b } : { fat: 0, pVar: 0, pCpv: 0, pCdf: 0, pFin: 0 });
+    }
+    // Gráfico em cascata (R$ milhões): totais saem do zero, descontos descem a partir do total anterior.
+    function simGraficoSvg(c) {
+      const passos = [['Faturamento bruto', c.fat, '#1e3a6e'], ['Impostos / fretes / comissões', -c.var], ['Faturamento líquido', c.liq, '#2b4f9e'], ['CPV', -c.cpv],
+        ['Margem de contribuição', c.mc, '#3b6fd8'], ['CDF (fixos)', -c.cdf], ['EBITDA', c.ebitda, '#93b4f5'], ['Desp. trib. e financeiras', -c.fin], ['Resultado líquido', c.res, '#d4a72c']];
+      let nivel = 0;
+      const barras = passos.map(([rot, v, cor]) => { if (cor) { nivel = v; return { rot, v, de: 0, ate: v, cor }; } const b = { rot, v, de: nivel, ate: nivel + v, cor: '#c2504a' }; nivel += v; return b; });
+      const W = 900, H = 300, mt = 30, mb = 48, ml = 14, mr = 14;
+      const vals = barras.flatMap(b => [b.de, b.ate]), max = Math.max(0, ...vals), min = Math.min(0, ...vals);
+      if (max === min) return '';
+      const y = v => mt + (max - v) / (max - min) * (H - mt - mb), slot = (W - ml - mr) / barras.length, bw = Math.min(64, slot * 0.62);
+      let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Cascata do planejamento de lucratividade">';
+      s += '<line x1="' + ml + '" x2="' + (W - mr) + '" y1="' + y(0) + '" y2="' + y(0) + '" stroke="rgba(255,255,255,0.25)" stroke-width="1"/>';
+      barras.forEach((b, i) => {
+        const x = ml + slot * i + (slot - bw) / 2, top = y(Math.max(b.de, b.ate)), h = Math.max(1.5, Math.abs(y(b.de) - y(b.ate)));
+        if (i < barras.length - 1) { const nx = ml + slot * (i + 1) + (slot - bw) / 2; s += '<line x1="' + (x + bw) + '" x2="' + nx + '" y1="' + y(b.ate) + '" y2="' + y(b.ate) + '" stroke="rgba(255,255,255,0.22)" stroke-dasharray="3 3"/>'; }
+        s += '<g class="bar"><title>' + esc(b.rot) + ': ' + brl(b.v) + '</title><rect x="' + x + '" y="' + top + '" width="' + bw + '" height="' + h + '" rx="4" fill="' + b.cor + '"/></g>';
+        s += '<text x="' + (x + bw / 2) + '" y="' + (top - 7) + '" text-anchor="middle" font-size="12" font-weight="700" fill="#e2e8f0" font-family="Inter, sans-serif">' + (b.v < 0 ? '−' : '') + brlMi(Math.abs(b.v)) + '</text>';
+        const pal = b.rot.split(' '), meio = Math.ceil(pal.length / 2), l1 = pal.length > 2 ? pal.slice(0, meio).join(' ') : b.rot, l2 = pal.length > 2 ? pal.slice(meio).join(' ') : '';
+        s += '<text x="' + (x + bw / 2) + '" y="' + (H - mb + 18) + '" text-anchor="middle" font-size="10.5" font-weight="600" fill="#94a3b8" font-family="Inter, sans-serif">' + esc(l1) + (l2 ? '<tspan x="' + (x + bw / 2) + '" dy="13">' + esc(l2) + '</tspan>' : '') + '</text>';
+      });
+      return s + '</svg>';
+    }
+    function renderSim(ano) {
+      simCache = {};
+      const atual = g('sel-op').value, cons = atual === 'todas', anoSim = ano + 1;
+      g('sim-ano').textContent = anoSim;
+      g('sim-abas').innerHTML = (opsVis.length > 1 ? [['todas', 'Consolidado']] : []).concat(opsVis.map(op => [op, OP_NOME[op]]))
+        .map(([v, r]) => '<button type="button" role="tab" class="sim-aba' + (v === atual ? ' on' : '') + '" aria-selected="' + (v === atual) + '" data-v="' + v + '">' + esc(r) + '</button>').join('');
+      g('sim-abas').querySelectorAll('.sim-aba').forEach(b => b.addEventListener('click', () => { g('sel-op').value = b.dataset.v; render(); }));
+      const ops = cons ? opsVis : [atual];
+      const ex0 = simBase(ops[0], ano).ex;
+      const partida = ex0.ultimoReal ? 'realizado ' + rotPer(ano * 100 + 1, ano * 100 + ex0.ultimoReal) + (ex0.projetados.length ? ' + ' + ex0.projetados.map(m => MES_C[m - 1]).join(', ') + ' projetado' : '') : 'sem DRE';
+      g('sim-sub').innerHTML = 'Simulação de <b>' + anoSim + '</b> partindo do exercício ' + ano + ' de cada empresa (' + partida + '). Altere o faturamento bruto (ou o % ao lado, para simular redução) e os <b>% em verde</b>. Impostos/fretes/comissões são % do faturamento bruto; CPV, CDF e despesas tributárias e financeiras são % do faturamento líquido.' + (cons ? ' O <b>Consolidado</b> soma as três empresas — para mudar, use a aba de cada uma.' : '');
+      const incompletas = ops.filter(op => simBase(op, ano).ex.faltam.length);
+      g('sim-aviso').innerHTML = incompletas.length ? '<div class="aviso">Exercício ' + ano + ' incompleto para ' + incompletas.map(op => OP_NOME[op]).join(', ') + ' (sem ' + simBase(incompletas[0], ano).ex.faltam.map(m => MES_C[m - 1]).join(', ') + '): o ponto de partida fica menor que o ano inteiro.</div>' : '';
+      const dis = cons ? ' disabled' : '';
+      const inp = (id, extra) => '<div class="in' + (cons ? ' ro' : '') + '"><input id="sim-i-' + id + '" inputmode="decimal"' + dis + (extra || '') + '><span class="suf">%</span></div>';
+      g('sim-grid').innerHTML =
+        '<div class="h res">Resultado líquido</div><div class="h ebitda">EBITDA</div><div class="h mc">Margem de contribuição</div><div class="h liq">Faturamento líquido</div><div class="h bruto">Faturamento bruto</div>' +
+        '<div class="v" id="sim-o-res"></div><div class="v" id="sim-o-ebitda"></div><div class="v" id="sim-o-mc"></div><div class="v" id="sim-o-liq"></div>' +
+        (cons ? '<div class="v" id="sim-o-fat"></div>' : '<div class="in"><span class="pre">R$</span><input id="sim-i-fat" class="big" inputmode="decimal" aria-label="Faturamento bruto"></div>') +
+        '<div class="d" id="sim-o-fin"></div><div class="d" id="sim-o-cdf"></div><div class="d" id="sim-o-cpv"></div><div class="d" id="sim-o-var"></div>' +
+        '<div class="in' + (cons ? ' ro' : '') + '"><input id="sim-i-pfat" inputmode="decimal" aria-label="Faturamento bruto em % do exercício ' + ano + '"' + dis + '><span class="suf">%</span></div>' +
+        '<div class="lb fin">Despesas tributárias e financeiras</div><div class="lb">CDF (custos e despesas fixas)</div><div class="lb">CPV (custo dos produtos vendidos)</div><div class="lb">Impostos / fretes / comissões</div><div class="lb" style="color:#8ee86a">Simulação com redução de faturamento</div>' +
+        '<div class="faixa">% sobre a receita líquida</div>' +
+        '<div class="pl">Resultado líquido</div><div class="pl">EBITDA</div><div class="pl">Margem de contribuição</div><div class="pl"></div><div class="pl"></div>' +
+        '<div class="pv" id="sim-o-pres"></div><div class="pv" id="sim-o-pebitda"></div><div class="pv" id="sim-o-pmc"></div><div class="pv"></div><div class="pv"></div>' +
+        inp('pfin', ' aria-label="Despesas tributárias e financeiras em %"') + inp('pcdf', ' aria-label="CDF em %"') + inp('pcpv', ' aria-label="CPV em %"') + inp('pvar', ' aria-label="Impostos, fretes e comissões em % do bruto"') +
+        '<div class="in ro"><span class="nt">' + (cons ? 'Soma das empresas' : '&larr; Preencher %') + '</span></div>' +
+        '<div class="sl">Despesas trib. e financeiras</div><div class="sl">CDF · custos e despesas fixas</div><div class="sl">CPV · custo dos produtos vendidos</div><div class="sl">Impostos / fretes / comissões (% do bruto)</div><div class="sl">% do exercício ' + ano + '</div>';
+      g('sim-gt').textContent = 'Cascata do planejamento lucratividade (R$ MM) · jan a dez/' + anoSim + (cons ? ' · Consolidado' : ' · ' + OP_NOME[atual]);
+      const baseFat = ops.reduce((a, op) => a + ((simBase(op, ano).s || {}).fat || 0), 0);
+      const calc = () => cons ? simSomar(ops.map(op => simCalcular(simRascunho(op, ano)))) : simCalcular(simRascunho(atual, ano));
+      const pc = (v, b) => b ? pct(v / b) : '—';
+      function saidas(pular) {
+        const c = calc();
+        const put = (id, v) => { const el = g('sim-o-' + id); el.textContent = brl(v); el.classList.toggle('neg', v < 0); };
+        ['res', 'ebitda', 'mc', 'liq', 'fin', 'cdf', 'cpv', 'var'].forEach(k => put(k, c[k]));
+        if (cons) put('fat', c.fat);
+        g('sim-o-pres').textContent = pc(c.res, c.liq); g('sim-o-pebitda').textContent = pc(c.ebitda, c.liq); g('sim-o-pmc').textContent = pc(c.mc, c.liq);
+        const d = cons ? { pVar: c.fat ? c.var / c.fat : 0, pCpv: c.liq ? c.cpv / c.liq : 0, pCdf: c.liq ? c.cdf / c.liq : 0, pFin: c.liq ? c.fin / c.liq : 0 } : simRascunho(atual, ano);
+        const set = (id, v) => { if (id !== pular) g('sim-i-' + id).value = v; };
+        set('pvar', pctIn(d.pVar)); set('pcpv', pctIn(d.pCpv)); set('pcdf', pctIn(d.pCdf)); set('pfin', pctIn(d.pFin));
+        set('pfat', baseFat ? pctIn(c.fat / baseFat) : '');
+        if (!cons) set('fat', numberToMoneyMasked(c.fat));
+        g('sim-svg').innerHTML = simGraficoSvg(c);
+      }
+      saidas();
+      if (!cons) {
+        const d = () => simRascunho(atual, ano);
+        attachMoneyMask(g('sim-i-fat'));
+        g('sim-i-fat').addEventListener('input', e => { const v = moneyToNumber(e.target.value); if (v != null) { d().fat = v; saidas('fat'); } });
+        g('sim-i-pfat').addEventListener('input', e => { const p = lerPct(e.target.value); if (p != null && baseFat) { d().fat = baseFat * p; saidas('pfat'); } });
+        [['pvar', 'pVar'], ['pcpv', 'pCpv'], ['pcdf', 'pCdf'], ['pfin', 'pFin']].forEach(([id, k]) =>
+          g('sim-i-' + id).addEventListener('input', e => { const p = lerPct(e.target.value); if (p != null) { d()[k] = p; saidas(id); } }));
+        document.querySelectorAll('#sim-grid input').forEach(el => el.addEventListener('blur', () => saidas()));
+      }
+      const salva = SIM.filter(r => ops.includes(r.operacao));
+      g('sim-status').innerHTML = cons ? (salva.length ? salva.length + ' de ' + ops.length + ' empresas com simulação salva' : 'Nenhuma simulação salva — partindo do real de ' + ano)
+        : salva.length ? 'Salva em <b>' + new Date(salva[0].atualizado_em).toLocaleDateString('pt-BR') + '</b>' : 'Não salva — partindo do real de ' + ano;
+      g('sim-acoes').innerHTML = cons ? '' : (podeEditar ? '<button class="btn" id="sim-salvar">Salvar simulação</button>' : '') +
+        '<button class="btn-g" id="sim-real">Voltar ao real de ' + ano + '</button>' + (podeEditar ? '' : '<span class="status">Dá para simular à vontade; só quem tem acesso a Lançamentos salva.</span>');
+      if (!cons) {
+        g('sim-real').addEventListener('click', () => { const b = simBase(atual, ano).s; SIMED[atual] = b ? { ...b } : { fat: 0, pVar: 0, pCpv: 0, pCdf: 0, pFin: 0 }; saidas(); });
+        if (podeEditar) g('sim-salvar').addEventListener('click', async () => {
+          const d = simRascunho(atual, ano);
+          const linha = { operacao: atual, ano: anoSim, fat_bruto: Math.round(d.fat * 100) / 100, p_var: d.pVar, p_cpv: d.pCpv, p_cdf: d.pCdf, p_fin: d.pFin, atualizado_em: new Date().toISOString() };
+          const { error } = await sb.from('dre_simulacao').upsert(linha, { onConflict: 'operacao,ano' });
+          if (error) return toast('Erro ao salvar: ' + error.message, 'red');
+          const r = await sb.from('dre_simulacao').select('*').eq('ano', anoSim); SIM = r.data || SIM;
+          toast('Simulação de ' + OP_NOME[atual] + ' salva.', 'green'); renderSim(ano);
+        });
+      }
+    }
+
     function render() {
       const ano = +g('sel-ano').value, ops = opsSel();
+      renderSim(ano);
       renderEntrada(ano);
       const b = basePadrao(ops, ano);
       // Tabela 1 — realizado do período-base (valores e índices)
@@ -334,15 +529,10 @@
       // Tabela 2 — exercício: meses realizados + meses projetados (o que ainda não tem DRE)
       document.querySelectorAll('.t2-ano').forEach(e => { e.textContent = ano; });
       const mp = mesesProj(ano);
-      let ultimoReal = 0; for (let m = 1; m <= 12; m++) if (temReal(ops, ano, m)) ultimoReal = m;
-      const pendentes = mp.filter(m => m > ultimoReal);
-      const cols = [];
-      if (ultimoReal) cols.push({ titulo: 'Realizado ' + rotPer(ano * 100 + 1, ano * 100 + ultimoReal), col: colReal(ops, ano, 1, ultimoReal) });
-      pendentes.forEach(m => { const c = colProjetada(ops, ano, m); if (c) cols.push({ titulo: rotMes(ano, m) + ' projetado', col: c }); });
-      const faltam = Array.from({ length: 12 }, (_, i) => i + 1).filter(m => m > ultimoReal && !pendentes.includes(m));
-      g('t2-aviso').innerHTML = faltam.length ? '<div class="aviso">Sem realizado nem projeção para ' + faltam.map(m => MES_C[m - 1]).join(', ') + ' — o exercício fica incompleto.</div>' : '';
-      if (cols.length) cols.push({ titulo: 'Exercício ' + ano, col: somarColunas(cols.map(c => c.col)) });
-      g('tb2').innerHTML = cols.length ? cascataHtml(cols, { regra: pendentes.length > 0 }) : '';
+      const ex = exercicio(ops, ano), cols = ex.cols.slice();
+      g('t2-aviso').innerHTML = ex.faltam.length ? '<div class="aviso">Sem realizado nem projeção para ' + ex.faltam.map(m => MES_C[m - 1]).join(', ') + ' — o exercício fica incompleto.</div>' : '';
+      if (cols.length) cols.push({ titulo: 'Exercício ' + ano, col: ex.total });
+      g('tb2').innerHTML = cols.length ? cascataHtml(cols, { regra: ex.pendentes.length > 0 }) : '';
       // Tabela 3 — previsto × realizado dos meses projetados que já têm DRE
       const fechados = mp.filter(m => temReal(ops, ano, m));
       g('t3').innerHTML = !fechados.length ? '<div class="vazio">' + (mp.length ? 'Nenhum mês projetado tem DRE lançado ainda (' + mp.map(m => rotMes(ano, m)).join(', ') + '). Quando o DRE for lançado, a comparação aparece aqui.' : 'Nenhum mês projetado em ' + ano + '.') + '</div>'

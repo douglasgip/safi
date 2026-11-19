@@ -75,3 +75,56 @@ test('ligação: subtela do DRE acima de Lançamentos, com rota, card na Home e 
   assert.match(ler('ajuda-conteudo.js'), /cascata: \{\n?\s*titulo: 'Cascata de Lucratividade'/);
   assert.match(ler('ajuda.js'), /cascata: \['\/cascata', 'Financeiro \(submenu do DRE\)'\]/);
 });
+
+// ── DRE Projetado – Lucratividade (simulador do Aldemar) ─────────────────────
+const grupoSim = extrairFuncao(codigo, 'grupoSim', {});
+const simDaColuna = extrairFuncao(codigo, 'simDaColuna', { grupoSim });
+const simCalcular = extrairFuncao(codigo, 'simCalcular', {});
+const simSomar = extrairFuncao(codigo, 'simSomar', {});
+const r2 = v => Math.round(v * 100) / 100;
+
+test('simulador: reproduz o print do Aldemar (100 mi, 26,6% / 55% / 34% / 1%)', () => {
+  const c = simCalcular({ fat: 100000000, pVar: 0.266, pCpv: 0.55, pCdf: 0.34, pFin: 0.01 });
+  assert.deepStrictEqual(Object.fromEntries(Object.entries(c).map(([k, v]) => [k, r2(v)])), {
+    fat: 100000000, var: 26600000, liq: 73400000, cpv: 40370000, mc: 33030000, cdf: 24956000, ebitda: 8074000, fin: 734000, res: 7340000,
+  });
+});
+
+test('simulador: grupos do DRE — impostos/fretes/comissões, CPV (só o CMV), fixos e financeiras/IR', () => {
+  assert.strictEqual(grupoSim({ classe: DED, campo: 'Simples Nacional (DAS)' }), 'var');
+  assert.strictEqual(grupoSim({ classe: CV, campo: 'Frete Pago' }), 'var');
+  assert.strictEqual(grupoSim({ classe: CV, campo: 'CMV' }), 'cpv');
+  assert.strictEqual(grupoSim({ classe: GO, campo: 'Despesas de Pessoal' }), 'cdf');
+  assert.strictEqual(grupoSim({ classe: GO, campo: 'Despesas Financeiras' }), 'fin');
+  assert.strictEqual(grupoSim({ classe: GO, campo: 'IR e CSLL' }), 'fin');
+});
+
+test('simulador: parte do real — % saem do DRE e a cascata volta aos mesmos valores', () => {
+  const col = { fat: 1000, itens: {
+    a: { classe: DED, campo: 'DAS', valor: 100 }, b: { classe: CV, campo: 'Frete Pago', valor: 100 }, c: { classe: CV, campo: 'CMV', valor: 400 },
+    d: { classe: GO, campo: 'Despesas de Pessoal', valor: 160 }, e: { classe: GO, campo: 'Despesas Financeiras', valor: 40 } } };
+  const s = simDaColuna(col);
+  assert.strictEqual(s.fat, 1000);
+  assert.strictEqual(r2(s.pVar), 0.2);          // 200 ÷ 1.000 (sobre o bruto)
+  assert.strictEqual(r2(s.pCpv), 0.5);          // 400 ÷ 800 (sobre o faturamento líquido)
+  assert.strictEqual(r2(s.pCdf), 0.2);          // 160 ÷ 800
+  assert.strictEqual(r2(s.pFin), 0.05);         // 40 ÷ 800
+  const c = simCalcular(s);
+  assert.strictEqual(r2(c.res), 1000 - 100 - 100 - 400 - 160 - 40);
+});
+
+test('simulador: consolidado soma os R$ das três empresas', () => {
+  const a = simCalcular({ fat: 1000, pVar: 0.2, pCpv: 0.5, pCdf: 0.2, pFin: 0 });
+  const b = simCalcular({ fat: 500, pVar: 0.1, pCpv: 0.4, pCdf: 0.3, pFin: 0.1 });
+  const t = simSomar([a, b, null]);
+  assert.strictEqual(t.fat, 1500);
+  assert.strictEqual(r2(t.liq), 800 + 450);
+  assert.strictEqual(r2(t.res), r2(a.res + b.res));
+});
+
+test('simulador: painel na Cascata, com abas por empresa e tabela própria', () => {
+  const html = ler('cascata.html');
+  assert.match(html, /DRE Projetado – Lucratividade/);
+  assert.match(html, /from\('dre_simulacao'\)/);
+  assert.match(html, /id="sim-abas"/);
+});

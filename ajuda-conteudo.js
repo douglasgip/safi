@@ -241,10 +241,11 @@ window.SAFI_AJUDA = { telas: {
   },
 
   cascata: {
-    titulo: 'Cascata de Lucratividade', versao: 1,
+    titulo: 'Cascata de Lucratividade', versao: 2,
     resumo: 'O DRE <b>em cascata</b>, com o valor e o <b>índice</b> (% do faturamento) de cada linha, e a <b>projeção</b> dos próximos meses a partir do faturamento previsto — para fechar a visão do exercício e servir de base para o Budget do ano seguinte. Depois, compara o <b>previsto × realizado</b> mês a mês.',
     passos: [
       { t: 'Escolha ano e operação', d: 'Exposição Paulista, Via Closet, E-commerce (GIP) ou o Consolidado (soma das três, cada uma projetada com os próprios índices).' },
+      { t: 'DRE Projetado – Lucratividade', d: 'Simulador do ano seguinte, com uma aba por empresa e o Consolidado (soma das três). Parte do exercício do ano escolhido (realizado + projetado); altere o <b>faturamento bruto</b> (ou o % dele, para simular redução) e os <b>% em verde</b>: impostos/fretes/comissões (% do bruto), CPV, CDF e despesas tributárias e financeiras (% do faturamento líquido). Mostra a cascata até o resultado líquido, com gráfico. <b>Salvar simulação</b> guarda a de cada empresa; <b>Voltar ao real</b> desfaz.' },
       { t: 'Informe o faturamento projetado', d: 'No quadro do topo, por operação e mês. Para projetar outro mês, use <b>+ mês projetado</b>. Clique em <b>Salvar e congelar projeção</b>: o SAFI calcula as linhas com o DRE do período-base daquele momento e guarda — é essa projeção que será comparada com o realizado.' },
       { t: 'Tabela 1 — realizado', d: 'O DRE do período-base (de janeiro até o último mês lançado antes da projeção), com R$, % do faturamento e a média mensal.' },
       { t: 'Tabela 2 — exercício', d: 'Meses realizados + meses projetados = o ano inteiro, com R$ e %. Cada linha projetada mostra a regra usada.' },
