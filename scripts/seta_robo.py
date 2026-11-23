@@ -643,41 +643,82 @@ def faltam_dias(est, hoje):
 
 
 def perguntar_antes(segundos=AVISO_SEGUNDOS):
-    """Janelinha por cima de tudo: "vou usar o mouse em N s" com [Começar agora] e [Adiar 1 hora].
-    Sem resposta, começa sozinho. Fechar no X = adiar."""
+    """Aviso chamativo por cima de tudo: "vou usar o mouse" com contagem regressiva grande,
+    [Começar agora] (Enter) e [Adiar] (Esc). Sem resposta, começa sozinho. Pisca e toca som."""
     import tkinter as tk
+    try:
+        import winsound
+        winsound.MessageBeep(0x30)  # som de "atenção" do Windows
+    except Exception:
+        pass
+    FUNDO, CARTAO, AMBAR, VERMELHO, VERDE, BRANCO, CINZA = '#0b1020', '#111a33', '#fbbf24', '#ef4444', '#10b981', '#f8fafc', '#94a3b8'
+    TITULO = 'Bahnschrift'
     res = {'v': 'agora'}
     root = tk.Tk()
     root.title('Robô do Seta')
+    root.overrideredirect(True)          # sem a barra do Windows: parece um alerta, não uma janela qualquer
     root.attributes('-topmost', True)
-    root.resizable(False, False)
-    tk.Label(root, text='Robô do Seta → SAFI', font=('Segoe UI', 13, 'bold')).pack(padx=24, pady=(18, 4))
-    tk.Label(root, text='Vou abrir o Seta e buscar as vendas que faltam.\n'
-                        'Preciso do mouse e do teclado por uns 3 a 5 minutos.', font=('Segoe UI', 10), justify='center').pack(padx=24)
-    conta = tk.Label(root, font=('Segoe UI', 10, 'bold'), fg='#b45309')
-    conta.pack(pady=10)
-    n = {'s': segundos}
+    root.configure(bg=AMBAR)             # a cor de fundo do root vira a borda grossa (pisca)
+    caixa = tk.Frame(root, bg=FUNDO, padx=34, pady=22)
+    caixa.pack(padx=6, pady=6)
 
-    def adiar():
+    faixa = tk.Label(caixa, text='  ATENÇÃO  ·  ROBÔ DO SETA  ', font=(TITULO, 12, 'bold'), bg=AMBAR, fg=FUNDO, padx=10, pady=3)
+    faixa.pack()
+    tk.Label(caixa, text='Vou usar o MOUSE\ne o TECLADO', font=(TITULO, 30, 'bold'), bg=FUNDO, fg=BRANCO, justify='center').pack(pady=(14, 4))
+    tk.Label(caixa, text='Vou abrir o Seta e buscar as vendas das lojas para o SAFI.\nLeva uns 3 a 5 minutos: não mexa no mouse até o Seta fechar.',
+             font=('Segoe UI', 11), bg=FUNDO, fg=CINZA, justify='center').pack()
+
+    meio = tk.Frame(caixa, bg=CARTAO, padx=26, pady=10)
+    meio.pack(pady=16, fill='x')
+    numero = tk.Label(meio, text=str(segundos), font=(TITULO, 54, 'bold'), bg=CARTAO, fg=AMBAR)
+    numero.pack()
+    tk.Label(meio, text='segundos para começar sozinho', font=(TITULO, 11), bg=CARTAO, fg=CINZA).pack()
+    barra = tk.Canvas(meio, width=380, height=8, bg='#1e293b', highlightthickness=0)
+    barra.pack(pady=(10, 4))
+    cheio = barra.create_rectangle(0, 0, 380, 8, fill=AMBAR, width=0)
+
+    def adiar(_=None):
         res['v'] = 'adiar'
         root.destroy()
+
+    def comecar(_=None):
+        res['v'] = 'agora'
+        root.destroy()
+
+    def botao(pai, texto, cor, acao):
+        b = tk.Label(pai, text=texto, font=(TITULO, 14, 'bold'), bg=cor, fg=FUNDO if cor != CARTAO else BRANCO,
+                     padx=22, pady=10, cursor='hand2')
+        b.bind('<Button-1>', acao)
+        return b
+
+    botoes = tk.Frame(caixa, bg=FUNDO)
+    botoes.pack()
+    botao(botoes, '▶  Começar agora', VERDE, comecar).pack(side='left', padx=8)
+    botao(botoes, '❚❚  Adiar %d min' % ADIAR_MINUTOS, CARTAO, adiar).pack(side='left', padx=8)
+    tk.Label(caixa, text='Enter = começar   ·   Esc = adiar', font=('Segoe UI', 9), bg=FUNDO, fg='#64748b').pack(pady=(12, 0))
+    root.bind('<Return>', comecar)
+    root.bind('<Escape>', adiar)
+
+    n = {'s': segundos, 'pisca': False}
 
     def tick():
         if n['s'] <= 0:
             root.destroy()
             return
-        conta.config(text='Começo sozinho em %d s' % n['s'])
+        numero.config(text=str(n['s']), fg=VERMELHO if n['s'] <= 10 else AMBAR)
+        barra.coords(cheio, 0, 0, 380 * n['s'] / segundos, 8)
+        n['pisca'] = not n['pisca']
+        borda = (VERMELHO if n['s'] <= 10 else AMBAR) if n['pisca'] else FUNDO
+        root.configure(bg=borda)
+        faixa.configure(bg=borda if n['pisca'] else AMBAR)
         n['s'] -= 1
         root.after(1000, tick)
 
-    botoes = tk.Frame(root)
-    botoes.pack(pady=(0, 18))
-    tk.Button(botoes, text='Começar agora', width=16, command=root.destroy).pack(side='left', padx=6)
-    tk.Button(botoes, text='Adiar %d min' % ADIAR_MINUTOS, width=16, command=adiar).pack(side='left', padx=6)
-    root.protocol('WM_DELETE_WINDOW', adiar)
     root.update_idletasks()
     w, h = root.winfo_width(), root.winfo_height()
     root.geometry('+%d+%d' % ((root.winfo_screenwidth() - w) // 2, (root.winfo_screenheight() - h) // 3))
+    root.lift()
+    root.focus_force()
     tick()
     root.mainloop()
     return res['v']
@@ -782,6 +823,10 @@ def main(args):
         return rodar(cfg, pedidos={loja: [date.fromisoformat(d) for d in args[2:]]})
     if args and args[0] == 'agendado':
         return agendado(cfg)
+    if args and args[0] == 'aviso':
+        # Só mostra o aviso para ver como fica (não abre o Seta).
+        print('Escolha:', perguntar_antes(int(args[1]) if len(args) > 1 else AVISO_SEGUNDOS))
+        return 0
     if not args or args[0] not in ('exportar', 'ler'):
         print(__doc__)
         return 1

@@ -166,3 +166,13 @@ test('robô do Seta: "buscar" dia avulso não mexe no estado.json (não volta a 
   assert.match(py, /rodar\(cfg, pedidos=\{loja: \[date\.fromisoformat/);
   assert.match(py, /if not ensaio and r\.get\('ok'\) and pedidos is None:/);
 });
+
+test('robô do Seta: aviso chamativo (fonte própria, sem barra do Windows, pisca, som) e comando "aviso" para ver como fica', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /Bahnschrift/);
+  assert.match(fn, /overrideredirect\(True\)/);
+  assert.match(fn, /MessageBeep/);
+  assert.match(fn, /<Escape>/);
+  assert.match(py, /args\[0\] == 'aviso'/);
+});
