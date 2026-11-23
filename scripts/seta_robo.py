@@ -64,8 +64,18 @@ RELATORIOS = {
 TENTATIVAS_RELATORIO = 3  # se exportar o relatório trocado, tenta de novo antes de desistir
 
 
+LOG = os.path.join(PASTA, 'robo.log')
+
+
 def log(*a):
-    print(time.strftime('%H:%M:%S'), *a, flush=True)
+    linha = time.strftime('%d/%m %H:%M:%S') + ' ' + ' '.join(str(x) for x in a)
+    print(linha, flush=True)
+    try:
+        os.makedirs(PASTA, exist_ok=True)
+        with open(LOG, 'a', encoding='utf-8') as f:
+            f.write(linha + '\n')
+    except OSError:
+        pass
 
 
 def carregar_config():
@@ -625,4 +635,10 @@ def main(args):
 
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except Exception as e:
+        import traceback
+        log('ERRO:', e)
+        log(traceback.format_exc())
+        sys.exit(1)

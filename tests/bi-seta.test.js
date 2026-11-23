@@ -106,3 +106,12 @@ test('robô do Seta: confere cada relatório logo após exportar e tenta de novo
   assert.match(fn[0], /salvar_como\(caminho\)[\s\S]*ler_planilha\(caminho, colunas\)/);
   assert.match(py, /TENTATIVAS_RELATORIO = [2-5]\b/);
 });
+
+test('robô do Seta: grava o passo a passo e os erros em robo.log (para conferir rodadas agendadas)', () => {
+  const py = ler('scripts/seta_robo.py');
+  assert.match(py, /robo\.log/);
+  const fnLog = py.match(/def log\([\s\S]*?\r?\n\r?\n\r?\n/);
+  assert.ok(fnLog);
+  assert.match(fnLog[0], /open\(LOG/);
+  assert.match(py, /if __name__ == '__main__':[\s\S]*except Exception[\s\S]*log\('ERRO/);
+});
