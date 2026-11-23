@@ -170,21 +170,22 @@ test('robô do Seta: "buscar" dia avulso não mexe no estado.json (não volta a 
 test('robô do Seta: aviso chamativo (fonte própria, sem barra do Windows, pisca, som) e comando "aviso" para ver como fica', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(fn, /Bahnschrift/);
+  assert.match(fn, /Agency FB|Bahnschrift/);
   assert.match(fn, /overrideredirect\(True\)/);
   assert.match(fn, /MessageBeep/);
   assert.match(fn, /<Escape>/);
   assert.match(py, /args\[0\] == 'aviso'/);
 });
 
-test('robô do Seta: aviso no clima neon/pôr do sol (degradê, sol retrô, letra Impact, borda neon que pisca)', () => {
+test('robô do Seta: aviso com cara de painel holográfico azul (anéis girando, cantoneiras, letra Agency FB, sem rosa)', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(fn, /Impact/);
-  assert.match(fn, /def mistura\(/);
+  assert.match(fn, /Agency FB/);
   assert.match(fn, /tk\.Canvas/);
-  assert.match(fn, /#ff2bd6/i);
-  assert.match(fn, /#00f0ff/i);
+  assert.match(fn, /create_arc\(/);
+  assert.match(fn, /def girar\(/);
+  assert.match(fn, /#00d4ff/i);
+  assert.doesNotMatch(fn, /#ff2bd6/i, 'o neon rosa saiu');
 });
 
 test('robô do Seta: o aviso roda em processo separado; se ele travar, o robô segue a rotina (não perde o dia)', () => {

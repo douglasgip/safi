@@ -643,84 +643,76 @@ def faltam_dias(est, hoje):
 
 
 def perguntar_antes(segundos=AVISO_SEGUNDOS):
-    """Aviso chamativo por cima de tudo (clima neon de pôr do sol): "vou usar o mouse" com contagem
-    regressiva sobre um sol retrô, [Começar agora] (Enter) e [Adiar] (Esc). Sem resposta, começa sozinho.
-    Borda neon pisca (rosa/ciano; vermelha nos últimos 10 s) e toca o som de atenção do Windows."""
+    """Aviso por cima de tudo com cara de painel holográfico azul: "vou usar o mouse", contagem regressiva
+    no meio de anéis que giram, [Iniciar agora] (Enter) e [Adiar] (Esc). Sem resposta, começa sozinho.
+    Toca o som de atenção do Windows; nos últimos 10 s o anel do tempo fica âmbar."""
+    import math
     import tkinter as tk
     try:
         import winsound
         winsound.MessageBeep(0x30)
     except Exception:
         pass
-    NOITE, ROXO, ROSA, LARANJA, AMARELO, CIANO, BRANCO, LILAS = (
-        '#12002b', '#3a0a5e', '#ff2bd6', '#ff7a18', '#ffd166', '#00f0ff', '#ffffff', '#e0c3ff')
-    GRANDE, PEQUENA = 'Impact', 'Bahnschrift'
-    W, H = 620, 560
+    FUNDO, GRADE, AZUL, AZUL2, ESCURO, CLARO, TEXTO, APAGADO, ALERTA = (
+        '#020a14', '#071a2c', '#00d4ff', '#0a84ff', '#0a3d5c', '#e6faff', '#7fb8d6', '#3a6d8c', '#ffb020')
+    HUD, MONO, LEVE = 'Agency FB', 'OCR A Extended', 'Segoe UI Light'
+    W, H = 660, 580
+    cx, cy = W // 2, 300
     res = {'v': 'agora'}
-
-    def mistura(c1, c2, t):
-        a = [int(c1[i:i + 2], 16) for i in (1, 3, 5)]
-        b = [int(c2[i:i + 2], 16) for i in (1, 3, 5)]
-        return '#%02x%02x%02x' % tuple(round(x + (y - x) * t) for x, y in zip(a, b))
 
     root = tk.Tk()
     root.title('Robô do Seta')
     root.overrideredirect(True)
     root.attributes('-topmost', True)
-    cv = tk.Canvas(root, width=W, height=H, highlightthickness=0, bg=NOITE)
+    root.attributes('-alpha', 0.97)
+    cv = tk.Canvas(root, width=W, height=H, highlightthickness=0, bg=FUNDO)
     cv.pack()
 
-    # Céu: degradê da noite (topo) para o roxo do pôr do sol (horizonte).
-    HORIZONTE = 400
-    for y in range(HORIZONTE):
-        cv.create_line(0, y, W, y, fill=mistura(NOITE, ROXO, y / HORIZONTE))
-    for y in range(HORIZONTE, H):
-        cv.create_line(0, y, W, y, fill=mistura('#1b0236', NOITE, (y - HORIZONTE) / (H - HORIZONTE)))
+    # Grade de fundo e moldura fina com cantoneiras.
+    for x in range(0, W, 30):
+        cv.create_line(x, 0, x, H, fill=GRADE)
+    for y in range(0, H, 30):
+        cv.create_line(0, y, W, y, fill=GRADE)
+    cv.create_rectangle(8, 8, W - 8, H - 8, outline=ESCURO)
+    cantos = []
+    for (x, y, dx, dy) in ((8, 8, 1, 1), (W - 8, 8, -1, 1), (8, H - 8, 1, -1), (W - 8, H - 8, -1, -1)):
+        cantos.append(cv.create_line(x, y + 34 * dy, x, y, x + 34 * dx, y, fill=AZUL, width=3))
 
-    # Sol retrô: faixas do amarelo ao rosa, com cortes horizontais na metade de baixo.
-    cx, cy, r = W // 2, 330, 92
-    for y in range(cy - r, HORIZONTE):
-        dy = y - cy
-        if abs(dy) > r:
-            continue
-        t = (y - (cy - r)) / (2 * r)
-        corte = dy > 8 and (dy // 9) % 2 == 1 and (dy % 9) < 2 + dy // 25
-        if corte:
-            continue
-        meia = int((r * r - dy * dy) ** 0.5)
-        cv.create_line(cx - meia, y, cx + meia, y, fill=mistura(mistura(AMARELO, LARANJA, min(1, t * 1.6)), ROSA, max(0, t * 1.4 - 0.4)))
+    # Cabeçalho.
+    cv.create_text(28, 30, anchor='w', text='SAFI // ROBÔ DO SETA', font=(MONO, 10), fill=AZUL)
+    status = cv.create_text(W - 28, 30, anchor='e', text='● AGUARDANDO', font=(MONO, 10), fill=AZUL)
+    cv.create_line(28, 46, W - 28, 46, fill=ESCURO)
+    for dx in (-1, 1):
+        cv.create_text(cx + dx, 86, text='VOU USAR O MOUSE E O TECLADO', font=(HUD, 34, 'bold'), fill=ESCURO)
+    cv.create_text(cx, 86, text='VOU USAR O MOUSE E O TECLADO', font=(HUD, 34, 'bold'), fill=CLARO)
+    cv.create_text(cx, 128, text='Vou abrir o Seta e buscar as vendas das lojas para o SAFI.\n'
+                                 'Leva uns 3 a 5 minutos: não mexa no mouse até o Seta fechar.',
+                   font=(LEVE, 11), fill=TEXTO, justify='center')
 
-    # Chão: grade neon em perspectiva.
-    cv.create_line(0, HORIZONTE, W, HORIZONTE, fill=ROSA, width=2)
-    for k in range(-9, 10):
-        cv.create_line(cx + k * 18, HORIZONTE, cx + k * 120, H, fill='#5b1a7a')
-    yy, passo = HORIZONTE + 6, 6
-    while yy < H:
-        cv.create_line(0, yy, W, yy, fill='#5b1a7a')
-        passo *= 1.45
-        yy += passo
+    # Reator: anéis, marcas e o anel do tempo.
+    cv.create_oval(cx - 118, cy - 118, cx + 118, cy + 118, outline=ESCURO, width=2)
+    for k in range(72):
+        a = math.radians(k * 5)
+        r1, r2 = (78, 70) if k % 6 == 0 else (78, 74)
+        cv.create_line(cx + r1 * math.cos(a), cy + r1 * math.sin(a), cx + r2 * math.cos(a), cy + r2 * math.sin(a), fill=APAGADO)
+    externos = [cv.create_arc(cx - 106, cy - 106, cx + 106, cy + 106, start=k * 120, extent=70, style='arc', outline=AZUL, width=4)
+                for k in range(3)]
+    internos = [cv.create_arc(cx - 92, cy - 92, cx + 92, cy + 92, start=k * 180, extent=110, style='arc', outline=AZUL2, width=2)
+                for k in range(2)]
+    cv.create_oval(cx - 62, cy - 62, cx + 62, cy + 62, outline=ESCURO, width=6)
+    tempo = cv.create_arc(cx - 62, cy - 62, cx + 62, cy + 62, start=90, extent=-359.9, style='arc', outline=AZUL, width=6)
+    numero = cv.create_text(cx, cy - 6, text=str(segundos), font=(HUD, 58, 'bold'), fill=CLARO)
+    cv.create_text(cx, cy + 34, text='SEG', font=(MONO, 9), fill=AZUL)
+    cv.create_text(cx, cy + 140, text='INÍCIO AUTOMÁTICO', font=(MONO, 10), fill=AZUL)
 
-    # Textos (sombra rosa deslocada + texto amarelo = letreiro neon).
-    def neon(x, y, texto, tam, cor=AMARELO, sombra=ROSA):
-        cv.create_text(x + 3, y + 3, text=texto, font=(GRANDE, tam), fill=sombra)
-        return cv.create_text(x, y, text=texto, font=(GRANDE, tam), fill=cor)
-
-    cv.create_rectangle(W // 2 - 150, 22, W // 2 + 150, 50, fill=CIANO, outline='')
-    cv.create_text(W // 2, 36, text='ATENÇÃO  ·  ROBÔ DO SETA', font=(PEQUENA, 13, 'bold'), fill=NOITE)
-    neon(W // 2, 98, 'VOU USAR O MOUSE', 44)
-    neon(W // 2, 156, 'E O TECLADO', 44)
-    cv.create_text(W // 2, 212, text='Vou abrir o Seta e buscar as vendas das lojas para o SAFI.\n'
-                                     'Leva uns 3 a 5 minutos: não mexa no mouse até o Seta fechar.',
-                   font=(PEQUENA, 11), fill=LILAS, justify='center')
-    numero_sombra = cv.create_text(cx + 3, cy + 3, text=str(segundos), font=(GRANDE, 64), fill=ROSA)
-    numero = cv.create_text(cx, cy, text=str(segundos), font=(GRANDE, 64), fill=NOITE)
-    cv.create_text(cx, HORIZONTE + 18, text='SEGUNDOS PARA COMEÇAR SOZINHO', font=(PEQUENA, 11, 'bold'), fill=CIANO)
-
-    # Barra do tempo: degradê rosa -> laranja que encolhe.
-    BX, BY, BW = 110, HORIZONTE + 38, W - 220
-    cv.create_rectangle(BX, BY, BX + BW, BY + 8, fill='#2a0845', outline='')
-    gomos = [cv.create_rectangle(BX + i * BW / 40, BY, BX + (i + 1) * BW / 40 - 1, BY + 8,
-                                 fill=mistura(ROSA, LARANJA, i / 39), outline='') for i in range(40)]
+    # Painéis laterais de dados.
+    esq = 'ALVO ........ SETA ERP\nLOJAS ....... EXPO · VIA\nDESTINO ..... SAFI / BI'
+    dir_ = 'DURAÇÃO ..... 3-5 MIN\nENTRADA ..... MOUSE+TECL.\nMODO ........ AUTOMÁTICO'
+    cv.create_text(30, cy, anchor='w', text=esq, font=(MONO, 8), fill=APAGADO, justify='left')
+    cv.create_text(W - 30, cy, anchor='e', text=dir_, font=(MONO, 8), fill=APAGADO, justify='left')
+    for x0, x1 in ((30, 180), (W - 180, W - 30)):
+        cv.create_line(x0, cy - 34, x1, cy - 34, fill=ESCURO)
+        cv.create_line(x0, cy + 34, x1, cy + 34, fill=ESCURO)
 
     def adiar(_=None):
         res['v'] = 'adiar'
@@ -730,23 +722,33 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
         res['v'] = 'agora'
         root.destroy()
 
-    def botao(x, texto, fundo, letra, acao):
+    def botao(x, texto, cheio, acao):
         tag = 'b%d' % x
-        cv.create_rectangle(x - 128 + 4, 498 + 4, x + 128 + 4, 538 + 4, fill=NOITE, outline='', tags=tag)
-        cv.create_rectangle(x - 128, 498, x + 128, 538, fill=fundo, outline=BRANCO, width=2, tags=tag)
-        cv.create_text(x, 518, text=texto, font=(GRANDE, 17), fill=letra, tags=tag)
+        pontos = (x - 130, 492, x + 118, 492, x + 130, 504, x + 130, 532, x - 118, 532, x - 130, 520)
+        cv.create_polygon(pontos, fill=AZUL if cheio else FUNDO, outline=AZUL, width=2, tags=tag)
+        cv.create_text(x, 512, text=texto, font=(HUD, 19, 'bold'), fill=FUNDO if cheio else AZUL, tags=tag)
         cv.tag_bind(tag, '<Button-1>', acao)
         cv.tag_bind(tag, '<Enter>', lambda e: cv.config(cursor='hand2'))
         cv.tag_bind(tag, '<Leave>', lambda e: cv.config(cursor=''))
 
-    botao(W // 2 - 140, '▶  COMEÇAR AGORA', CIANO, NOITE, comecar)
-    botao(W // 2 + 140, ('❚❚  Adiar %d min' % ADIAR_MINUTOS).upper(), ROSA, BRANCO, adiar)
-    cv.create_text(W // 2, H - 8, text='Enter = começar   ·   Esc = adiar', font=(PEQUENA, 8), fill='#8b6fb0')
+    botao(cx - 145, '▶  INICIAR AGORA', True, comecar)
+    botao(cx + 145, ('❚❚  Adiar %d min' % ADIAR_MINUTOS).upper(), False, adiar)
+    cv.create_text(cx, H - 22, text='ENTER: INICIAR   ·   ESC: ADIAR', font=(MONO, 8), fill=APAGADO)
     root.bind('<Return>', comecar)
     root.bind('<Escape>', adiar)
 
-    # Borda neon que pisca.
-    borda = cv.create_rectangle(2, 2, W - 2, H - 2, outline=ROSA, width=5)
+    ang = {'a': 0.0}
+
+    def girar():
+        if not root.winfo_exists():
+            return
+        ang['a'] = (ang['a'] + 3) % 360
+        for k, item in enumerate(externos):
+            cv.itemconfig(item, start=k * 120 - ang['a'])
+        for k, item in enumerate(internos):
+            cv.itemconfig(item, start=k * 180 + ang['a'] * 1.6)
+        root.after(40, girar)
+
     n = {'s': segundos, 'pisca': False}
 
     def tick():
@@ -754,13 +756,13 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
             root.destroy()
             return
         fim = n['s'] <= 10
-        cv.itemconfig(numero, text=str(n['s']))
-        cv.itemconfig(numero_sombra, text=str(n['s']), fill='#ff1f3d' if fim else ROSA)
-        mostrar = round(40 * n['s'] / segundos)
-        for i, g in enumerate(gomos):
-            cv.itemconfig(g, state='normal' if i < mostrar else 'hidden')
+        cor = ALERTA if fim else AZUL
+        cv.itemconfig(numero, text=str(n['s']), fill=ALERTA if fim else CLARO)
+        cv.itemconfig(tempo, extent=-359.9 * n['s'] / segundos, outline=cor)
         n['pisca'] = not n['pisca']
-        cv.itemconfig(borda, outline=('#ff1f3d' if fim else CIANO) if n['pisca'] else ROSA)
+        cv.itemconfig(status, fill=cor if n['pisca'] else ESCURO, text='● INICIANDO' if fim else '● AGUARDANDO')
+        for c in cantos:
+            cv.itemconfig(c, fill=cor if n['pisca'] else AZUL2)
         n['s'] -= 1
         root.after(1000, tick)
 
@@ -769,6 +771,7 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
     root.lift()
     root.focus_force()
     tick()
+    girar()
     root.mainloop()
     return res['v']
 
