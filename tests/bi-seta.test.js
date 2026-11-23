@@ -97,3 +97,12 @@ test('robô do Seta: comando token enxerga a linha "token =" vazia (não lê a l
   const cheio = cfg.replace('token = ', 'token = abc123');
   assert.equal(cheio.match(re)[1], 'abc123');
 });
+
+test('robô do Seta: confere cada relatório logo após exportar e tenta de novo se vier trocado', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def exportar_dia\([\s\S]*?\r?\n\r?\n\r?\n/);
+  assert.ok(fn, 'exportar_dia não encontrada');
+  assert.match(fn[0], /for tentativa in range/);
+  assert.match(fn[0], /salvar_como\(caminho\)[\s\S]*ler_planilha\(caminho, colunas\)/);
+  assert.match(py, /TENTATIVAS_RELATORIO = [2-5]\b/);
+});

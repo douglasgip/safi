@@ -61,6 +61,7 @@ RELATORIOS = {
     'resumo': (0, ['quantidade', 'total', 'lucro', 'frete']),
     'listagem': (1, ['codigo', 'data', 'total']),
 }
+TENTATIVAS_RELATORIO = 3  # se exportar o relatório trocado, tenta de novo antes de desistir
 
 
 def log(*a):
@@ -360,13 +361,23 @@ def exportar_dia(top, form, loja, dia):
     """Na tela "Relatórios das vendas" aberta: data nos dois campos e exporta os dois relatórios."""
     digitar_data(form, 'data_inicial', dia)
     digitar_data(form, 'data_final', dia)
-    for rel, (setas, _) in RELATORIOS.items():
-        top.set_focus()
-        clicar(form, REL['lista_relatorios'])
-        teclas('{HOME}' + '{DOWN}' * setas)
-        clicar(form, REL['excel'])
+    for rel, (setas, colunas) in RELATORIOS.items():
         caminho = arquivo(loja, dia.isoformat(), rel)
-        salvar_como(caminho)
+        for tentativa in range(1, TENTATIVAS_RELATORIO + 1):
+            top.set_focus()
+            clicar(form, REL['lista_relatorios'])
+            time.sleep(0.4 * tentativa)  # o Seta às vezes ignora as setas se vierem rápido demais
+            teclas('{HOME}' + '{DOWN}' * setas)
+            time.sleep(0.4 * tentativa)
+            clicar(form, REL['excel'])
+            salvar_como(caminho)
+            try:
+                ler_planilha(caminho, colunas)  # confere se saiu o relatório certo
+                break
+            except RuntimeError:
+                if tentativa == TENTATIVAS_RELATORIO:
+                    raise
+                log('  saiu o relatório errado em', os.path.basename(caminho), '- tentando de novo')
         log('  salvei', os.path.basename(caminho))
 
 
