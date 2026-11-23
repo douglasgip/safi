@@ -157,7 +157,7 @@ test('robô do Seta: modo agendado só age se faltar dia, respeita tela bloquead
   const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes() == 'adiar'", 'return rodar(cfg)'].map(s => fn.indexOf(s));
   ordem.forEach((i, k) => assert.ok(i > 0, 'faltou o passo ' + k));
   assert.deepEqual([...ordem].sort((a, b) => a - b), ordem, 'a ordem dos passos mudou');
-  assert.match(py, /'Adiar %d min' % ADIAR_MINUTOS/);
+  assert.match(py, /Adiar %d min' % ADIAR_MINUTOS/);
   assert.match(py, /args\[0\] == 'agendado'/);
 });
 
