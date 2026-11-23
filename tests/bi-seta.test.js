@@ -170,22 +170,25 @@ test('robô do Seta: "buscar" dia avulso não mexe no estado.json (não volta a 
 test('robô do Seta: aviso chamativo (fonte própria, sem barra do Windows, pisca, som) e comando "aviso" para ver como fica', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(fn, /Agency FB|Bahnschrift/);
+  assert.match(fn, /font=\(/);
   assert.match(fn, /overrideredirect\(True\)/);
   assert.match(fn, /MessageBeep/);
   assert.match(fn, /<Escape>/);
   assert.match(py, /args\[0\] == 'aviso'/);
 });
 
-test('robô do Seta: aviso com cara de painel holográfico azul (anéis girando, cantoneiras, letra Agency FB, sem rosa)', () => {
+test('robô do Seta: aviso com a cara do GerônIA (foto dele, fundo escuro com brilho roxo/azul, âmbar, vidro)', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(fn, /Agency FB/);
-  assert.match(fn, /tk\.Canvas/);
-  assert.match(fn, /create_arc\(/);
-  assert.match(fn, /def girar\(/);
-  assert.match(fn, /#00d4ff/i);
-  assert.doesNotMatch(fn, /#ff2bd6/i, 'o neon rosa saiu');
+  assert.match(fn, /GerônIA\.png/);
+  assert.match(fn, /#080b14/i);   // fundo do GerônIA
+  assert.match(fn, /#7c3aed/i);   // brilho roxo
+  assert.match(fn, /#1d4ed8/i);   // brilho azul
+  assert.match(fn, /#f59e0b/i);   // âmbar dos botões do GerônIA
+  assert.match(fn, /#4ade80/i);   // bolinha verde "online"
+  assert.match(fn, /create_arc\(/); // anel do tempo
+  assert.doesNotMatch(fn, /#00d4ff|#ff2bd6/i, 'saíram o azul holográfico e o neon rosa');
+  assert.ok(require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'public', 'GerônIA.png')));
 });
 
 test('robô do Seta: o aviso roda em processo separado; se ele travar, o robô segue a rotina (não perde o dia)', () => {
