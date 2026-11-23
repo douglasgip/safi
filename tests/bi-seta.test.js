@@ -154,7 +154,7 @@ test('robô do Seta: agendamento — 08:32, ao entrar e ao desbloquear, como adm
 test('robô do Seta: modo agendado só age se faltar dia, respeita tela bloqueada e Seta em uso, e avisa com "Adiar"', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def agendado\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes() == 'adiar'", 'return rodar(cfg)'].map(s => fn.indexOf(s));
+  const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes_seguro() == 'adiar'", 'return rodar(cfg)'].map(s => fn.indexOf(s));
   ordem.forEach((i, k) => assert.ok(i > 0, 'faltou o passo ' + k));
   assert.deepEqual([...ordem].sort((a, b) => a - b), ordem, 'a ordem dos passos mudou');
   assert.match(py, /Adiar %d min' % ADIAR_MINUTOS/);
@@ -175,4 +175,23 @@ test('robô do Seta: aviso chamativo (fonte própria, sem barra do Windows, pisc
   assert.match(fn, /MessageBeep/);
   assert.match(fn, /<Escape>/);
   assert.match(py, /args\[0\] == 'aviso'/);
+});
+
+test('robô do Seta: aviso no clima neon/pôr do sol (degradê, sol retrô, letra Impact, borda neon que pisca)', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /Impact/);
+  assert.match(fn, /def mistura\(/);
+  assert.match(fn, /tk\.Canvas/);
+  assert.match(fn, /#ff2bd6/i);
+  assert.match(fn, /#00f0ff/i);
+});
+
+test('robô do Seta: o aviso roda em processo separado; se ele travar, o robô segue a rotina (não perde o dia)', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def perguntar_antes_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /subprocess\.run\(/);
+  assert.match(fn, /returncode == 10/);
+  assert.match(fn, /return 'agora'/);
+  assert.match(py, /return 10 if perguntar_antes\(/);
 });

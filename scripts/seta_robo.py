@@ -643,39 +643,84 @@ def faltam_dias(est, hoje):
 
 
 def perguntar_antes(segundos=AVISO_SEGUNDOS):
-    """Aviso chamativo por cima de tudo: "vou usar o mouse" com contagem regressiva grande,
-    [Começar agora] (Enter) e [Adiar] (Esc). Sem resposta, começa sozinho. Pisca e toca som."""
+    """Aviso chamativo por cima de tudo (clima neon de pôr do sol): "vou usar o mouse" com contagem
+    regressiva sobre um sol retrô, [Começar agora] (Enter) e [Adiar] (Esc). Sem resposta, começa sozinho.
+    Borda neon pisca (rosa/ciano; vermelha nos últimos 10 s) e toca o som de atenção do Windows."""
     import tkinter as tk
     try:
         import winsound
-        winsound.MessageBeep(0x30)  # som de "atenção" do Windows
+        winsound.MessageBeep(0x30)
     except Exception:
         pass
-    FUNDO, CARTAO, AMBAR, VERMELHO, VERDE, BRANCO, CINZA = '#0b1020', '#111a33', '#fbbf24', '#ef4444', '#10b981', '#f8fafc', '#94a3b8'
-    TITULO = 'Bahnschrift'
+    NOITE, ROXO, ROSA, LARANJA, AMARELO, CIANO, BRANCO, LILAS = (
+        '#12002b', '#3a0a5e', '#ff2bd6', '#ff7a18', '#ffd166', '#00f0ff', '#ffffff', '#e0c3ff')
+    GRANDE, PEQUENA = 'Impact', 'Bahnschrift'
+    W, H = 620, 560
     res = {'v': 'agora'}
+
+    def mistura(c1, c2, t):
+        a = [int(c1[i:i + 2], 16) for i in (1, 3, 5)]
+        b = [int(c2[i:i + 2], 16) for i in (1, 3, 5)]
+        return '#%02x%02x%02x' % tuple(round(x + (y - x) * t) for x, y in zip(a, b))
+
     root = tk.Tk()
     root.title('Robô do Seta')
-    root.overrideredirect(True)          # sem a barra do Windows: parece um alerta, não uma janela qualquer
+    root.overrideredirect(True)
     root.attributes('-topmost', True)
-    root.configure(bg=AMBAR)             # a cor de fundo do root vira a borda grossa (pisca)
-    caixa = tk.Frame(root, bg=FUNDO, padx=34, pady=22)
-    caixa.pack(padx=6, pady=6)
+    cv = tk.Canvas(root, width=W, height=H, highlightthickness=0, bg=NOITE)
+    cv.pack()
 
-    faixa = tk.Label(caixa, text='  ATENÇÃO  ·  ROBÔ DO SETA  ', font=(TITULO, 12, 'bold'), bg=AMBAR, fg=FUNDO, padx=10, pady=3)
-    faixa.pack()
-    tk.Label(caixa, text='Vou usar o MOUSE\ne o TECLADO', font=(TITULO, 30, 'bold'), bg=FUNDO, fg=BRANCO, justify='center').pack(pady=(14, 4))
-    tk.Label(caixa, text='Vou abrir o Seta e buscar as vendas das lojas para o SAFI.\nLeva uns 3 a 5 minutos: não mexa no mouse até o Seta fechar.',
-             font=('Segoe UI', 11), bg=FUNDO, fg=CINZA, justify='center').pack()
+    # Céu: degradê da noite (topo) para o roxo do pôr do sol (horizonte).
+    HORIZONTE = 400
+    for y in range(HORIZONTE):
+        cv.create_line(0, y, W, y, fill=mistura(NOITE, ROXO, y / HORIZONTE))
+    for y in range(HORIZONTE, H):
+        cv.create_line(0, y, W, y, fill=mistura('#1b0236', NOITE, (y - HORIZONTE) / (H - HORIZONTE)))
 
-    meio = tk.Frame(caixa, bg=CARTAO, padx=26, pady=10)
-    meio.pack(pady=16, fill='x')
-    numero = tk.Label(meio, text=str(segundos), font=(TITULO, 54, 'bold'), bg=CARTAO, fg=AMBAR)
-    numero.pack()
-    tk.Label(meio, text='segundos para começar sozinho', font=(TITULO, 11), bg=CARTAO, fg=CINZA).pack()
-    barra = tk.Canvas(meio, width=380, height=8, bg='#1e293b', highlightthickness=0)
-    barra.pack(pady=(10, 4))
-    cheio = barra.create_rectangle(0, 0, 380, 8, fill=AMBAR, width=0)
+    # Sol retrô: faixas do amarelo ao rosa, com cortes horizontais na metade de baixo.
+    cx, cy, r = W // 2, 330, 92
+    for y in range(cy - r, HORIZONTE):
+        dy = y - cy
+        if abs(dy) > r:
+            continue
+        t = (y - (cy - r)) / (2 * r)
+        corte = dy > 8 and (dy // 9) % 2 == 1 and (dy % 9) < 2 + dy // 25
+        if corte:
+            continue
+        meia = int((r * r - dy * dy) ** 0.5)
+        cv.create_line(cx - meia, y, cx + meia, y, fill=mistura(mistura(AMARELO, LARANJA, min(1, t * 1.6)), ROSA, max(0, t * 1.4 - 0.4)))
+
+    # Chão: grade neon em perspectiva.
+    cv.create_line(0, HORIZONTE, W, HORIZONTE, fill=ROSA, width=2)
+    for k in range(-9, 10):
+        cv.create_line(cx + k * 18, HORIZONTE, cx + k * 120, H, fill='#5b1a7a')
+    yy, passo = HORIZONTE + 6, 6
+    while yy < H:
+        cv.create_line(0, yy, W, yy, fill='#5b1a7a')
+        passo *= 1.45
+        yy += passo
+
+    # Textos (sombra rosa deslocada + texto amarelo = letreiro neon).
+    def neon(x, y, texto, tam, cor=AMARELO, sombra=ROSA):
+        cv.create_text(x + 3, y + 3, text=texto, font=(GRANDE, tam), fill=sombra)
+        return cv.create_text(x, y, text=texto, font=(GRANDE, tam), fill=cor)
+
+    cv.create_rectangle(W // 2 - 150, 22, W // 2 + 150, 50, fill=CIANO, outline='')
+    cv.create_text(W // 2, 36, text='ATENÇÃO  ·  ROBÔ DO SETA', font=(PEQUENA, 13, 'bold'), fill=NOITE)
+    neon(W // 2, 98, 'VOU USAR O MOUSE', 44)
+    neon(W // 2, 156, 'E O TECLADO', 44)
+    cv.create_text(W // 2, 212, text='Vou abrir o Seta e buscar as vendas das lojas para o SAFI.\n'
+                                     'Leva uns 3 a 5 minutos: não mexa no mouse até o Seta fechar.',
+                   font=(PEQUENA, 11), fill=LILAS, justify='center')
+    numero_sombra = cv.create_text(cx + 3, cy + 3, text=str(segundos), font=(GRANDE, 64), fill=ROSA)
+    numero = cv.create_text(cx, cy, text=str(segundos), font=(GRANDE, 64), fill=NOITE)
+    cv.create_text(cx, HORIZONTE + 18, text='SEGUNDOS PARA COMEÇAR SOZINHO', font=(PEQUENA, 11, 'bold'), fill=CIANO)
+
+    # Barra do tempo: degradê rosa -> laranja que encolhe.
+    BX, BY, BW = 110, HORIZONTE + 38, W - 220
+    cv.create_rectangle(BX, BY, BX + BW, BY + 8, fill='#2a0845', outline='')
+    gomos = [cv.create_rectangle(BX + i * BW / 40, BY, BX + (i + 1) * BW / 40 - 1, BY + 8,
+                                 fill=mistura(ROSA, LARANJA, i / 39), outline='') for i in range(40)]
 
     def adiar(_=None):
         res['v'] = 'adiar'
@@ -685,43 +730,62 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
         res['v'] = 'agora'
         root.destroy()
 
-    def botao(pai, texto, cor, acao):
-        b = tk.Label(pai, text=texto, font=(TITULO, 14, 'bold'), bg=cor, fg=FUNDO if cor != CARTAO else BRANCO,
-                     padx=22, pady=10, cursor='hand2')
-        b.bind('<Button-1>', acao)
-        return b
+    def botao(x, texto, fundo, letra, acao):
+        tag = 'b%d' % x
+        cv.create_rectangle(x - 128 + 4, 498 + 4, x + 128 + 4, 538 + 4, fill=NOITE, outline='', tags=tag)
+        cv.create_rectangle(x - 128, 498, x + 128, 538, fill=fundo, outline=BRANCO, width=2, tags=tag)
+        cv.create_text(x, 518, text=texto, font=(GRANDE, 17), fill=letra, tags=tag)
+        cv.tag_bind(tag, '<Button-1>', acao)
+        cv.tag_bind(tag, '<Enter>', lambda e: cv.config(cursor='hand2'))
+        cv.tag_bind(tag, '<Leave>', lambda e: cv.config(cursor=''))
 
-    botoes = tk.Frame(caixa, bg=FUNDO)
-    botoes.pack()
-    botao(botoes, '▶  Começar agora', VERDE, comecar).pack(side='left', padx=8)
-    botao(botoes, '❚❚  Adiar %d min' % ADIAR_MINUTOS, CARTAO, adiar).pack(side='left', padx=8)
-    tk.Label(caixa, text='Enter = começar   ·   Esc = adiar', font=('Segoe UI', 9), bg=FUNDO, fg='#64748b').pack(pady=(12, 0))
+    botao(W // 2 - 140, '▶  COMEÇAR AGORA', CIANO, NOITE, comecar)
+    botao(W // 2 + 140, ('❚❚  Adiar %d min' % ADIAR_MINUTOS).upper(), ROSA, BRANCO, adiar)
+    cv.create_text(W // 2, H - 8, text='Enter = começar   ·   Esc = adiar', font=(PEQUENA, 8), fill='#8b6fb0')
     root.bind('<Return>', comecar)
     root.bind('<Escape>', adiar)
 
+    # Borda neon que pisca.
+    borda = cv.create_rectangle(2, 2, W - 2, H - 2, outline=ROSA, width=5)
     n = {'s': segundos, 'pisca': False}
 
     def tick():
         if n['s'] <= 0:
             root.destroy()
             return
-        numero.config(text=str(n['s']), fg=VERMELHO if n['s'] <= 10 else AMBAR)
-        barra.coords(cheio, 0, 0, 380 * n['s'] / segundos, 8)
+        fim = n['s'] <= 10
+        cv.itemconfig(numero, text=str(n['s']))
+        cv.itemconfig(numero_sombra, text=str(n['s']), fill='#ff1f3d' if fim else ROSA)
+        mostrar = round(40 * n['s'] / segundos)
+        for i, g in enumerate(gomos):
+            cv.itemconfig(g, state='normal' if i < mostrar else 'hidden')
         n['pisca'] = not n['pisca']
-        borda = (VERMELHO if n['s'] <= 10 else AMBAR) if n['pisca'] else FUNDO
-        root.configure(bg=borda)
-        faixa.configure(bg=borda if n['pisca'] else AMBAR)
+        cv.itemconfig(borda, outline=('#ff1f3d' if fim else CIANO) if n['pisca'] else ROSA)
         n['s'] -= 1
         root.after(1000, tick)
 
     root.update_idletasks()
-    w, h = root.winfo_width(), root.winfo_height()
-    root.geometry('+%d+%d' % ((root.winfo_screenwidth() - w) // 2, (root.winfo_screenheight() - h) // 3))
+    root.geometry('%dx%d+%d+%d' % (W, H, (root.winfo_screenwidth() - W) // 2, (root.winfo_screenheight() - H) // 3))
     root.lift()
     root.focus_force()
     tick()
     root.mainloop()
     return res['v']
+
+
+def perguntar_antes_seguro(segundos=AVISO_SEGUNDOS):
+    """Mostra o aviso num processo separado (o desenho do aviso já travou o Python algumas vezes).
+    Código 10 = adiar; qualquer outro resultado (inclusive travar) = segue a rotina, para não perder o dia."""
+    import subprocess
+    try:
+        r = subprocess.run([sys.executable, '-P', os.path.abspath(__file__), 'aviso', str(segundos)], timeout=segundos + 60)
+        if r.returncode == 10:
+            return 'adiar'
+        if r.returncode != 0:
+            log('agendado: o aviso fechou com erro (%s); sigo a rotina sem ele' % r.returncode)
+    except Exception as e:
+        log('agendado: o aviso não abriu (%s); sigo a rotina sem ele' % e)
+    return 'agora'
 
 
 def agendado(cfg):
@@ -740,7 +804,7 @@ def agendado(cfg):
             log('agendado: o Seta está aberto (alguém usando); tento de novo em %d min' % ADIAR_MINUTOS)
             time.sleep(ADIAR_MINUTOS * 60)
             continue
-        if perguntar_antes() == 'adiar':
+        if perguntar_antes_seguro() == 'adiar':
             log('agendado: adiado %d min' % ADIAR_MINUTOS)
             time.sleep(ADIAR_MINUTOS * 60)
             continue
@@ -825,8 +889,7 @@ def main(args):
         return agendado(cfg)
     if args and args[0] == 'aviso':
         # Só mostra o aviso para ver como fica (não abre o Seta).
-        print('Escolha:', perguntar_antes(int(args[1]) if len(args) > 1 else AVISO_SEGUNDOS))
-        return 0
+        return 10 if perguntar_antes(int(args[1]) if len(args) > 1 else AVISO_SEGUNDOS) == 'adiar' else 0
     if not args or args[0] not in ('exportar', 'ler'):
         print(__doc__)
         return 1
