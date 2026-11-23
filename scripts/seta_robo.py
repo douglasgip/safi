@@ -531,7 +531,7 @@ def criar_token():
     import subprocess
     with open(CONFIG, encoding='utf-8') as f:
         txt = f.read()
-    m = re.search(r'(?ms)^\[safi\]\s*$.*?^token\s*=\s*(.*?)\s*$', txt)
+    m = re.search(r'(?ms)^\[safi\]\s*$.*?^token[ \t]*=[ \t]*(.*?)[ \t]*$', txt)
     if not m:
         print('Não achei a linha "token =" na parte [safi] do', CONFIG)
         return 1

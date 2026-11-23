@@ -84,3 +84,16 @@ test('robô do Seta: segredos só no arquivo de configuração do PC, nunca no c
   assert.doesNotMatch(py, /Bearer [A-Za-z0-9]{12,}/);
   assert.match(py, /"planilhas"/);
 });
+
+test('robô do Seta: comando token enxerga a linha "token =" vazia (não lê a linha de baixo)', () => {
+  const py = ler('scripts/seta_robo.py');
+  const ini = py.match(/def criar_token\(\):[\s\S]*?re\.search\(r'\(\?(\w+)\)(.*?)', txt\)/);
+  assert.ok(ini, 'regex do criar_token não encontrada');
+  const re = new RegExp(ini[2], ini[1]);
+  const cfg = '[seta exposicao]\nusuario = a\nsenha = b\n\n[safi]\ntoken = \n\n[lojas]\nexposicao = 1\n';
+  const m = cfg.match(re);
+  assert.ok(m, 'não achou a linha token');
+  assert.equal(m[1], '', 'linha vazia tem que ser lida como vazia');
+  const cheio = cfg.replace('token = ', 'token = abc123');
+  assert.equal(cheio.match(re)[1], 'abc123');
+});
