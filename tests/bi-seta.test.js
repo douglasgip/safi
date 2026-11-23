@@ -138,3 +138,31 @@ test('robô do Seta: erro num dia não perde os dias bons (manda ao SAFI e só d
   const ultimoRaise = fn.lastIndexOf('raise falha');
   assert.ok(envio > 0 && ultimoRaise > envio, 'o erro tem que ser acusado depois do envio');
 });
+
+test('robô do Seta: agendamento — 08:32, ao entrar e ao desbloquear, como administrador, sem rodar duas vezes juntas', () => {
+  const xml = ler('scripts/seta_agendamento.xml');
+  assert.match(xml, /<StartBoundary>[^<]*T08:32:00<\/StartBoundary>/);
+  assert.match(xml, /<LogonTrigger>/);
+  assert.match(xml, /<StateChange>SessionUnlock<\/StateChange>/);
+  assert.match(xml, /<RunLevel>HighestAvailable<\/RunLevel>/);
+  assert.match(xml, /<LogonType>InteractiveToken<\/LogonType>/);
+  assert.match(xml, /<MultipleInstancesPolicy>IgnoreNew<\/MultipleInstancesPolicy>/);
+  assert.match(xml, /<Arguments>[^<]*agendado<\/Arguments>/);
+  assert.match(ler('scripts/instalar-agendamento.ps1'), /Register-ScheduledTask[\s\S]*-Xml/);
+});
+
+test('robô do Seta: modo agendado só age se faltar dia, respeita tela bloqueada e Seta em uso, e avisa com "Adiar"', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def agendado\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes() == 'adiar'", 'return rodar(cfg)'].map(s => fn.indexOf(s));
+  ordem.forEach((i, k) => assert.ok(i > 0, 'faltou o passo ' + k));
+  assert.deepEqual([...ordem].sort((a, b) => a - b), ordem, 'a ordem dos passos mudou');
+  assert.match(py, /'Adiar %d min' % ADIAR_MINUTOS/);
+  assert.match(py, /args\[0\] == 'agendado'/);
+});
+
+test('robô do Seta: "buscar" dia avulso não mexe no estado.json (não volta a rotina para trás)', () => {
+  const py = ler('scripts/seta_robo.py');
+  assert.match(py, /rodar\(cfg, pedidos=\{loja: \[date\.fromisoformat/);
+  assert.match(py, /if not ensaio and r\.get\('ok'\) and pedidos is None:/);
+});

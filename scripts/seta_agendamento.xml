@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-16"?>
+<!-- Tarefa do Agendador do Windows para o robô do Seta (instalar com scripts/instalar-agendamento.ps1, como administrador).
+     Gatilhos: todo dia 08:32, ao entrar no Windows e ao desbloquear. O robô só age se faltar dia (uma vez por dia). -->
+<Task version="1.4" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>Robô do Seta: busca as vendas das lojas no Seta e manda ao BI do SAFI.</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2026-11-24T08:32:00</StartBoundary>
+      <Enabled>true</Enabled>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+    <LogonTrigger>
+      <Enabled>true</Enabled>
+      <UserId>__USUARIO__</UserId>
+      <Delay>PT2M</Delay>
+    </LogonTrigger>
+    <SessionStateChangeTrigger>
+      <Enabled>true</Enabled>
+      <StateChange>SessionUnlock</StateChange>
+      <UserId>__USUARIO__</UserId>
+      <Delay>PT1M</Delay>
+    </SessionStateChangeTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <UserId>__USUARIO__</UserId>
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
+    <StopIfGoingOnBatteries>false</StopIfGoingOnBatteries>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <ExecutionTimeLimit>PT12H</ExecutionTimeLimit>
+    <Enabled>true</Enabled>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>__PYTHONW__</Command>
+      <Arguments>-P "__SCRIPT__" agendado</Arguments>
+      <WorkingDirectory>__PASTA__</WorkingDirectory>
+    </Exec>
+  </Actions>
+</Task>

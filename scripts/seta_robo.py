@@ -20,6 +20,9 @@ Configuração e segredos: SÓ no arquivo %USERPROFILE%\\SAFI-robo\\config.ini (
 Uso (num PowerShell de administrador):
   python seta_robo.py rodar                  -> rotina diária: abre cada Seta, busca os dias que faltam, sai e envia
   python seta_robo.py rodar ensaio           -> igual, mas o SAFI só calcula e mostra (não grava)
+  python seta_robo.py agendado               -> o que o Agendador chama: só age se faltar dia; avisa antes (com "Adiar")
+  python seta_robo.py buscar ViaCloset 2026-11-14 -> dia(s) avulso(s) de uma loja (não mexe no estado.json)
+  Agendamento: scripts/instalar-agendamento.ps1 (como administrador) instala a tarefa "SAFI - Robo do Seta".
   python seta_robo.py exportar 2026-11-17     -> com "Relatórios das vendas" aberta: exporta e confere (não envia)
   python seta_robo.py token                  -> gera a senha da importação (grava no config.ini e copia; não mostra)
   python seta_robo.py ler 2026-11-17          -> só lê as planilhas já salvas e confere (não mexe no Seta)
@@ -555,8 +558,9 @@ def sair(top):
     log('  Seta fechado')
 
 
-def rodar(cfg, ensaio=False):
-    """Rotina diária: para cada loja, os dias que faltam -> exporta, confere e manda ao SAFI."""
+def rodar(cfg, ensaio=False, pedidos=None):
+    """Rotina diária: para cada loja, os dias que faltam -> exporta, confere e manda ao SAFI.
+    Com pedidos={loja: [dias]} busca só esses dias e NÃO mexe no estado.json (dia avulso no passado)."""
     if seta_aberto():
         raise RuntimeError('o Seta já está aberto: feche antes (o robô abre e fecha sozinho)')
     est = ler_estado()
@@ -564,7 +568,7 @@ def rodar(cfg, ensaio=False):
     planilhas = []
     falha = None  # se um dia der erro, manda ao SAFI o que já deu certo e só depois acusa o erro
     for loja in ('Exposicao', 'ViaCloset'):
-        dias = dias_faltando(est.get(loja), hoje)
+        dias = pedidos.get(loja, []) if pedidos is not None else dias_faltando(est.get(loja), hoje)
         if not dias:
             log(loja, ': nada a buscar')
             continue
@@ -604,7 +608,7 @@ def rodar(cfg, ensaio=False):
         log('  sem vendas:', s)
     if r.get('erro'):
         raise RuntimeError('SAFI: ' + str(r['erro']))
-    if not ensaio and r.get('ok'):
+    if not ensaio and r.get('ok') and pedidos is None:
         # Avança só até o último dia bom EM SEQUÊNCIA: um dia recusado é tentado de novo na próxima vez.
         recusados = {(e.get('motivo') or '').split(':')[0] for e in r.get('erros') or []}
         for loja in ('Exposicao', 'ViaCloset'):
@@ -615,6 +619,93 @@ def rodar(cfg, ensaio=False):
         gravar_estado(est)
     if falha:
         raise falha
+    return 0
+
+
+AVISO_SEGUNDOS = 60   # tempo do aviso antes de pegar o mouse (sem resposta = começa)
+ADIAR_MINUTOS = 60    # "Adiar" espera isto e pergunta de novo
+TENTATIVAS_NO_DIA = 8  # no máximo 8 adiamentos/esperas numa mesma chamada
+
+
+def tela_bloqueada():
+    """Com o Windows bloqueado o robô não consegue clicar: fica para o gatilho de desbloqueio."""
+    u = ctypes.windll.user32
+    h = u.OpenInputDesktop(0, False, 0x0100)
+    if not h:
+        return True
+    ok = u.SwitchDesktop(h)
+    u.CloseDesktop(h)
+    return not ok
+
+
+def faltam_dias(est, hoje):
+    return any(dias_faltando(est.get(l), hoje) for l in ('Exposicao', 'ViaCloset'))
+
+
+def perguntar_antes(segundos=AVISO_SEGUNDOS):
+    """Janelinha por cima de tudo: "vou usar o mouse em N s" com [Começar agora] e [Adiar 1 hora].
+    Sem resposta, começa sozinho. Fechar no X = adiar."""
+    import tkinter as tk
+    res = {'v': 'agora'}
+    root = tk.Tk()
+    root.title('Robô do Seta')
+    root.attributes('-topmost', True)
+    root.resizable(False, False)
+    tk.Label(root, text='Robô do Seta → SAFI', font=('Segoe UI', 13, 'bold')).pack(padx=24, pady=(18, 4))
+    tk.Label(root, text='Vou abrir o Seta e buscar as vendas que faltam.\n'
+                        'Preciso do mouse e do teclado por uns 3 a 5 minutos.', font=('Segoe UI', 10), justify='center').pack(padx=24)
+    conta = tk.Label(root, font=('Segoe UI', 10, 'bold'), fg='#b45309')
+    conta.pack(pady=10)
+    n = {'s': segundos}
+
+    def adiar():
+        res['v'] = 'adiar'
+        root.destroy()
+
+    def tick():
+        if n['s'] <= 0:
+            root.destroy()
+            return
+        conta.config(text='Começo sozinho em %d s' % n['s'])
+        n['s'] -= 1
+        root.after(1000, tick)
+
+    botoes = tk.Frame(root)
+    botoes.pack(pady=(0, 18))
+    tk.Button(botoes, text='Começar agora', width=16, command=root.destroy).pack(side='left', padx=6)
+    tk.Button(botoes, text='Adiar %d min' % ADIAR_MINUTOS, width=16, command=adiar).pack(side='left', padx=6)
+    root.protocol('WM_DELETE_WINDOW', adiar)
+    root.update_idletasks()
+    w, h = root.winfo_width(), root.winfo_height()
+    root.geometry('+%d+%d' % ((root.winfo_screenwidth() - w) // 2, (root.winfo_screenheight() - h) // 3))
+    tick()
+    root.mainloop()
+    return res['v']
+
+
+def agendado(cfg):
+    """Chamado pelo Agendador do Windows (08:32, ao entrar e ao desbloquear). Só age se faltar dia:
+    tela bloqueada -> deixa para o desbloqueio; Seta aberto -> espera; senão avisa (com "Adiar") e roda."""
+    if not sou_administrador():
+        log('agendado: precisa rodar como administrador (marque "privilégios mais altos" na tarefa)')
+        return 1
+    for _ in range(TENTATIVAS_NO_DIA):
+        if not faltam_dias(ler_estado(), date.today()):
+            return 0
+        if tela_bloqueada():
+            log('agendado: tela bloqueada, fica para quando desbloquear')
+            return 0
+        if seta_aberto():
+            log('agendado: o Seta está aberto (alguém usando); tento de novo em %d min' % ADIAR_MINUTOS)
+            time.sleep(ADIAR_MINUTOS * 60)
+            continue
+        if perguntar_antes() == 'adiar':
+            log('agendado: adiado %d min' % ADIAR_MINUTOS)
+            time.sleep(ADIAR_MINUTOS * 60)
+            continue
+        log('agendado: começando')
+        return rodar(cfg)
+    log('agendado: desisti por hoje (adiado/ocupado demais); tento no próximo gatilho')
     return 0
 
 
@@ -679,6 +770,18 @@ def main(args):
             print('Rode como administrador.')
             return 1
         return rodar(cfg, ensaio='ensaio' in args[1:])
+    if args and args[0] == 'buscar':
+        # Dia(s) avulso(s) de uma loja, fora da rotina (ex.: buraco no BI). Não mexe no estado.json.
+        if not sou_administrador():
+            print('Rode como administrador.')
+            return 1
+        loja = args[1] if len(args) > 1 else ''
+        if loja not in ('Exposicao', 'ViaCloset') or len(args) < 3:
+            print('Uso: buscar Exposicao|ViaCloset aaaa-mm-dd [aaaa-mm-dd ...]')
+            return 1
+        return rodar(cfg, pedidos={loja: [date.fromisoformat(d) for d in args[2:]]})
+    if args and args[0] == 'agendado':
+        return agendado(cfg)
     if not args or args[0] not in ('exportar', 'ler'):
         print(__doc__)
         return 1
