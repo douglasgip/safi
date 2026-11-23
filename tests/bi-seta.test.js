@@ -115,3 +115,26 @@ test('robô do Seta: grava o passo a passo e os erros em robo.log (para conferir
   assert.match(fnLog[0], /open\(LOG/);
   assert.match(py, /if __name__ == '__main__':[\s\S]*except Exception[\s\S]*log\('ERRO/);
 });
+
+test('robô do Seta: dia sem vendas (feriado) — reconhece o aviso do Seta e manda o dia vazio', () => {
+  const py = ler('scripts/seta_robo.py');
+  const pad = py.match(/SEM_REGISTRO = r'([^']+)'/);
+  assert.ok(pad, 'padrão do aviso não encontrado');
+  const re = new RegExp(pad[1], 'i');
+  for (const t of ['Nenhum registro encontrado!', 'Não há dados para exibir', 'Não foram encontrados registros', 'Sem movimento no período'])
+    assert.match(t, re, t);
+  for (const t of ['Deseja realmente sair?', 'Erro ao conectar no banco'])
+    assert.doesNotMatch(t, re, t);
+  assert.match(py, /except SemRegistros:[\s\S]*?return False/);
+  assert.match(py, /def dia_sem_vendas[\s\S]*?'resumo': \[\], 'listagem': \[\]/);
+  assert.match(py, /exportar_dia\(top, form, loja, d\) is False[\s\S]*?dia_sem_vendas/);
+});
+
+test('robô do Seta: erro num dia não perde os dias bons (manda ao SAFI e só depois acusa o erro)', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def rodar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /falha = falha or e/);
+  const envio = fn.indexOf('enviar(cfg, planilhas');
+  const ultimoRaise = fn.lastIndexOf('raise falha');
+  assert.ok(envio > 0 && ultimoRaise > envio, 'o erro tem que ser acusado depois do envio');
+});

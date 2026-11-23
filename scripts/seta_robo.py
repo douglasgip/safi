@@ -187,8 +187,52 @@ def digitar_data(form, campo, dia):
     teclas(dia.strftime('%d%m%Y'), pausa=0.4)
 
 
+class SemRegistros(Exception):
+    """O Seta avisou que não há vendas no dia (feriado, loja fechada): no lugar do "Salvar como" vem um aviso."""
+
+
+# Texto de aviso do Seta que quer dizer "não teve venda nesse dia".
+SEM_REGISTRO = r'nenhum|n[ãa]o (h[áa]|existe|foram|foi|encontr|possui)|sem (registro|dado|movimento|venda)|vazi'
+
+
+def eh_sem_registro(texto):
+    import re
+    return bool(re.search(SEM_REGISTRO, texto or '', re.I))
+
+
+def mensagem_do_seta():
+    """Janela de aviso aberta pelo Seta (fora a janela principal e o "Salvar como"): devolve (janela, texto) ou None."""
+    from pywinauto import Desktop
+    janelas = Desktop(backend='win32').windows()
+    pids = {w.process_id() for w in janelas if w.class_name().startswith('seta') and 'Empresa:' in w.window_text()}
+    for w in janelas:
+        if w.process_id() not in pids or not w.is_visible() or 'Empresa:' in w.window_text():
+            continue
+        if w.window_text() in ('Save As', 'Salvar como'):
+            continue
+        r = w.rectangle()
+        if r.width() < 120 or r.height() < 60:
+            continue
+        textos = [w.window_text()] + [d.window_text() for d in w.descendants()]
+        return w, ' | '.join(t.strip() for t in textos if t and t.strip())
+    return None
+
+
+def fechar_mensagem(w):
+    try:
+        w.set_focus()
+        time.sleep(0.3)
+        teclas('{ENTER}', pausa=1)
+        if w.exists() and w.is_visible():
+            w.close()
+            time.sleep(1)
+    except Exception:
+        pass
+
+
 def salvar_como(caminho, espera=20):
-    """Espera o "Save As" do Windows, digita o caminho completo e clica em Salvar."""
+    """Espera o "Save As" do Windows, digita o caminho completo e clica em Salvar.
+    Se no lugar dele o Seta mostrar um aviso de "sem registros", fecha o aviso e avisa com SemRegistros."""
     from pywinauto import Desktop
     if os.path.exists(caminho):
         os.remove(caminho)
@@ -199,6 +243,15 @@ def salvar_como(caminho, espera=20):
             if w.class_name() == '#32770' and w.is_visible() and w.window_text() in ('Save As', 'Salvar como'):
                 dlg = w
                 break
+        if not dlg:
+            msg = mensagem_do_seta()
+            if msg:
+                janela, texto = msg
+                log('  mensagem do Seta:', texto or '(sem texto legível)')
+                fechar_mensagem(janela)
+                if eh_sem_registro(texto):
+                    raise SemRegistros(texto)
+                raise RuntimeError('o Seta mostrou uma mensagem em vez de salvar: ' + (texto or '(sem texto legível)'))
         time.sleep(0.3)
     if not dlg:
         raise RuntimeError('a janela de salvar o Excel não abriu')
@@ -368,7 +421,8 @@ def acionar_menu(top, nome_menu, item):
 
 
 def exportar_dia(top, form, loja, dia):
-    """Na tela "Relatórios das vendas" aberta: data nos dois campos e exporta os dois relatórios."""
+    """Na tela "Relatórios das vendas" aberta: data nos dois campos e exporta os dois relatórios.
+    Devolve False se o Seta avisar que não houve vendas no dia (nada exportado)."""
     digitar_data(form, 'data_inicial', dia)
     digitar_data(form, 'data_final', dia)
     for rel, (setas, colunas) in RELATORIOS.items():
@@ -380,7 +434,11 @@ def exportar_dia(top, form, loja, dia):
             teclas('{HOME}' + '{DOWN}' * setas)
             time.sleep(0.4 * tentativa)
             clicar(form, REL['excel'])
-            salvar_como(caminho)
+            try:
+                salvar_como(caminho)
+            except SemRegistros:
+                log('  %s %s: sem vendas no dia' % (loja, dia.strftime('%d/%m')))
+                return False
             try:
                 ler_planilha(caminho, colunas)  # confere se saiu o relatório certo
                 break
@@ -389,6 +447,11 @@ def exportar_dia(top, form, loja, dia):
                     raise
                 log('  saiu o relatório errado em', os.path.basename(caminho), '- tentando de novo')
         log('  salvei', os.path.basename(caminho))
+
+
+def dia_sem_vendas(loja, dia):
+    """Dia em que o Seta avisou "sem registros": vai ao SAFI com as duas planilhas vazias (o SAFI marca como sem vendas)."""
+    return {'operacao': loja, 'data': dia, 'resumo': [], 'listagem': []}
 
 
 def ler_dia(loja, dia):
@@ -499,24 +562,33 @@ def rodar(cfg, ensaio=False):
     est = ler_estado()
     hoje = date.today()
     planilhas = []
+    falha = None  # se um dia der erro, manda ao SAFI o que já deu certo e só depois acusa o erro
     for loja in ('Exposicao', 'ViaCloset'):
         dias = dias_faltando(est.get(loja), hoje)
         if not dias:
             log(loja, ': nada a buscar')
             continue
         log(loja, ': dias', ', '.join(d.strftime('%d/%m') for d in dias))
-        top = abrir_seta(cfg, loja)
         try:
-            top = entrar(cfg)
-            form = abrir_relatorios(top)
-            for d in dias:
-                exportar_dia(top, form, loja, d)
-                p = ler_dia(loja, d.isoformat())
-                mostrar(p)
-                planilhas.append(p)
-        finally:
-            sair(top)
+            top = abrir_seta(cfg, loja)
+            try:
+                top = entrar(cfg)
+                form = abrir_relatorios(top)
+                for d in dias:
+                    if exportar_dia(top, form, loja, d) is False:
+                        planilhas.append(dia_sem_vendas(loja, d.isoformat()))
+                        continue
+                    p = ler_dia(loja, d.isoformat())
+                    mostrar(p)
+                    planilhas.append(p)
+            finally:
+                sair(top)
+        except Exception as e:
+            log('ERRO na loja', loja, '->', e, '(os dias que já deram certo seguem para o SAFI)')
+            falha = falha or e
     if not planilhas:
+        if falha:
+            raise falha
         return 0
     if not cfg.get('safi', 'token', fallback='').strip():
         log('Sem o token do SAFI no config.ini: exportei e conferi, mas NÃO enviei.')
@@ -541,6 +613,8 @@ def rodar(cfg, ensaio=False):
                     break
                 est[loja] = p['data']
         gravar_estado(est)
+    if falha:
+        raise falha
     return 0
 
 
