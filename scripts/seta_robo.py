@@ -171,6 +171,28 @@ def achar_form(top, nome, espera=15, so_visivel=True):
     raise RuntimeError('a janela "%s" não apareceu' % nome)
 
 
+def focar(w, tentativas=4):
+    """Traz a janela para a frente. Rodando pelo Agendador, o Windows às vezes recusa ("SetForegroundWindow");
+    um Alt solto destrava essa trava. Se mesmo assim não der, desiste com uma mensagem clara."""
+    import win32con
+    import win32gui
+    u = ctypes.windll.user32
+    for _ in range(tentativas):
+        try:
+            w.set_focus()
+            return
+        except Exception:
+            u.keybd_event(0x12, 0, 0, 0)  # Alt pressionado...
+            u.keybd_event(0x12, 0, 2, 0)  # ...e solto
+            try:
+                win32gui.ShowWindow(w.handle, win32con.SW_RESTORE)
+                win32gui.SetForegroundWindow(w.handle)
+                return
+            except Exception:
+                time.sleep(1.5)
+    raise RuntimeError('o Windows não deixou trazer o Seta para a frente (tela bloqueada ou desligada?)')
+
+
 def clicar(form, ponto, pausa=0.5):
     from pywinauto import mouse
     r = form.rectangle()
@@ -223,7 +245,7 @@ def mensagem_do_seta():
 
 def fechar_mensagem(w):
     try:
-        w.set_focus()
+        focar(w)
         time.sleep(0.3)
         teclas('{ENTER}', pausa=1)
         if w.exists() and w.is_visible():
@@ -346,7 +368,7 @@ def entrar(cfg):
     if not usuario or not senha:
         raise RuntimeError('preencha usuario e senha em [%s] no %s' % (secao, CONFIG))
     log('Entrando no Seta da loja', loja)
-    top.set_focus()
+    focar(top)
     time.sleep(1)
     if logado_na_retaguarda(top):
         return top
@@ -377,14 +399,14 @@ def entrar(cfg):
 def abrir_relatorios(top):
     """Menu Vendas > Relatórios -> janela "Relatórios das vendas".
     O menu de cima do Seta é um menu padrão do Windows: escolhe pelo NOME (posição só se o nome falhar)."""
-    top.set_focus()
+    focar(top)
     time.sleep(0.5)
     acionar_menu(top, 'Vendas', VENDAS_RELATORIOS)
     try:
         return achar_form(top, 'Relatórios das vendas', espera=8)
     except RuntimeError:
         log('  pelo comando não abriu; tentando pelo teclado (Alt+V e setas)')
-        top.set_focus()
+        focar(top)
         teclas('%v', pausa=0.8)
         teclas('{DOWN}' * VENDAS_RELATORIOS['setas'] + '{ENTER}', pausa=1)
         return achar_form(top, 'Relatórios das vendas', espera=15)
@@ -431,7 +453,7 @@ def exportar_dia(top, form, loja, dia):
     for rel, (setas, colunas) in RELATORIOS.items():
         caminho = arquivo(loja, dia.isoformat(), rel)
         for tentativa in range(1, TENTATIVAS_RELATORIO + 1):
-            top.set_focus()
+            focar(top)
             clicar(form, REL['lista_relatorios'])
             time.sleep(0.4 * tentativa)  # o Seta às vezes ignora as setas se vierem rápido demais
             teclas('{HOME}' + '{DOWN}' * setas)
@@ -508,13 +530,30 @@ def seta_aberto():
     return [t for t in Desktop(backend='win32').windows() if t.class_name().startswith('seta') and t.is_visible() and 'Menu Inicial' in t.window_text()]
 
 
+SETAS_ABERTOS = []  # processos do Seta que o robô abriu nesta rodada
+
+
+def fechar_setas_abertos():
+    """Depois de um erro, fecha à força o Seta que o próprio robô abriu (se ainda estiver aberto),
+    para a próxima loja/rodada não esbarrar em "Seta aberto"."""
+    for proc in SETAS_ABERTOS:
+        try:
+            if proc.poll() is None:
+                proc.kill()
+                log('  fechei o Seta que ficou aberto depois do erro')
+        except Exception:
+            pass
+    SETAS_ABERTOS.clear()
+    time.sleep(2)
+
+
 def abrir_seta(cfg, loja):
     import subprocess
     exe = cfg.get('lojas', loja, fallback='').strip()
     if not exe or not os.path.exists(exe):
         raise RuntimeError('não achei o Seta da loja %s (%s) — confira [lojas] no %s' % (loja, exe, CONFIG))
     log('Abrindo o Seta da loja', loja)
-    subprocess.Popen([exe], cwd=os.path.dirname(exe))
+    SETAS_ABERTOS.append(subprocess.Popen([exe], cwd=os.path.dirname(exe)))
     # O Seta demora para abrir e o título vai se completando: espera aparecer "Empresa:" e a tela de login.
     def pronto():
         for t in seta_aberto():
@@ -536,7 +575,7 @@ def sair(top):
     import win32con
     import win32gui
     u = ctypes.windll.user32
-    top.set_focus()
+    focar(top)
     time.sleep(0.5)
     rel = [d for d in top.descendants() if d.window_text() == 'Relatórios das vendas' and d.is_visible()]
     if rel:
@@ -590,6 +629,7 @@ def rodar(cfg, ensaio=False, pedidos=None):
         except Exception as e:
             log('ERRO na loja', loja, '->', e, '(os dias que já deram certo seguem para o SAFI)')
             falha = falha or e
+            fechar_setas_abertos()
     if not planilhas:
         if falha:
             raise falha
@@ -629,6 +669,14 @@ TENTATIVAS_NO_DIA = 8  # no máximo 8 adiamentos/esperas numa mesma chamada
 
 def tela_bloqueada():
     """Com o Windows bloqueado o robô não consegue clicar: fica para o gatilho de desbloqueio."""
+    import subprocess
+    try:
+        r = subprocess.run(['tasklist', '/FI', 'IMAGENAME eq LogonUI.exe', '/NH'], capture_output=True, text=True,
+                           creationflags=0x08000000, timeout=15)
+        if 'logonui' in (r.stdout or '').lower():
+            return True  # a tela de login/bloqueio do Windows está aberta
+    except Exception:
+        pass
     u = ctypes.windll.user32
     h = u.OpenInputDesktop(0, False, 0x0100)
     if not h:
@@ -925,7 +973,7 @@ def main(args):
         print('Não achei o Seta aberto.')
         return 1
     loja = loja_da_janela(top)
-    top.set_focus()
+    focar(top)
     time.sleep(0.5)
     form = achar_form(top, 'Relatórios das vendas', espera=3)
     log('Loja:', loja, '· dia:', dia.isoformat())

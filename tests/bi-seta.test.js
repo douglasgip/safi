@@ -199,3 +199,25 @@ test('robô do Seta: o aviso roda em processo separado; se ele travar, o robô s
   assert.match(fn, /return 'agora'/);
   assert.match(py, /return 10 if perguntar_antes\(/);
 });
+
+test('robô do Seta (24/11): Windows recusou trazer o Seta para a frente — tenta destravar (Alt) antes de desistir', () => {
+  const py = ler('scripts/seta_robo.py');
+  const usos = py.split(/\r?\n/).filter(l => /\.set_focus\(\)/.test(l));
+  assert.equal(usos.length, 1, 'só a função focar() pode chamar set_focus direto; achei: ' + usos.join(' | '));
+  const fn = py.match(/def focar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /keybd_event\(0x12/);
+  assert.match(fn, /SetForegroundWindow/);
+});
+
+test('robô do Seta (24/11): tela bloqueada também é reconhecida pela tela de login do Windows (LogonUI)', () => {
+  const fn = ler('scripts/seta_robo.py').match(/def tela_bloqueada\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /LogonUI/);
+});
+
+test('robô do Seta (24/11): se der erro, fecha o Seta que ele mesmo abriu (senão a próxima rodada acha "Seta aberto")', () => {
+  const py = ler('scripts/seta_robo.py');
+  assert.match(py, /SETAS_ABERTOS\.append\(/);
+  const fn = py.match(/def rodar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /fechar_setas_abertos\(\)/);
+  assert.match(py, /def fechar_setas_abertos\([\s\S]*?\.kill\(\)/);
+});
