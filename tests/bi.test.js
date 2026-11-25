@@ -57,6 +57,16 @@ test('totais com e-commerce junto: peças por atendimento só conta as lojas (o 
   assert.strictEqual(t.vendas, 817);
 });
 
+test('margem %: dia sem margem (e-commerce lançado à mão, 25/11) não puxa a % para baixo — divide só pelo faturamento dos dias com margem', () => {
+  const t = totais(expo.concat([{ operacao: 'GIP', data: '2026-11-16', faturamento: 68016.33, margem: null, ticket_medio: 73.93, pecas_atendimento: null, qtd_vendas: 920 }]));
+  perto(t.fat, 47307.78 + 68016.33);
+  perto(t.margem, 20854.85);
+  perto(t.margemPct, 20854.85 / 47307.78, 1e-9);
+  const so = totais([{ operacao: 'GIP', data: '2026-11-16', faturamento: 68016.33, margem: null, ticket_medio: 73.93, qtd_vendas: 920 }]);
+  assert.strictEqual(so.margem, null);
+  assert.strictEqual(so.margemPct, null);
+});
+
 test('atalhos de período (semana começa na segunda)', () => {
   const h = '2026-11-17';  // terça
   assert.deepStrictEqual(j(periodoPreset('hoje', h)), { de: h, ate: h });

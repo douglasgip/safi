@@ -311,6 +311,8 @@
       const fat = linhas.reduce((a, r) => a + (+r.faturamento || 0), 0);
       const comMargem = linhas.filter(r => r.margem != null);
       const margem = comMargem.length ? comMargem.reduce((a, r) => a + +r.margem, 0) : null;
+      // % da margem só sobre os dias que têm margem (dia lançado sem margem não pode puxar a % para baixo)
+      const fatComMargem = comMargem.reduce((a, r) => a + (+r.faturamento || 0), 0);
       let vendas = 0, temVendas = false, fatComVendas = 0, pecas = 0, vendasPecas = 0;
       linhas.forEach(r => {
         const v = vendasDoDia(r); if (v == null) return;
@@ -318,7 +320,7 @@
         if (r.pecas_atendimento != null) { pecas += v * +r.pecas_atendimento; vendasPecas += v; }
       });
       return {
-        fat, margem, margemPct: margem != null && fat ? margem / fat : null,
+        fat, margem, margemPct: margem != null && fatComMargem ? margem / fatComMargem : null,
         vendas: temVendas ? vendas : null, ticket: temVendas && vendas ? fatComVendas / vendas : null,
         pecasAtend: vendasPecas ? pecas / vendasPecas : null,
       };
