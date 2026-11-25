@@ -6,7 +6,8 @@ const assert = require('node:assert');
 const vm = require('node:vm');
 const { ler, scriptsDaPagina } = require('./helpers/carregar');
 
-const TELAS = { 'temp-fluxo-financeiro.html': 'tmp_fluxo', 'temp-fluxo-pedidos.html': 'tmp_pedidos', 'temp-templates.html': 'tmp_templates' };
+// (o Fluxo Financeiro (OTB) virou tela de verdade em 25/11/2026: otb.html, testada em otb.test.js)
+const TELAS = { 'temp-fluxo-pedidos.html': 'tmp_pedidos', 'temp-templates.html': 'tmp_templates' };
 const codigoDe = arq => scriptsDaPagina(ler(arq)).filter(s => !s.src).map(s => s.codigo).join('\n');
 
 test('telas temporárias: só conferem o login (user_profiles) — nenhuma outra leitura ou gravação', () => {
@@ -20,7 +21,7 @@ test('telas temporárias: só conferem o login (user_profiles) — nenhuma outra
 
 test('telas temporárias: setor "Temporária" no menu, sem card na Home nem texto de ajuda', () => {
   const sidebar = ler('sidebar.js'), home = ler('index.html'), ajuda = ler('ajuda-conteudo.js');
-  assert.match(sidebar, /\{ id: 'temporaria', label: 'Temporária', items: \['tmp_fluxo', 'tmp_pedidos', 'tmp_templates'\] \}/);
+  assert.match(sidebar, /\{ id: 'temporaria', label: 'Temporária', items: \['tmp_pedidos', 'tmp_templates'\] \}/);
   for (const [arq, key] of Object.entries(TELAS)) {
     assert.match(sidebar, new RegExp(key + ": \\{[^\\n]*temp: true"), key + ' sem marca temp');
     assert.ok(!home.includes('card-' + key), 'Home não deve ter card de ' + key);
@@ -38,20 +39,4 @@ test('Fluxo Pedido Compras: totais calculados batem com a planilha (pedidos 228.
   assert.strictEqual((ctx.r.tP - ctx.r.tN).toFixed(2), '226093.85');
   // vencimentos da planilha: NOV 7.594,68 · DEZ 107.237,51 · JAN 57.081,37 · FEV 41.837,23 · MAR 10.893,41 · ABR/MAI/JUN 1.228,66
   assert.deepStrictEqual(Array.from(ctx.r.mP, v => v.toFixed(2)), ['7594.68', '107237.51', '57081.37', '41837.23', '10893.41', '1228.66', '1228.66', '1228.66']);
-});
-
-test('Fluxo Financeiro: entradas e saídas somadas batem com a planilha', () => {
-  const c = codigoDe('temp-fluxo-financeiro.html');
-  const ini = c.indexOf('const MESES'), fim = c.indexOf('// Cada bloco');
-  const ctx = vm.createContext({});
-  vm.runInContext(c.slice(ini, fim) + '\nglobalThis.r = [soma(ECOM.entradas, 0), soma(ECOM.saidas, 0), soma(ECOM.entradas, 1), soma(ECOM.saidas, 1), soma(LOJAS.entradas, 0), soma(LOJAS.saidas, 0), soma(LOJAS.entradas, 1), soma(LOJAS.saidas, 1)];', ctx);
-  const r = JSON.parse(JSON.stringify(ctx.r));
-  assert.deepStrictEqual(r[0], [641460, 1000001, 700000]);   // GIP entradas
-  assert.deepStrictEqual(r[1], [719000, 716710, 418730]);    // GIP saídas
-  assert.deepStrictEqual(r[2], [176740, 1, 0]);              // E.P. entradas
-  assert.deepStrictEqual(r[3], [97980, 53400, 246900]);      // E.P. saídas
-  assert.deepStrictEqual(r[4], [312680, 916780, 468270]);    // ISA entradas
-  assert.deepStrictEqual(r[5], [293450, 596300, 393500]);    // ISA saídas
-  assert.deepStrictEqual(r[6], [301540, 343510, 215540]);    // VIA entradas
-  assert.deepStrictEqual(r[7], [136860, 220610, 172450]);    // VIA saídas
 });

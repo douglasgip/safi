@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Muitas edições em pouco tempo. Aguarde alguns minutos.' }), { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } })
 
   const body = await req.json()
-  const { user_id, email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_calc_importacao, can_orcamento, can_tesouraria, can_reunioes, can_reunioes_editar, mfa_obrigatorio } = body
+  const { user_id, email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_calc_importacao, can_orcamento, can_tesouraria, can_otb, can_otb_editar, can_reunioes, can_reunioes_editar, mfa_obrigatorio } = body
   if (!user_id)
     return new Response(JSON.stringify({ error: 'user_id obrigatorio' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } })
 
@@ -107,6 +107,8 @@ Deno.serve(async (req: Request) => {
   if (can_calc_importacao !== undefined) up.can_calc_importacao = can_calc_importacao
   if (can_orcamento !== undefined) up.can_orcamento = can_orcamento
   if (can_tesouraria !== undefined) up.can_tesouraria = can_tesouraria
+  if (can_otb !== undefined) up.can_otb = can_otb
+  if (can_otb_editar !== undefined) up.can_otb_editar = can_otb_editar
   if (can_reunioes !== undefined) up.can_reunioes = can_reunioes
   if (can_reunioes_editar !== undefined) up.can_reunioes_editar = can_reunioes_editar
   if (mfa_obrigatorio !== undefined) up.mfa_obrigatorio = mfa_obrigatorio

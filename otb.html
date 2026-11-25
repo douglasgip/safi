@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SAFI | Fluxo Financeiro (OTB)</title>
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="/user-menu.js"></script>
+  <script src="/sidebar.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', sans-serif; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; background: #080b14; color: #f1f5f9; }
+    .bg { position: fixed; inset: 0; z-index: 0; background: radial-gradient(ellipse at 20% 50%, #06304a 0%, transparent 60%), radial-gradient(ellipse at 80% 20%, #0d3058 0%, transparent 55%), radial-gradient(ellipse at 60% 80%, #1a0a3d 0%, transparent 50%), linear-gradient(135deg, #080b14 0%, #0d1022 50%, #080b14 100%); }
+    .grid-overlay { position: fixed; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 48px 48px; }
+    .header { position: relative; z-index: 100; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 20px; border-bottom: 1px solid rgba(255,255,255,0.08); background: rgba(8,11,20,0.85); backdrop-filter: blur(20px); }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .header-logo-full { height: 30px; width: auto; object-fit: contain; }
+    #ot-hamburger { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; color: #94a3b8; flex-shrink: 0; }
+    #ot-hamburger:hover { background: rgba(255,255,255,0.1); color: #f1f5f9; }
+    .header-sub { font-size: 10px; font-weight: 600; color: #475569; letter-spacing: 2px; text-transform: uppercase; }
+    .dc-sidebar-backdrop { display: none; position: fixed; inset: 0; z-index: 990; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); }
+    .dc-sidebar-backdrop.open { display: block; }
+    .dc-sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: 272px; z-index: 991; background: rgba(8,11,20,0.98); border-right: 1px solid rgba(255,255,255,0.09); overflow-y: auto; transform: translateX(-100%); transition: transform 0.28s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; scrollbar-width: thin; scrollbar-color: #38bdf8 rgba(255,255,255,0.04); }
+    .dc-sidebar.open { transform: translateX(0); }
+    .dc-sidebar-nav-btn { display: flex; align-items: center; gap: 12px; width: 100%; padding: 13px 20px; background: transparent; border: none; border-radius: 10px; cursor: pointer; font-family: Inter, sans-serif; font-size: 14px; font-weight: 600; color: #94a3b8; text-align: left; text-decoration: none; }
+    .dc-sidebar-nav-btn:hover, .dc-sidebar-nav-btn.active { background: rgba(56,189,248,0.12); color: #7dd3fc; }
+    .dc-sidebar-group-row { display: flex; align-items: center; gap: 2px; }
+    .dc-sidebar-submenu { display: flex; flex-direction: column; }
+    .dc-sidebar-sub-btn { padding-left: 44px !important; }
+    .dc-sidebar-chevron { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; margin-right: 4px; background: transparent; border: none; border-radius: 8px; cursor: pointer; color: #64748b; flex-shrink: 0; }
+    .dc-sidebar-chevron.collapsed svg { transform: rotate(-90deg); }
+    .dc-sidebar-submenu.collapsed { display: none; }
+    .main { position: relative; z-index: 10; flex: 1; padding: 24px; overflow-y: auto; }
+    #ot-loading { flex: 1; display: flex; align-items: center; justify-content: center; color: #64748b; font-size: 13px; }
+    .tp-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    .tp-top h1 { font-size: 19px; font-weight: 800; color: #f8fafc; letter-spacing: -0.3px; }
+    .tp-sub { font-size: 12.5px; color: #64748b; margin-top: 3px; }
+    .tp-selo { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.3); color: #fcd34d; font-size: 11px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; }
+    .panel { background: rgba(15,23,42,0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 18px; backdrop-filter: blur(16px); padding: 20px; margin-bottom: 18px; }
+    .panel-head { font-size: 11px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: #7dd3fc; margin-bottom: 14px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .card { background: rgba(15,23,42,0.75); border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 5px; }
+    .card.hi { border-color: rgba(56,189,248,0.4); background: linear-gradient(160deg, rgba(14,50,80,0.75), rgba(15,23,42,0.75)); }
+    .card-l { font-size: 10px; font-weight: 700; letter-spacing: 1.1px; text-transform: uppercase; color: #64748b; }
+    .card-v { font-size: 22px; font-weight: 800; color: #f8fafc; font-variant-numeric: tabular-nums; letter-spacing: -0.4px; }
+    .card-s { font-size: 11.5px; color: #94a3b8; }
+    .neg { color: #fca5a5 !important; } .pos { color: #6ee7b7 !important; } .muted { color: #475569 !important; }
+    .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table.t { width: 100%; border-collapse: collapse; }
+    .t th { text-align: left; padding: 9px 10px; font-size: 9.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: #64748b; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; background: rgba(8,11,20,0.35); }
+    .t td { padding: 8px 10px; font-size: 12.5px; color: #e2e8f0; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; }
+    .t .r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .t tr.grp th { color: #7dd3fc; text-align: center; border-bottom: none; }
+    .t tr.tot td { font-weight: 800; color: #f8fafc; background: rgba(56,189,248,0.07); border-top: 1px solid rgba(255,255,255,0.1); }
+    .t tr.sec td { font-weight: 800; color: #7dd3fc; background: rgba(255,255,255,0.03); font-size: 11px; letter-spacing: .6px; text-transform: uppercase; }
+    .t tr.memo td { color: #94a3b8; font-style: italic; }
+    .t .sep { border-left: 1px solid rgba(255,255,255,0.08); }
+    .nota { font-size: 11.5px; color: #94a3b8; line-height: 1.6; margin-top: 10px; }
+    .tabs { display: flex; gap: 6px; margin-bottom: 18px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 4px; max-width: 640px; flex-wrap: wrap; }
+    .tab { flex: 1; padding: 10px 14px; background: transparent; border: none; border-radius: 9px; color: #64748b; font-family: Inter, sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .tab.active { background: rgba(56,189,248,0.15); color: #7dd3fc; }
+    .sel { padding: 9px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; color-scheme: dark; }
+    select option { background: #0f172a; }
+    .bloco-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .t-fluxo { min-width: 900px; }
+    .t-fluxo td:first-child { white-space: nowrap; }
+    @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } }
+    .main { padding-bottom: 90px; }
+    .ot-periodo { display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap; }
+    .ot-periodo label { display: flex; flex-direction: column; gap: 4px; font-size: 10px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #64748b; }
+    .ot-periodo input[type=month] { padding: 8px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; color-scheme: dark; }
+    .btn-sec { padding: 9px 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #cbd5e1; font-family: Inter, sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .btn-sec:hover { background: rgba(255,255,255,0.09); color: #f8fafc; }
+    .btn-primary { padding: 10px 18px; background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 55%, #0284c7 100%); border: none; border-radius: 10px; color: #082f49; font-family: Inter, sans-serif; font-size: 13px; font-weight: 800; cursor: pointer; box-shadow: 0 3px 0 #075985; }
+    .btn-primary:disabled { opacity: .5; cursor: wait; }
+    .t-otb { border-collapse: separate; border-spacing: 0; }
+    .t-otb td:first-child, .t-otb th:first-child { position: sticky; left: 0; z-index: 2; background: #0c1222; min-width: 230px; }
+    .t-otb td.r { padding: 3px 6px; }
+    .t-otb input.cel { width: 104px; padding: 6px 8px; background: rgba(255,255,255,0.03); border: 1px solid transparent; border-radius: 7px; color: #e2e8f0; font-family: Inter, sans-serif; font-size: 12.5px; text-align: right; font-variant-numeric: tabular-nums; }
+    .t-otb input.cel:hover { border-color: rgba(255,255,255,0.12); }
+    .t-otb input.cel:focus { outline: none; border-color: #38bdf8; background: rgba(56,189,248,0.08); }
+    .t-otb input.cel.pend { border-color: rgba(251,191,36,0.6); background: rgba(251,191,36,0.08); }
+    .t-otb input.cel.err { border-color: #f87171; background: rgba(248,113,113,0.12); }
+    .t-otb td.cons { color: #94a3b8; }
+    .t-otb .vz { color: #334155; }
+    .ot-barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 150; display: none; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; background: rgba(8,11,20,0.96); border-top: 1px solid rgba(251,191,36,0.35); backdrop-filter: blur(10px); }
+    .ot-barra.on { display: flex; }
+    .ot-barra span { color: #fcd34d; font-size: 13px; font-weight: 700; }
+    .modal-overlay { display: none; position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px; }
+    .modal-overlay.open { display: flex; }
+    .modal-card { width: 100%; max-width: 640px; max-height: 90vh; overflow-y: auto; background: rgba(12,16,30,0.98); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 24px; box-shadow: 0 24px 60px rgba(0,0,0,0.7); }
+    .modal-title { font-size: 17px; font-weight: 800; color: #f8fafc; margin-bottom: 4px; }
+    .modal-sub { font-size: 12.5px; color: #64748b; margin-bottom: 14px; line-height: 1.5; }
+    .lin-row { display: grid; grid-template-columns: 1fr 120px auto auto; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .lin-row.oculta input[type=text] { opacity: .45; text-decoration: line-through; }
+    .lin-row input[type=text], .lin-row select { padding: 8px 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 9px; color: #f1f5f9; font-family: Inter, sans-serif; font-size: 13px; color-scheme: dark; min-width: 0; }
+    .lin-acoes { display: flex; gap: 4px; }
+    .ic { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: #cbd5e1; cursor: pointer; font-size: 13px; }
+    .ic:hover { color: #f8fafc; background: rgba(255,255,255,0.1); }
+    .lin-ver { font-size: 11.5px; color: #94a3b8; display: flex; align-items: center; gap: 5px; white-space: nowrap; cursor: pointer; }
+    .modal-pe { display: flex; justify-content: space-between; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+    .msg-erro { display: none; margin-top: 10px; color: #fca5a5; font-size: 12px; }
+    @media (max-width: 600px) { .lin-row { grid-template-columns: 1fr 1fr; } .t-otb td:first-child, .t-otb th:first-child { min-width: 150px; } }
+  </style>
+</head>
+<body>
+  <div class="bg"></div><div class="grid-overlay"></div>
+  <div class="dc-sidebar-backdrop" id="ot-sidebar-backdrop"></div>
+  <aside class="dc-sidebar" id="ot-sidebar"></aside>
+  <header class="header">
+    <div class="header-brand">
+      <button id="ot-hamburger" aria-label="Menu"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <a href="/" style="display:flex;align-items:center;text-decoration:none"><img src="/public/logo cheia.png" alt="SAFI" class="header-logo-full"></a>
+      <div class="header-sub">Fluxo Financeiro (OTB)</div>
+    </div>
+  </header>
+  <div id="ot-loading">Carregando…</div>
+  <main class="main" id="ot-main" style="display:none">
+    <div class="tp-top">
+      <div><h1>Fluxo Financeiro (OTB)</h1><div class="tp-sub" id="ot-sub">Fluxo financeiro projetado — e-commerce (GIP e E.P.) e lojas (ISA e VIA). Cada mês fecha sozinho: entradas − saídas do próprio mês.</div></div>
+      <div class="ot-periodo">
+        <label>De<input type="month" id="ot-de"></label>
+        <label>Até<input type="month" id="ot-ate"></label>
+        <button class="btn-sec" id="ot-3m" type="button">Próximos 3 meses</button>
+      </div>
+    </div>
+    <div class="cards" id="cards"></div>
+    <div id="blocos"></div>
+    <div class="nota">Linhas <b>informativas</b> (Investimentos, FINIMP…) aparecem para consulta e ficam fora da soma. "Consolidado" soma as duas empresas do bloco. Máximo de 12 meses por vez.</div>
+  </main>
+
+  <div class="ot-barra" id="ot-barra">
+    <span id="ot-pend"></span>
+    <button class="btn-sec" id="ot-descartar" type="button">Descartar</button>
+    <button class="btn-primary" id="ot-salvar" type="button">Salvar alterações</button>
+  </div>
+
+  <div class="modal-overlay" id="lin-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="lin-titulo">Linhas</div>
+      <div class="modal-sub">Renomeie, mude o tipo, a ordem (↑ ↓) ou oculte linhas. Linha oculta sai da tela e da soma, mas os valores ficam guardados — dá para mostrar de novo.</div>
+      <div id="lin-lista"></div>
+      <div class="msg-erro" id="lin-erro"></div>
+      <div class="modal-pe">
+        <button class="btn-sec" id="lin-nova" type="button">+ Nova linha</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sec" id="lin-cancelar" type="button">Cancelar</button>
+          <button class="btn-primary" id="lin-salvar" type="button">Salvar linhas</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sb = supabase.createClient('https://ujsoqyhkebasszwtexmp.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c');
+    SafiSidebar.mount('ot', { active: 'otb', accent: { g1: '#38bdf8', g2: '#0284c7', text: '#082f49', adminRgb: '56,189,248', adminFg: '#7dd3fc' } });
+    wireSidebarToggle('ot');
+    const g = id => document.getElementById(id);
+    function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function brl(v) { if (v == null) return ''; return (v < 0 ? '-' : '') + 'R$ ' + Math.abs(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); }
+    function fmt(v) { return v == null ? '' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); }
+
+    const BLOCOS = [
+      { id: 'ecom', titulo: 'E-commerce', empresas: [['GIP', 'G I P'], ['EP', 'E. P.']] },
+      { id: 'lojas', titulo: 'PDVs / Lojas', empresas: [['ISA', 'I S A'], ['VIA', 'V I A']] },
+    ];
+    const TIPOS = { e: 'Entrada', s: 'Saída', i: 'Informativa' };
+    const NOME_MES = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+    const PERIODO_KEY = 'safi_otb_periodo';
+    const rotMes = m => NOME_MES[+m.slice(5, 7) - 1] + '/' + m.slice(2, 4);
+
+    // ---------- regras (funções puras, testadas em tests/otb.test.js) ----------
+    function chave(linha, empresa, mes) { return linha + '|' + empresa + '|' + mes; }
+
+    // Valor digitado no jeito brasileiro: "190.300", "1.234,56", "R$ 2.000", "-1.740". Vazio = null; lixo = NaN.
+    function parseValor(s) {
+      if (s == null) return null;
+      let t = String(s).replace(/R\$/g, '').replace(/\s/g, '');
+      if (t === '') return null;
+      t = t.replace(/\./g, '').replace(',', '.');
+      if (!/^-?\d+(\.\d+)?$/.test(t)) return NaN;
+      return Number(t);
+    }
+
+    // "2026-11", "2027-01" -> ['2026-11-01', '2026-12-01', '2027-01-01'] (no máximo 12 meses)
+    function mesesEntre(de, ate) {
+      if (de > ate) { const x = de; de = ate; ate = x; }
+      let a = +de.slice(0, 4), m = +de.slice(5, 7);
+      const a2 = +ate.slice(0, 4), m2 = +ate.slice(5, 7);
+      const out = [];
+      while ((a < a2 || (a === a2 && m <= m2)) && out.length < 12) {
+        out.push(a + '-' + String(m).padStart(2, '0') + '-01');
+        m++; if (m > 12) { m = 1; a++; }
+      }
+      return out;
+    }
+
+    // Entradas, saídas e saldo por empresa e mês (+ total do bloco). Cada mês fecha sozinho (sem saldo anterior).
+    // Linha informativa ou oculta não entra na soma.
+    function calcularBloco(linhas, val, empresas, meses) {
+      const r2 = x => Math.round(x * 100) / 100;
+      const r = { total: {} };
+      meses.forEach(m => { r.total[m] = { ent: 0, sai: 0, saldo: 0 }; });
+      empresas.forEach(emp => {
+        r[emp] = {};
+        meses.forEach(m => {
+          let ent = 0, sai = 0;
+          linhas.forEach(l => {
+            if (!l.ativo || l.tipo === 'i') return;
+            const v = val[chave(l.id, emp, m)];
+            if (v == null) return;
+            if (l.tipo === 'e') ent += Number(v); else if (l.tipo === 's') sai += Number(v);
+          });
+          r[emp][m] = { ent: r2(ent), sai: r2(sai), saldo: r2(ent - sai) };
+          r.total[m].ent = r2(r.total[m].ent + ent);
+          r.total[m].sai = r2(r.total[m].sai + sai);
+          r.total[m].saldo = r2(r.total[m].saldo + ent - sai);
+        });
+      });
+      return r;
+    }
+
+    // Só grava o que mudou: compara o que veio do banco com o que foi digitado (null = célula apagada).
+    function alteracoes(original, editado) {
+      const gravar = [], apagar = [];
+      Object.keys(editado).forEach(k => {
+        const v = editado[k], o = original[k];
+        if (v == null) { if (o != null) apagar.push(k); }
+        else if (o == null || Number(o) !== Number(v)) gravar.push(k);
+      });
+      return { gravar, apagar };
+    }
+
+    // ---------- estado ----------
+    let me = null, podeEditar = false;
+    let LINHAS = [];   // otb_linhas
+    let VAL = {};      // valores do banco no período
+    let EDIT = {};     // digitado e ainda não salvo
+    let MESES = [];
+
+    function efetivos() {
+      const v = Object.assign({}, VAL);
+      Object.keys(EDIT).forEach(k => { if (EDIT[k] == null) delete v[k]; else v[k] = EDIT[k]; });
+      return v;
+    }
+    const linhasDo = bloco => LINHAS.filter(l => l.bloco === bloco).sort((a, b) => a.ordem - b.ordem);
+
+    async function buscarValores() {
+      const out = [];
+      for (let ini = 0; ; ini += 1000) {
+        const { data, error } = await sb.from('otb_valores').select('linha_id,empresa,mes,valor')
+          .gte('mes', MESES[0]).lte('mes', MESES[MESES.length - 1]).order('mes').range(ini, ini + 999);
+        if (error) throw error;
+        out.push(...data);
+        if (data.length < 1000) break;
+      }
+      VAL = {};
+      out.forEach(r => { VAL[chave(r.linha_id, r.empresa, r.mes)] = Number(r.valor); });
+    }
+    async function buscarLinhas() {
+      const { data, error } = await sb.from('otb_linhas').select('*').order('ordem');
+      if (error) throw error;
+      LINHAS = data;
+    }
+
+    // ---------- tela ----------
+    function celula(k, v) {
+      if (!podeEditar) return '<td class="r' + (v == null ? ' vz' : '') + '">' + (v == null ? '—' : fmt(v)) + '</td>';
+      return '<td class="r"><input class="cel' + (k in EDIT ? ' pend' : '') + '" data-k="' + esc(k) + '" inputmode="decimal" value="' + esc(fmt(v)) + '"></td>';
+    }
+    function tabelaBloco(B) {
+      const val = efetivos(), lin = linhasDo(B.id).filter(l => l.ativo), n = MESES.length;
+      const emps = B.empresas.map(e => e[0]);
+      let h = '<thead><tr class="grp"><th></th>' + B.empresas.map(e => '<th colspan="' + n + '" class="sep">' + e[1] + '</th>').join('') +
+        '<th colspan="' + n + '" class="sep">Consolidado</th></tr><tr><th>Fluxo financeiro projetado</th>' +
+        [0, 1, 2].map(() => MESES.map((m, i) => '<th class="r' + (i === 0 ? ' sep' : '') + '">' + rotMes(m) + '</th>').join('')).join('') + '</tr></thead><tbody>';
+      const cols = n * 3 + 1;
+      const linhaDados = l => {
+        let s = '<tr><td>' + esc(l.nome) + '</td>';
+        emps.forEach(emp => MESES.forEach(m => { const k = chave(l.id, emp, m); s += celula(k, val[k]); }));
+        MESES.forEach(m => {
+          const vs = emps.map(emp => val[chave(l.id, emp, m)]).filter(v => v != null);
+          s += '<td class="r cons" data-cons="' + l.id + '|' + m + '">' + (vs.length ? fmt(vs.reduce((a, b) => a + b, 0)) : '') + '</td>';
+        });
+        return s + '</tr>';
+      };
+      const linhaTot = (rot, campo, cls) => '<tr class="' + cls + '"><td>' + rot + '</td>' +
+        [...emps, 'total'].map(emp => MESES.map((m, i) => '<td class="r' + (i === 0 ? ' sep' : '') + '" data-t="' + B.id + '|' + emp + '|' + m + '|' + campo + '"></td>').join('')).join('') + '</tr>';
+      const sec = (rot) => '<tr class="sec"><td colspan="' + cols + '">' + rot + '</td></tr>';
+      h += sec('Entradas') + lin.filter(l => l.tipo === 'e').map(linhaDados).join('') + linhaTot('Total de entradas', 'ent', 'tot');
+      h += sec('Saídas') + lin.filter(l => l.tipo === 's').map(linhaDados).join('') + linhaTot('Total de saídas', 'sai', 'tot');
+      h += linhaTot('Saldo do mês', 'saldo', 'tot');
+      const inf = lin.filter(l => l.tipo === 'i');
+      if (inf.length) h += sec('Informativos (fora da soma)') + inf.map(linhaDados).join('');
+      return h + '</tbody>';
+    }
+    function render() {
+      g('blocos').innerHTML = BLOCOS.map(B => '<div class="panel"><div class="bloco-h"><div class="panel-head" style="margin:0">' + B.titulo + ' — fluxo financeiro projetado</div>' +
+        (podeEditar ? '<button class="btn-sec" type="button" data-linhas="' + B.id + '">Editar linhas</button>' : '') +
+        '</div><div class="scroll"><table class="t t-otb" id="tb-' + B.id + '">' + tabelaBloco(B) + '</table></div></div>').join('');
+      atualizarTotais();
+      atualizarBarra();
+    }
+    function atualizarTotais() {
+      const val = efetivos();
+      const tot = {};
+      BLOCOS.forEach(B => { tot[B.id] = calcularBloco(linhasDo(B.id), val, B.empresas.map(e => e[0]), MESES); });
+      document.querySelectorAll('[data-t]').forEach(td => {
+        const [b, emp, m, campo] = td.dataset.t.split('|');
+        const v = tot[b][emp][m][campo];
+        td.textContent = fmt(v);
+        td.classList.toggle('neg', campo === 'saldo' && v < 0);
+        td.classList.toggle('pos', campo === 'saldo' && v > 0);
+      });
+      document.querySelectorAll('[data-cons]').forEach(td => {
+        const [id, m] = td.dataset.cons.split('|');
+        const B = BLOCOS.find(x => x.id === (LINHAS.find(l => l.id === id) || {}).bloco);
+        const vs = B ? B.empresas.map(e => val[chave(id, e[0], m)]).filter(v => v != null) : [];
+        td.textContent = vs.length ? fmt(vs.reduce((a, b) => a + b, 0)) : '';
+      });
+      // Cards: o período inteiro, os dois blocos juntos
+      const porMes = MESES.map(m => ({ m, ent: tot.ecom.total[m].ent + tot.lojas.total[m].ent, sai: tot.ecom.total[m].sai + tot.lojas.total[m].sai, saldo: tot.ecom.total[m].saldo + tot.lojas.total[m].saldo }));
+      const soma = c => porMes.reduce((a, x) => a + x[c], 0);
+      const pior = porMes.reduce((a, x) => (a == null || x.saldo < a.saldo ? x : a), null);
+      const card = (lab, v, s, hi) => '<div class="card' + (hi ? ' hi' : '') + '"><div class="card-l">' + lab + '</div><div class="card-v ' + (v < 0 ? 'neg' : '') + '">' + brl(v) + '</div><div class="card-s">' + s + '</div></div>';
+      const per = MESES.length === 1 ? rotMes(MESES[0]) : rotMes(MESES[0]) + ' a ' + rotMes(MESES[MESES.length - 1]);
+      g('cards').innerHTML = card('Saldo do período', soma('saldo'), 'E-commerce + lojas · ' + per, true) +
+        card('Entradas do período', soma('ent'), per) + card('Saídas do período', soma('sai'), per) +
+        (pior ? card('Mês mais apertado', pior.saldo, rotMes(pior.m) + ' · E-commerce ' + brl(tot.ecom.total[pior.m].saldo) + ' · Lojas ' + brl(tot.lojas.total[pior.m].saldo)) : '');
+    }
+    function atualizarBarra() {
+      const a = alteracoes(VAL, EDIT), n = a.gravar.length + a.apagar.length;
+      g('ot-pend').textContent = n === 1 ? '1 alteração não salva' : n + ' alterações não salvas';
+      g('ot-barra').classList.toggle('on', n > 0);
+    }
+
+    // ---------- edição das células ----------
+    g('blocos').addEventListener('focusin', e => {
+      const i = e.target.closest('input.cel'); if (!i) return;
+      const v = efetivos()[i.dataset.k];
+      i.value = v == null ? '' : String(v).replace('.', ',');
+      i.select();
+    });
+    g('blocos').addEventListener('focusout', e => {
+      const i = e.target.closest('input.cel'); if (!i) return;
+      const k = i.dataset.k, p = parseValor(i.value);
+      if (Number.isNaN(p)) { i.classList.add('err'); i.title = 'Valor inválido — use números, ex.: 190.300 ou 1.234,56'; return; }
+      i.classList.remove('err'); i.title = '';
+      const o = VAL[k];
+      if ((p == null && o == null) || (p != null && o != null && Number(o) === p)) delete EDIT[k]; else EDIT[k] = p;
+      i.classList.toggle('pend', k in EDIT);
+      i.value = fmt(p);
+      atualizarTotais();
+      atualizarBarra();
+    });
+    g('blocos').addEventListener('keydown', e => {
+      const i = e.target.closest('input.cel'); if (!i || e.key !== 'Enter') return;
+      e.preventDefault();
+      // Enter desce para a linha de baixo, mesma coluna
+      const td = i.closest('td'), col = Array.from(td.parentNode.children).indexOf(td);
+      let tr = td.parentNode.nextElementSibling;
+      while (tr) { const alvo = tr.children[col] && tr.children[col].querySelector('input.cel'); if (alvo) { alvo.focus(); return; } tr = tr.nextElementSibling; }
+      i.blur();
+    });
+
+    g('ot-descartar').addEventListener('click', () => { if (confirm('Descartar as alterações não salvas?')) { EDIT = {}; render(); } });
+    g('ot-salvar').addEventListener('click', async () => {
+      const btn = g('ot-salvar');
+      const { gravar, apagar } = alteracoes(VAL, EDIT);
+      btn.disabled = true; btn.textContent = 'Salvando…';
+      try {
+        const agora = new Date().toISOString();
+        if (gravar.length) {
+          const rows = gravar.map(k => { const [linha_id, empresa, mes] = k.split('|'); return { linha_id, empresa, mes, valor: EDIT[k], atualizado_em: agora, atualizado_por: me.id }; });
+          const { error } = await sb.from('otb_valores').upsert(rows, { onConflict: 'linha_id,empresa,mes' });
+          if (error) throw error;
+        }
+        for (const k of apagar) {
+          const [linha_id, empresa, mes] = k.split('|');
+          const { error } = await sb.from('otb_valores').delete().eq('linha_id', linha_id).eq('empresa', empresa).eq('mes', mes);
+          if (error) throw error;
+        }
+        EDIT = {};
+        await buscarValores();
+        render();
+      } catch (err) {
+        alert('Não consegui salvar: ' + (err.message || err));
+      } finally { btn.disabled = false; btn.textContent = 'Salvar alterações'; }
+    });
+    window.addEventListener('beforeunload', e => { if (Object.keys(EDIT).length) { e.preventDefault(); e.returnValue = ''; } });
+
+    // ---------- período ----------
+    function mesAtual(desloc) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + (desloc || 0)); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+    async function mudarPeriodo(de, ate) {
+      if (Object.keys(EDIT).length) { alert('Salve ou descarte as alterações antes de mudar o período.'); g('ot-de').value = MESES[0].slice(0, 7); g('ot-ate').value = MESES[MESES.length - 1].slice(0, 7); return; }
+      MESES = mesesEntre(de, ate);
+      g('ot-de').value = MESES[0].slice(0, 7); g('ot-ate').value = MESES[MESES.length - 1].slice(0, 7);
+      try { localStorage.setItem(PERIODO_KEY, JSON.stringify([g('ot-de').value, g('ot-ate').value])); } catch (e) {}
+      await buscarValores();
+      render();
+    }
+    g('ot-de').addEventListener('change', () => { if (g('ot-de').value && g('ot-ate').value) mudarPeriodo(g('ot-de').value, g('ot-ate').value); });
+    g('ot-ate').addEventListener('change', () => { if (g('ot-de').value && g('ot-ate').value) mudarPeriodo(g('ot-de').value, g('ot-ate').value); });
+    g('ot-3m').addEventListener('click', () => mudarPeriodo(mesAtual(0), mesAtual(2)));
+
+    // ---------- linhas (criar, renomear, tipo, ordem, ocultar) ----------
+    let LIN_BLOCO = null, LIN_RASCUNHO = [];
+    function abrirLinhas(bloco) {
+      LIN_BLOCO = bloco;
+      LIN_RASCUNHO = linhasDo(bloco).map(l => ({ ...l }));
+      g('lin-titulo').textContent = 'Linhas — ' + BLOCOS.find(b => b.id === bloco).titulo;
+      g('lin-erro').style.display = 'none';
+      desenharLinhas();
+      g('lin-modal').classList.add('open');
+    }
+    function desenharLinhas() {
+      const ordemTipo = { e: 0, s: 1, i: 2 };
+      LIN_RASCUNHO.sort((a, b) => ordemTipo[a.tipo] - ordemTipo[b.tipo] || a.ordem - b.ordem);
+      g('lin-lista').innerHTML = LIN_RASCUNHO.map((l, i) => '<div class="lin-row' + (l.ativo ? '' : ' oculta') + '" data-i="' + i + '">' +
+        '<input type="text" data-f="nome" value="' + esc(l.nome) + '" placeholder="Nome da linha">' +
+        '<select data-f="tipo">' + Object.entries(TIPOS).map(([k, t]) => '<option value="' + k + '"' + (l.tipo === k ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
+        '<div class="lin-acoes"><button class="ic" type="button" data-mv="-1" title="Subir">↑</button><button class="ic" type="button" data-mv="1" title="Descer">↓</button></div>' +
+        '<label class="lin-ver"><input type="checkbox" data-f="ativo"' + (l.ativo ? ' checked' : '') + '> mostrar</label></div>').join('');
+    }
+    g('lin-lista').addEventListener('input', e => {
+      const row = e.target.closest('.lin-row'); if (!row) return;
+      const l = LIN_RASCUNHO[+row.dataset.i], f = e.target.dataset.f;
+      if (f === 'nome') l.nome = e.target.value;
+    });
+    g('lin-lista').addEventListener('change', e => {
+      const row = e.target.closest('.lin-row'); if (!row) return;
+      const l = LIN_RASCUNHO[+row.dataset.i], f = e.target.dataset.f;
+      if (f === 'tipo') { l.tipo = e.target.value; l.ordem = 9999; renumerar(); desenharLinhas(); }
+      if (f === 'ativo') { l.ativo = e.target.checked; row.classList.toggle('oculta', !l.ativo); }
+    });
+    g('lin-lista').addEventListener('click', e => {
+      const b = e.target.closest('[data-mv]'); if (!b) return;
+      const i = +b.closest('.lin-row').dataset.i, j2 = i + Number(b.dataset.mv);
+      const a = LIN_RASCUNHO[i], c = LIN_RASCUNHO[j2];
+      if (!c || c.tipo !== a.tipo) return;
+      const t = a.ordem; a.ordem = c.ordem; c.ordem = t;
+      desenharLinhas();
+    });
+    function renumerar() {
+      const ordemTipo = { e: 0, s: 1, i: 2 };
+      LIN_RASCUNHO.sort((a, b) => ordemTipo[a.tipo] - ordemTipo[b.tipo] || a.ordem - b.ordem).forEach((l, i) => { l.ordem = (i + 1) * 10; });
+    }
+    g('lin-nova').addEventListener('click', () => {
+      LIN_RASCUNHO.push({ id: null, bloco: LIN_BLOCO, nome: '', tipo: 'e', ordem: 9999, ativo: true });
+      renumerar(); desenharLinhas();
+      const ins = g('lin-lista').querySelectorAll('input[data-f="nome"]');
+      const nova = Array.from(ins).find(x => x.value === ''); if (nova) nova.focus();
+    });
+    g('lin-cancelar').addEventListener('click', () => g('lin-modal').classList.remove('open'));
+    g('lin-salvar').addEventListener('click', async () => {
+      const erro = m => { g('lin-erro').textContent = m; g('lin-erro').style.display = 'block'; };
+      LIN_RASCUNHO.forEach(l => { l.nome = l.nome.trim(); });
+      if (LIN_RASCUNHO.some(l => !l.nome)) return erro('Toda linha precisa de um nome.');
+      renumerar();
+      const btn = g('lin-salvar'); btn.disabled = true;
+      try {
+        for (const l of LIN_RASCUNHO) {
+          const dados = { bloco: LIN_BLOCO, nome: l.nome, tipo: l.tipo, ordem: l.ordem, ativo: l.ativo };
+          if (!l.id) { const { error } = await sb.from('otb_linhas').insert(dados); if (error) throw error; continue; }
+          const o = LINHAS.find(x => x.id === l.id);
+          if (o && o.nome === l.nome && o.tipo === l.tipo && o.ordem === l.ordem && o.ativo === l.ativo) continue;
+          const { error } = await sb.from('otb_linhas').update(dados).eq('id', l.id);
+          if (error) throw error;
+        }
+        await buscarLinhas();
+        g('lin-modal').classList.remove('open');
+        render();
+      } catch (err) { erro('Não consegui salvar: ' + (err.message || err)); }
+      finally { btn.disabled = false; }
+    });
+    g('blocos').addEventListener('click', e => { const b = e.target.closest('[data-linhas]'); if (b) abrirLinhas(b.dataset.linhas); });
+
+    (async function init() {
+      const { data } = await sb.auth.getSession();
+      if (!data.session) return window.location.replace('/login');
+      const { data: rows } = await sb.from('user_profiles').select('*').eq('id', data.session.user.id).limit(1);
+      me = (rows && rows[0]) || null;
+      if (!me || !(me.is_admin || me.can_otb === true || me.can_otb_editar === true)) return window.location.replace('/');
+      me.id = data.session.user.id;
+      podeEditar = !!(me.is_admin || me.can_otb_editar === true);
+      SafiSidebar.apply('ot', me, { email: data.session.user.email, sb });
+      if (!podeEditar) g('ot-sub').textContent += ' Você tem acesso só para ver.';
+      let de = mesAtual(0), ate = mesAtual(2);
+      try { const p = JSON.parse(localStorage.getItem(PERIODO_KEY) || 'null'); if (p && p[0] && p[1]) { de = p[0]; ate = p[1]; } } catch (e) {}
+      MESES = mesesEntre(de, ate);
+      g('ot-de').value = MESES[0].slice(0, 7); g('ot-ate').value = MESES[MESES.length - 1].slice(0, 7);
+      try { await Promise.all([buscarLinhas(), buscarValores()]); } catch (err) { g('ot-loading').textContent = 'Erro ao carregar: ' + (err.message || err); return; }
+      g('ot-loading').style.display = 'none';
+      g('ot-main').style.display = 'block';
+      render();
+    })();
+  </script>
+</body>
+</html>

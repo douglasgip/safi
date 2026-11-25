@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
   if (rateLimited(caller!.id))
     return new Response(JSON.stringify({ error: 'Muitas contas criadas em pouco tempo. Aguarde alguns minutos.' }), { status: 429, headers: { ...cors, 'Content-Type': 'application/json' } })
 
-  const { email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_calc_importacao, can_orcamento, can_tesouraria, can_reunioes, can_reunioes_editar, mfa_obrigatorio } = await req.json()
+  const { email, password, full_name, role, can_resumo, can_dre, dre_epgip, dre_exposicao, dre_viacloset, can_mapa_societario, can_funcionarios, funcionarios_epgip, funcionarios_exposicao, funcionarios_viacloset, can_lancamentos, lancamentos_ep, lancamentos_gip, lancamentos_exposicao, lancamentos_viacloset, can_calc_importacao, can_orcamento, can_tesouraria, can_otb, can_otb_editar, can_reunioes, can_reunioes_editar, mfa_obrigatorio } = await req.json()
 
   const { data: authData, error: authErr } = await sb.auth.admin.createUser({ email, password, email_confirm: true })
   if (authErr)
@@ -58,6 +58,8 @@ Deno.serve(async (req: Request) => {
     can_calc_importacao: can_calc_importacao ?? false,
     can_orcamento: can_orcamento ?? false,
     can_tesouraria: can_tesouraria ?? false,
+    can_otb: can_otb ?? false,
+    can_otb_editar: can_otb_editar ?? false,
     can_reunioes: can_reunioes ?? false,
     can_reunioes_editar: can_reunioes_editar ?? false,
     mfa_obrigatorio: mfa_obrigatorio ?? false,

@@ -755,6 +755,28 @@
           </div>
         </div>
 
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Fluxo Financeiro (OTB) — ver</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Ver o fluxo financeiro projetado do e-commerce e das lojas, sem alterar — visível por padrão só pra ninguém</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-otb">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('otb', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('otb', false)">Não</button>
+          </div>
+        </div>
+
+        <div class="perm-row">
+          <div>
+            <div class="perm-name">Fluxo Financeiro (OTB) — editar</div>
+            <div style="font-size:10.5px;color:#64748b;margin-top:2px">Digitar os valores e criar, renomear ou ocultar linhas (inclui ver)</div>
+          </div>
+          <div class="toggle-wrap" id="toggle-otb-editar">
+            <button type="button" class="toggle-btn active-yes" data-val="true" onclick="setToggle('otb-editar', true)">Sim</button>
+            <button type="button" class="toggle-btn inactive" data-val="false" onclick="setToggle('otb-editar', false)">Não</button>
+          </div>
+        </div>
+
         <div class="perm-row" style="flex-direction:column;align-items:flex-start;gap:10px">
           <div style="display:flex;align-items:center;justify-content:space-between;width:100%">
             <div>
@@ -1055,6 +1077,7 @@ const ACCESS_DOMAINS = [
   u => u.can_calc_importacao === true,
   u => u.can_orcamento === true,
   u => u.can_tesouraria === true,
+  u => u.can_otb === true || u.can_otb_editar === true,
   u => u.can_reunioes === true || u.can_reunioes_editar === true,
 ];
 function computeAccessPct(u) {
@@ -1161,7 +1184,7 @@ function openCreateModal() {
   ['resumo','dre','epgip','exposicao','viacloset'].forEach(k => setToggle(k, true));
   setToggle('mapasoc', false);
   setToggle('mfa', false);
-  ['funcionarios','func-epgip','func-exposicao','func-viacloset','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','orcamento','tesouraria','reunioes','reunioes-editar'].forEach(k => setToggle(k, false));
+  ['funcionarios','func-epgip','func-exposicao','func-viacloset','lancamentos','lanc-ep','lanc-gip','lanc-exposicao','lanc-viacloset','calcimport','orcamento','tesouraria','otb','otb-editar','reunioes','reunioes-editar'].forEach(k => setToggle(k, false));
   document.getElementById('modal-error').className   = 'modal-error';
   document.getElementById('modal').classList.add('open');
   document.getElementById('f-email').focus();
@@ -1197,6 +1220,8 @@ function openEditModal(u) {
   setToggle('calcimport',      !!u.can_calc_importacao);
   setToggle('orcamento',       !!u.can_orcamento);
   setToggle('tesouraria',      !!u.can_tesouraria);
+  setToggle('otb',             !!u.can_otb);
+  setToggle('otb-editar',      !!u.can_otb_editar);
   setToggle('reunioes',        !!u.can_reunioes);
   setToggle('reunioes-editar', !!u.can_reunioes_editar);
   setToggle('lancamentos',       !!u.can_lancamentos);
@@ -1248,6 +1273,8 @@ document.getElementById('user-form').addEventListener('submit', async e => {
     can_calc_importacao: toggleState.calcimport,
     can_orcamento: toggleState.orcamento,
     can_tesouraria: toggleState.tesouraria,
+    can_otb: toggleState.otb,
+    can_otb_editar: toggleState['otb-editar'],
     can_reunioes: toggleState.reunioes,
     can_reunioes_editar: toggleState['reunioes-editar'],
     can_lancamentos:       toggleState.lancamentos,

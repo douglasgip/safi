@@ -431,6 +431,18 @@
             </div>
           </a>
 
+          <a href="/fluxo-otb" id="card-otb" class="dash-card theme-cyan" style="display:none">
+            <div class="dash-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+            </div>
+            <div class="dash-card-title">Fluxo Financeiro (OTB)</div>
+            <div class="dash-card-desc">Entradas e saídas projetadas mês a mês do e-commerce e das lojas.</div>
+            <div class="dash-card-arrow">
+              Acessar
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </div>
+          </a>
+
         </div>
       </div>
 
@@ -561,6 +573,8 @@
       if (showOrcamento) { const c=document.getElementById('card-orcamento'); if(c) c.style.display=''; }
       const showTesouraria = !!prof && (prof.is_admin || prof.can_tesouraria === true);
       if (showTesouraria) { const c=document.getElementById('card-tesouraria'); if(c) c.style.display=''; }
+      const showOtb = !!prof && (prof.is_admin || prof.can_otb === true || prof.can_otb_editar === true);
+      if (showOtb) { const c=document.getElementById('card-otb'); if(c) c.style.display=''; }
       if (showDre) { const c=document.getElementById('card-conselho'); if(c) c.style.display=''; }
       if (showDre) { ['card-bi','card-cascata'].forEach(id => { const c=document.getElementById(id); if(c) c.style.display=''; }); }
       const showCalcImport = !!prof && (prof.is_admin || prof.can_calc_importacao === true);
@@ -583,7 +597,7 @@
       // um rótulo de setor flutuando sem nada embaixo (mesmos setores da barra lateral).
       [
         ['section-conselho', ['card-conselho','card-reunioes']],
-        ['section-financeiro', ['card-dre','card-cascata','card-lancamentos','card-bi','card-orcamento','card-tesouraria']],
+        ['section-financeiro', ['card-dre','card-cascata','card-lancamentos','card-bi','card-orcamento','card-tesouraria','card-otb']],
         ['section-contabil', ['card-resumo']],
         ['section-compras', ['card-calcimport']],
         ['section-pessoal', ['card-funcionarios']],

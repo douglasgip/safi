@@ -330,6 +330,22 @@ window.SAFI_AJUDA = { telas: {
     dados: 'Cadastro próprio, lançamento por lançamento.',
   },
 
+  otb: {
+    titulo: 'Fluxo Financeiro (OTB)', versao: 1,
+    resumo: 'O fluxo financeiro projetado (OTB) em dois blocos: <b>E-commerce</b> (GIP e E.P.) e <b>PDVs / Lojas</b> (ISA e VIA). Para cada mês: entradas, saídas e o <b>saldo do mês</b>. Começou com a planilha "FLUXO FINANCEIRO (OTB)" do Aldemar.',
+    passos: [
+      { t: 'Escolha o período', d: 'No topo, <b>De</b> e <b>Até</b> (até 12 meses). <b>Próximos 3 meses</b> volta para o mês atual e os dois seguintes.' },
+      { t: 'Digite os valores', d: 'Clique na célula e digite (ex.: <b>190.300</b> ou <b>1.234,56</b>). <b>Enter</b> desce para a linha de baixo. Célula alterada fica amarela até salvar.' },
+      { t: 'Salve', d: 'A barra de baixo mostra quantas alterações faltam salvar: <b>Salvar alterações</b> grava só o que mudou; <b>Descartar</b> volta ao que estava.' },
+      { t: 'Ajuste as linhas', d: '<b>Editar linhas</b> em cada bloco: criar linha nova, renomear, mudar o tipo (<b>Entrada</b>, <b>Saída</b> ou <b>Informativa</b>), a ordem (↑ ↓) ou ocultar.' },
+    ],
+    dicas: ['Cada mês fecha sozinho: <b>saldo do mês = entradas − saídas do próprio mês</b> (não soma o saldo do mês anterior), igual à planilha.', 'Linhas <b>informativas</b> (Investimentos, FINIMP…) aparecem só para consulta e ficam fora da soma.', 'Linha oculta sai da tela e da soma, mas os valores ficam guardados.', '"Consolidado" soma as duas empresas do bloco.'],
+    naoFaz: ['Não puxa números de outras telas: tudo é digitado aqui.', 'Não lança nada no DRE.'],
+    termos: [{ t: 'OTB', d: '"Open to buy": quanto o caixa projetado permite comprar em cada mês.' }],
+    quemVe: 'Quem tem a permissão Fluxo OTB — ver (só olha) ou editar (digita e ajusta linhas).',
+    dados: 'Cadastro próprio, célula por célula.',
+  },
+
   admin: {
     titulo: 'Gestão de Acessos', versao: 4,
     resumo: 'Aqui o admin cria usuários, define <b>exatamente o que cada um pode ver e fazer</b> no SAFI — tela por tela e, em vários casos, empresa por empresa — e acompanha quem está usando o sistema.',

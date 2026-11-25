@@ -421,7 +421,7 @@
   // ── Manual em texto puro (o GerônIA lê isto). A página Admin sincroniza com a tabela ajuda_manual. ──
   var ROTAS = {
     home: ['/', 'Visão Geral'], geronia: ['/geronia', 'Visão Geral'], conselho: ['/conselho', 'Conselho'], reunioes: ['/reunioes', 'Conselho'],
-    dre: ['/dre', 'Financeiro'], lancamentos: ['/lancamentos', 'Financeiro (submenu do DRE)'], cascata: ['/cascata', 'Financeiro (submenu do DRE)'], orcamento: ['/orcamento', 'Financeiro'], bi: ['/bi', 'Financeiro'], tesouraria: ['/tesouraria', 'Financeiro'],
+    dre: ['/dre', 'Financeiro'], lancamentos: ['/lancamentos', 'Financeiro (submenu do DRE)'], cascata: ['/cascata', 'Financeiro (submenu do DRE)'], orcamento: ['/orcamento', 'Financeiro'], bi: ['/bi', 'Financeiro'], tesouraria: ['/tesouraria', 'Financeiro'], otb: ['/fluxo-otb', 'Financeiro'],
     resumo: ['/resumocontabil', 'Contábil'], calcimport: ['/calculadora-importacao', 'Compras'], funcionarios: ['/funcionarios', 'Pessoal'],
     mapasoc: ['/mapa-societario', 'Gestão'], admin: ['/admin', 'Gestão']
   };
