@@ -152,13 +152,21 @@ def janela_principal():
     return None
 
 
-def loja_da_janela(top):
+def loja_ou_nada(top):
+    """Loja pelo título da janela; None se o nome ainda não apareceu (o Seta escreve o título aos poucos)."""
     t = top.window_text().lower()
     if 'exposi' in t:
         return 'Exposicao'
     if 'via' in t:
         return 'ViaCloset'
-    raise RuntimeError('não reconheci a loja no título: ' + top.window_text())
+    return None
+
+
+def loja_da_janela(top):
+    loja = loja_ou_nada(top)
+    if not loja:
+        raise RuntimeError('não reconheci a loja no título: ' + top.window_text())
+    return loja
 
 
 def achar_form(top, nome, espera=15, so_visivel=True):
@@ -361,7 +369,10 @@ def entrar(cfg):
     top = esperar(janela_login, 60)
     if not top:
         raise RuntimeError('a tela do Seta não abriu')
-    loja = loja_da_janela(top)
+    # Logo após ligar o PC o Seta se atualiza e demora a pôr o nome da loja no título (25/11).
+    loja = esperar(lambda: loja_ou_nada(top), 60)
+    if not loja:
+        loja_da_janela(top)
     secao = 'seta ' + loja.lower()
     usuario = cfg.get(secao, 'usuario', fallback='').strip()
     senha = cfg.get(secao, 'senha', fallback='')
@@ -554,10 +565,11 @@ def abrir_seta(cfg, loja):
         raise RuntimeError('não achei o Seta da loja %s (%s) — confira [lojas] no %s' % (loja, exe, CONFIG))
     log('Abrindo o Seta da loja', loja)
     SETAS_ABERTOS.append(subprocess.Popen([exe], cwd=os.path.dirname(exe)))
-    # O Seta demora para abrir e o título vai se completando: espera aparecer "Empresa:" e a tela de login.
+    # O Seta demora para abrir e o título vai se completando: espera aparecer "Empresa:", o nome da loja
+    # (logo após ligar o PC ele se atualiza e o nome chega por último — 25/11) e a tela de login.
     def pronto():
         for t in seta_aberto():
-            if 'Empresa:' in t.window_text() and any(d.window_text() == 'SetaERP - Menu Inicial' for d in t.descendants()):
+            if 'Empresa:' in t.window_text() and loja_ou_nada(t) and any(d.window_text() == 'SetaERP - Menu Inicial' for d in t.descendants()):
                 return t
         return None
     top = esperar(pronto, 120, passo=1)
@@ -840,14 +852,16 @@ def perguntar_antes_seguro(segundos=AVISO_SEGUNDOS):
     """Mostra o aviso num processo separado (o desenho do aviso já travou o Python algumas vezes).
     Código 10 = adiar; qualquer outro resultado (inclusive travar) = segue a rotina, para não perder o dia."""
     import subprocess
-    try:
-        r = subprocess.run([sys.executable, '-P', os.path.abspath(__file__), 'aviso', str(segundos)], timeout=segundos + 60)
-        if r.returncode == 10:
-            return 'adiar'
-        if r.returncode != 0:
-            log('agendado: o aviso fechou com erro (%s); sigo a rotina sem ele' % r.returncode)
-    except Exception as e:
-        log('agendado: o aviso não abriu (%s); sigo a rotina sem ele' % e)
+    for tentativa in range(2):
+        try:
+            r = subprocess.run([sys.executable, '-P', os.path.abspath(__file__), 'aviso', str(segundos)], timeout=segundos + 60)
+            if r.returncode in (0, 10):
+                return 'adiar' if r.returncode == 10 else 'agora'
+            log('agendado: o aviso fechou com erro (%s)%s' % (r.returncode, '; tento de novo' if tentativa == 0 else '; sigo a rotina sem ele'))
+        except Exception as e:
+            log('agendado: o aviso não abriu (%s); sigo a rotina sem ele' % e)
+            break
+        time.sleep(3)
     return 'agora'
 
 

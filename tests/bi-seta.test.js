@@ -200,6 +200,25 @@ test('robô do Seta: o aviso roda em processo separado; se ele travar, o robô s
   assert.match(py, /return 10 if perguntar_antes\(/);
 });
 
+test('robô do Seta: logo após ligar o PC o Seta demora a escrever o nome da loja no título — o robô espera em vez de dar erro (25/11)', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def entrar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /loja = esperar\(lambda: loja_ou_nada\(top\), \d+\)/);
+  assert.doesNotMatch(fn, /loja = loja_da_janela\(top\)/);
+  const abrir = py.match(/def abrir_seta\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(abrir, /def pronto\(\):[\s\S]*?loja_ou_nada\(t\)[\s\S]*?return t/, 'abrir_seta só pode seguir quando o nome da loja já estiver no título');
+  const ou = py.match(/def loja_ou_nada\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(ou, /return None/);
+  assert.doesNotMatch(ou, /raise/);
+});
+
+test('robô do Seta: se o aviso cair (erro do desenho da janela), tenta abrir o aviso mais uma vez antes de seguir sem ele (25/11)', () => {
+  const py = ler('scripts/seta_robo.py');
+  const fn = py.match(/def perguntar_antes_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /for tentativa in range\(2\)/);
+  assert.match(fn, /returncode in \(0, 10\)/);
+});
+
 test('robô do Seta (24/11): Windows recusou trazer o Seta para a frente — tenta destravar (Alt) antes de desistir', () => {
   const py = ler('scripts/seta_robo.py');
   const usos = py.split(/\r?\n/).filter(l => /\.set_focus\(\)/.test(l));
