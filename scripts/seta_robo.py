@@ -609,6 +609,27 @@ def sair(top):
     log('  Seta fechado')
 
 
+def minimizar_tudo():
+    """Minimiza todas as janelas (como Windows+D). Devolve True se conseguiu."""
+    try:
+        import win32com.client
+        win32com.client.Dispatch('Shell.Application').MinimizeAll()
+        time.sleep(1.5)
+        return True
+    except Exception as e:
+        log('  não consegui minimizar as outras janelas (%s); sigo assim mesmo' % e)
+        return False
+
+
+def restaurar_tudo():
+    """Devolve as janelas que minimizar_tudo() escondeu."""
+    try:
+        import win32com.client
+        win32com.client.Dispatch('Shell.Application').UndoMinimizeALL()
+    except Exception as e:
+        log('  não consegui devolver as janelas (%s)' % e)
+
+
 def rodar(cfg, ensaio=False, pedidos=None):
     """Rotina diária: para cada loja, os dias que faltam -> exporta, confere e manda ao SAFI.
     Com pedidos={loja: [dias]} busca só esses dias e NÃO mexe no estado.json (dia avulso no passado)."""
@@ -618,30 +639,38 @@ def rodar(cfg, ensaio=False, pedidos=None):
     hoje = date.today()
     planilhas = []
     falha = None  # se um dia der erro, manda ao SAFI o que já deu certo e só depois acusa o erro
-    for loja in ('Exposicao', 'ViaCloset'):
-        dias = pedidos.get(loja, []) if pedidos is not None else dias_faltando(est.get(loja), hoje)
-        if not dias:
-            log(loja, ': nada a buscar')
-            continue
-        log(loja, ': dias', ', '.join(d.strftime('%d/%m') for d in dias))
-        try:
-            top = abrir_seta(cfg, loja)
+    # Com outras janelas abertas o Seta abre por baixo e o Windows não deixa trazê-lo para a frente:
+    # minimiza tudo antes de abrir e, no fim, devolve as janelas como estavam (25/11).
+    minimizei = False
+    try:
+        for loja in ('Exposicao', 'ViaCloset'):
+            dias = pedidos.get(loja, []) if pedidos is not None else dias_faltando(est.get(loja), hoje)
+            if not dias:
+                log(loja, ': nada a buscar')
+                continue
+            log(loja, ': dias', ', '.join(d.strftime('%d/%m') for d in dias))
             try:
-                top = entrar(cfg)
-                form = abrir_relatorios(top)
-                for d in dias:
-                    if exportar_dia(top, form, loja, d) is False:
-                        planilhas.append(dia_sem_vendas(loja, d.isoformat()))
-                        continue
-                    p = ler_dia(loja, d.isoformat())
-                    mostrar(p)
-                    planilhas.append(p)
-            finally:
-                sair(top)
-        except Exception as e:
-            log('ERRO na loja', loja, '->', e, '(os dias que já deram certo seguem para o SAFI)')
-            falha = falha or e
-            fechar_setas_abertos()
+                minimizei = minimizar_tudo() or minimizei
+                top = abrir_seta(cfg, loja)
+                try:
+                    top = entrar(cfg)
+                    form = abrir_relatorios(top)
+                    for d in dias:
+                        if exportar_dia(top, form, loja, d) is False:
+                            planilhas.append(dia_sem_vendas(loja, d.isoformat()))
+                            continue
+                        p = ler_dia(loja, d.isoformat())
+                        mostrar(p)
+                        planilhas.append(p)
+                finally:
+                    sair(top)
+            except Exception as e:
+                log('ERRO na loja', loja, '->', e, '(os dias que já deram certo seguem para o SAFI)')
+                falha = falha or e
+                fechar_setas_abertos()
+    finally:
+        if minimizei:
+            restaurar_tudo()
     if not planilhas:
         if falha:
             raise falha

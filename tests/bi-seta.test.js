@@ -212,6 +212,16 @@ test('robô do Seta: logo após ligar o PC o Seta demora a escrever o nome da lo
   assert.doesNotMatch(ou, /raise/);
 });
 
+test('robô do Seta: minimiza as outras janelas antes de abrir o Seta (senão ele abre por baixo) e devolve tudo no fim (25/11)', () => {
+  const py = ler('scripts/seta_robo.py');
+  assert.match(py, /def minimizar_tudo\([\s\S]*?MinimizeAll\(\)/);
+  assert.match(py, /def restaurar_tudo\([\s\S]*?UndoMinimizeALL\(\)/);
+  const fn = py.match(/def rodar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  const min = fn.indexOf('minimizar_tudo()'), abre = fn.indexOf('abrir_seta(cfg, loja)');
+  assert.ok(min > 0 && min < abre, 'minimizar antes de abrir o Seta');
+  assert.match(fn, /finally:[\s\S]*?restaurar_tudo\(\)/, 'devolver as janelas mesmo se der erro');
+});
+
 test('robô do Seta: se o aviso cair (erro do desenho da janela), tenta abrir o aviso mais uma vez antes de seguir sem ele (25/11)', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def perguntar_antes_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
