@@ -33,8 +33,6 @@ const ajuda = ler('ajuda-conteudo.js');
 const SEM_CARD = new Set(['home', 'geronia']);
 // Lançamentos é aberto pelo alternador do DRE, não tem linha própria no menu.
 const FORA_DO_MENU = new Set(['lancamentos', 'cascata']);
-// Telas temporárias (setor "Temporária", só para apresentação): ficam no menu, mas sem card na Home nem ajuda.
-const TEMPORARIAS = new Set(Object.keys(ITEMS).filter(k => ITEMS[k].temp));
 
 test('toda rota do menu existe em vercel.json e aponta para um arquivo real', () => {
   for (const [path, key] of Object.entries(PATH_TO_KEY)) {
@@ -54,7 +52,7 @@ test('todo item do menu aparece em algum setor (SECTIONS)', () => {
 
 test('todo item do menu tem card na Home e texto de ajuda', () => {
   for (const key of Object.keys(ITEMS)) {
-    if (SEM_CARD.has(key) || TEMPORARIAS.has(key)) continue;
+    if (SEM_CARD.has(key)) continue;
     assert.ok(home.includes('id="card-' + key + '"'), 'Home sem card-' + key);
     assert.ok(new RegExp('\\b' + key + '\\s*:').test(ajuda), 'ajuda-conteudo.js sem "' + key + '"');
   }

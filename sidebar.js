@@ -29,8 +29,6 @@
     tesouraria: SVG('<rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 6V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v2"/>'),
     cascata: SVG('<path d="M4 4h16"/><path d="M7 9h13"/><path d="M10 14h10"/><path d="M13 19h7"/>', 14),
     otb: SVG('<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>'),
-    tmp_pedidos: SVG('<path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/>'),
-    tmp_templates: SVG('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>'),
     admin: SVG('<circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/>'),
     chevron: SVG('<polyline points="6 9 12 15 18 9"/>', 14)
   };
@@ -52,10 +50,7 @@
     lancamentos: { label: 'Lançamentos', href: '/lancamentos', sub: true, can: function (p) { return p.is_admin || p.can_lancamentos === true; } },
     calcimport: { label: 'Calculadora de Importação', href: '/calculadora-importacao', can: function (p) { return p.is_admin || p.can_calc_importacao === true; } },
     funcionarios: { label: 'Funcionários', href: '/funcionarios', can: function (p) { return p.is_admin || p.can_funcionarios === true; } },
-    mapasoc: { label: 'Mapa Societário', href: '/mapa-societario', can: function (p) { return p.is_admin || p.can_mapa_societario === true; } },
-    // TEMPORÁRIAS (apresentação do Aldemar): dados fixos na página, sem card na Home nem ajuda. Excluir depois.
-    tmp_pedidos: { label: 'Fluxo Pedido Compras', href: '/temp-fluxo-pedidos', temp: true, can: function (p) { return p.is_admin || p.can_dre !== false; } },
-    tmp_templates: { label: 'Templates de Indicadores', href: '/temp-templates', temp: true, can: function (p) { return p.is_admin || p.can_dre !== false; } }
+    mapasoc: { label: 'Mapa Societário', href: '/mapa-societario', can: function (p) { return p.is_admin || p.can_mapa_societario === true; } }
   };
 
   // Setores, na ordem em que aparecem. 'lancamentos' fica aninhado sob 'dre'.
@@ -66,16 +61,14 @@
     { id: 'contabil', label: 'Contábil', items: ['resumo'] },
     { id: 'compras', label: 'Compras', items: ['calcimport'] },
     { id: 'pessoal', label: 'Pessoal', items: ['funcionarios'] },
-    { id: 'gestao', label: 'Gestão', items: ['mapasoc'] },
-    { id: 'temporaria', label: 'Temporária', items: ['tmp_pedidos', 'tmp_templates'] }
+    { id: 'gestao', label: 'Gestão', items: ['mapasoc'] }
   ];
 
   var PATH_TO_KEY = {
     '/': 'home', '/resumocontabil': 'resumo', '/dre': 'dre', '/lancamentos': 'lancamentos',
     '/geronia': 'geronia', '/mapa-societario': 'mapasoc', '/funcionarios': 'funcionarios',
     '/conselho': 'conselho', '/reunioes': 'reunioes', '/orcamento': 'orcamento', '/bi': 'bi', '/calculadora-importacao': 'calcimport',
-    '/tesouraria': 'tesouraria', '/cascata': 'cascata', '/fluxo-otb': 'otb',
-    '/temp-fluxo-pedidos': 'tmp_pedidos', '/temp-templates': 'tmp_templates'
+    '/tesouraria': 'tesouraria', '/cascata': 'cascata', '/fluxo-otb': 'otb'
   };
 
   var COLLAPSED_KEY = 'safi-sidebar-collapsed-sections';
