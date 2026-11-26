@@ -154,7 +154,7 @@ test('robô do Seta: agendamento — 08:32, ao entrar e ao desbloquear, como adm
 test('robô do Seta: modo agendado só age se faltar dia, respeita tela bloqueada e Seta em uso, e avisa com "Adiar"', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def agendado\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes_seguro() == 'adiar'", 'rc = rodar(cfg)'].map(s => fn.indexOf(s));
+  const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes_seguro() == 'adiar'", 'rc = rodar(cfg'].map(s => fn.indexOf(s));
   ordem.forEach((i, k) => assert.ok(i > 0, 'faltou o passo ' + k));
   assert.deepEqual([...ordem].sort((a, b) => a - b), ordem, 'a ordem dos passos mudou');
   assert.match(py, /Adiar %d min' % ADIAR_MINUTOS/);
@@ -244,7 +244,7 @@ test('robô do Seta (26/11): no fim, se deu certo, o GerônIA mostra o resumo do
   assert.match(rodar, /RESUMO\[:\] = /, 'rodar guarda o que o SAFI gravou');
   assert.ok(rodar.indexOf('RESUMO[:] = ') > rodar.indexOf("if r.get('erro'):"), 'só guarda depois de conferir que o SAFI não deu erro');
   const ag = py.match(/def agendado\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(ag, /rc = rodar\(cfg\)[\s\S]*?if RESUMO:[\s\S]*?mostrar_pronto_seguro\(RESUMO\)[\s\S]*?return rc/);
+  assert.match(ag, /rc = rodar\(cfg[\s\S]*?if RESUMO:[\s\S]*?mostrar_pronto_seguro\(RESUMO\)[\s\S]*?return rc/);
   const seguro = py.match(/def mostrar_pronto_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
   assert.match(seguro, /json\.dump/);
   assert.match(seguro, /janela_separada\(\['pronto'/);
@@ -252,6 +252,26 @@ test('robô do Seta (26/11): no fim, se deu certo, o GerônIA mostra o resumo do
   assert.match(py, /URL_BI = 'https:\/\/painel\.topfinds\.com\.br\/bi'/);
   for (const s of ['Abrir o BI', 'webbrowser.open(URL_BI)', 'sem vendas', "'<Return>'", "'<Escape>'", 'moldura_geronia(']) assert.ok(tela.includes(s), 'falta ' + s);
   assert.match(py, /args\[0\] == 'pronto'/);
+});
+
+test('robô do Seta (26/11): janelinha de progresso no canto — 5 etapas na ordem, barra com %, sem atrapalhar os cliques', () => {
+  const py = ler('scripts/seta_robo.py');
+  assert.match(py, /ETAPAS = \(\('Exposição', 'Seta'\), \('Via Closet', 'Seta'\), \('E-commerce', 'GeFinance'\), \('Enviando', 'ao SAFI'\), \('Concluído', ''\)\)/);
+  const jan = py.match(/def janela_progresso\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(jan, /0x20/, 'WS_EX_TRANSPARENT: o clique do robô atravessa a janelinha');
+  assert.match(jan, /0x08000000/, 'WS_EX_NOACTIVATE: nunca rouba o foco do Seta');
+  assert.match(jan, /mostrar\(pos='canto', ativa=False\)/);
+  assert.match(jan, /processo_vivo\(pid_robo\)/, 'fecha sozinha se o robô sumir');
+  const cls = py.match(/class Progresso:[\s\S]*?\r?\n\r?\n\r?\nPROGRESSO = Progresso\(\)/)[0];
+  assert.match(cls, /subprocess\.Popen\(/, 'abre a janelinha sem travar o robô');
+  assert.match(cls, /os\.replace\(tmp, PROGRESSO_ARQ\)/, 'grava o arquivo inteiro de uma vez (a janelinha nunca lê pela metade)');
+  assert.match(cls, /if self\.ativo:/, 'desligado (fora da rotina agendada) não faz nada');
+  const rodar = py.match(/def rodar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  for (const s of ["PROGRESSO.etapa(i, 'abrindo o Seta'", "PROGRESSO.feito(i, ", "PROGRESSO.falhou(i, ", "PROGRESSO.etapa(3, 'mandando as lojas'", 'PROGRESSO.feito(3, ']) assert.ok(rodar.includes(s), 'falta ' + s);
+  const ag = py.match(/def agendado\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(ag, /PROGRESSO\.abrir\(\)[\s\S]*?rc = rodar\([\s\S]*?PROGRESSO\.fim\(erro=e\)[\s\S]*?PROGRESSO\.fim\(\)/);
+  assert.match(py, /args\[0\] == 'progresso'/);
+  assert.match(py, /args\[0\] == 'progresso-demo'/);
 });
 
 test('robô do Seta (24/11): Windows recusou trazer o Seta para a frente — tenta destravar (Alt) antes de desistir', () => {

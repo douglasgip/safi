@@ -54,7 +54,13 @@ test('GeFinance: manda ao SAFI como "linhas" (o bi-importar já aceita GIP) e ro
   assert.match(fn(py(), 'rodar_gefinance'), /base\.enviar\(cfg, linhas=linhas/);
   assert.match(fn(seta, 'enviar'), /"linhas": linhas/);
   const ag = fn(seta, 'agendado');
-  assert.ok(ag.indexOf('gefinance_do_dia(cfg)') > 0 && ag.indexOf('gefinance_do_dia(cfg)') < ag.indexOf('for _ in range(TENTATIVAS_NO_DIA)'), 'GeFinance roda antes do laço do Seta');
+  // 26/11: com a barra de progresso, o GeFinance roda ENTRE as lojas e o envio (Exposição -> Via -> E-commerce -> Enviando);
+  // sem Seta para rodar agora (lojas em dia, tela bloqueada, Seta aberto, adiado), roda sozinho — não precisa da tela.
+  assert.match(ag, /rodar\(cfg, antes_de_enviar=lambda: gefinance_do_dia\(cfg\)\)/);
+  assert.match(ag, /tela bloqueada[\s\S]*?gefinance_do_dia\(cfg\)[\s\S]*?return 0/);
+  assert.match(ag, /if gefinance_do_dia\(cfg\) and not tela_bloqueada\(\)/);
+  const rodar = fn(seta, 'rodar');
+  assert.ok(rodar.indexOf('antes_de_enviar()') > 0 && rodar.indexOf('antes_de_enviar()') < rodar.indexOf('r = enviar('), 'GeFinance antes do envio das lojas');
   const dia = fn(seta, 'gefinance_do_dia');
   assert.match(dia, /except Exception/, 'erro no GeFinance não pode atrapalhar o Seta');
   assert.match(dia, /est\.get\('GeFinance'\) == hoje/, 'uma vez por dia');

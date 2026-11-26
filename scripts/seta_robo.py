@@ -22,6 +22,7 @@ Uso (num PowerShell de administrador):
   python seta_robo.py rodar ensaio           -> igual, mas o SAFI só calcula e mostra (não grava)
   python seta_robo.py agendado               -> o que o Agendador chama: só age se faltar dia; avisa antes (com "Adiar")
   python seta_robo.py buscar ViaCloset 2026-11-14 -> dia(s) avulso(s) de uma loja (não mexe no estado.json)
+  python seta_robo.py progresso-demo         -> mostra a janelinha de progresso andando sozinha (não abre o Seta)
   python seta_robo.py pronto                 -> mostra de novo o aviso de "pronto" do último envio (ultimo_envio.json)
   Agendamento: scripts/instalar-agendamento.ps1 (como administrador) instala a tarefa "SAFI - Robo do Seta".
   python seta_robo.py exportar 2026-11-17     -> com "Relatórios das vendas" aberta: exporta e confere (não envia)
@@ -631,7 +632,7 @@ def restaurar_tudo():
         log('  não consegui devolver as janelas (%s)' % e)
 
 
-def rodar(cfg, ensaio=False, pedidos=None):
+def rodar(cfg, ensaio=False, pedidos=None, antes_de_enviar=None):
     """Rotina diária: para cada loja, os dias que faltam -> exporta, confere e manda ao SAFI.
     Com pedidos={loja: [dias]} busca só esses dias e NÃO mexe no estado.json (dia avulso no passado)."""
     if seta_aberto():
@@ -644,41 +645,56 @@ def rodar(cfg, ensaio=False, pedidos=None):
     # minimiza tudo antes de abrir e, no fim, devolve as janelas como estavam (25/11).
     minimizei = False
     try:
-        for loja in ('Exposicao', 'ViaCloset'):
+        for i, loja in enumerate(('Exposicao', 'ViaCloset')):
             dias = pedidos.get(loja, []) if pedidos is not None else dias_faltando(est.get(loja), hoje)
             if not dias:
                 log(loja, ': nada a buscar')
+                PROGRESSO.feito(i, 'nada a buscar')
                 continue
             log(loja, ': dias', ', '.join(d.strftime('%d/%m') for d in dias))
+            soma = [0.0, 0]  # faturamento e vendas dos dias buscados (para a janelinha de progresso)
             try:
+                PROGRESSO.etapa(i, 'abrindo o Seta', 0.05)
                 minimizei = minimizar_tudo() or minimizei
                 top = abrir_seta(cfg, loja)
                 try:
                     top = entrar(cfg)
+                    PROGRESSO.etapa(i, 'abrindo os relatórios', 0.25)
                     form = abrir_relatorios(top)
-                    for d in dias:
+                    for k, d in enumerate(dias):
+                        PROGRESSO.etapa(i, 'exportando ' + d.strftime('%d/%m'), 0.3 + 0.65 * k / len(dias))
                         if exportar_dia(top, form, loja, d) is False:
                             planilhas.append(dia_sem_vendas(loja, d.isoformat()))
                             continue
                         p = ler_dia(loja, d.isoformat())
                         mostrar(p)
                         planilhas.append(p)
+                        cc = conferencia_local(p['resumo'], p['listagem'])
+                        soma[0] += cc['faturamento']
+                        soma[1] += int(cc['vendas'] or 0)
                 finally:
                     sair(top)
+                PROGRESSO.feito(i, '%s · %d vendas' % (brl(soma[0]).split(',')[0], soma[1]) if soma[1] else 'sem vendas')
             except Exception as e:
                 log('ERRO na loja', loja, '->', e, '(os dias que já deram certo seguem para o SAFI)')
+                PROGRESSO.falhou(i, 'deu erro (ver robo.log)')
                 falha = falha or e
                 fechar_setas_abertos()
     finally:
         if minimizei:
             restaurar_tudo()
+    if antes_de_enviar:
+        antes_de_enviar()  # o e-commerce (GeFinance) entra aqui, entre as lojas e o envio
     if not planilhas:
+        PROGRESSO.feito(3, 'nada novo das lojas')
         if falha:
             raise falha
         return 0
     if not cfg.get('safi', 'token', fallback='').strip():
         log('Sem o token do SAFI no config.ini: exportei e conferi, mas NÃO enviei.')
+        PROGRESSO.falhou(3, 'falta o token do SAFI')
         return 0
+    PROGRESSO.etapa(3, 'mandando as lojas', 0.5)
     r = enviar(cfg, planilhas, ensaio=ensaio)
     log('SAFI:', 'ENSAIO (nada gravado)' if ensaio else '', 'gravadas', r.get('gravadas'), '· recusadas', len(r.get('erros') or []))
     for l in r.get('linhas') or []:
@@ -689,7 +705,9 @@ def rodar(cfg, ensaio=False, pedidos=None):
     for s in r.get('semVendas') or []:
         log('  sem vendas:', s)
     if r.get('erro'):
+        PROGRESSO.falhou(3, 'o SAFI não gravou')
         raise RuntimeError('SAFI: ' + str(r['erro']))
+    PROGRESSO.feito(3, '%s dia(s) gravado(s)' % r.get('gravadas'))
     if not ensaio:
         # Para o aviso de "pronto" do GerônIA: o que o SAFI gravou e os dias sem vendas.
         RESUMO[:] = [dict(l, tipo='venda') for l in r.get('linhas') or []] + [
@@ -749,8 +767,9 @@ def moldura_geronia(W, H, subtitulo, som=0x30):
     import tkinter as tk
     from types import SimpleNamespace
     try:
-        import winsound
-        winsound.MessageBeep(som)
+        if som is not None:
+            import winsound
+            winsound.MessageBeep(som)
     except Exception:
         pass
     c = SimpleNamespace(FUNDO='#080b14', ROXO='#7c3aed', AZUL='#1d4ed8', CARTAO='#0f1322', BORDA='#232a40', LINHA='#0c1020',
@@ -830,11 +849,19 @@ def moldura_geronia(W, H, subtitulo, som=0x30):
         cv.tag_bind(tag, '<Enter>', lambda e: cv.config(cursor='hand2'))
         cv.tag_bind(tag, '<Leave>', lambda e: cv.config(cursor=''))
 
-    def mostrar():
+    def mostrar(pos='centro', ativa=True):
         root.update_idletasks()
-        root.geometry('%dx%d+%d+%d' % (W, H, (root.winfo_screenwidth() - W) // 2, (root.winfo_screenheight() - H) // 3))
-        root.lift()
-        root.focus_force()
+        if pos == 'canto':  # canto inferior direito, acima da barra de tarefas
+            from ctypes import wintypes
+            area = wintypes.RECT()
+            ctypes.windll.user32.SystemParametersInfoW(0x30, 0, ctypes.byref(area), 0)  # SPI_GETWORKAREA
+            x, y = area.right - W - 16, area.bottom - H - 16
+        else:
+            x, y = (root.winfo_screenwidth() - W) // 2, (root.winfo_screenheight() - H) // 3
+        root.geometry('%dx%d+%d+%d' % (W, H, x, y))
+        if ativa:
+            root.lift()
+            root.focus_force()
         root._foto = foto  # segura a imagem viva enquanto a janela estiver aberta
 
     return SimpleNamespace(root=root, cv=cv, c=c, LETRA=LETRA, M=M, W=W, H=H, mistura=mistura,
@@ -1028,23 +1055,263 @@ def mostrar_pronto_seguro(resumo):
     janela_separada(['pronto', ULTIMO_ENVIO], AVISO_PRONTO_SEGUNDOS + 60, tentativas=2, espera=30)
 
 
+PROGRESSO_ARQ = os.path.join(PASTA, 'progresso.json')  # onde o robô anota a etapa (a janelinha lê daqui)
+ETAPAS = (('Exposição', 'Seta'), ('Via Closet', 'Seta'), ('E-commerce', 'GeFinance'), ('Enviando', 'ao SAFI'), ('Concluído', ''))
+PESOS = (35, 35, 15, 10, 5)  # quanto cada etapa vale na barra (%)
+
+
+class Progresso:
+    """Anota em progresso.json em que etapa o robô está; a janelinha do GerônIA (outro processo) lê e desenha.
+    Desligado (padrão) não faz nada: só a rotina agendada liga. Se a janelinha cair, o robô nem percebe."""
+
+    def __init__(self):
+        self.ativo = False
+        self.estado = None
+
+    def abrir(self):
+        import subprocess
+        self.ativo = True
+        self.estado = {'inicio': time.time(), 'etapa': 0, 'frac': 0.0, 'texto': 'começando',
+                       'feitos': {}, 'erros': {}, 'fim': False, 'erro': None}
+        self._gravar()
+        try:
+            err = open(AVISO_ERRO, 'a', encoding='utf-8')
+            err.write('\n--- %s  progresso\n' % time.strftime('%d/%m %H:%M:%S'))
+            err.flush()
+            subprocess.Popen([sys.executable, '-P', '-X', 'faulthandler', os.path.abspath(__file__), 'progresso',
+                              PROGRESSO_ARQ, str(os.getpid())], stdin=subprocess.DEVNULL, stdout=err, stderr=err)
+        except Exception as e:
+            log('progresso: a janelinha não abriu (%s); sigo sem ela' % e)
+
+    def etapa(self, i, texto='', frac=0.0):
+        if self.ativo:
+            self.estado.update(etapa=i, texto=texto, frac=max(0.0, min(1.0, frac)))
+            self._gravar()
+
+    def feito(self, i, texto=''):
+        if self.ativo:
+            self.estado['feitos'][str(i)] = texto
+            self.estado.update(etapa=i + 1, texto='', frac=0.0)
+            self._gravar()
+
+    def falhou(self, i, texto=''):
+        if self.ativo:
+            self.estado['erros'][str(i)] = texto[:60]
+            self.estado.update(etapa=i + 1, texto='', frac=0.0)
+            self._gravar()
+
+    def fim(self, erro=None):
+        if self.ativo:
+            if not erro:
+                self.estado['feitos'][str(len(ETAPAS) - 1)] = 'tudo no SAFI'
+            self.estado.update(fim=True, erro=(str(erro)[:80] if erro else None), etapa=len(ETAPAS))
+            self._gravar()
+            self.ativo = False
+
+    def _gravar(self):
+        import json
+        tmp = PROGRESSO_ARQ + '.tmp'
+        try:
+            with open(tmp, 'w', encoding='utf-8') as f:
+                json.dump(self.estado, f, ensure_ascii=False)
+            for _ in range(5):  # a janelinha pode estar lendo bem nessa hora
+                try:
+                    os.replace(tmp, PROGRESSO_ARQ)
+                    break
+                except PermissionError:
+                    time.sleep(0.05)
+        except OSError:
+            pass
+
+
+PROGRESSO = Progresso()
+
+
+def porcentagem(estado):
+    """Quanto da rotina já foi (0 a 100), pelas etapas feitas + o pedaço da etapa atual."""
+    if estado.get('fim'):
+        return 100
+    i = int(estado.get('etapa') or 0)
+    feito = sum(PESOS[:min(i, len(PESOS))])
+    if i < len(PESOS):
+        feito += PESOS[i] * float(estado.get('frac') or 0)
+    return int(min(99, feito))
+
+
+def processo_vivo(pid):
+    k = ctypes.windll.kernel32
+    h = k.OpenProcess(0x1000, False, int(pid))  # PROCESS_QUERY_LIMITED_INFORMATION
+    if not h:
+        return False
+    codigo = ctypes.c_ulong()
+    ok = k.GetExitCodeProcess(h, ctypes.byref(codigo))
+    k.CloseHandle(h)
+    return bool(ok) and codigo.value == 259  # STILL_ACTIVE
+
+
+def janela_progresso(arquivo, pid_robo):
+    """Janelinha de progresso no canto da tela (cara do GerônIA): barra com %, as 5 etapas (Exposição, Via Closet,
+    E-commerce, Enviando, Concluído) com o que está acontecendo e o resultado de cada uma, e o tempo.
+    É "transparente" para o mouse e nunca pega o foco (os cliques do robô no Seta atravessam ela).
+    Fecha sozinha quando o robô termina (ou se o robô sumir)."""
+    import json
+    W, H = 680, 360
+    g = moldura_geronia(W, H, 'Robô do Seta · trabalhando', som=None)
+    cv, c, L, M = g.cv, g.c, g.LETRA, g.M
+    x0, x1 = M + 30, W - M - 30
+    titulo = cv.create_text(x0, 160, anchor='w', text='Buscando as vendas', font=(L, 15, 'bold'), fill=c.BRANCO)
+    pct = cv.create_text(x1, 160, anchor='e', text='0%', font=(L, 18, 'bold'), fill=c.AMBAR2)
+    g.arredondado(x0, 182, x1, 194, 6, fill=c.BORDA, outline='')
+    barra = g.arredondado(x0, 182, x0 + 12, 194, 6, fill=c.AMBAR, outline='')
+    n = len(ETAPAS)
+    xs = [x0 + 30 + k * (x1 - x0 - 60) / (n - 1) for k in range(n)]
+    cy = 230
+    for k in range(n - 1):
+        cv.create_line(xs[k] + 14, cy, xs[k + 1] - 14, cy, fill=c.BORDA, width=2, tags='linha%d' % k)
+    bolas, marcas, subs = [], [], []
+    for k, (nome, fonte) in enumerate(ETAPAS):
+        bolas.append(cv.create_oval(xs[k] - 12, cy - 12, xs[k] + 12, cy + 12, outline=c.BORDA, width=2, fill=c.CARTAO))
+        marcas.append(cv.create_text(xs[k], cy, text='', font=(L, 10, 'bold'), fill=c.FUNDO))
+        cv.create_text(xs[k], cy + 26, text=nome, font=(L, 9, 'bold'), fill=c.TEXTO)
+        if fonte:
+            cv.create_text(xs[k], cy + 40, text=fonte, font=(L, 8), fill=c.APAGADO)
+        subs.append(cv.create_text(xs[k], cy + 57, text='', font=(L, 8), fill=c.CINZA, width=118, justify='center'))
+    rodape = cv.create_text(W // 2, H - M - 14, text='', font=(L, 8), fill=c.APAGADO)
+
+    g.mostrar(pos='canto', ativa=False)
+    hwnd = ctypes.windll.user32.GetParent(g.root.winfo_id())
+    try:
+        ex = ctypes.windll.user32.GetWindowLongW(hwnd, -20)  # GWL_EXSTYLE
+        # LAYERED | TRANSPARENT (clique atravessa) | TOOLWINDOW (fora da barra de tarefas) | NOACTIVATE (nunca pega o foco)
+        ctypes.windll.user32.SetWindowLongW(hwnd, -20, ex | 0x80000 | 0x20 | 0x80 | 0x08000000)
+        ctypes.windll.user32.SetLayeredWindowAttributes(hwnd, 0, 255, 0x2)  # opaca (LWA_ALPHA 255)
+    except Exception:
+        pass
+    vis = {'pisca': False, 'fechar_em': None, 'ultimo': None}
+
+    def ler():
+        try:
+            with open(arquivo, encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            return vis['ultimo']
+
+    def tick():
+        est = ler()
+        if est is None or (not est.get('fim') and not processo_vivo(pid_robo)):
+            g.root.destroy()
+            return
+        vis['ultimo'] = est
+        vis['pisca'] = not vis['pisca']
+        atual = int(est.get('etapa') or 0)
+        p = porcentagem(est)
+        cv.itemconfig(pct, text='%d%%' % p)
+        cv.coords(barra, *[v for v in _pontos_barra(x0, x1, p)])
+        for k in range(n):
+            feito, erro = str(k) in est.get('feitos', {}), str(k) in est.get('erros', {})
+            if erro:
+                cv.itemconfig(bolas[k], fill=c.VERMELHO, outline=c.VERMELHO)
+                cv.itemconfig(marcas[k], text='✕')
+                cv.itemconfig(subs[k], text=est['erros'][str(k)], fill=c.VERMELHO)
+            elif feito:
+                cv.itemconfig(bolas[k], fill=c.VERDE, outline=c.VERDE)
+                cv.itemconfig(marcas[k], text='✓')
+                cv.itemconfig(subs[k], text=est['feitos'][str(k)], fill=c.VERDE)
+            elif k == atual and not est.get('fim'):
+                cv.itemconfig(bolas[k], fill=c.CARTAO, outline=c.AMBAR if vis['pisca'] else c.AMBAR2, width=3)
+                cv.itemconfig(marcas[k], text='')
+                cv.itemconfig(subs[k], text=est.get('texto') or '', fill=c.AMBAR2)
+            else:
+                cv.itemconfig(bolas[k], fill=c.CARTAO, outline=c.BORDA, width=2)
+                cv.itemconfig(marcas[k], text='')
+                cv.itemconfig(subs[k], text='', fill=c.CINZA)
+            if k < n - 1:
+                cv.itemconfig('linha%d' % k, fill=c.VERDE if feito else c.BORDA)
+        seg = int(time.time() - float(est.get('inicio') or time.time()))
+        tempo = '%d min %02d s' % (seg // 60, seg % 60) if seg >= 60 else '%d s' % seg
+        if est.get('fim'):
+            if est.get('erro'):
+                cv.itemconfig(titulo, text='Parei com um erro', fill=c.VERMELHO)
+                cv.itemconfig(rodape, text=est['erro'] + '   ·   ' + tempo)
+            else:
+                cv.itemconfig(titulo, text='Extração concluída', fill=c.VERDE)
+                cv.itemconfig(rodape, text='tudo no SAFI em ' + tempo)
+            if vis['fechar_em'] is None:
+                vis['fechar_em'] = time.time() + (12 if est.get('erro') else 4)
+        else:
+            cv.itemconfig(rodape, text='não mexa no mouse até terminar   ·   ' + tempo)
+        g.pisca()
+        # Continua por cima de tudo, mesmo depois do "minimizar tudo" do robô, sem pegar o foco.
+        try:
+            u = ctypes.windll.user32
+            if u.IsIconic(hwnd):
+                u.ShowWindow(hwnd, 4)  # SW_SHOWNOACTIVATE
+            u.SetWindowPos(hwnd, -1, 0, 0, 0, 0, 0x1 | 0x2 | 0x10 | 0x40)  # TOPMOST, sem mover/redimensionar/ativar
+        except Exception:
+            pass
+        if vis['fechar_em'] and time.time() >= vis['fechar_em']:
+            g.root.destroy()
+            return
+        g.root.after(500, tick)
+
+    tick()
+    g.root.mainloop()
+    return 0
+
+
+def _pontos_barra(x0, x1, p):
+    """Polígono arredondado da parte preenchida da barra (mesmo desenho do arredondado() da moldura)."""
+    x2 = max(x0 + 12, x0 + (x1 - x0) * p / 100)
+    y1, y2, r = 182, 194, 6
+    return (x0 + r, y1, x2 - r, y1, x2, y1, x2, y1 + r, x2, y2 - r, x2, y2,
+            x2 - r, y2, x0 + r, y2, x0, y2, x0, y2 - r, x0, y1 + r, x0, y1)
+
+
+def demo_progresso():
+    """Mostra a janelinha de progresso andando sozinha (sem abrir o Seta), para ver como fica."""
+    PROGRESSO.abrir()
+    passos = [(0, 'abrindo o Seta', .1), (0, 'entrando', .3), (0, 'exportando 25/11', .6)]
+    for i, t, f in passos:
+        PROGRESSO.etapa(i, t, f)
+        time.sleep(1.5)
+    PROGRESSO.feito(0, 'R$ 31.542 · 135 vendas')
+    for i, t, f in [(1, 'abrindo o Seta', .1), (1, 'exportando 25/11', .6)]:
+        PROGRESSO.etapa(i, t, f)
+        time.sleep(1.5)
+    PROGRESSO.feito(1, 'R$ 12.115 · 69 vendas')
+    PROGRESSO.etapa(2, 'abrindo o GeFinance', .3)
+    time.sleep(1.5)
+    PROGRESSO.feito(2, 'mês atualizado')
+    PROGRESSO.etapa(3, 'mandando as lojas', .5)
+    time.sleep(1.5)
+    PROGRESSO.feito(3, '2 dias gravados')
+    PROGRESSO.fim()
+    time.sleep(5)
+    return 0
+
+
 def gefinance_do_dia(cfg):
     """E-commerce (GeFinance), uma vez por dia. Não usa mouse nem tela (roda até com o PC bloqueado).
     Erro aqui não atrapalha o Seta: fica registrado e tenta de novo no próximo gatilho."""
     hoje = date.today().isoformat()
     est = ler_estado()
     if est.get('GeFinance') == hoje:
+        PROGRESSO.feito(2, 'já atualizado hoje')
         return None
     try:
+        PROGRESSO.etapa(2, 'abrindo o GeFinance', 0.3)
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # o Agendador chama com -P
         import gefinance_robo
         linhas = gefinance_robo.rodar_gefinance(cfg)
         est = ler_estado()
         est['GeFinance'] = hoje
         gravar_estado(est)
+        u = linhas[-1]
+        PROGRESSO.feito(2, 'mês atualizado · %s %s' % (u['data'][8:10] + '/' + u['data'][5:7], brl(u['faturamento']).split(',')[0]))
         return linhas
     except Exception as e:
         log('GeFinance: ERRO (tento no próximo gatilho):', e)
+        PROGRESSO.falhou(2, 'não consegui ler o GeFinance')
         return None
 
 
@@ -1067,25 +1334,34 @@ def agendado(cfg):
     if not sou_administrador():
         log('agendado: precisa rodar como administrador (marque "privilégios mais altos" na tarefa)')
         return 1
-    ge = gefinance_do_dia(cfg)
     for _ in range(TENTATIVAS_NO_DIA):
         if not faltam_dias(ler_estado(), date.today()):
-            if ge and not tela_bloqueada():
-                mostrar_pronto_seguro(resumo_gefinance())  # só o e-commerce tinha o que mandar
+            # Lojas em dia: só o e-commerce (GeFinance, uma vez por dia; não usa a tela).
+            if gefinance_do_dia(cfg) and not tela_bloqueada():
+                mostrar_pronto_seguro(resumo_gefinance())
             return 0
         if tela_bloqueada():
             log('agendado: tela bloqueada, fica para quando desbloquear')
+            gefinance_do_dia(cfg)  # o GeFinance não precisa da tela: já adianta
             return 0
         if seta_aberto():
             log('agendado: o Seta está aberto (alguém usando); tento de novo em %d min' % ADIAR_MINUTOS)
+            gefinance_do_dia(cfg)
             time.sleep(ADIAR_MINUTOS * 60)
             continue
         if perguntar_antes_seguro() == 'adiar':
             log('agendado: adiado %d min' % ADIAR_MINUTOS)
+            gefinance_do_dia(cfg)
             time.sleep(ADIAR_MINUTOS * 60)
             continue
         log('agendado: começando')
-        rc = rodar(cfg)
+        PROGRESSO.abrir()  # janelinha de progresso no canto (Exposição -> Via -> E-commerce -> Enviando -> Concluído)
+        try:
+            rc = rodar(cfg, antes_de_enviar=lambda: gefinance_do_dia(cfg))
+        except Exception as e:
+            PROGRESSO.fim(erro=e)
+            raise
+        PROGRESSO.fim()
         RESUMO.extend(resumo_gefinance())
         if RESUMO:
             log('agendado: pronto; mostrando o resumo')
@@ -1170,6 +1446,11 @@ def main(args):
         return rodar(cfg, pedidos={loja: [date.fromisoformat(d) for d in args[2:]]})
     if args and args[0] == 'agendado':
         return agendado(cfg)
+    if args and args[0] == 'progresso':
+        # A janelinha de progresso (aberta pelo próprio robô em outro processo): arquivo e número do processo do robô.
+        return janela_progresso(args[1], int(args[2]))
+    if args and args[0] == 'progresso-demo':
+        return demo_progresso()
     if args and args[0] == 'pronto':
         # Aviso de fim com o resumo (lê o arquivo gravado por mostrar_pronto_seguro; sem arquivo, usa o último envio).
         import json
