@@ -23,6 +23,7 @@ import seta_robo as base  # noqa: E402  (log, config, envio ao SAFI e a pasta do
 
 PERFIL = os.path.join(base.PASTA, 'gefinance-perfil')
 URL_MARGEM = 'https://app.ge.finance/minha-conta/dashboard/margem'
+URL_PRODUTOS = 'https://app.ge.finance/minha-conta/margem-de-produtos'  # "Análise de produtos": peças por produto
 ULTIMO = os.path.join(base.PASTA, 'ultimo_gefinance.json')
 
 
@@ -43,6 +44,26 @@ def linhas_do_gefinance(resposta, hoje):
                      'margem': round(float(d.get('contributionMargin') or 0), 2), 'qtd_vendas': vendas,
                      'ticket_medio': round(fat / vendas, 2) if vendas else None}
     return [dias[k] for k in sorted(dias)]
+
+
+def pecas_por_unidade(nome):
+    """Quantas peças vem em 1 unidade vendida: "KIT 3 PARES MEIA..." = 3, "Kit 6 Cueca..." = 6; o resto = 1.
+    (Decisão do Douglas, 26/11: kit conta aberto. Todos os kits do GeFinance têm "Kit N" no nome.)"""
+    import re
+    m = re.search(r'\bkit\s*(?:c/|com|de|-)?\s*(\d{1,2})\b', nome or '', re.I)
+    n = int(m.group(1)) if m else 1
+    return n if n >= 1 else 1
+
+
+def pecas_da_resposta(resposta):
+    """Peças vendidas na resposta da Análise de produtos: soma das vendas de cada produto × peças por unidade
+    (kit aberto). Brinde não conta (categoria "Brinde")."""
+    total = 0
+    for prod in (resposta or {}).get('products') or []:
+        if str(prod.get('category') or '').strip().lower().startswith('brinde'):
+            continue
+        total += int(prod.get('sales') or 0) * pecas_por_unidade(prod.get('name'))
+    return total
 
 
 def entrar_se_preciso(page, cfg):
@@ -105,6 +126,31 @@ def clicar_dia(page, d):
     raise RuntimeError('não achei o dia %s no calendário do GeFinance' % d.isoformat())
 
 
+def buscar_pecas(page, dias):
+    """Na Análise de produtos, filtra cada dia sozinho e soma as peças (pecas_da_resposta). Devolve {aaaa-mm-dd: peças}.
+    Só aceita a resposta do dia pedido (início 00:00:00 e fim 23:59:59 do mesmo dia)."""
+    page.goto(URL_PRODUTOS, wait_until='domcontentloaded', timeout=60000)
+    cabeca = page.get_by_text('Filtro para verificar períodos e comparar', exact=True)
+    cabeca.first.wait_for(timeout=90000)
+    pecas = {}
+    for d in dias:
+        if not page.locator('.mat-calendar-body-cell').first.is_visible():
+            cabeca.first.click()
+            page.locator('.mat-calendar-body-cell').first.wait_for(timeout=15000)
+        clicar_dia(page, d)  # 1º clique = início, 2º = fim: o mesmo dia
+        clicar_dia(page, d)
+        ini = '"startDate":"%sT00:00:00' % d.isoformat()
+        fim = '"endDate":"%sT23:59:59' % d.isoformat()
+        with page.expect_response(lambda r: 'products-insights/summary' in r.url and r.request.method == 'POST'
+                                  and ini in (r.request.post_data or '') and fim in (r.request.post_data or ''),
+                                  timeout=90000) as info:
+            page.get_by_role('button', name='Aplicar').click()
+        if info.value.status != 200:
+            raise RuntimeError('o GeFinance respondeu %s ao pedir os produtos de %s' % (info.value.status, d.isoformat()))
+        pecas[d.isoformat()] = pecas_da_resposta(info.value.json())
+    return pecas
+
+
 def buscar(cfg, visivel=False, hoje=None):
     """Abre o painel de Margem, filtra do início do mês (ver periodo_de_busca) até ontem e devolve o JSON que o
     site recebeu. Confere que o GeFinance filtrou exatamente esse período antes de usar."""
@@ -139,7 +185,15 @@ def buscar(cfg, visivel=False, hoje=None):
             pedido = resp.request.post_data or ''
             if esperado not in pedido:
                 raise RuntimeError('o filtro do GeFinance não ficou no período certo (queria %s)' % esperado)
-            return resp.json()
+            dados = resp.json()
+            # Peças de cada dia (meta de peças). Se falhar, o resto vai mesmo assim, sem apagar as peças já gravadas.
+            dias = [inicio + timedelta(days=k) for k in range((fim - inicio).days + 1)]
+            try:
+                pecas = buscar_pecas(page, dias)
+            except Exception as e:
+                base.log('GeFinance: não consegui as peças (%s); mando o resto sem peças' % e)
+                pecas = {}
+            return dados, pecas
         finally:
             ctx.close()
 
@@ -147,12 +201,15 @@ def buscar(cfg, visivel=False, hoje=None):
 def rodar_gefinance(cfg, ensaio=False, visivel=False):
     """Busca o mês no GeFinance (ver periodo_de_busca) e manda ao SAFI. Devolve as linhas enviadas."""
     base.log('GeFinance: buscando o mês')
-    linhas = linhas_do_gefinance(buscar(cfg, visivel=visivel), date.today())
+    resposta, pecas = buscar(cfg, visivel=visivel)
+    linhas = linhas_do_gefinance(resposta, date.today())
     if not linhas:
         raise RuntimeError('o GeFinance não trouxe nenhum dia fechado')
     for l in linhas:
-        base.log('  GIP %s: fat %.2f · margem %.2f · %d vendas · ticket %.2f' % (
-            l['data'], l['faturamento'], l['margem'], l['qtd_vendas'], l['ticket_medio'] or 0))
+        if l['data'] in pecas:
+            l['pecas'] = pecas[l['data']]
+        base.log('  GIP %s: fat %.2f · margem %.2f · %d vendas · ticket %.2f · %s peças' % (
+            l['data'], l['faturamento'], l['margem'], l['qtd_vendas'], l['ticket_medio'] or 0, l.get('pecas', '?')))
     r = base.enviar(cfg, linhas=linhas, ensaio=ensaio)
     base.log('SAFI (GeFinance):', 'ENSAIO (nada gravado)' if ensaio else '', 'gravadas', r.get('gravadas'),
              '· recusadas', len(r.get('erros') or []))

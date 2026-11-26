@@ -46,6 +46,15 @@ test('números: faturamento obrigatório; campos opcionais podem faltar; texto q
   assert.strictEqual(j(validarLinha({ ...ok, margem: -50 }, HOJE)).ok, true, 'margem negativa existe (dia de liquidação)');
 });
 
+test('peças (26/11, para a meta de peças): número inteiro ≥ 0; quando NÃO vem, a linha não leva o campo (não apaga as peças já gravadas)', () => {
+  assert.strictEqual(j(validarLinha({ ...ok, pecas: 586 }, HOJE)).linha.pecas, 586);
+  assert.strictEqual(j(validarLinha({ ...ok, pecas: '586' }, HOJE)).linha.pecas, 586);
+  assert.ok(!('pecas' in j(validarLinha(ok, HOJE)).linha), 'sem peças no envio → nem leva o campo');
+  assert.ok(!('pecas' in j(validarLinha({ ...ok, pecas: null }, HOJE)).linha));
+  assert.match(j(validarLinha({ ...ok, pecas: -1 }, HOJE)).motivo, /pecas negativo/);
+  assert.match(j(validarLinha({ ...ok, pecas: 2.5 }, HOJE)).motivo, /pecas tem que ser inteiro/);
+});
+
 test('lote: linhas com erro não impedem as boas; o mesmo dia repetido vale a última', () => {
   const r = j(prepararLote([ok, { ...ok, operacao: 'X' }, { ...ok, faturamento: 30000 }], HOJE));
   assert.strictEqual(r.boas.length, 1);

@@ -73,6 +73,28 @@ test('GeFinance: manda ao SAFI como "linhas" (o bi-importar já aceita GIP) e ro
   assert.match(dia, /est\.get\('GeFinance'\) == hoje/, 'uma vez por dia');
 });
 
+test('GeFinance (26/11): peças do dia pela Análise de produtos — kit aberto ("Kit N" = N peças), brinde não conta', () => {
+  const src = py();
+  assert.match(src, /URL_PRODUTOS = 'https:\/\/app\.ge\.finance\/minha-conta\/margem-de-produtos'/);
+  const mult = fn(src, 'pecas_por_unidade');
+  assert.match(mult, /\\bkit/i);
+  const soma = fn(src, 'pecas_da_resposta');
+  assert.match(soma, /'brinde'/, 'categoria Brinde fica de fora');
+  assert.match(soma, /pecas_por_unidade\(/);
+  const bp = fn(src, 'buscar_pecas');
+  assert.match(bp, /products-insights\/summary/);
+  assert.match(bp, /T00:00:00/, 'confere que a resposta é do dia pedido (início)');
+  assert.match(bp, /T23:59:59/, 'e do fim do mesmo dia');
+});
+
+test('GeFinance (26/11): se as peças falharem, a margem e o faturamento vão mesmo assim (sem apagar as peças já gravadas)', () => {
+  const b = fn(py(), 'buscar');
+  assert.match(b, /buscar_pecas\(/);
+  assert.match(b, /except Exception as e:[\s\S]*?peças/);
+  const r = fn(py(), 'rodar_gefinance');
+  assert.match(r, /if l\['data'\] in pecas:/, 'só manda peças dos dias que conseguiu ler');
+});
+
 test('GeFinance: o aviso de "pronto" mostra o e-commerce junto com as lojas', () => {
   const t = fn(ler('scripts/seta_robo.py'), 'aviso_pronto');
   assert.match(t, /'GIP': 'E-commerce'/);

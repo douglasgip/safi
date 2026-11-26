@@ -4,7 +4,8 @@
 // Implantar com verify_jwt = false (o token é próprio, não é login do Supabase).
 //
 // POST { "linhas": [ { "operacao": "Exposicao", "data": "2026-11-16", "faturamento": 24330.78,
-//                      "margem": 11213.7, "ticket_medio": 190.08, "pecas_atendimento": 4.04, "qtd_vendas": 128 } ] }
+//                      "margem": 11213.7, "ticket_medio": 190.08, "pecas_atendimento": 4.04, "qtd_vendas": 128, "pecas": 517 } ] }
+// ("pecas" é opcional: peças vendidas no dia, para a meta de peças; sem ele, as peças já gravadas ficam.)
 // Cada linha é um dia de uma operação; reenviar o mesmo dia SUBSTITUI o anterior (não duplica).
 // Ou POST { "planilhas": [ { operacao, data, resumo: [...], listagem: [...] } ], "ensaio"?: true } — o robô do Seta
 // (scripts/seta_robo.py) manda as planilhas cruas e as contas são feitas aqui (ver kpiDasPlanilhas). Ensaio não grava.
@@ -59,6 +60,15 @@ function validarLinha(l: any, hoje: string): { ok: true; linha: Record<string, u
     out[c] = n
   }
   if (out.faturamento === null) return { ok: false, motivo: 'faturamento é obrigatório' }
+  // Peças vendidas no dia (meta de peças). Opcional: quando não vem, a linha nem leva o campo e as peças já
+  // gravadas continuam (o upsert só mexe nas colunas enviadas).
+  const pecas = numero(l.pecas)
+  if (Number.isNaN(pecas)) return { ok: false, motivo: 'pecas não é número: ' + JSON.stringify(l.pecas) }
+  if (pecas !== null) {
+    if (pecas < 0) return { ok: false, motivo: 'pecas negativo' }
+    if (!Number.isInteger(pecas)) return { ok: false, motivo: 'pecas tem que ser inteiro' }
+    out.pecas = pecas
+  }
   return { ok: true, linha: out }
 }
 
@@ -114,6 +124,7 @@ function kpiDasPlanilhas(p: any, hoje: string): { ok: true; linha: Record<string
   return validarLinha({
     operacao: p.operacao, data: p.data, faturamento: fat, margem: r2(soma(resumo, 'lucro') - soma(resumo, 'frete')),
     ticket_medio: vendas ? r2(fat / vendas) : null, pecas_atendimento: vendas ? r2(pecas / vendas) : null, qtd_vendas: vendas,
+    pecas: Math.round(pecas),
   }, hoje)
 }
 

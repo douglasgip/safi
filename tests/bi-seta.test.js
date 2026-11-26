@@ -19,7 +19,7 @@ test('17/11 da Exposição: faturamento, lucro (sem o frete), vendas, ticket e P
   assert.strictEqual(r.ok, true, r.motivo);
   assert.deepStrictEqual(r.linha, {
     operacao: 'Exposicao', data: '2026-11-17', fonte: 'automacao',
-    faturamento: 25995.93, margem: 12326, ticket_medio: 206.32, pecas_atendimento: 4.65, qtd_vendas: 126,
+    faturamento: 25995.93, margem: 12326, ticket_medio: 206.32, pecas_atendimento: 4.65, qtd_vendas: 126, pecas: 586,
   });
 });
 
