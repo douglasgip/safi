@@ -124,14 +124,19 @@ def buscar(cfg, visivel=False, hoje=None):
             # Os campos de data são só de leitura: escolhe no calendário (1º clique = início, 2º = fim).
             clicar_dia(page, inicio)
             clicar_dia(page, fim)
-            with page.expect_response(lambda r: 'dashboard-kpis/margin' in r.url and r.request.method == 'POST',
-                                      timeout=90000) as info:
-                page.get_by_role('button', name='Aplicar').click()
+            # Espera SÓ a resposta do período pedido: ao abrir a página o GeFinance já pede o período antigo, e essa
+            # resposta pode chegar atrasada (26/11: foi pega por engano e a trava abaixo barrou o envio).
+            esperado = 'firstDate=%s&endDate=%s' % (inicio.isoformat(), fim.isoformat())
+            try:
+                with page.expect_response(lambda r: 'dashboard-kpis/margin' in r.url and r.request.method == 'POST'
+                                          and esperado in (r.request.post_data or ''), timeout=90000) as info:
+                    page.get_by_role('button', name='Aplicar').click()
+            except Exception:
+                raise RuntimeError('o GeFinance não respondeu o período pedido (%s)' % esperado)
             resp = info.value
             if resp.status != 200:
                 raise RuntimeError('o GeFinance respondeu %s ao pedir os números' % resp.status)
             pedido = resp.request.post_data or ''
-            esperado = 'firstDate=%s&endDate=%s' % (inicio.isoformat(), fim.isoformat())
             if esperado not in pedido:
                 raise RuntimeError('o filtro do GeFinance não ficou no período certo (queria %s)' % esperado)
             return resp.json()

@@ -35,6 +35,13 @@ test('GeFinance (26/11): atualiza o MÊS INTEIRO todo dia (o GeFinance vai baixa
   assert.match(b, /firstDate=%s&endDate=%s/, 'confere que o GeFinance filtrou exatamente o período pedido antes de usar');
 });
 
+test('GeFinance (26/11): espera SÓ a resposta do período pedido — o pedido atrasado da abertura da página (período antigo) não pode ser pego por engano', () => {
+  const b = fn(py(), 'buscar');
+  const i = b.indexOf('esperado = '), j = b.indexOf('expect_response(');
+  assert.ok(i > 0 && i < j, 'o período esperado é montado antes de esperar a resposta');
+  assert.match(b, /expect_response\(lambda r: 'dashboard-kpis\/margin' in r\.url and r\.request\.method == 'POST'\s*and esperado in \(r\.request\.post_data or ''\)/);
+});
+
 test('GeFinance: dia a dia = faturamento total, margem de lucro bruto e vendas; só dias fechados; operação GIP', () => {
   const f = fn(py(), 'linhas_do_gefinance');
   for (const s of ["'revenueVersusMargin'", "'revenue'", "'contributionMargin'", "'salesQuantity'", "'operacao': 'GIP'"]) assert.ok(f.includes(s), 'falta ' + s);
