@@ -154,7 +154,7 @@ test('robô do Seta: agendamento — 08:32, ao entrar e ao desbloquear, como adm
 test('robô do Seta: modo agendado só age se faltar dia, respeita tela bloqueada e Seta em uso, e avisa com "Adiar"', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def agendado\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes_seguro() == 'adiar'", 'return rodar(cfg)'].map(s => fn.indexOf(s));
+  const ordem = ['faltam_dias(', 'tela_bloqueada()', 'seta_aberto()', "perguntar_antes_seguro() == 'adiar'", 'rc = rodar(cfg)'].map(s => fn.indexOf(s));
   ordem.forEach((i, k) => assert.ok(i > 0, 'faltou o passo ' + k));
   assert.deepEqual([...ordem].sort((a, b) => a - b), ordem, 'a ordem dos passos mudou');
   assert.match(py, /Adiar %d min' % ADIAR_MINUTOS/);
@@ -170,33 +170,37 @@ test('robô do Seta: "buscar" dia avulso não mexe no estado.json (não volta a 
 test('robô do Seta: aviso chamativo (fonte própria, sem barra do Windows, pisca, som) e comando "aviso" para ver como fica', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  const mold = py.match(/def moldura_geronia\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /moldura_geronia\(/);
   assert.match(fn, /font=\(/);
-  assert.match(fn, /overrideredirect\(True\)/);
-  assert.match(fn, /MessageBeep/);
+  assert.match(mold, /overrideredirect\(True\)/);
+  assert.match(mold, /MessageBeep/);
   assert.match(fn, /<Escape>/);
   assert.match(py, /args\[0\] == 'aviso'/);
 });
 
 test('robô do Seta: aviso com a cara do GerônIA (foto dele, fundo escuro com brilho roxo/azul, âmbar, vidro)', () => {
   const py = ler('scripts/seta_robo.py');
-  const fn = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  const aviso = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  const fn = py.match(/def moldura_geronia\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
   assert.match(fn, /GerônIA\.png/);
   assert.match(fn, /#080b14/i);   // fundo do GerônIA
   assert.match(fn, /#7c3aed/i);   // brilho roxo
   assert.match(fn, /#1d4ed8/i);   // brilho azul
   assert.match(fn, /#f59e0b/i);   // âmbar dos botões do GerônIA
   assert.match(fn, /#4ade80/i);   // bolinha verde "online"
-  assert.match(fn, /create_arc\(/); // anel do tempo
-  assert.doesNotMatch(fn, /#00d4ff|#ff2bd6/i, 'saíram o azul holográfico e o neon rosa');
+  assert.match(aviso, /create_arc\(/); // anel do tempo
+  assert.doesNotMatch(py, /#00d4ff|#ff2bd6/i, 'saíram o azul holográfico e o neon rosa');
   assert.ok(require('node:fs').existsSync(require('node:path').join(__dirname, '..', 'public', 'GerônIA.png')));
 });
 
 test('robô do Seta: o aviso roda em processo separado; se ele travar, o robô segue a rotina (não perde o dia)', () => {
   const py = ler('scripts/seta_robo.py');
   const fn = py.match(/def perguntar_antes_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(fn, /subprocess\.run\(/);
-  assert.match(fn, /returncode == 10/);
-  assert.match(fn, /return 'agora'/);
+  const sep = py.match(/def janela_separada\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(sep, /subprocess\.run\(/);
+  assert.match(sep, /returncode in \(0, 10\)/);
+  assert.match(fn, /== 10 else 'agora'/);
   assert.match(py, /return 10 if perguntar_antes\(/);
 });
 
@@ -222,11 +226,32 @@ test('robô do Seta: minimiza as outras janelas antes de abrir o Seta (senão el
   assert.match(fn, /finally:[\s\S]*?restaurar_tudo\(\)/, 'devolver as janelas mesmo se der erro');
 });
 
-test('robô do Seta: se o aviso cair (erro do desenho da janela), tenta abrir o aviso mais uma vez antes de seguir sem ele (25/11)', () => {
+test('robô do Seta: se o aviso cair (erro do desenho da janela), tenta de novo com folga e guarda o erro num arquivo (25-26/11)', () => {
   const py = ler('scripts/seta_robo.py');
-  const fn = py.match(/def perguntar_antes_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(fn, /for tentativa in range\(2\)/);
-  assert.match(fn, /returncode in \(0, 10\)/);
+  const fn = py.match(/def janela_separada\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(fn, /for tentativa in range\(tentativas\)/);
+  assert.match(fn, /'-X', 'faulthandler'/);
+  assert.match(fn, /stderr=err/);
+  assert.match(py, /AVISO_ERRO = os\.path\.join\(PASTA, 'aviso_erro\.log'\)/);
+  const seguro = py.match(/def perguntar_antes_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(seguro, /janela_separada\(\['aviso', str\(segundos\)\], segundos \+ 60, tentativas=3, espera=30\)/);
+  assert.match(seguro, /== 10/);
+});
+
+test('robô do Seta (26/11): no fim, se deu certo, o GerônIA mostra o resumo do que foi para o SAFI', () => {
+  const py = ler('scripts/seta_robo.py');
+  const rodar = py.match(/def rodar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(rodar, /RESUMO\[:\] = /, 'rodar guarda o que o SAFI gravou');
+  assert.ok(rodar.indexOf('RESUMO[:] = ') > rodar.indexOf("if r.get('erro'):"), 'só guarda depois de conferir que o SAFI não deu erro');
+  const ag = py.match(/def agendado\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(ag, /rc = rodar\(cfg\)[\s\S]*?if RESUMO:[\s\S]*?mostrar_pronto_seguro\(RESUMO\)[\s\S]*?return rc/);
+  const seguro = py.match(/def mostrar_pronto_seguro\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(seguro, /json\.dump/);
+  assert.match(seguro, /janela_separada\(\['pronto'/);
+  const tela = py.match(/def aviso_pronto\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(py, /URL_BI = 'https:\/\/painel\.topfinds\.com\.br\/bi'/);
+  for (const s of ['Abrir o BI', 'webbrowser.open(URL_BI)', 'sem vendas', "'<Return>'", "'<Escape>'", 'moldura_geronia(']) assert.ok(tela.includes(s), 'falta ' + s);
+  assert.match(py, /args\[0\] == 'pronto'/);
 });
 
 test('robô do Seta (24/11): Windows recusou trazer o Seta para a frente — tenta destravar (Alt) antes de desistir', () => {

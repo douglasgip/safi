@@ -22,6 +22,7 @@ Uso (num PowerShell de administrador):
   python seta_robo.py rodar ensaio           -> igual, mas o SAFI só calcula e mostra (não grava)
   python seta_robo.py agendado               -> o que o Agendador chama: só age se faltar dia; avisa antes (com "Adiar")
   python seta_robo.py buscar ViaCloset 2026-11-14 -> dia(s) avulso(s) de uma loja (não mexe no estado.json)
+  python seta_robo.py pronto                 -> mostra de novo o aviso de "pronto" do último envio (ultimo_envio.json)
   Agendamento: scripts/instalar-agendamento.ps1 (como administrador) instala a tarefa "SAFI - Robo do Seta".
   python seta_robo.py exportar 2026-11-17     -> com "Relatórios das vendas" aberta: exporta e confere (não envia)
   python seta_robo.py token                  -> gera a senha da importação (grava no config.ini e copia; não mostra)
@@ -689,6 +690,10 @@ def rodar(cfg, ensaio=False, pedidos=None):
         log('  sem vendas:', s)
     if r.get('erro'):
         raise RuntimeError('SAFI: ' + str(r['erro']))
+    if not ensaio:
+        # Para o aviso de "pronto" do GerônIA: o que o SAFI gravou e os dias sem vendas.
+        RESUMO[:] = [dict(l, tipo='venda') for l in r.get('linhas') or []] + [
+            {'tipo': 'sem', 'operacao': x.split(' ')[0], 'data': x.split(' ')[-1]} for x in r.get('semVendas') or []]
     if not ensaio and r.get('ok') and pedidos is None:
         # Avança só até o último dia bom EM SEQUÊNCIA: um dia recusado é tentado de novo na próxima vez.
         recusados = {(e.get('motivo') or '').split(':')[0] for e in r.get('erros') or []}
@@ -731,23 +736,27 @@ def faltam_dias(est, hoje):
     return any(dias_faltando(est.get(l), hoje) for l in ('Exposicao', 'ViaCloset'))
 
 
-def perguntar_antes(segundos=AVISO_SEGUNDOS):
-    """Aviso por cima de tudo com a cara do GerônIA (mesmas cores e foto da tela dele no SAFI):
-    "vou usar o mouse", contagem regressiva em anel âmbar, [Começar agora] (Enter) e [Adiar] (Esc).
-    Sem resposta, começa sozinho. Toca o som de atenção do Windows; nos últimos 10 s o anel fica vermelho."""
+AVISO_ERRO = os.path.join(PASTA, 'aviso_erro.log')        # erro da janelinha (se ela cair), para diagnóstico
+ULTIMO_ENVIO = os.path.join(PASTA, 'ultimo_envio.json')   # resumo do último envio (usado pelo aviso de "pronto")
+URL_BI = 'https://painel.topfinds.com.br/bi'
+RESUMO = []  # o que o SAFI gravou na última rodada (rodar() preenche; o aviso de "pronto" mostra)
+
+
+def moldura_geronia(W, H, subtitulo, som=0x30):
+    """Janela por cima de tudo com a cara do GerônIA (mesmas cores e foto da tela dele no SAFI):
+    fundo escuro com brilhos roxo/azul, cartão de vidro, foto redonda com brilho índigo e bolinha "online".
+    Devolve um objeto com a janela, o desenho e as ferramentas para cada aviso montar o seu miolo."""
     import tkinter as tk
+    from types import SimpleNamespace
     try:
         import winsound
-        winsound.MessageBeep(0x30)
+        winsound.MessageBeep(som)
     except Exception:
         pass
-    FUNDO, ROXO, AZUL, CARTAO, BORDA, LINHA = '#080b14', '#7c3aed', '#1d4ed8', '#0f1322', '#232a40', '#0c1020'
-    BRANCO, TEXTO, CINZA, APAGADO = '#f1f5f9', '#e2e8f0', '#94a3b8', '#64748b'
-    AMBAR, AMBAR2, ESCURO_AMBAR, INDIGO, LILAS, VERDE, VERMELHO = (
-        '#f59e0b', '#fbbf24', '#1a0a00', '#6366f1', '#a5b4fc', '#4ade80', '#f87171')
+    c = SimpleNamespace(FUNDO='#080b14', ROXO='#7c3aed', AZUL='#1d4ed8', CARTAO='#0f1322', BORDA='#232a40', LINHA='#0c1020',
+                        BRANCO='#f1f5f9', TEXTO='#e2e8f0', CINZA='#94a3b8', APAGADO='#64748b', AMBAR='#f59e0b', AMBAR2='#fbbf24',
+                        ESCURO_AMBAR='#1a0a00', INDIGO='#6366f1', LILAS='#a5b4fc', VERDE='#4ade80', VERMELHO='#f87171')
     LETRA = 'Segoe UI'
-    W, H = 640, 580
-    res = {'v': 'agora'}
 
     def mistura(c1, c2, t):
         a = [int(c1[i:i + 2], 16) for i in (1, 3, 5)]
@@ -758,7 +767,7 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
     root.title('GerônIA · Robô do Seta')
     root.overrideredirect(True)
     root.attributes('-topmost', True)
-    cv = tk.Canvas(root, width=W, height=H, highlightthickness=0, bg=FUNDO)
+    cv = tk.Canvas(root, width=W, height=H, highlightthickness=0, bg=c.FUNDO)
     cv.pack()
 
     def arredondado(x1, y1, x2, y2, r, **kw):
@@ -766,20 +775,19 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
              x2 - r, y2, x1 + r, y2, x1, y2, x1, y2 - r, x1, y1 + r, x1, y1)
         return cv.create_polygon(p, smooth=True, **kw)
 
-    # Fundo do GerônIA: brilhos borrados roxo (em cima, à esquerda) e azul (embaixo, à direita) + grade sutil.
-    for (ox, oy, raio, cor, forca) in ((40, 30, 330, ROXO, 0.38), (W - 30, H - 20, 300, AZUL, 0.34)):
+    # Fundo: brilhos borrados roxo (em cima, à esquerda) e azul (embaixo, à direita) + grade sutil.
+    for (ox, oy, raio, cor, forca) in ((40, 30, 330, c.ROXO, 0.38), (W - 30, H - 20, 300, c.AZUL, 0.34)):
         for k in range(40, 0, -1):
             t = k / 40
             r = raio * t
-            cv.create_oval(ox - r, oy - r, ox + r, oy + r, outline='', fill=mistura(FUNDO, cor, forca * (1 - t) ** 1.6))
+            cv.create_oval(ox - r, oy - r, ox + r, oy + r, outline='', fill=mistura(c.FUNDO, cor, forca * (1 - t) ** 1.6))
     for x in range(0, W, 28):
-        cv.create_line(x, 0, x, H, fill=LINHA)
+        cv.create_line(x, 0, x, H, fill=c.LINHA)
     for y in range(0, H, 28):
-        cv.create_line(0, y, W, y, fill=LINHA)
+        cv.create_line(0, y, W, y, fill=c.LINHA)
 
-    # Cartão de vidro.
     M = 26
-    arredondado(M, M, W - M, H - M, 26, fill=CARTAO, outline=BORDA, width=1)
+    arredondado(M, M, W - M, H - M, 26, fill=c.CARTAO, outline=c.BORDA, width=1)  # cartão de vidro
 
     # Cabeçalho: foto do GerônIA (redonda, com brilho índigo), nome e "online".
     ax, ay, lado = M + 62, M + 62, 64
@@ -791,107 +799,233 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
         foto = img.subsample(fator, fator)
         cv.create_image(ax, ay, image=foto)
     except Exception:
-        cv.create_oval(ax - lado / 2, ay - lado / 2, ax + lado / 2, ay + lado / 2, fill=INDIGO, outline='')
-        cv.create_text(ax, ay, text='G', font=(LETRA, 24, 'bold'), fill=BRANCO)
+        cv.create_oval(ax - lado / 2, ay - lado / 2, ax + lado / 2, ay + lado / 2, fill=c.INDIGO, outline='')
+        cv.create_text(ax, ay, text='G', font=(LETRA, 24, 'bold'), fill=c.BRANCO)
     r = lado / 2
-    cv.create_oval(ax - r - 8, ay - r - 8, ax + r + 8, ay + r + 8, outline=CARTAO, width=17)  # recorta a foto em círculo
-    brilhos = [cv.create_oval(ax - r - d, ay - r - d, ax + r + d, ay + r + d, outline=mistura(CARTAO, INDIGO, a), width=2)
+    cv.create_oval(ax - r - 8, ay - r - 8, ax + r + 8, ay + r + 8, outline=c.CARTAO, width=17)  # recorta a foto em círculo
+    brilhos = [cv.create_oval(ax - r - d, ay - r - d, ax + r + d, ay + r + d, outline=mistura(c.CARTAO, c.INDIGO, a), width=2)
                for d, a in ((2, 0.85), (5, 0.45), (8, 0.2))]
-    cv.create_text(ax + 50, ay - 12, anchor='w', text='GerônIA', font=(LETRA, 17, 'bold'), fill=BRANCO)
-    ponto = cv.create_oval(ax + 51, ay + 9, ax + 59, ay + 17, fill=VERDE, outline='')
-    cv.create_text(ax + 66, ay + 13, anchor='w', text='Robô do Seta · pronto para buscar as vendas', font=(LETRA, 10), fill=CINZA)
-    cv.create_line(M + 24, ay + 50, W - M - 24, ay + 50, fill=BORDA)
+    cv.create_text(ax + 50, ay - 12, anchor='w', text='GerônIA', font=(LETRA, 17, 'bold'), fill=c.BRANCO)
+    ponto = cv.create_oval(ax + 51, ay + 9, ax + 59, ay + 17, fill=c.VERDE, outline='')
+    cv.create_text(ax + 66, ay + 13, anchor='w', text=subtitulo, font=(LETRA, 10), fill=c.CINZA)
+    cv.create_line(M + 24, ay + 50, W - M - 24, ay + 50, fill=c.BORDA)
 
-    # Mensagem.
+    estado = {'pisca': False}
+
+    def pisca():
+        estado['pisca'] = not estado['pisca']
+        cv.itemconfig(ponto, fill=c.VERDE if estado['pisca'] else mistura(c.CARTAO, c.VERDE, 0.35))
+        for b, a in zip(brilhos, ((0.85, 0.45, 0.2) if estado['pisca'] else (0.6, 0.25, 0.08))):
+            cv.itemconfig(b, outline=mistura(c.CARTAO, c.INDIGO, a))
+
+    def botao(x, y, largura, texto, principal, acao):
+        tag = 'b%d_%d' % (x, y)
+        if principal:
+            arredondado(x - largura, y + 4, x + largura, y + 50, 18, fill=mistura(c.AMBAR, c.ESCURO_AMBAR, 0.55), outline='', tags=tag)
+            arredondado(x - largura, y, x + largura, y + 46, 18, fill=c.AMBAR, outline=c.AMBAR2, width=1, tags=tag)
+        else:
+            arredondado(x - largura, y, x + largura, y + 46, 18, fill=mistura(c.CARTAO, '#ffffff', 0.05), outline=c.BORDA, width=1, tags=tag)
+        cv.create_text(x, y + 23, text=texto, font=(LETRA, 12, 'bold'), fill=c.ESCURO_AMBAR if principal else c.TEXTO, tags=tag)
+        cv.tag_bind(tag, '<Button-1>', acao)
+        cv.tag_bind(tag, '<Enter>', lambda e: cv.config(cursor='hand2'))
+        cv.tag_bind(tag, '<Leave>', lambda e: cv.config(cursor=''))
+
+    def mostrar():
+        root.update_idletasks()
+        root.geometry('%dx%d+%d+%d' % (W, H, (root.winfo_screenwidth() - W) // 2, (root.winfo_screenheight() - H) // 3))
+        root.lift()
+        root.focus_force()
+        root._foto = foto  # segura a imagem viva enquanto a janela estiver aberta
+
+    return SimpleNamespace(root=root, cv=cv, c=c, LETRA=LETRA, M=M, W=W, H=H, mistura=mistura,
+                           arredondado=arredondado, botao=botao, pisca=pisca, mostrar=mostrar)
+
+
+def perguntar_antes(segundos=AVISO_SEGUNDOS):
+    """Aviso antes de começar: "vou usar o mouse", contagem regressiva em anel âmbar, [Começar agora] (Enter)
+    e [Adiar] (Esc). Sem resposta, começa sozinho. Nos últimos 10 s o anel fica vermelho."""
+    g = moldura_geronia(640, 580, 'Robô do Seta · pronto para buscar as vendas')
+    cv, c, L, W, H, M = g.cv, g.c, g.LETRA, g.W, g.H, g.M
+    res = {'v': 'agora'}
     cx = W // 2
-    cv.create_text(cx, 196, text='Vou usar o mouse e o teclado', font=(LETRA, 25, 'bold'), fill=BRANCO)
+    cv.create_text(cx, 196, text='Vou usar o mouse e o teclado', font=(L, 25, 'bold'), fill=c.BRANCO)
     cv.create_text(cx, 240, text='Vou abrir o Seta e buscar as vendas das lojas para o SAFI.\n'
                                  'Leva uns 3 a 5 minutos: não mexa no mouse até o Seta fechar.',
-                   font=(LETRA, 10), fill=CINZA, justify='center')
+                   font=(L, 10), fill=c.CINZA, justify='center')
 
     # Contagem regressiva em anel âmbar.
     cy, ra = 338, 54
-    cv.create_oval(cx - ra, cy - ra, cx + ra, cy + ra, outline=BORDA, width=7)
-    anel = cv.create_arc(cx - ra, cy - ra, cx + ra, cy + ra, start=90, extent=-359.9, style='arc', outline=AMBAR, width=7)
-    numero = cv.create_text(cx, cy - 4, text=str(segundos), font=(LETRA, 34, 'bold'), fill=AMBAR2)
-    cv.create_text(cx, cy + 26, text='segundos', font=(LETRA, 9), fill=APAGADO)
+    cv.create_oval(cx - ra, cy - ra, cx + ra, cy + ra, outline=c.BORDA, width=7)
+    anel = cv.create_arc(cx - ra, cy - ra, cx + ra, cy + ra, start=90, extent=-359.9, style='arc', outline=c.AMBAR, width=7)
+    numero = cv.create_text(cx, cy - 4, text=str(segundos), font=(L, 34, 'bold'), fill=c.AMBAR2)
+    cv.create_text(cx, cy + 26, text='segundos', font=(L, 9), fill=c.APAGADO)
 
     # Etiquetas (como as sugestões do GerônIA).
     etiquetas = ('Seta ERP', 'Exposição · Via Closet', 'BI das Lojas', '3 a 5 min')
     larguras = [len(t) * 7 + 26 for t in etiquetas]
     x = cx - (sum(larguras) + 8 * (len(etiquetas) - 1)) / 2
     for t, lg in zip(etiquetas, larguras):
-        arredondado(x, 418, x + lg, 444, 13, fill=mistura(CARTAO, INDIGO, 0.12), outline=mistura(CARTAO, INDIGO, 0.45))
-        cv.create_text(x + lg / 2, 431, text=t, font=(LETRA, 9, 'bold'), fill=LILAS)
+        g.arredondado(x, 418, x + lg, 444, 13, fill=g.mistura(c.CARTAO, c.INDIGO, 0.12), outline=g.mistura(c.CARTAO, c.INDIGO, 0.45))
+        cv.create_text(x + lg / 2, 431, text=t, font=(L, 9, 'bold'), fill=c.LILAS)
         x += lg + 8
 
     def adiar(_=None):
         res['v'] = 'adiar'
-        root.destroy()
+        g.root.destroy()
 
     def comecar(_=None):
         res['v'] = 'agora'
-        root.destroy()
+        g.root.destroy()
 
-    def botao(x, texto, principal, acao):
-        tag = 'b%d' % x
-        if principal:
-            arredondado(x - 120, 470, x + 120, 516, 18, fill=mistura(AMBAR, ESCURO_AMBAR, 0.55), outline='', tags=tag)
-            arredondado(x - 120, 466, x + 120, 512, 18, fill=AMBAR, outline=AMBAR2, width=1, tags=tag)
-        else:
-            arredondado(x - 120, 466, x + 120, 512, 18, fill=mistura(CARTAO, '#ffffff', 0.05), outline=BORDA, width=1, tags=tag)
-        cv.create_text(x, 489, text=texto, font=(LETRA, 12, 'bold'), fill=ESCURO_AMBAR if principal else TEXTO, tags=tag)
-        cv.tag_bind(tag, '<Button-1>', acao)
-        cv.tag_bind(tag, '<Enter>', lambda e: cv.config(cursor='hand2'))
-        cv.tag_bind(tag, '<Leave>', lambda e: cv.config(cursor=''))
+    g.botao(cx - 130, 466, 120, '▶  Começar agora', True, comecar)
+    g.botao(cx + 130, 466, 120, '❚❚  Adiar %d min' % ADIAR_MINUTOS, False, adiar)
+    cv.create_text(cx, H - M - 16, text='Enter = começar   ·   Esc = adiar', font=(L, 8), fill=c.APAGADO)
+    g.root.bind('<Return>', comecar)
+    g.root.bind('<Escape>', adiar)
 
-    botao(cx - 130, '▶  Começar agora', True, comecar)
-    botao(cx + 130, '❚❚  Adiar %d min' % ADIAR_MINUTOS, False, adiar)
-    cv.create_text(cx, H - M - 16, text='Enter = começar   ·   Esc = adiar', font=(LETRA, 8), fill=APAGADO)
-    root.bind('<Return>', comecar)
-    root.bind('<Escape>', adiar)
-
-    n = {'s': segundos, 'pisca': False}
+    n = {'s': segundos}
 
     def tick():
         if n['s'] <= 0:
-            root.destroy()
+            g.root.destroy()
             return
         fim = n['s'] <= 10
-        cv.itemconfig(numero, text=str(n['s']), fill=VERMELHO if fim else AMBAR2)
-        cv.itemconfig(anel, extent=-359.9 * n['s'] / segundos, outline=VERMELHO if fim else AMBAR)
-        n['pisca'] = not n['pisca']
-        cv.itemconfig(ponto, fill=VERDE if n['pisca'] else mistura(CARTAO, VERDE, 0.35))
-        for b, a in zip(brilhos, ((0.85, 0.45, 0.2) if n['pisca'] else (0.6, 0.25, 0.08))):
-            cv.itemconfig(b, outline=mistura(CARTAO, INDIGO, a))
+        cv.itemconfig(numero, text=str(n['s']), fill=c.VERMELHO if fim else c.AMBAR2)
+        cv.itemconfig(anel, extent=-359.9 * n['s'] / segundos, outline=c.VERMELHO if fim else c.AMBAR)
+        g.pisca()
         n['s'] -= 1
-        root.after(1000, tick)
+        g.root.after(1000, tick)
 
-    root.update_idletasks()
-    root.geometry('%dx%d+%d+%d' % (W, H, (root.winfo_screenwidth() - W) // 2, (root.winfo_screenheight() - H) // 3))
-    root.lift()
-    root.focus_force()
-    root._foto = foto  # segura a imagem viva enquanto a janela estiver aberta
+    g.mostrar()
     tick()
-    root.mainloop()
+    g.root.mainloop()
     return res['v']
 
 
-def perguntar_antes_seguro(segundos=AVISO_SEGUNDOS):
-    """Mostra o aviso num processo separado (o desenho do aviso já travou o Python algumas vezes).
-    Código 10 = adiar; qualquer outro resultado (inclusive travar) = segue a rotina, para não perder o dia."""
-    import subprocess
-    for tentativa in range(2):
+def brl(v):
+    s = '{:,.2f}'.format(float(v or 0)).replace(',', '#').replace('.', ',').replace('#', '.')
+    return 'R$ ' + s
+
+
+AVISO_PRONTO_SEGUNDOS = 120  # o aviso de "pronto" fecha sozinho depois disso
+
+
+def aviso_pronto(resumo, segundos=AVISO_PRONTO_SEGUNDOS):
+    """Fim da rotina: o GerônIA confirma que as vendas foram para o SAFI e mostra o resumo de cada loja/dia
+    (faturamento, vendas, ticket, margem). [Abrir o BI] abre o BI das Lojas; [OK] (Enter/Esc) fecha."""
+    import webbrowser
+    lojas = {'Exposicao': 'Exposição', 'ViaCloset': 'Via Closet'}
+    linhas = [l for l in resumo if l.get('tipo') == 'venda']
+    sem = [l for l in resumo if l.get('tipo') == 'sem']
+    n = len(linhas) + len(sem)
+    W, H = 700, 450 + 46 * max(1, n)
+    g = moldura_geronia(W, H, 'Robô do Seta · tarefa concluída', som=0x40)
+    cv, c, L, M = g.cv, g.c, g.LETRA, g.M
+    cx = W // 2
+    cv.create_text(cx, 186, text='Pronto! As vendas já estão no SAFI', font=(L, 22, 'bold'), fill=c.BRANCO)
+    cv.create_text(cx, 222, text='Busquei no Seta, conferi o total de cada dia e mandei para o BI das Lojas.',
+                   font=(L, 10), fill=c.CINZA)
+
+    # Tabela: loja · dia · faturamento · vendas · ticket · margem
+    cols = (M + 34, M + 180, M + 350, M + 430, M + 535, W - M - 34)
+    y = 262
+    for x, t, anc in zip(cols, ('LOJA', 'DIA', 'FATURAMENTO', 'VENDAS', 'TICKET', 'MARGEM'), ('w', 'w', 'e', 'e', 'e', 'e')):
+        cv.create_text(x, y, text=t, anchor=anc, font=(L, 8, 'bold'), fill=c.APAGADO)
+    y += 16
+    total = 0.0
+    for l in sorted(linhas, key=lambda l: (l['data'], l['operacao'])):
+        g.arredondado(M + 20, y, W - M - 20, y + 38, 12, fill=g.mistura(c.CARTAO, c.INDIGO, 0.08), outline=g.mistura(c.CARTAO, c.INDIGO, 0.3))
+        meio = y + 19
+        fat = float(l.get('faturamento') or 0)
+        total += fat
+        mg = l.get('margem')
+        cv.create_text(cols[0], meio, anchor='w', text=lojas.get(l['operacao'], l['operacao']), font=(L, 11, 'bold'), fill=c.BRANCO)
+        cv.create_text(cols[1], meio, anchor='w', text=l['data'][8:10] + '/' + l['data'][5:7], font=(L, 11), fill=c.TEXTO)
+        cv.create_text(cols[2], meio, anchor='e', text=brl(fat), font=(L, 11, 'bold'), fill=c.AMBAR2)
+        cv.create_text(cols[3], meio, anchor='e', text=str(int(float(l.get('qtd_vendas') or 0))), font=(L, 11), fill=c.TEXTO)
+        cv.create_text(cols[4], meio, anchor='e', text=brl(l.get('ticket_medio')), font=(L, 11), fill=c.TEXTO)
+        cv.create_text(cols[5], meio, anchor='e', text=('%.1f%%' % (100 * float(mg) / fat)).replace('.', ',') if mg is not None and fat else '—',
+                       font=(L, 11), fill=c.VERDE)
+        y += 46
+    for s in sem:
+        g.arredondado(M + 20, y, W - M - 20, y + 38, 12, fill=c.CARTAO, outline=c.BORDA)
+        cv.create_text(cols[0], y + 19, anchor='w', text=lojas.get(s['operacao'], s['operacao']), font=(L, 11, 'bold'), fill=c.CINZA)
+        cv.create_text(cols[1], y + 19, anchor='w', text=s['data'][8:10] + '/' + s['data'][5:7] + '   ·   sem vendas no dia',
+                       font=(L, 11), fill=c.APAGADO)
+        y += 46
+    if not n:
+        cv.create_text(cx, y + 19, text='Nada novo para mandar hoje.', font=(L, 11), fill=c.CINZA)
+        y += 46
+    if len(linhas) > 1:
+        cv.create_text(cols[2], y + 6, anchor='e', text='Total ' + brl(total), font=(L, 12, 'bold'), fill=c.BRANCO)
+    y += 34
+
+    def fechar(_=None):
+        g.root.destroy()
+
+    def abrir_bi(_=None):
         try:
-            r = subprocess.run([sys.executable, '-P', os.path.abspath(__file__), 'aviso', str(segundos)], timeout=segundos + 60)
+            webbrowser.open(URL_BI)
+        finally:
+            g.root.destroy()
+
+    g.botao(cx - 130, y, 120, '▦  Abrir o BI', True, abrir_bi)
+    g.botao(cx + 130, y, 120, '✓  OK', False, fechar)
+    conta = cv.create_text(cx, H - M - 16, text='', font=(L, 8), fill=c.APAGADO)
+    g.root.bind('<Return>', fechar)
+    g.root.bind('<Escape>', fechar)
+    falta = {'s': segundos}
+
+    def tick():
+        if falta['s'] <= 0:
+            g.root.destroy()
+            return
+        cv.itemconfig(conta, text='fecha sozinho em %d s   ·   Enter ou Esc = OK' % falta['s'])
+        g.pisca()
+        falta['s'] -= 1
+        g.root.after(1000, tick)
+
+    g.mostrar()
+    tick()
+    g.root.mainloop()
+    return 0
+
+
+def janela_separada(args, limite, tentativas=2, espera=30):
+    """Abre um aviso num processo separado (o desenho da janela já derrubou o Python logo depois de desbloquear
+    o PC). Se cair, guarda o erro em aviso_erro.log e tenta de novo depois de `espera` segundos.
+    Devolve o código de saída do aviso, ou None se não conseguiu abrir."""
+    import subprocess
+    for tentativa in range(tentativas):
+        try:
+            with open(AVISO_ERRO, 'a', encoding='utf-8') as err:
+                err.write('\n--- %s  %s (tentativa %d)\n' % (time.strftime('%d/%m %H:%M:%S'), ' '.join(args), tentativa + 1))
+                err.flush()
+                r = subprocess.run([sys.executable, '-P', '-X', 'faulthandler', os.path.abspath(__file__)] + args,
+                                   timeout=limite, stdin=subprocess.DEVNULL, stdout=err, stderr=err)
             if r.returncode in (0, 10):
-                return 'adiar' if r.returncode == 10 else 'agora'
-            log('agendado: o aviso fechou com erro (%s)%s' % (r.returncode, '; tento de novo' if tentativa == 0 else '; sigo a rotina sem ele'))
+                return r.returncode
+            log('aviso "%s" fechou com erro (%s)%s' % (args[0], r.returncode,
+                '; tento de novo em %d s' % espera if tentativa < tentativas - 1 else '; sigo sem ele (detalhe em aviso_erro.log)'))
         except Exception as e:
-            log('agendado: o aviso não abriu (%s); sigo a rotina sem ele' % e)
-            break
-        time.sleep(3)
-    return 'agora'
+            log('aviso "%s" não abriu (%s)' % (args[0], e))
+            return None
+        if tentativa < tentativas - 1:
+            time.sleep(espera)
+    return None
+
+
+def perguntar_antes_seguro(segundos=AVISO_SEGUNDOS):
+    """Código 10 = adiar; qualquer outro resultado (inclusive o aviso cair) = segue a rotina, para não perder o dia."""
+    return 'adiar' if janela_separada(['aviso', str(segundos)], segundos + 60, tentativas=3, espera=30) == 10 else 'agora'
+
+
+def mostrar_pronto_seguro(resumo):
+    """Grava o resumo do envio em ultimo_envio.json e abre o aviso de "pronto" (num processo separado)."""
+    import json
+    with open(ULTIMO_ENVIO, 'w', encoding='utf-8') as f:
+        json.dump(resumo, f, ensure_ascii=False)
+    janela_separada(['pronto', ULTIMO_ENVIO], AVISO_PRONTO_SEGUNDOS + 60, tentativas=2, espera=30)
 
 
 def agendado(cfg):
@@ -915,7 +1049,11 @@ def agendado(cfg):
             time.sleep(ADIAR_MINUTOS * 60)
             continue
         log('agendado: começando')
-        return rodar(cfg)
+        rc = rodar(cfg)
+        if RESUMO:
+            log('agendado: pronto; mostrando o resumo')
+            mostrar_pronto_seguro(RESUMO)
+        return rc
     log('agendado: desisti por hoje (adiado/ocupado demais); tento no próximo gatilho')
     return 0
 
@@ -993,6 +1131,11 @@ def main(args):
         return rodar(cfg, pedidos={loja: [date.fromisoformat(d) for d in args[2:]]})
     if args and args[0] == 'agendado':
         return agendado(cfg)
+    if args and args[0] == 'pronto':
+        # Aviso de fim com o resumo (lê o arquivo gravado por mostrar_pronto_seguro; sem arquivo, usa o último envio).
+        import json
+        with open(args[1] if len(args) > 1 else ULTIMO_ENVIO, encoding='utf-8') as f:
+            return aviso_pronto(json.load(f), int(args[2]) if len(args) > 2 else AVISO_PRONTO_SEGUNDOS)
     if args and args[0] == 'aviso':
         # Só mostra o aviso para ver como fica (não abre o Seta).
         return 10 if perguntar_antes(int(args[1]) if len(args) > 1 else AVISO_SEGUNDOS) == 'adiar' else 0
