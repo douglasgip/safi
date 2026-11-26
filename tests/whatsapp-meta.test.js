@@ -50,7 +50,10 @@ test('whatsapp: o modo teste manda só na conversa "Meu numero" e não conta com
 
 test('whatsapp: confere que a mensagem saiu antes de marcar o dia como enviado', () => {
   const c = py();
-  assert.match(fn(c, 'escrever_no_grupo'), /msg-time/);
+  // 26/11: a imagem ainda subia quando o Edge fechou e a mensagem ficou com erro; agora espera "Enviada/Entregue/Lida"
+  const e = fn(c, 'escrever_no_grupo');
+  assert.match(e, /'Enviada', 'Entregue', 'Lida'/);
+  assert.match(e, /startswith\('Ocorreu um erro'\)[\s\S]*?raise RuntimeError/);
   assert.ok(c.indexOf('confirmar_envio(') < c.indexOf('gravar_ultimo('));
 });
 

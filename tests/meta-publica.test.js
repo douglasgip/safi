@@ -143,3 +143,10 @@ test('meta: no celular o botão manda a imagem junto (preparada antes do toque);
 test('meta: prévia do link no WhatsApp usa endereço completo da imagem', () => {
   assert.match(html, /<meta property="og:image" content="https:\/\/topfinds\.com\.br\/public\/meta\/moto\.png">/);
 });
+
+test('meta: imagem quase quadrada (título em cima, total à esquerda, operações à direita) para o WhatsApp não cortar', () => {
+  // 26/11: empilhada em pé (848x2262) o WhatsApp cortava a prévia no meio
+  const f = codigo.match(/async function imagemDaMeta\(\)[\s\S]*?\n    }\n/)[0];
+  assert.match(f, /const W = 3 \* m \+ 2 \* col, H = 3 \* m \+ topo\.height \+ alto;/);
+  assert.match(f, /g\.drawImage\(ops, 2 \* m \+ col/);
+});

@@ -103,6 +103,7 @@
     .trilho .enche::after { content: ''; position: absolute; top: 0; bottom: 0; width: 70px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: brilho 2.8s 1.6s infinite; left: -70px; }
     @keyframes brilho { from { left: -70px; } to { left: 100%; } }
     .capturando .trilho .enche::after { display: none; }
+    .capturando .total { border-bottom: none; }
     [data-tema="editorial"] .capturando .op:nth-child(3) { box-shadow: none; border: 1px solid #e6e2d8; }
     .trilho .ponto { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--fundo); border: 2px solid var(--tinta); left: 0; }
 
@@ -275,13 +276,19 @@
       try {
         for (const el of partes) telas.push(await html2canvas(el, { backgroundColor: fundo, scale: 2, ignoreElements: fora, logging: false }));
       } finally { document.body.classList.remove('capturando'); }
-      const m = 48, W = Math.max(...telas.map(c => c.width)) + 2 * m, H = telas.reduce((a, c) => a + c.height, 0) + m * (telas.length + 1);
+      // Formato quase quadrado, para o WhatsApp mostrar a imagem inteira (em pé e comprida, ele corta a prévia):
+      // título em cima; embaixo, o total à esquerda e os cards das operações à direita.
+      const [topo, total, ops] = telas, m = 56;
+      const col = Math.max(total.width, ops.width), alto = Math.max(total.height, ops.height);
+      const W = 3 * m + 2 * col, H = 3 * m + topo.height + alto;
       const cv = document.createElement('canvas');
       cv.width = W; cv.height = H;
       const g = cv.getContext('2d');
       g.fillStyle = fundo; g.fillRect(0, 0, W, H);
-      let y = m;
-      for (const c of telas) { g.drawImage(c, (W - c.width) / 2, y); y += c.height + m; }
+      const y = 2 * m + topo.height;
+      g.drawImage(topo, (W - topo.width) / 2, m);
+      g.drawImage(total, m + (col - total.width) / 2, y + (alto - total.height) / 2);
+      g.drawImage(ops, 2 * m + col + (col - ops.width) / 2, y + (alto - ops.height) / 2);
       return new Promise(r => cv.toBlob(r, 'image/png'));
     }
 

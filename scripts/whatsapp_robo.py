@@ -136,6 +136,13 @@ def mensagens_com(page, trecho):
         .filter(e => !e.closest('footer') && (e.textContent || '').includes(t)).length""", trecho)
 
 
+def situacao_da_ultima(page, trecho):
+    """Marcas da última mensagem da conversa que tem esse trecho (o WhatsApp põe 'Enviada', 'Entregue', 'Lida' ou
+    'Ocorreu um erro...'). Procura pelo texto porque às vezes a última linha da conversa é uma linha vazia."""
+    return page.evaluate("""t => { const r = [...document.querySelectorAll('#main [role="row"]')].filter(x => (x.innerText || '').includes(t)).pop();
+        return r ? [...r.querySelectorAll('[aria-label]')].map(e => (e.getAttribute('aria-label') || '').trim()) : []; }""", trecho)
+
+
 def colar_imagem(page, imagem):
     """Cola a imagem na conversa (como Ctrl+V): o WhatsApp abre a tela da imagem com a legenda já em foco."""
     with open(imagem, 'rb') as f:
@@ -174,13 +181,20 @@ def escrever_no_grupo(page, texto, imagem=None, ensaio=False):
         limpar_rascunho(page)
         return antes
     page.keyboard.press('Enter')
-    # espera a mensagem nova aparecer na conversa e sair o relógio ("enviando")
-    fim = time.time() + 90
+    # Espera a mensagem nova ficar "Enviada"/"Entregue"/"Lida". A imagem demora a subir: fechar o Edge antes deixa a
+    # mensagem com erro (26/11, no teste). Se o WhatsApp marcar "Ocorreu um erro", para e avisa.
+    fim = time.time() + 180
     while time.time() < fim:
-        page.wait_for_timeout(1500)
-        if mensagens_com(page, linhas[0]) > antes and not page.locator('#main [data-icon="msg-time"]').count():
+        page.wait_for_timeout(2000)
+        if mensagens_com(page, linhas[0]) <= antes:
+            continue
+        marcas = situacao_da_ultima(page, linhas[0])
+        if any(m.startswith('Ocorreu um erro') for m in marcas):
+            raise RuntimeError('o WhatsApp deu erro ao enviar a mensagem')
+        if any(m in ('Enviada', 'Entregue', 'Lida') for m in marcas):
+            page.wait_for_timeout(3000)
             return antes
-    raise RuntimeError('a mensagem não saiu ou ficou no relógio (sem internet?)')
+    raise RuntimeError('a mensagem não terminou de enviar (sem internet?)')
 
 
 def confirmar_envio(page, texto, antes):
