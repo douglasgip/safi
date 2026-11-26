@@ -1130,12 +1130,35 @@ PROGRESSO = Progresso()
 def porcentagem(estado):
     """Quanto da rotina já foi (0 a 100), pelas etapas feitas + o pedaço da etapa atual."""
     if estado.get('fim'):
-        return 100
+        return 100.0
     i = int(estado.get('etapa') or 0)
     feito = sum(PESOS[:min(i, len(PESOS))])
     if i < len(PESOS):
         feito += PESOS[i] * float(estado.get('frac') or 0)
-    return int(min(99, feito))
+    return float(min(99, feito))
+
+
+ANDA_SOZINHA = 0.35  # % por segundo que a barra avança sozinha enquanto o robô está parado numa etapa
+
+
+def alvo_suave(estado, parado_ha):
+    """Para onde a barra deve ir: o que o robô já informou + um avanço lento enquanto ele trabalha numa etapa
+    demorada (sem passar do fim dessa etapa, para nunca mostrar mais do que de fato foi)."""
+    base = porcentagem(estado)
+    if estado.get('fim'):
+        return 100.0
+    i = int(estado.get('etapa') or 0)
+    if i >= len(PESOS):
+        return base
+    teto = sum(PESOS[:i + 1]) - 1
+    return max(base, min(teto, base + max(0.0, parado_ha) * ANDA_SOZINHA))
+
+
+def aproximar(atual, alvo, dt):
+    """Desliza a barra até o alvo (rápido no começo, suave no fim); nunca anda para trás."""
+    if alvo <= atual:
+        return atual
+    return atual + (alvo - atual) * min(1.0, dt * 4.0)
 
 
 def processo_vivo(pid):
@@ -1163,6 +1186,7 @@ def janela_progresso(arquivo, pid_robo):
     pct = cv.create_text(x1, 160, anchor='e', text='0%', font=(L, 18, 'bold'), fill=c.AMBAR2)
     g.arredondado(x0, 182, x1, 194, 6, fill=c.BORDA, outline='')
     barra = g.arredondado(x0, 182, x0 + 12, 194, 6, fill=c.AMBAR, outline='')
+    brilho = cv.create_rectangle(x0, 183, x0, 193, fill=g.mistura(c.AMBAR, '#ffffff', 0.45), outline='', state='hidden')
     n = len(ETAPAS)
     xs = [x0 + 30 + k * (x1 - x0 - 60) / (n - 1) for k in range(n)]
     cy = 230
@@ -1187,7 +1211,8 @@ def janela_progresso(arquivo, pid_robo):
         ctypes.windll.user32.SetLayeredWindowAttributes(hwnd, 0, 255, 0x2)  # opaca (LWA_ALPHA 255)
     except Exception:
         pass
-    vis = {'pisca': False, 'fechar_em': None, 'ultimo': None}
+    vis = {'pisca': False, 'fechar_em': None, 'ultimo': None, 'chave': None, 'desde': time.time(),
+           'mostrado': 0.0, 'quadro': time.time(), 'atual': 0}
 
     def ler():
         try:
@@ -1204,9 +1229,10 @@ def janela_progresso(arquivo, pid_robo):
         vis['ultimo'] = est
         vis['pisca'] = not vis['pisca']
         atual = int(est.get('etapa') or 0)
-        p = porcentagem(est)
-        cv.itemconfig(pct, text='%d%%' % p)
-        cv.coords(barra, *[v for v in _pontos_barra(x0, x1, p)])
+        vis['atual'] = -1 if est.get('fim') else atual
+        chave = (atual, est.get('frac'), est.get('texto'), est.get('fim'))
+        if chave != vis['chave']:  # o robô informou algo novo: a "caminhada sozinha" recomeça daqui
+            vis['chave'], vis['desde'] = chave, time.time()
         for k in range(n):
             feito, erro = str(k) in est.get('feitos', {}), str(k) in est.get('erros', {})
             if erro:
@@ -1218,7 +1244,7 @@ def janela_progresso(arquivo, pid_robo):
                 cv.itemconfig(marcas[k], text='✓')
                 cv.itemconfig(subs[k], text=est['feitos'][str(k)], fill=c.VERDE)
             elif k == atual and not est.get('fim'):
-                cv.itemconfig(bolas[k], fill=c.CARTAO, outline=c.AMBAR if vis['pisca'] else c.AMBAR2, width=3)
+                cv.itemconfig(bolas[k], fill=c.CARTAO, width=3)  # a cor pulsa em anima()
                 cv.itemconfig(marcas[k], text='')
                 cv.itemconfig(subs[k], text=est.get('texto') or '', fill=c.AMBAR2)
             else:
@@ -1252,9 +1278,38 @@ def janela_progresso(arquivo, pid_robo):
         if vis['fechar_em'] and time.time() >= vis['fechar_em']:
             g.root.destroy()
             return
-        g.root.after(500, tick)
+        g.root.after(300, tick)
+
+    def anima():
+        """~30 quadros por segundo: a barra desliza até o alvo, um brilho corre dentro dela e a etapa atual pulsa."""
+        import math
+        agora = time.time()
+        dt, vis['quadro'] = agora - vis['quadro'], agora
+        est = vis['ultimo']
+        if est is not None:
+            vis['mostrado'] = aproximar(vis['mostrado'], alvo_suave(est, agora - vis['desde']), dt)
+            p = vis['mostrado']
+            cv.itemconfig(pct, text='%d%%' % int(p))
+            cv.coords(barra, *_pontos_barra(x0, x1, p))
+            cheio = (x1 - x0) * p / 100
+            if cheio > 40 and not est.get('fim'):
+                pos = x0 + ((agora * 0.45) % 1.3 - 0.15) * cheio
+                a, b = max(x0 + 6, pos), min(x0 + cheio - 6, pos + 34)
+                cv.coords(brilho, a, 183, max(a, b), 193)
+                cv.itemconfig(brilho, state='normal' if b > a else 'hidden')
+            else:
+                cv.itemconfig(brilho, state='hidden')
+            k = vis['atual']
+            if 0 <= k < n:
+                onda = (math.sin(agora * 5) + 1) / 2
+                cv.itemconfig(bolas[k], outline=g.mistura(c.AMBAR, '#fff3c4', onda * 0.7))
+        try:
+            g.root.after(33, anima)
+        except Exception:
+            pass
 
     tick()
+    anima()
     g.root.mainloop()
     return 0
 

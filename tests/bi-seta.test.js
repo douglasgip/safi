@@ -274,6 +274,18 @@ test('robô do Seta (26/11): janelinha de progresso no canto — 5 etapas na ord
   assert.match(py, /args\[0\] == 'progresso-demo'/);
 });
 
+test('robô do Seta (26/11): barra de progresso fluida — anima a ~30 quadros/s, anda sozinha sem passar do fim da etapa, nunca volta', () => {
+  const py = ler('scripts/seta_robo.py');
+  const alvo = py.match(/def alvo_suave\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(alvo, /teto = sum\(PESOS\[:i \+ 1\]\) - 1/, 'não passa do fim da etapa atual');
+  assert.match(alvo, /ANDA_SOZINHA/);
+  const ap = py.match(/def aproximar\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(ap, /if alvo <= atual:\s*\r?\n\s*return atual/, 'nunca anda para trás');
+  const jan = py.match(/def janela_progresso\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(jan, /g\.root\.after\(33, anima\)/);
+  assert.match(jan, /alvo_suave\(est, agora - vis\['desde'\]\)/);
+});
+
 test('robô do Seta (24/11): Windows recusou trazer o Seta para a frente — tenta destravar (Alt) antes de desistir', () => {
   const py = ler('scripts/seta_robo.py');
   const usos = py.split(/\r?\n/).filter(l => /\.set_focus\(\)/.test(l));
