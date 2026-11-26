@@ -756,7 +756,7 @@ def faltam_dias(est, hoje):
 
 AVISO_ERRO = os.path.join(PASTA, 'aviso_erro.log')        # erro da janelinha (se ela cair), para diagnóstico
 ULTIMO_ENVIO = os.path.join(PASTA, 'ultimo_envio.json')   # resumo do último envio (usado pelo aviso de "pronto")
-URL_BI = 'https://painel.topfinds.com.br/bi'
+URL_BI = 'https://topfinds.com.br/bi'
 RESUMO = []  # o que o SAFI gravou na última rodada (rodar() preenche; o aviso de "pronto" mostra)
 
 
