@@ -62,19 +62,6 @@ test('realizado do período soma os meses (e operações) — mês sem DRE não 
   assert.strictEqual(realizadoP(['GIP'], ms(2026, 1, 2)), null);
 });
 
-test('metas: o realizado só conta os meses que têm meta (meta de set–dez não se compara com venda de jan–out)', () => {
-  const resumoMetas = extrairFuncao(codigo, 'resumoMetas', {});
-  const pc = {
-    'GIP|2026|8': { tem_meta: false, meta_receita: 0, receita_bruta: 5000 },
-    'GIP|2026|9': { tem_meta: true, meta_receita: 1000, receita_bruta: 900 },
-    'GIP|2026|10': { tem_meta: true, meta_receita: 1000, receita_bruta: 1100 },
-  };
-  const r = resumoMetas(['GIP'], ms(2026, 8, 9, 10), ms(2026, 8, 9, 10), pc);
-  assert.strictEqual(r.meta, 2000);
-  assert.strictEqual(r.real, 2000, 'agosto (sem meta) fica fora do realizado');
-  assert.strictEqual(r.pct, 1);
-});
-
 test('meta do período só existe se todos os meses têm meta (senão não compara)', () => {
   const tab = { 9: { rb: 1000, opex: null }, 10: { rb: 2000, opex: null } };
   const orcadoP = extrairFuncao(codigo, 'orcadoP', { orcado: (ops, a, m) => tab[m] || null });

@@ -173,29 +173,6 @@
     .kpi-o { font-size: 11.5px; color: #93c5fd; padding-top: 6px; border-top: 1px dashed rgba(255,255,255,0.08); margin-top: 2px; }
     .kpi-o b { color: #bfdbfe; }
     .co-row { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 0; }
-    /* Bloco Metas e Orçamento */
-    .mo-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 22px; }
-    .mo-sub { font-size: 10.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #94a3b8; margin-bottom: 12px; }
-    .mo-meta { margin-bottom: 16px; }
-    .mo-meta-h { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 7px; font-size: 12.5px; color: #cbd5e1; }
-    .mo-meta-h b { color: #f8fafc; font-size: 15px; font-variant-numeric: tabular-nums; }
-    .mo-meta-v { font-size: 11.5px; color: #94a3b8; font-variant-numeric: tabular-nums; text-align: right; }
-    .mo-barra { position: relative; height: 12px; background: rgba(255,255,255,0.06); border-radius: 7px; }
-    .mo-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 7px; background: linear-gradient(90deg, #0284c7, #38bdf8); max-width: 100%; }
-    .mo-fill.ok { background: linear-gradient(90deg, #059669, #34d399); }
-    .mo-tempo { position: absolute; top: -4px; bottom: -4px; width: 2px; background: #fbbf24; border-radius: 2px; }
-    .mo-leg { font-size: 11px; color: #64748b; margin-top: 5px; }
-    .mo-vazio { padding: 18px 14px; border: 1px dashed rgba(255,255,255,0.12); border-radius: 12px; color: #64748b; font-size: 12.5px; line-height: 1.5; }
-    .mo-vazio a { color: #7dd3fc; }
-    .mo-obs { font-size: 11px; color: #94a3b8; margin-top: 10px; line-height: 1.5; }
-    table.mo-tbl { width: 100%; border-collapse: collapse; }
-    .mo-tbl th { font-size: 9.5px; font-weight: 700; letter-spacing: .7px; text-transform: uppercase; color: #64748b; padding: 7px 8px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.08); white-space: nowrap; }
-    .mo-tbl th.l, .mo-tbl td.l { text-align: left; }
-    .mo-tbl tr.grp th { color: #7dd3fc; text-align: center; border-bottom: none; padding-bottom: 0; }
-    .mo-tbl td { font-size: 12.5px; color: #e2e8f0; padding: 8px; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.04); font-variant-numeric: tabular-nums; white-space: nowrap; }
-    .mo-tbl td.sep, .mo-tbl th.sep { border-left: 1px solid rgba(255,255,255,0.08); }
-    .mo-tbl tr.tot td { font-weight: 800; color: #f8fafc; border-top: 1px solid rgba(255,255,255,0.12); }
-    .mo-ruim { color: #f87171 !important; } .mo-bom { color: #4ade80 !important; } .mo-tbl .muted { color: #64748b; }
     .chart-box { position: relative; height: 300px; }
     .co-note { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.25); color: #fcd34d; border-radius: 12px; padding: 10px 14px; font-size: 12px; line-height: 1.5; margin-bottom: 16px; display: none; }
     .co-note.on { display: block; }
@@ -266,7 +243,7 @@
     #ind-modal .modal-card { max-width: 640px; }
     @media (max-width: 1000px) { .ind-etapas { grid-template-columns: 1fr; } }
     @media (max-width: 600px) { .ind-form { grid-template-columns: 1fr; } }
-    @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .co-row { grid-template-columns: 1fr; } .mo-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 1000px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .co-row { grid-template-columns: 1fr; } }
     @media (max-width: 768px) { .header { padding: 0 14px; } .header-logo-full { height: 24px; } .main { padding: 14px; } .panel { padding: 14px; } .kpi-grid { grid-template-columns: 1fr; } .kpi-v { font-size: 22px; } }
 
   </style>
@@ -324,14 +301,6 @@
     <a class="co-acoes" id="co-acoes" href="/reunioes"></a>
 
     <div class="kpi-grid" id="kpis"></div>
-
-    <div class="panel" id="panel-mo">
-      <div class="panel-head">Metas e Orçamento — <span id="mo-periodo"></span></div>
-      <div class="mo-grid">
-        <div id="mo-metas"></div>
-        <div id="mo-gastos"></div>
-      </div>
-    </div>
 
     <div class="co-row">
       <div class="panel">
@@ -534,89 +503,6 @@
       return { s: best.s, rot: MES_CURTO[best.mes - 1] + '/' + best.ano };
     }
 
-    // ── Metas e Orçamento (tela Budget) ──────────────────────────
-    let orcCompras = [];  // linhas de orcamento_mensal (compras previstas × realizadas, digitadas na tela Budget)
-    // Meses de jan..mês ou do trimestre do mês (sempre do mesmo ano).
-    const mesesAte = (ano, mes) => Array.from({ length: mes }, (_, i) => ({ ano, mes: i + 1 }));
-    const mesesDoTrimestre = (ano, mes) => { const t0 = Math.floor((mes - 1) / 3) * 3; return [1, 2, 3].map(i => ({ ano, mes: t0 + i })); };
-    const mesesDoAno = ano => mesesAte(ano, 12);
-    // Meta × realizado de um período. Só entram as operações que têm meta lançada em algum mês do período
-    // (comparar a meta de uma com a venda de todas inflaria o atingimento). real = receita até o mês selecionado.
-    function resumoMetas(ops, mesesMeta, mesesReal, porChave) {
-      let meta = 0, real = 0; const com = [];
-      ops.forEach(op => {
-        const rs = mesesMeta.map(p => porChave[op + '|' + p.ano + '|' + p.mes]).filter(r => r && r.tem_meta);
-        if (!rs.length) return;
-        com.push(op);
-        meta += rs.reduce((a, r) => a + (+r.meta_receita || 0), 0);
-        // só os meses COM meta entram no realizado (senão a venda de meses sem meta infla o atingimento)
-        real += mesesReal.reduce((a, p) => { const r = porChave[op + '|' + p.ano + '|' + p.mes]; return a + (r && r.tem_meta ? +r.receita_bruta || 0 : 0); }, 0);
-      });
-      return { meta, real, com, pct: meta ? real / meta : null, falta: Math.max(0, meta - real) };
-    }
-    // Compras previstas × realizadas num período, por operação. Só entram as operações com compra prevista no período.
-    // saldo = previstas − realizadas (positivo = sobrou verba); % usado = realizadas ÷ previstas.
-    function resumoCompras(ops, meses, linhas) {
-      const chave = new Set(meses.map(p => p.ano + '|' + p.mes));
-      const noPer = linhas.filter(l => ops.includes(l.operacao) && chave.has(l.ano + '|' + l.mes));
-      const porOp = ops.map(op => {
-        const ls = noPer.filter(l => l.operacao === op);
-        const prev = ls.reduce((a, l) => a + (+l.compras_previstas || 0), 0), real = ls.reduce((a, l) => a + (+l.compras_realizadas || 0), 0);
-        return { op, prev, real, tem: ls.some(l => l.compras_previstas != null) };
-      }).filter(x => x.tem);
-      const tot = porOp.reduce((a, x) => ({ prev: a.prev + x.prev, real: a.real + x.real }), { prev: 0, real: 0 });
-      return { porOp, tot, saldo: tot.prev - tot.real, uso: tot.prev ? tot.real / tot.prev : null, com: porOp.map(x => x.op) };
-    }
-    function moBarra(pct, tempo) {
-      const w = pct == null ? 0 : Math.min(100, pct * 100);
-      return '<div class="mo-barra"><div class="mo-fill' + (pct >= 1 ? ' ok' : '') + '" style="width:' + w + '%"></div>' +
-        (tempo > 0 && tempo < 1 ? '<div class="mo-tempo" style="left:calc(' + (tempo * 100) + '% - 1px)" title="Quanto do período já passou"></div>' : '') + '</div>';
-    }
-    const nomesOps = ops => ops.map(o => OP_NOME[o] || o).join(' + ');
-    // Tudo que o bloco mostra (também usado pelo PDF).
-    function dadosMetasOrc(ops, ano, mes, meses, rot) {
-      const per = meses && meses.length > 1;
-      const metas = [
-        per ? { l: 'Período', rot, r: resumoMetas(ops, meses, meses, porChave), tempo: 1 } : { l: 'Mês', rot: MESES[mes - 1], r: resumoMetas(ops, [{ ano, mes }], [{ ano, mes }], porChave), tempo: 1 },
-        { l: 'Trimestre', rot: Math.ceil(mes / 3) + 'º trimestre', r: resumoMetas(ops, mesesDoTrimestre(ano, mes), mesesDoTrimestre(ano, mes).filter(p => p.mes <= mes), porChave), tempo: (((mes - 1) % 3) + 1) / 3 },
-        { l: 'Ano', rot: String(ano), r: resumoMetas(ops, mesesDoAno(ano), mesesAte(ano, mes), porChave), tempo: mes / 12 },
-      ];
-      return { metas, cMes: resumoCompras(ops, meses || [{ ano, mes }], orcCompras), cAcum: resumoCompras(ops, mesesAte(ano, mes), orcCompras), rotMes: rot || MES_CURTO[mes - 1] + '/' + ano };
-    }
-    function renderMetasOrc(ops, ano, mes, meses, rot) {
-      g('mo-periodo').textContent = rot || MESES[mes - 1] + ' / ' + ano;
-      const D = dadosMetasOrc(ops, ano, mes, meses, rot);
-      const temMeta = D.metas[2].r.com.length > 0;
-      let h = '<div class="mo-sub">Meta de vendas × faturamento do DRE</div>';
-      if (!temMeta) h += '<div class="mo-vazio">Nenhuma venda prevista lançada para ' + ano + '. Lance em <a href="/orcamento">Budget</a> (coluna Vendas previstas).</div>';
-      else {
-        D.metas.forEach(x => {
-          const r = x.r;
-          h += '<div class="mo-meta"><div class="mo-meta-h"><span>' + x.l + ' · ' + x.rot + '</span><b>' + (r.pct == null ? '—' : pct(r.pct)) + '</b></div>' + moBarra(r.pct, x.tempo) +
-            '<div class="mo-leg">' + (r.meta ? brl(r.real) + ' de ' + brl(r.meta) + (r.falta ? ' · faltam ' + brl(r.falta) : ' · meta batida') : 'sem meta lançada neste período') + (x.tempo > 0 && x.tempo < 1 ? ' · ' + pct(x.tempo) + ' do período' : '') + '</div></div>';
-        });
-        const parcial = D.metas[2].r.com.length < ops.length;
-        if (parcial) h += '<div class="mo-obs">Considerando só ' + esc(nomesOps(D.metas[2].r.com)) + ' — as demais operações não têm venda prevista lançada.</div>';
-      }
-      g('mo-metas').innerHTML = h;
-
-      let t = '<div class="mo-sub">Compras — previstas × realizadas</div>';
-      if (!D.cAcum.com.length) t += '<div class="mo-vazio">Nenhuma compra prevista lançada para ' + ano + '. Lance em <a href="/orcamento">Budget</a> (coluna Compras previstas).</div>';
-      else {
-        const mapaMes = Object.fromEntries(D.cMes.porOp.map(x => [x.op, x]));
-        const uso = (p, r) => p ? '<span class="' + (r > p ? 'mo-ruim' : 'mo-bom') + '">' + pct(r / p) + '</span>' : '<span class="muted">—</span>';
-        const lin = (nome, m, a, cls) => '<tr class="' + (cls || '') + '"><td class="l">' + esc(nome) + '</td>' +
-          '<td class="sep">' + (m.prev ? brl(m.prev) : '—') + '</td><td>' + brl(m.real) + '</td><td>' + uso(m.prev, m.real) + '</td>' +
-          '<td class="sep">' + (a.prev ? brl(a.prev) : '—') + '</td><td>' + brl(a.real) + '</td><td>' + uso(a.prev, a.real) + '</td></tr>';
-        t += '<div class="table-scroll" style="max-height:none"><table class="mo-tbl"><thead><tr class="grp"><th class="l"></th><th class="sep" colspan="3">' + D.rotMes + '</th><th class="sep" colspan="3">Jan–' + MES_CURTO[mes - 1] + '</th></tr>' +
-          '<tr><th class="l">Operação</th><th class="sep">Previstas</th><th>Realizadas</th><th>% usado</th><th class="sep">Previstas</th><th>Realizadas</th><th>% usado</th></tr></thead><tbody>' +
-          D.cAcum.porOp.map(x => lin(OP_NOME[x.op] || x.op, mapaMes[x.op] || { prev: 0, real: 0 }, x)).join('') +
-          (D.cAcum.porOp.length > 1 ? lin('Total', D.cMes.tot, D.cAcum.tot, 'tot') : '') + '</tbody></table></div>';
-        t += '<div class="mo-obs">% usado acima de 100% (vermelho) = comprou mais que o previsto. Valores digitados na tela Budget.</div>';
-      }
-      g('mo-gastos').innerHTML = t;
-    }
-
     // ── KPIs ────────────────────────────────────────────────────────────────
     // Ordem = ordem visual na grade 3x2: linha 1 (Faturamento, Receita Líquida, Margem de
     // Contribuição) e linha 2 (Gastos Operacionais, EBITDA, Resultado Líquido).
@@ -808,7 +694,6 @@
       ULTIMO = { ops, ano, mes, meses, rot, modo, opSel, cur, base, orc, msgs };
       g('co-sub').textContent = 'Visão consolidada do resultado — ' + rot + (meses.length > 1 ? ' (' + meses.length + ' meses somados)' : '') + ', com comparativos e EBITDA.';
       renderKpis(cur, base, orc);
-      renderMetasOrc(ops, ano, mes, meses, rot);
       renderEvolucao(ops, ano, mes);
       renderPonte(cur, base);
       g('panel-ops').style.display = opSel === 'todas' && opsVisiveis.length > 1 ? '' : 'none';
@@ -881,19 +766,6 @@
       const nomeOps = U.opSel === 'todas' ? 'Todas as operações' : OP_NOME[U.opSel];
       const itens = kpiItens(U);
       blocos.push({ tipo: 'kpis', opcao: 'kpis', titulo: 'Indicadores - ' + U.rot + ' (' + nomeOps + ')', itens });
-      if (sel.opcoes.metasorc) {
-        const D = dadosMetasOrc(U.ops, U.ano, U.mes, U.meses, U.rot);
-        if (D.metas[2].r.com.length) blocos.push({ tipo: 'kpis', opcao: 'metasorc', titulo: 'Meta de vendas - ' + U.rot + (D.metas[2].r.com.length < U.ops.length ? ' (só ' + nomesOps(D.metas[2].r.com) + ')' : ''),
-          itens: D.metas.map(x => ({ l: x.l + ' - ' + x.rot, v: x.r.pct == null ? '-' : pct(x.r.pct), linhas: x.r.meta ? [{ t: brlS(x.r.real) + ' de ' + brlS(x.r.meta) }, { t: x.r.falta ? 'Faltam ' + brlS(x.r.falta) : 'Meta batida', cor: x.r.falta ? null : OK }] : [{ t: 'sem meta lançada' }] })) });
-        if (D.cAcum.com.length) {
-          const mapaMes = Object.fromEntries(D.cMes.porOp.map(x => [x.op, x]));
-          const usoT = (p, r) => p ? pct(r / p) : '-';
-          const lin = (nome, m, a, k) => { const cor = {}; if (m.prev && m.real > m.prev) cor[3] = RUIM; if (a.prev && a.real > a.prev) cor[6] = RUIM; return { k, cor, c: [nome, m.prev ? brlS(m.prev) : '-', brlS(m.real), usoT(m.prev, m.real), a.prev ? brlS(a.prev) : '-', brlS(a.real), usoT(a.prev, a.real)] }; };
-          blocos.push({ tipo: 'tabela', opcao: 'metasorc', titulo: 'Compras - previstas x realizadas',
-            colunas: [{ h: 'Operação', larg: 2.2 }, { h: 'Previstas ' + D.rotMes, al: 'right', larg: 1.1 }, { h: 'Realizadas ' + D.rotMes, al: 'right', larg: 1.1 }, { h: '% usado', al: 'right', larg: 0.8 }, { h: 'Previstas Jan-' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.2 }, { h: 'Realizadas Jan-' + MES_CURTO[U.mes - 1], al: 'right', larg: 1.2 }, { h: '% usado', al: 'right', larg: 0.8 }],
-            linhas: D.cAcum.porOp.map(x => lin(OP_NOME[x.op] || x.op, mapaMes[x.op] || { prev: 0, real: 0 }, x, '')).concat(D.cAcum.porOp.length > 1 ? [lin('Total', D.cMes.tot, D.cAcum.tot, 'T')] : []) });
-        }
-      }
       if (sel.opcoes.rentab) {
         const linhasR = RENT.map(row => {
           const v = row.v(U.cur), p = U.cur.rb ? v / U.cur.rb : null, vr = rentVar(row, U.cur, U.base);
@@ -972,7 +844,6 @@
         (det.data || []).forEach(r => { detalhePorChave[r.operacao + '|' + r.ano + '|' + r.mes] = r; });
       } catch (e) { /* CMV e pessoal são complemento — o resto do painel segue sem eles */ }
       opsVisiveis = ['GIP', 'Exposicao', 'ViaCloset'].filter(op => dados.some(r => r.operacao === op));
-      try { const oc = await sb.from('orcamento_mensal').select('operacao,ano,mes,compras_previstas,compras_realizadas').gte('ano', y - 1).lte('ano', y + 1); orcCompras = oc.data || []; } catch (e) { orcCompras = []; }
       try { await carregarPessoas(); } catch (e) { /* painel de Pessoas é opcional — resto da tela segue normal */ }
       try { await indCarregar(y); } catch (e) { /* indicadores do conselho: sem eles o resto da tela segue */ }
     }
@@ -1043,7 +914,6 @@
       SafiPdf.iniciar({ chave: 'conselho', titulo: 'Painel do Conselho', sb, profile: prof, accent: '#38bdf8',
         opcoes: [
           { id: 'kpis', label: 'Indicadores (Faturamento, MC, EBITDA, resultado…)' },
-          { id: 'metasorc', label: 'Metas e Orçamento (meta de vendas e compras previstas × realizadas)' },
           { id: 'rentab', label: 'Rentabilidade e custos (R$ e % do faturamento)' },
           { id: 'pessoas', label: 'Pessoas e produtividade (turnover, faturamento por funcionário)', dica: 'Admissões, desligamentos e turnover só existem a partir de Set/2026, quando o SAFI passou a registrar esses eventos.' },
           { id: 'indicadores', label: 'Indicadores do conselho (6 pilares, prazos, NCG, liquidez)', dica: 'Prazos, capital e estoque usam o último balanço lançado.' },

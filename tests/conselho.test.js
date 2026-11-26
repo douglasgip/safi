@@ -45,55 +45,15 @@ test('conselho: o aviso entra na faixa de avisos da tela', () => {
   assert.match(codigo, /avisoEbitdaIgual\(cur\)[^\n]*msgs\.push/);
 });
 
-// ── Bloco "Metas e Orçamento" ───────────────────────────────────────────────
-const resumoMetas = extrairFuncao(codigo, 'resumoMetas', {});
-const resumoCompras = extrairFuncao(codigo, 'resumoCompras', {});
-const pc = {
-  'GIP|2026|7': { tem_meta: true, meta_receita: 1000, receita_bruta: 900 },
-  'GIP|2026|8': { tem_meta: true, meta_receita: 1000, receita_bruta: 1100 },
-  'GIP|2026|9': { tem_meta: true, meta_receita: 1000, receita_bruta: 800 },
-  'ViaCloset|2026|9': { tem_meta: false, meta_receita: 0, receita_bruta: 5000 },
-};
-const tri3 = [7, 8, 9].map(mes => ({ ano: 2026, mes }));
-
-test('metas no Conselho: trimestre soma as metas dos meses e o realizado até o mês', () => {
-  const r = resumoMetas(['GIP'], tri3, tri3.slice(0, 2), pc);    // agosto selecionado: realizado de jul+ago
-  assert.strictEqual(r.meta, 3000);
-  assert.strictEqual(r.real, 2000);
-  assert.strictEqual(r.falta, 1000);
-});
-
-test('metas no Conselho: operação sem meta não entra (não infla o atingimento)', () => {
-  const r = resumoMetas(['GIP', 'ViaCloset'], [{ ano: 2026, mes: 9 }], [{ ano: 2026, mes: 9 }], pc);
-  assert.deepStrictEqual(JSON.parse(JSON.stringify(r.com)), ['GIP']);
-  assert.strictEqual(r.real, 800, 'a venda da Via Closet (sem meta) fica de fora');
-  assert.strictEqual(r.pct, 0.8);
-  assert.strictEqual(resumoMetas(['ViaCloset'], [{ ano: 2026, mes: 9 }], [{ ano: 2026, mes: 9 }], pc).pct, null);
-});
-
-test('compras no Conselho: previstas × realizadas por operação, só das que têm compra prevista', () => {
-  const linhas = [
-    { operacao: 'GIP', ano: 2026, mes: 9, compras_previstas: 100000, compras_realizadas: 120000 },
-    { operacao: 'Exposicao', ano: 2026, mes: 9, compras_previstas: 50000, compras_realizadas: 30000 },
-    { operacao: 'ViaCloset', ano: 2026, mes: 9, compras_previstas: null, compras_realizadas: 9999 },
-    { operacao: 'GIP', ano: 2026, mes: 8, compras_previstas: 80000, compras_realizadas: 70000 },
-  ];
-  const r = JSON.parse(JSON.stringify(resumoCompras(['GIP', 'Exposicao', 'ViaCloset'], [{ ano: 2026, mes: 9 }], linhas)));
-  assert.deepStrictEqual(r.com, ['GIP', 'Exposicao'], 'Via Closet sem compra prevista fica de fora');
-  assert.deepStrictEqual(r.tot, { prev: 150000, real: 150000 });
-  assert.strictEqual(r.saldo, 0);
-  assert.strictEqual(r.uso, 1);
-  const acum = resumoCompras(['GIP'], [8, 9].map(mes => ({ ano: 2026, mes })), linhas);
-  assert.strictEqual(acum.tot.prev, 180000);
-  assert.strictEqual(acum.tot.real, 190000);
-});
-
-test('bloco Metas e Orçamento está na tela, no render e no PDF', () => {
+// ── Bloco "Metas e Orçamento" — EXCLUÍDO em 26/11/2026 (pedido do Douglas: não faz mais sentido nesta tela) ──
+test('Painel do Conselho: o quadro Metas e Orçamento saiu (tela, render, PDF, ajuda); o Budget e o "× Meta" do Faturamento ficam', () => {
   const html = ler('conselho.html');
-  assert.match(html, /id="panel-mo"/);
-  assert.match(codigo, /renderMetasOrc\(ops, ano, mes, meses, rot\)/);
-  assert.match(codigo, /from\('orcamento_mensal'\)\.select\('operacao,ano,mes,compras_previstas,compras_realizadas'\)/);
-  assert.doesNotMatch(codigo, /conselho_orcamento_campos/, 'RPC antigo (orçamento de gastos) foi apagado');
-  assert.match(codigo, /id: 'metasorc'/);
-  assert.match(codigo, /if \(sel\.opcoes\.metasorc\)/);
+  assert.doesNotMatch(html, /id="panel-mo"|mo-metas|mo-gastos|\.mo-grid/);
+  for (const nome of ['renderMetasOrc', 'dadosMetasOrc', 'resumoMetas', 'resumoCompras', 'moBarra', 'orcCompras']) assert.ok(!codigo.includes(nome), nome + ' ainda está na tela');
+  assert.doesNotMatch(codigo, /from\('orcamento_mensal'\)/, 'o Painel não lê mais as compras do Budget');
+  assert.doesNotMatch(codigo, /metasorc/, 'opção do PDF saiu');
+  assert.match(codigo, /id: 'rb', l: 'Faturamento'[^\n]*orc: 'rb', rotOrc: 'Meta'/, 'o × Meta do Faturamento continua');
+  const ajuda = ler('ajuda-conteudo.js');
+  assert.doesNotMatch(ajuda, /#panel-mo|Acompanhe metas e orçamento/);
+  assert.match(ler('orcamento.html'), /from\('orcamento_mensal'\)/, 'a tela Budget continua com os dados');
 });

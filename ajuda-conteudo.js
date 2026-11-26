@@ -201,13 +201,12 @@ window.SAFI_AJUDA = { telas: {
   },
 
   conselho: {
-    titulo: 'Painel do Conselho', versao: 10,
+    titulo: 'Painel do Conselho', versao: 11,
     resumo: 'Visão consolidada para o conselho: <b>Faturamento, Receita Líquida, Margem de Contribuição, Gastos Operacionais, EBITDA e Resultado Líquido</b>, com comparativos, evolução de 12 meses, ponte do EBITDA, a <b>cascata de rentabilidade e custos</b> (Margem Bruta, CMV, pessoal, despesas financeiras, tudo em R$ e % do faturamento) e indicadores de Pessoas (admissões, desligamentos, turnover, produtividade por funcionário). Traz também os <b>Indicadores do conselho</b> nos 6 pilares (PME, ciclo financeiro, NCG, liquidez, estrutura de capital, financiamento do estoque...), calculados com o DRE e o balanço lançado a cada trimestre.',
     passos: [
       { t: 'Escolha o período e a operação', d: 'Em <b>Período</b>: um mês, <b>acumulado do ano (YTD)</b>, trimestre até o mês, últimos 3 ou 12 meses, ano inteiro ou <b>meses específicos</b> (marque quantos quiser, até de anos diferentes). Todo o painel soma os meses escolhidos. O mês padrão é o mais recente com dados.' },
       { t: 'Escolha a base de comparação', d: 'Com um mês: <b>mês anterior</b>, <b>mesmo mês do ano anterior</b>, <b>média dos 12 meses</b> ou <b>melhor mês</b> (por EBITDA) dos últimos 12. Com mais de um mês: <b>período anterior</b> do mesmo tamanho ou <b>mesmo período do ano anterior</b>.' },
       { t: 'Leia os indicadores', d: 'Cada cartão mostra o valor, a variação (verde = melhor, vermelho = pior) e, quando lançados em Budget, o atingimento da <b>meta</b> no Faturamento (a meta é a venda prevista).' },
-      { t: 'Acompanhe metas e orçamento', d: 'O bloco <b>Metas e Orçamento</b> mostra o progresso da meta de vendas (venda prevista no Budget × faturamento do DRE) no mês, no trimestre e no ano (a marca amarela é quanto do período já passou) e as compras previstas × realizadas por operação, no mês e no acumulado do ano. Só entram as operações que têm valores lançados em Budget.' },
       { t: 'Entenda o que mudou', d: 'A <b>ponte do EBITDA</b> mostra quanto cada linha (receita, deduções, custos, gastos) somou ou subtraiu entre a base e o mês.' },
       { t: 'Veja onde o dinheiro fica', d: 'A tabela <b>Rentabilidade e custos</b> desce do Faturamento até o Resultado Líquido, mostrando cada linha em R$, em % do faturamento e a variação em pontos percentuais contra a base.' },
       { t: 'Acompanhe Pessoas', d: 'Admissões, desligamentos e turnover do mês, calculados a partir de quem entra e sai da tela de Funcionários, mais o faturamento e a margem de contribuição por funcionário.' },
@@ -226,11 +225,10 @@ window.SAFI_AJUDA = { telas: {
       { t: 'Produtividade por funcionário', d: 'Valor do mês ÷ quadro atual de funcionários. Em meses antigos é uma aproximação, porque o SAFI não guarda o quadro de época.' },
     ],
     quemVe: 'Quem tem acesso ao DRE, limitado às operações liberadas — Pessoas segue a mesma regra (não depende do acesso a Funcionários).',
-    dados: 'Lançamentos (realizado) e Budget (vendas previstas e compras); ações vêm de Reuniões e Decisões; Pessoas vem de criar/excluir em Funcionários.',
+    dados: 'Lançamentos (realizado) e Budget (vendas previstas, como meta do Faturamento); ações vêm de Reuniões e Decisões; Pessoas vem de criar/excluir em Funcionários.',
     tour: [
       { sel: '.co-filters', t: 'Filtros', d: 'Mês, base de comparação (mês anterior, ano anterior, média ou melhor mês) e operação.' },
       { sel: '#kpis', t: 'Indicadores', d: 'Valor do mês, variação contra a base e, havendo meta ou orçamento lançado, o atingimento (meta no Faturamento, orçado nos Gastos Operacionais).' },
-      { sel: '#panel-mo', t: 'Metas e Orçamento', d: 'Meta de vendas (mês, trimestre e ano) e compras previstas × realizadas por operação.' },
       { sel: '.co-row > .panel:nth-child(1)', t: 'Evolução de 12 meses', d: 'Faturamento em barras e EBITDA em linha (com a meta de faturamento tracejada, se houver).' },
       { sel: '.co-row > .panel:nth-child(2)', t: 'Ponte do EBITDA', d: 'Mostra o que explica a diferença de EBITDA entre a base e o mês: receita, deduções, custos e gastos.' },
       { sel: '#panel-rentab', t: 'Rentabilidade e custos', d: 'Desce do Faturamento até o Resultado Líquido: cada linha em R$, em % do faturamento e a variação em pontos percentuais contra a base (custo que sobe aparece em vermelho).' },
