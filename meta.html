@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Meta de peças · Grupo Sacoman</title>
+  <meta name="description" content="Meta de peças das lojas e do e-commerce do Grupo Sacoman.">
+  <meta property="og:title" content="Meta de peças · Grupo Sacoman">
+  <meta property="og:description" content="Acompanhe a meta do mês: Exposição Paulista, Via Closet e GIP E-commerce.">
+  <meta property="og:image" content="/public/meta/moto.png">
+  <link rel="icon" type="image/png" href="/public/favicon.png">
+  <meta name="theme-color" content="#faf9f6">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Jost:wght@300;400;500&family=Playfair+Display:wght@400;500&family=Montserrat:wght@300;400;500&family=Josefin+Sans:wght@300;400&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root { --tinta: #111; --cinza: #8a8a8a; --claro: #b9b6ae; --linha: #e6e4df; --fundo: #faf9f6; --amarelo: #e3dc00;
+      --papel: #f4f2ee; --acento: #e3dc00; --serifa: 'Bodoni Moda', serif; --sans: 'Jost', sans-serif; --peso-num: 400;
+      --prata: linear-gradient(90deg, #8d8d8d, #d9d9d9 55%, #9a9a9a); }
+    [data-tema="noir"] { --tinta: #f2f2f2; --cinza: #9a9a9a; --claro: #5e5e5e; --linha: #262626; --fundo: #0b0b0b; --papel: #161616; --acento: #d6d6d6;
+      --serifa: 'Playfair Display', serif; --sans: 'Montserrat', sans-serif; --prata: linear-gradient(90deg, #7a7a7a, #e8e8e8 55%, #8a8a8a); }
+    [data-tema="grafite"] { --tinta: #f3f3ee; --cinza: #a3a39b; --claro: #6c6c66; --linha: #3e3e3b; --fundo: #2c2c2b; --papel: #353533; --acento: #e8e000;
+      --serifa: 'Josefin Sans', sans-serif; --sans: 'Josefin Sans', sans-serif; --peso-num: 300; }
+    [data-tema="grafite"] .pct, [data-tema="grafite"] .titulo { color: var(--acento); }
+    [data-tema="areia"] { --tinta: #2b241c; --cinza: #8c7f6d; --claro: #c2b6a3; --linha: #ddd3c3; --fundo: #f1ebe1; --papel: #e8dfd1; --acento: #b8913a;
+      --serifa: 'Cormorant Garamond', serif; --sans: 'Montserrat', sans-serif; --peso-num: 500; }
+    [data-tema="areia"] .pct, [data-tema="areia"] .op-pct { color: #5a4630; }
+    .so-print .aviso-rasc { display: none; }
+    /* Prêmios (fotos com fundo branco: multiply funde o branco no fundo da página) */
+    .premio-grupo { display: flex; align-items: center; gap: 14px; margin-top: 22px; padding: 14px 16px; border: 1px solid var(--linha); text-align: left; }
+    .premio-grupo img { width: 92px; height: auto; mix-blend-mode: multiply; flex-shrink: 0; }
+    .pg-l { font-size: 9.5px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--cinza); }
+    .pg-t { font-family: var(--serifa); font-size: 17px; margin-top: 3px; line-height: 1.2; }
+    .pg-s { font-size: 11.5px; color: var(--cinza); margin-top: 4px; letter-spacing: .3px; }
+    .premio-grupo.ganhou .pg-s { color: var(--tinta); font-weight: 500; }
+    .premio-op { grid-column: 2 / 4; display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 11px; color: var(--cinza); letter-spacing: .3px; }
+    .premio-op img { width: 30px; height: auto; mix-blend-mode: multiply; }
+    .premio-op.ganhou { color: var(--tinta); font-weight: 500; }
+    [data-tema="noir"] .premio-grupo img, [data-tema="noir"] .premio-op img, [data-tema="grafite"] .premio-grupo img, [data-tema="grafite"] .premio-op img { mix-blend-mode: normal; background: #fff; border-radius: 6px; padding: 2px; }
+
+    /* Editorial "com um pouco mais de cor": cartões em tons suaves de cada marca e amarelo no total */
+    [data-tema="editorial"] { --fundo: #f7f5ef; --barra-total: linear-gradient(90deg, #d9cf00, #f2c200); }
+    [data-tema="editorial"] .op { border-bottom: none; margin-bottom: 12px; padding: 16px; border-radius: 14px; }
+    [data-tema="editorial"] .op:nth-child(1) { background: #fbf9d8; }
+    [data-tema="editorial"] .op:nth-child(2) { background: #eeeeec; }
+    [data-tema="editorial"] .op:nth-child(3) { background: #ffffff; box-shadow: inset 0 0 0 1px #e6e2d8; }
+    [data-tema="editorial"] .premio-grupo { background: #111; border-color: #111; border-radius: 14px; padding: 18px 20px; }
+    [data-tema="editorial"] .premio-grupo .pg-l { color: #a8a8a8; }
+    [data-tema="editorial"] .premio-grupo .pg-t { color: #fff; }
+    [data-tema="editorial"] .premio-grupo .pg-s { color: #cfcfcf; }
+    [data-tema="editorial"] .premio-grupo.ganhou .pg-s { color: #f2c200; }
+    [data-tema="editorial"] .pct small, [data-tema="editorial"] .modos button.on { color: #b89a00; }
+    [data-tema="editorial"] .modos button.on { border-bottom-color: #d9b800; }
+    [data-tema="editorial"] .selo-meta span { background-image: linear-gradient(#f2c200, #f2c200); }
+    body { font-family: var(--sans); background: var(--fundo); color: var(--tinta); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    .wrap { max-width: 460px; margin: 0 auto; padding: 30px 22px 40px; }
+    .aviso-rasc { text-align: center; font-size: 10px; letter-spacing: 2px; color: #b45309; border: 1px dashed #e7c18a; padding: 5px; margin-bottom: 24px; }
+    .topo { text-align: center; margin-bottom: 24px; }
+    .marca { font-size: 10.5px; letter-spacing: 4px; text-transform: uppercase; color: var(--cinza); }
+    .titulo { font-family: var(--serifa); font-weight: var(--peso-num); font-size: 30px; font-weight: 500; margin-top: 8px; }
+    .periodo { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--cinza); margin-top: 6px; }
+
+    /* Seletor do gráfico */
+    .modos { display: flex; gap: 18px; margin: 4px -22px 18px; padding: 0 22px; overflow-x: auto; scrollbar-width: none; -webkit-mask-image: linear-gradient(90deg, transparent, #000 22px, #000 calc(100% - 22px), transparent); }
+    .modos::-webkit-scrollbar { display: none; }
+    .modos button { flex: 0 0 auto; }
+    .modos button { background: none; border: none; font-family: var(--sans); font-size: 10.5px; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--claro); padding: 6px 0; cursor: pointer; border-bottom: 1px solid transparent; transition: color .2s, border-color .2s; }
+    .modos button.on { color: var(--tinta); border-bottom-color: var(--tinta); }
+
+    .total { text-align: center; padding-bottom: 26px; border-bottom: 1px solid var(--linha); margin-bottom: 8px; }
+    .pct { font-family: var(--serifa); font-weight: var(--peso-num); font-size: 84px; line-height: 1; letter-spacing: -2px; }
+    .pct small { font-size: 40px; vertical-align: top; position: relative; top: 9px; margin-left: 2px; }
+    .num { font-size: 13px; letter-spacing: 1.5px; color: var(--cinza); margin-top: 10px; }
+    .num b { color: var(--tinta); font-weight: 500; }
+    .palco { margin: 18px auto 0; height: 170px; display: flex; align-items: center; justify-content: center; }
+    .palco svg { width: 100%; height: 100%; overflow: visible; }
+    .palco.baixo { height: 142px; }
+    .info { display: flex; justify-content: center; gap: 26px; margin-top: 16px; }
+    .info div { text-align: center; }
+    .info .v { font-family: var(--serifa); font-weight: var(--peso-num); font-size: 22px; }
+    .info .l { font-size: 9.5px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--cinza); margin-top: 2px; }
+
+    .op { display: grid; grid-template-columns: 54px 1fr auto; align-items: center; column-gap: 16px; padding: 18px 0; border-bottom: 1px solid var(--linha); }
+    .op:last-child { border-bottom: none; }
+    .logo { width: 54px; height: 54px; border-radius: 50%; overflow: hidden; background: #fff; border: 1px solid var(--linha); display: flex; align-items: center; justify-content: center; }
+    .logo img { width: 100%; height: 100%; object-fit: cover; }
+    .logo.gip img { width: 78%; height: 78%; object-fit: contain; }
+    .op-nome { white-space: nowrap; font-size: 10.5px; letter-spacing: 2.2px; text-transform: uppercase; color: var(--cinza); }
+    .op-num { font-size: 13px; margin-top: 5px; }
+    .op-num span { color: var(--cinza); }
+    .op-ontem { font-size: 11px; color: var(--cinza); margin-top: 3px; letter-spacing: .5px; }
+    .op-pct { font-family: var(--serifa); font-weight: var(--peso-num); font-size: 32px; letter-spacing: -1px; text-align: right; }
+    .op-pct small { font-size: 17px; vertical-align: top; position: relative; top: 4px; }
+    .ok { display: block; font-family: var(--sans); font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--cinza); margin-top: 2px; }
+    .op .trilho { grid-column: 2 / 4; margin-top: 52px; }
+
+    /* Barra "top": trilho fino com marcas de 25/50/75, preenchimento com brilho e um ponto no fim */
+    .trilho { position: relative; height: 4px; background: var(--linha); border-radius: 4px; }
+    .trilho .enche { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; overflow: hidden; }
+    .trilho .enche::after { content: ''; position: absolute; top: 0; bottom: 0; width: 70px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: brilho 2.8s 1.6s infinite; left: -70px; }
+    @keyframes brilho { from { left: -70px; } to { left: 100%; } }
+    .trilho .ponto { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--fundo); border: 2px solid var(--tinta); left: 0; }
+
+    /* Meta batida (100%) */
+    .selo-meta { height: 0; overflow: hidden; opacity: 0; font-size: 11px; letter-spacing: 9px; text-transform: uppercase; transition: opacity .9s, letter-spacing 1.2s cubic-bezier(.2,.8,.2,1), height .5s; }
+    .selo-meta.on { height: 30px; opacity: 1; letter-spacing: 4px; padding-top: 10px; }
+    .selo-meta span { display: inline-block; padding-bottom: 4px; background: linear-gradient(var(--amarelo), var(--amarelo)) no-repeat left bottom / 0 2px; transition: background-size 1.2s .5s ease; }
+    .selo-meta.on span { background-size: 100% 2px; }
+    .festa { position: fixed; inset: 0; pointer-events: none; z-index: 9; overflow: hidden; }
+    .festa i { position: absolute; top: -20px; width: 3px; height: 14px; animation: cai linear forwards; }
+    @keyframes cai { 0% { transform: translate(0, 0) rotate(0deg); } 100% { transform: translate(var(--dx), 110vh) rotate(var(--rot)); } }
+    .tremula { animation: tremula 0.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: left center; }
+    @keyframes tremula { from { transform: skewY(-8deg) scaleX(.92); } to { transform: skewY(8deg) scaleX(1.04); } }
+    .pulsa { animation: pulsa 1.4s ease-in-out 2; transform-box: fill-box; transform-origin: center; }
+    @keyframes pulsa { 50% { stroke-width: 14; } }
+    .aviso-rasc a { color: #b45309; }
+
+    .trilho.grosso { height: 11px; border-radius: 8px; } .trilho.grosso .enche { border-radius: 8px; }
+    @media (min-width: 1000px) { .trilho.grosso { height: 16px; } }
+    .rodape { text-align: center; font-size: 10.5px; letter-spacing: 2px; text-transform: uppercase; color: var(--claro); margin-top: 30px; }
+
+    /* PC e TV: total em cima (barra larga com a motinha) e as 3 operações lado a lado embaixo */
+    @media (min-width: 1000px) {
+      .wrap { max-width: 1280px; padding: 44px 56px 36px; }
+      .topo { margin-bottom: 18px; }
+      .titulo { font-size: 38px; }
+      .modos { justify-content: center; margin: 0 0 6px; padding: 0; -webkit-mask-image: none; }
+      .total { display: grid; grid-template-columns: 1fr 1fr; column-gap: 48px; align-items: center; padding-bottom: 34px; margin-bottom: 30px;
+        grid-template-areas: "modos modos" "pct pct" "num num" "selo selo" "palco palco" "info premio"; }
+      .modos { grid-area: modos; } .pct { grid-area: pct; } .num { grid-area: num; } .selo-meta { grid-area: selo; }
+      .palco { grid-area: palco; width: 100%; height: 240px; } .palco.baixo { height: 200px; }
+      .info { grid-area: info; justify-content: flex-end; gap: 56px; margin-top: 22px; }
+      .info .v { font-size: 34px; }
+      .premio-grupo { grid-area: premio; margin-top: 22px; max-width: 460px; }
+      .pct { font-size: 150px; } .pct small { font-size: 70px; top: 18px; }
+      #ops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; align-items: stretch; }
+      [data-tema="editorial"] .op { margin-bottom: 0; padding: 20px 22px; }
+      .op { border-bottom: none; align-content: start; }
+      .op-pct { font-size: 40px; }
+      .op .trilho { margin-top: 70px; }
+      .rodape { margin-top: 26px; }
+    }
+    @media (min-width: 1600px) {
+      .wrap { max-width: 1500px; }
+      .pct { font-size: 180px; } .pct small { font-size: 84px; top: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="festa" id="festa"></div>
+  <div class="wrap">
+    <div class="topo">
+      <div class="marca">Grupo Sacoman</div>
+      <div class="titulo">Meta de peças</div>
+      <div class="periodo" id="periodo">&nbsp;</div>
+    </div>
+    <div class="total">
+      <div class="modos" id="modos">
+        <button data-m="barra">Barra</button><button data-m="pizza">Pizza</button><button data-m="montanha">Montanha</button><button data-m="degraus">Degraus</button><button data-m="arara">Arara</button><button data-m="camiseta">Camiseta</button><button data-m="costura">Costura</button><button data-m="sacola">Sacola</button><button data-m="vitrine">Vitrine</button><button data-m="corrida">Corrida</button><button data-m="ampulheta">Ampulheta</button><button data-m="velocimetro">Velocímetro</button>
+      </div>
+      <div class="pct"><span id="t-pct">0</span><small>%</small></div>
+      <div class="num"><b id="t-feito">0</b> &nbsp;/&nbsp; <span id="t-meta">0</span> peças</div>
+      <div class="selo-meta" id="selo"><span>Meta batida</span></div>
+      <div class="palco" id="palco"></div>
+      <div class="info">
+        <div><div class="v" id="t-ontem">+0</div><div class="l" id="l-ontem">Ontem</div></div>
+        <div><div class="v" id="t-dias">0</div><div class="l" id="l-dias">Dias restantes</div></div>
+      </div>
+      <div class="premio-grupo" id="premio-grupo">
+        <div><div class="pg-l">Meta do grupo</div><div class="pg-t">Sorteio de uma motinha elétrica</div><div class="pg-s" id="pg-s"></div></div>
+      </div>
+    </div>
+    <div id="ops"></div>
+    <div class="rodape">Atualizado todo dia</div>
+  </div>
+  <script>
+    // Página pública da meta de peças (sem login). Os números vêm do BI pela porta pública meta_pecas_publica,
+    // que só devolve peças, meta e o dia mais recente de cada operação (nada de valores em reais nem outras tabelas).
+    document.documentElement.dataset.tema = 'editorial';
+    const R = getComputedStyle(document.documentElement), V = k => R.getPropertyValue(k).trim();
+    const C = { tinta: V('--tinta'), papel: V('--papel'), fundo: V('--fundo'), acento: V('--acento'), claro: V('--claro'), linha: V('--linha'),
+                cinza: V('--cinza'), serifa: V('--serifa'), sans: V('--sans') };
+    const sb = supabase.createClient('https://ujsoqyhkebasszwtexmp.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVqc29xeWhrZWJhc3N6d3RleG1wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0MzQwNDMsImV4cCI6MjEwMjAxMDA0M30.Pad05NiXhnDnOSdGLUnn_HYnKbrD19_hE6eeM9hln6c');
+    const VISUAL = {
+      Exposicao: { nome: 'Exposição Paulista', logo: '/public/meta/expo.jpg', cls: '', cor: 'var(--amarelo)' },
+      ViaCloset: { nome: 'Via Closet', logo: '/public/meta/via.webp', cls: '', cor: 'var(--prata)' },
+      GIP: { nome: 'GIP E-commerce', logo: '/public/meta/gip.png', cls: 'gip', cor: 'var(--tinta)' },
+    };
+
+    // Resumo do que a página mostra, a partir da resposta da porta pública (testado em tests/meta-publica.test.js)
+    function resumoMeta(d) {
+      const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const ops = (d.ops || []).map(o => ({ operacao: o.operacao, meta: +o.meta || 0, feito: +o.feito || 0, ontem: +o.ontem || 0 }));
+      const tot = ops.reduce((a, o) => ({ feito: a.feito + o.feito, meta: a.meta + o.meta, ontem: a.ontem + o.ontem }), { feito: 0, meta: 0, ontem: 0 });
+      const dia = t => new Date(t + 'T12:00:00'), dd = t => t.slice(8, 10) + '/' + t.slice(5, 7);
+      const entre = (a, b) => Math.round((dia(b) - dia(a)) / 864e5);
+      const n = v => Math.round(v).toLocaleString('pt-BR');
+      const estado = d.hoje < d.inicio ? 'antes' : d.hoje > d.fim ? 'encerrada' : 'andamento';
+      const amanhaDoFim = new Date(dia(d.fim).getTime() + 864e5);
+      const mesInteiro = d.inicio.slice(8) === '01' && d.inicio.slice(0, 7) === d.fim.slice(0, 7) && amanhaDoFim.getDate() === 1;
+      const nome = mesInteiro ? MESES[+d.inicio.slice(5, 7) - 1] : dd(d.inicio) + ' a ' + dd(d.fim);
+      const r = { ops, tot, P: tot.meta ? tot.feito / tot.meta : 0, estado };
+      if (estado === 'antes') {
+        const k = entre(d.hoje, d.inicio);
+        Object.assign(r, { rotulo: nome + ' · começa em ' + dd(d.inicio), ontemRotulo: 'Começa em', ontemTexto: k + (k === 1 ? ' dia' : ' dias'),
+          diasRotulo: 'Dias de meta', diasTexto: String(entre(d.inicio, d.fim) + 1) });
+      } else {
+        Object.assign(r, { rotulo: nome + (d.ate ? ' · até ' + dd(d.ate) : ' · começou'),
+          ontemRotulo: !d.ate || entre(d.ate, d.hoje) === 1 ? 'Ontem' : 'Em ' + dd(d.ate), ontemTexto: '+' + n(tot.ontem) });
+        if (estado === 'encerrada') Object.assign(r, { diasRotulo: 'Encerrada em', diasTexto: dd(d.fim) });
+        else Object.assign(r, { diasRotulo: 'Dias restantes', diasTexto: String(entre(d.hoje, d.fim) + 1) });
+      }
+      return r;
+    }
+
+    // Patinete e motinha (fotos recortadas): as rodas giram por baixo; para-lama, garfo e braÃ§o ficam parados por cima
+    const VEIC = {"patinete": {"img": "/public/meta/patinete.png", "w": 679, "h": 728, "rodas": [{"left": 2.798, "top": 80.769, "w": 18.851, "h": 17.582, "r": 0.0943, "roda": "/public/meta/patinete_roda0.png", "topo": "/public/meta/patinete_topo0.png"}, {"left": 80.412, "top": 81.868, "w": 18.851, "h": 17.582, "r": 0.0943, "roda": "/public/meta/patinete_roda1.png", "topo": "/public/meta/patinete_topo1.png"}]}, "moto": {"img": "/public/meta/moto.png", "w": 497, "h": 376, "rodas": [{"left": 7.243, "top": 63.298, "w": 24.95, "h": 32.979, "r": 0.1247, "roda": "/public/meta/moto_roda0.png", "topo": "/public/meta/moto_topo0.png"}, {"left": 73.642, "top": 62.766, "w": 25.755, "h": 34.043, "r": 0.1288, "roda": "/public/meta/moto_roda1.png", "topo": "/public/meta/moto_topo1.png"}]}};
+    function veiculoHTML(tipo, largura) {
+      const v = VEIC[tipo];
+      return '<div class="veic" style="position:relative;width:' + largura + 'px;aspect-ratio:' + v.w + '/' + v.h + '">' +
+        '<img src="' + v.img + '" alt="" style="position:absolute;inset:0;width:100%;height:100%">' +
+        v.rodas.map(r => { const pos = 'position:absolute;left:' + r.left + '%;top:' + r.top + '%;width:' + r.w + '%;height:' + r.h + '%';
+          return '<img class="roda" src="' + r.roda + '" alt="" style="' + pos + ';will-change:transform">' + '<img src="' + r.topo + '" alt="" style="' + pos + '">'; }).join('') + '</div>';
+    }
+    // gira as rodas conforme o veÃ­culo anda (distÃ¢ncia Ã· raio)
+    function rodar(el, tipo, largura, dx) { const raio = VEIC[tipo].rodas[0].r * largura; el._giro = (el._giro || 0) + dx / raio * 180 / Math.PI;
+      el.querySelectorAll('.roda').forEach(r => { r.style.transform = 'rotate(' + el._giro + 'deg)'; }); }
+    function app(M) {
+    const OPS = M.ops.map(o => Object.assign({}, VISUAL[o.operacao] || { nome: o.operacao, logo: '', cls: '', cor: 'var(--tinta)' }, o));
+    const NS = 'http://www.w3.org/2000/svg';
+    const n = v => Math.round(v).toLocaleString('pt-BR');
+    const suave = k => 1 - Math.pow(1 - k, 3);
+    const tot = M.tot;
+    const P = M.P, PV = Math.min(1, P);   // PV = até onde o desenho vai (no máximo o topo)
+
+    function anima(ms, cada, fim) { const t0 = performance.now(); let id; const f = t => { const k = Math.min(1, (t - t0) / ms); cada(suave(k), k); if (k < 1) id = requestAnimationFrame(f); else if (fim) fim(); }; id = requestAnimationFrame(f); return () => cancelAnimationFrame(id); }
+    const el = (tag, at, pai) => { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (pai) pai.appendChild(e); return e; };
+
+    // Bonequinho de traço fino; `passo` (0..1) mexe pernas e braços
+    function boneco(pai) {
+      const g = el('g', { stroke: C.tinta, 'stroke-width': 1.6, 'stroke-linecap': 'round', fill: 'none' }, pai);
+      el('circle', { cx: 0, cy: -19, r: 3.4, fill: C.tinta, stroke: 'none' }, g);
+      el('line', { x1: 0, y1: -15, x2: 0, y2: -7 }, g);
+      const pe1 = el('line', { x1: 0, y1: -7 }, g), pe2 = el('line', { x1: 0, y1: -7 }, g);
+      const br1 = el('line', { x1: 0, y1: -13 }, g), br2 = el('line', { x1: 0, y1: -13 }, g);
+      g.mexe = s => { const a = Math.sin(s * Math.PI * 2) * 4;
+        pe1.setAttribute('x2', a); pe1.setAttribute('y2', 0); pe2.setAttribute('x2', -a); pe2.setAttribute('y2', 0);
+        br1.setAttribute('x2', -a * .8 + 2); br1.setAttribute('y2', -9); br2.setAttribute('x2', a * .8 - 2); br2.setAttribute('y2', -9); };
+      g.mexe(0);
+      g.comemora = (x, y) => { br1.setAttribute('x2', -5); br1.setAttribute('y2', -24); br2.setAttribute('x2', 5); br2.setAttribute('y2', -24);
+        pe1.setAttribute('x2', -3); pe2.setAttribute('x2', 3);
+        return anima(1500, (e, k) => { const pulo = Math.abs(Math.sin(k * Math.PI * 3)) * 6; g.setAttribute('transform', `translate(${x} ${y - pulo})`); }); };
+      return g;
+    }
+    function bandeira(pai, x, y) { const g = el('g', {}, pai); el('line', { x1: x, y1: y, x2: x, y2: y - 22, stroke: C.tinta, 'stroke-width': 1.4 }, g); g.pano = el('path', { d: `M${x} ${y - 22} l14 4 l-14 4 z`, fill: C.acento, stroke: C.tinta, 'stroke-width': 1 }, g); return g; }
+
+    // ---- Os 4 jeitos de mostrar o total ----
+    const MODOS = {
+      barra(palco) {
+        // Barra principal (meta do grupo): a motinha anda em cima da barra, rodas girando, e para na % atual
+        const L = palco.clientWidth > 900 ? 168 : 108;
+        const vento = `<svg class="vento" viewBox="0 0 30 40" width="28" height="36" style="position:absolute;left:-26px;bottom:14px;overflow:visible">` +
+          `<g stroke="${C.claro}" stroke-width="1.4" stroke-linecap="round"><line x1="6" y1="10" x2="26" y2="10"/><line x1="0" y1="20" x2="24" y2="20"/><line x1="8" y1="30" x2="26" y2="30"/></g></svg>`;
+        palco.innerHTML = '<div style="width:100%;padding-top:' + Math.round(L * 376 / 497 + 8) + 'px"><div class="trilho grosso"><div class="enche" style="background:var(--barra-total, var(--tinta))"></div>' +
+          '<div class="carro" style="position:absolute;left:0;bottom:calc(100% - 2px);transform:translateX(-' + (L - 6) + 'px)">' + vento + veiculoHTML('moto', L) + '</div></div>' +
+          '<div style="position:relative;height:18px;margin-top:8px;font-size:10px;letter-spacing:1.5px;color:var(--claro)">' +
+          [25, 50, 75].map(m => '<span style="position:absolute;left:' + m + '%;transform:translateX(-50%)">' + m + '</span>').join('') + '</div></div>';
+        const trilho = palco.querySelector('.trilho'), enche = palco.querySelector('.enche'), carro = palco.querySelector('.carro'), sopro = palco.querySelector('.vento');
+        const base = 'translateX(-' + (L - 6) + 'px)';
+        let antes = 0;
+        return anima(2400, (e, k) => { const w = PV * 100 * e; enche.style.width = w + '%'; carro.style.left = `max(${w}%, ${L - 6}px)`;
+            rodar(carro, 'moto', L, (w - antes) / 100 * trilho.clientWidth); antes = w;
+            carro.style.transform = base + ` translateY(${k < 1 ? -Math.abs(Math.sin(k * 40)) * 1.2 : 0}px)`;
+            sopro.style.opacity = k < 1 ? Math.min(1, (1 - k) * 2.5) : 0; },
+          () => { sopro.style.opacity = 0; if (P >= 1) { carro.animate([{ transform: base }, { transform: base + ' translateY(-10px) rotate(-7deg)' }, { transform: base }], { duration: 600, iterations: 2 }); chegou(); } });
+      },
+      pizza(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 200 200' }, palco), r = 78, c = 2 * Math.PI * r;
+        el('circle', { cx: 100, cy: 100, r, fill: 'none', stroke: C.linha, 'stroke-width': 10 }, svg);
+        const arco = el('circle', { cx: 100, cy: 100, r, fill: 'none', stroke: C.tinta, 'stroke-width': 10, 'stroke-linecap': 'round', 'stroke-dasharray': c, 'stroke-dashoffset': c, transform: 'rotate(-90 100 100)' }, svg);
+        [0.25, 0.5, 0.75].forEach(m => { const a = m * 2 * Math.PI - Math.PI / 2; el('line', { x1: 100 + Math.cos(a) * 66, y1: 100 + Math.sin(a) * 66, x2: 100 + Math.cos(a) * 60, y2: 100 + Math.sin(a) * 60, stroke: C.claro, 'stroke-width': 1 }, svg); });
+        const falta = Math.max(0, tot.meta - tot.feito);
+        el('text', { x: 100, y: 88, 'text-anchor': 'middle', 'font-family': C.sans, 'font-size': 9, 'letter-spacing': 2.5, fill: C.cinza }, svg).textContent = falta ? 'FALTAM' : 'META BATIDA';
+        const txt = el('text', { x: 100, y: 116, 'text-anchor': 'middle', 'font-family': C.serifa, 'font-size': 26, fill: C.tinta }, svg);
+        if (falta) el('text', { x: 100, y: 132, 'text-anchor': 'middle', 'font-family': C.sans, 'font-size': 9, 'letter-spacing': 2.5, fill: C.cinza }, svg).textContent = 'PEÇAS';
+        return anima(1800, e => { arco.setAttribute('stroke-dashoffset', c * (1 - PV * e)); txt.textContent = falta ? n(falta * e) : n(tot.feito * e); },
+          () => { if (P >= 1) { arco.classList.add('pulsa'); chegou(); } });
+      },
+      montanha(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco);
+        el('path', { d: 'M150 170 L235 70 L315 170 Z', fill: C.papel, stroke: 'none' }, svg);                       // montanha de trás
+        el('path', { d: 'M8 170 L170 22 L300 170 Z', fill: C.papel, stroke: C.tinta, 'stroke-width': 1.4, 'stroke-linejoin': 'round' }, svg);
+        el('path', { d: 'M150 40 L170 22 L190 40 L180 36 L170 44 L160 36 Z', fill: C.fundo, stroke: C.tinta, 'stroke-width': 1 }, svg);  // neve
+        el('line', { x1: 0, y1: 170, x2: 320, y2: 170, stroke: C.tinta, 'stroke-width': 1.4 }, svg);
+        const trilha = 'M30 168 L120 140 L80 120 L150 96 L118 76 L160 54 L170 26';
+        el('path', { d: trilha, fill: 'none', stroke: C.claro, 'stroke-width': 1.2, 'stroke-dasharray': '2 4' }, svg);
+        const feito = el('path', { d: trilha, fill: 'none', stroke: C.tinta, 'stroke-width': 1.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
+        const L = feito.getTotalLength(); feito.setAttribute('stroke-dasharray', L); feito.setAttribute('stroke-dashoffset', L);
+        const band = bandeira(svg, 170, 26);
+        const b = boneco(svg);
+        return anima(2600, (e, k) => { const d = L * PV * e, p = feito.getPointAtLength(d); feito.setAttribute('stroke-dashoffset', L - d);
+          b.setAttribute('transform', `translate(${p.x} ${p.y})`); b.mexe(k < 1 ? k * 9 : 0); },
+          () => { if (P >= 1) { const p = feito.getPointAtLength(L); band.pano.classList.add('tremula'); b.comemora(p.x, p.y); chegou(); } });
+      },
+      degraus(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), N = 10, w = 28, h = 14, x0 = 20, y0 = 170;
+        el('line', { x1: 0, y1: y0, x2: 320, y2: y0, stroke: C.tinta, 'stroke-width': 1.4 }, svg);
+        const degs = [];
+        // Cada degrau vale 1/N da meta e pinta aos poucos, da esquerda para a direita (87% = 8 cheios + o 9º com 70%)
+        for (let i = 0; i < N; i++) {
+          el('rect', { x: x0 + i * w, y: y0 - (i + 1) * h, width: w, height: (i + 1) * h, fill: C.papel }, svg);
+          degs.push(el('rect', { x: x0 + i * w, y: y0 - (i + 1) * h, width: 0, height: (i + 1) * h, fill: C.tinta }, svg));
+          el('rect', { x: x0 + i * w, y: y0 - (i + 1) * h, width: w, height: (i + 1) * h, fill: 'none', stroke: C.tinta, 'stroke-width': 1 }, svg);
+        }
+        const band = bandeira(svg, x0 + N * w - 8, y0 - N * h);
+        // A pessoa anda em cima do degrau, exatamente na borda da parte pintada
+        const onde = q => { const i = Math.min(N - 1, Math.floor(q)), f = Math.min(1, q - i); return { x: x0 + i * w + f * w, y: y0 - (i + 1) * h }; };
+        const b = boneco(svg);
+        return anima(2600, (e, t) => { const q = PV * N * e, p = onde(q);
+            b.setAttribute('transform', `translate(${p.x} ${p.y})`); b.mexe(t < 1 ? t * 10 : 0);
+            degs.forEach((r, i) => r.setAttribute('width', w * Math.max(0, Math.min(1, q - i)))); },
+          () => { if (P >= 1) { const p = onde(N); band.pano.classList.add('tremula'); b.comemora(p.x, p.y); chegou(); } });
+      },
+      arara(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), N = 12, xs = i => 38 + i * 22, yb = 44;
+        const tinta = { stroke: C.tinta, 'stroke-width': 1.4, fill: 'none', 'stroke-linecap': 'round' };
+        el('line', { x1: 22, y1: yb, x2: 298, y2: yb, ...tinta, 'stroke-width': 2 }, svg);
+        [[30, 26], [290, 294]].forEach(([a, b]) => { el('line', { x1: a, y1: yb, x2: b, y2: 166, ...tinta }, svg); el('circle', { cx: b, cy: 169, r: 3, ...tinta }, svg); });
+        el('line', { x1: 0, y1: 172, x2: 320, y2: 172, ...tinta }, svg);
+        const formas = ['M-12 4 L-5 1 L5 1 L12 4 L9 11 L6 10 L6 34 L-6 34 L-6 10 L-9 11 Z',          // camiseta
+                        'M-5 1 L5 1 L6 8 L13 38 L-13 38 L-6 8 Z',                                       // vestido
+                        'M-9 2 L9 2 L10 40 L3 40 L0 14 L-3 40 L-10 40 Z'];                              // calça
+        const cores = [C.tinta, C.claro, C.tinta, C.cinza];
+        const pecas = [];
+        for (let i = 0; i < N; i++) {
+          const g = el('g', { transform: `translate(${xs(i)} ${yb})` }, svg);
+          el('path', { d: 'M0 0 L0 -3 a3 3 0 1 1 3 -3 M-10 6 L0 0 L10 6', ...tinta, 'stroke-width': 1 }, g);   // cabide
+          const p = el('path', { d: formas[i % 3], fill: cores[i % 4], stroke: C.tinta, 'stroke-width': .8, opacity: 0, transform: 'translate(0 3)' }, g);
+          pecas.push(p);
+        }
+        return anima(2200, e => { const k = PV * N * e; pecas.forEach((p, i) => { const v = Math.max(0, Math.min(1, k - i)); p.setAttribute('opacity', v); p.setAttribute('transform', `translate(0 ${3 - (1 - v) * 10})`); }); },
+          () => { if (P >= 1) chegou(); });
+      },
+      camiseta(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), id = 'cam' + Math.random().toString(36).slice(2, 7);
+        const forma = 'M118 30 L140 18 Q160 32 180 18 L202 30 L226 62 L206 76 L196 66 L196 168 L124 168 L124 66 L114 76 L94 62 Z';
+        const clip = el('clipPath', { id }, el('defs', {}, svg)); el('path', { d: forma }, clip);
+        const g = el('g', { 'clip-path': `url(#${id})` }, svg);
+        el('rect', { x: 90, y: 10, width: 140, height: 165, fill: C.papel }, g);
+        const onda = el('path', { fill: C.tinta }, g);
+        el('path', { d: forma, fill: 'none', stroke: C.tinta, 'stroke-width': 1.6, 'stroke-linejoin': 'round' }, svg);
+        el('path', { d: 'M140 18 Q160 32 180 18', fill: 'none', stroke: C.tinta, 'stroke-width': 1.2 }, svg);
+        const nivel = (v, t) => { const topo = 168 - v * 152; let d = `M90 175 L90 ${topo}`; for (let x = 90; x <= 230; x += 5) d += ` L${x} ${topo + Math.sin(x / 9 + t * 6) * (v > 0 && v < 1 ? 2.5 : 0)}`; return d + ' L230 175 Z'; };
+        let t0 = performance.now(), vivo = true;
+        const parar = anima(2200, e => onda.setAttribute('d', nivel(PV * e, 0)), () => { if (P >= 1) chegou();
+          const loop = t => { if (!vivo) return; onda.setAttribute('d', nivel(PV, (t - t0) / 1000)); requestAnimationFrame(loop); }; requestAnimationFrame(loop); });
+        return () => { vivo = false; parar(); };
+      },
+      costura(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), id = 'cos' + Math.random().toString(36).slice(2, 7);
+        const forma = 'M160 16 Q148 24 136 18 L104 34 L84 70 L106 80 L118 64 L118 168 L202 168 L202 64 L214 80 L236 70 L216 34 L184 18 Q172 24 160 16';
+        el('path', { d: forma, fill: C.papel, stroke: C.linha, 'stroke-width': 1, 'stroke-dasharray': '1 4', 'stroke-linejoin': 'round' }, svg);
+        const mask = el('mask', { id }, el('defs', {}, svg));
+        const rev = el('path', { d: forma, fill: 'none', stroke: C.fundo, 'stroke-width': 6, 'stroke-linejoin': 'round' }, mask);
+        el('path', { d: forma, fill: 'none', stroke: C.tinta, 'stroke-width': 1.6, 'stroke-dasharray': '6 4', mask: `url(#${id})`, 'stroke-linejoin': 'round' }, svg);
+        const L = rev.getTotalLength(); rev.setAttribute('stroke-dasharray', L); rev.setAttribute('stroke-dashoffset', L);
+        const agulha = el('g', {}, svg);
+        el('line', { x1: 0, y1: 0, x2: 22, y2: 0, stroke: C.cinza, 'stroke-width': 1.6, 'stroke-linecap': 'round' }, agulha);
+        el('ellipse', { cx: 18, cy: 0, rx: 2.4, ry: 1, fill: C.fundo, stroke: C.cinza, 'stroke-width': .6 }, agulha);
+        const linha = el('path', { fill: 'none', stroke: C.acento, 'stroke-width': 1 }, svg);
+        return anima(2800, e => { const d = L * PV * e, p = rev.getPointAtLength(d), q = rev.getPointAtLength(Math.min(L, d + 1));
+          rev.setAttribute('stroke-dashoffset', L - d); const ang = Math.atan2(q.y - p.y, q.x - p.x) * 180 / Math.PI;
+          agulha.setAttribute('transform', `translate(${p.x} ${p.y}) rotate(${ang + 180})`);
+          linha.setAttribute('d', `M${p.x} ${p.y} q 18 -26 40 -6`); }, () => { if (P >= 1) chegou(); });
+      },
+      sacola(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), id = 'sac' + Math.random().toString(36).slice(2, 7);
+        const corpo = 'M108 62 L212 62 L222 170 L98 170 Z';
+        const clip = el('clipPath', { id }, el('defs', {}, svg)); el('path', { d: corpo }, clip);
+        el('path', { d: corpo, fill: C.papel }, svg);
+        const dentro = el('g', { 'clip-path': `url(#${id})` }, svg), N = 8, h = 13, cores = [C.tinta, C.claro, C.cinza, C.tinta, C.acento, C.claro, C.tinta, C.cinza];
+        const dobras = [];
+        for (let i = 0; i < N; i++) dobras.push(el('rect', { x: 112 + (i % 2) * 6, y: 170 - (i + 1) * h, width: 90 + (i % 3) * 4, height: h - 2, rx: 3, fill: cores[i], opacity: 0 }, dentro));
+        el('path', { d: corpo, fill: 'none', stroke: C.tinta, 'stroke-width': 1.6, 'stroke-linejoin': 'round' }, svg);
+        el('path', { d: 'M136 62 Q136 30 160 30 Q184 30 184 62', fill: 'none', stroke: C.tinta, 'stroke-width': 1.6 }, svg);
+        el('text', { x: 160, y: 120, 'text-anchor': 'middle', 'font-family': C.serifa, 'font-size': 14, fill: C.cinza, 'letter-spacing': 2 }, svg).textContent = '';
+        return anima(2400, e => { const k = PV * N * e; dobras.forEach((r, i) => { const v = Math.max(0, Math.min(1, k - i)); r.setAttribute('opacity', v > 0 ? 1 : 0);
+            r.setAttribute('transform', `translate(0 ${-(1 - v) * 60})`); }); }, () => { if (P >= 1) chegou(); });
+      },
+      vitrine(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), N = 5, tinta = { stroke: C.tinta, 'stroke-width': 1.4, fill: 'none' };
+        const defs = el('defs', {}, svg), uid = Math.random().toString(36).slice(2, 7);
+        el('rect', { x: 16, y: 40, width: 288, height: 130, ...tinta }, svg);
+        for (let i = 0; i < 12; i++) el('path', { d: `M${16 + i * 24} 24 h24 v16 q-12 8 -24 0 z`, fill: i % 2 ? C.fundo : C.tinta, stroke: C.tinta, 'stroke-width': 1 }, svg);   // toldo listrado
+        // Cada manequim vale 1/N da meta e se acende de baixo para cima, na proporção (87% = 4 acesos + o 5º com 35%)
+        const luzes = [], niveis = [], topo = 64, base = 163;
+        for (let i = 0; i < N; i++) {
+          const x = 48 + i * 56;
+          luzes.push(el('path', { d: `M${x - 4} 44 L${x + 4} 44 L${x + 22} 162 L${x - 22} 162 Z`, fill: C.acento, opacity: 0 }, svg));
+          const forma = g => { el('circle', { cx: x, cy: 72, r: 7 }, g); el('path', { d: `M${x - 13} 84 L${x + 13} 84 L${x + 9} 112 L${x + 15} 140 L${x - 15} 140 L${x - 9} 112 Z` }, g);
+            el('line', { x1: x, y1: 140, x2: x, y2: 160 }, g); el('line', { x1: x - 10, y1: 162, x2: x + 10, y2: 162 }, g); };
+          forma(el('g', { fill: C.fundo, stroke: C.claro, 'stroke-width': 1.2 }, svg));
+          const id = 'vit' + uid + i, nivel = el('rect', { x: x - 20, y: base, width: 40, height: 0 }, el('clipPath', { id }, defs));
+          forma(el('g', { fill: C.tinta, stroke: C.tinta, 'stroke-width': 1.2, 'clip-path': `url(#${id})` }, svg));
+          niveis.push(nivel);
+        }
+        return anima(2400, e => { const k = PV * N * e; niveis.forEach((r, i) => { const v = Math.max(0, Math.min(1, k - i)), h = (base - topo) * v;
+            r.setAttribute('y', base - h); r.setAttribute('height', h); luzes[i].setAttribute('opacity', v * 0.22); }); },
+          () => { if (P >= 1) chegou(); });
+      },
+      corrida(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), x0 = 24, x1 = 282, chao = 150;
+        [96, chao].forEach(y => el('line', { x1: 0, y1: y, x2: 320, y2: y, stroke: C.tinta, 'stroke-width': 1.2 }, svg));
+        for (let x = 6; x < 320; x += 26) el('line', { x1: x, y1: 123, x2: x + 12, y2: 123, stroke: C.linha, 'stroke-width': 1 }, svg);
+        for (let i = 0; i < 27; i++) el('rect', { x: x1 + (i % 2) * 5, y: 96 + i * 2, width: 5, height: 2, fill: i % 2 ? C.fundo : C.tinta }, svg);   // faixa quadriculada
+        [96, chao].forEach(y => el('line', { x1: x1 + 18, y1: y, x2: x1 + 18, y2: y - 46, stroke: C.tinta, 'stroke-width': 1.2 }, svg));             // postes da fita
+        // fita de chegada (amarela) entre os postes; ao bater 100% ela se parte e cai para os lados
+        const fitaA = el('line', { x1: x1 + 18, y1: 60, x2: x1 + 18, y2: 82, stroke: C.acento, 'stroke-width': 3, 'stroke-linecap': 'round' }, svg);
+        const fitaB = el('line', { x1: x1 + 18, y1: 82, x2: x1 + 18, y2: 104, stroke: C.acento, 'stroke-width': 3, 'stroke-linecap': 'round' }, svg);
+        const b = boneco(svg), escala = 1.7, poe = x => b.setAttribute('transform', `translate(${x} ${chao}) scale(${escala})`);
+        b.comemora = ((orig) => (x, y) => { const g = b; const linhas = g.querySelectorAll('line');
+          linhas[3].setAttribute('x2', -5); linhas[3].setAttribute('y2', -24); linhas[4].setAttribute('x2', 5); linhas[4].setAttribute('y2', -24);
+          return anima(1500, (e, k) => { const pulo = Math.abs(Math.sin(k * Math.PI * 3)) * 8; g.setAttribute('transform', `translate(${x} ${chao - pulo}) scale(${escala})`); }); })();
+        return anima(2600, (e, k) => { poe(x0 + (x1 - x0) * PV * e); b.mexe(k < 1 ? k * 14 : 0); },
+          () => { if (P >= 1) { fitaA.setAttribute('x2', x1 + 40); fitaA.setAttribute('y2', 74); fitaB.setAttribute('x1', x1 + 40); fitaB.setAttribute('y1', 98);
+            b.comemora(x1, chao); chegou(); } });
+      },
+      ampulheta(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), ida = 'amp' + Math.random().toString(36).slice(2, 7), idb = ida + 'b';
+        const cima = 'M128 22 L192 22 Q192 66 162 88 L158 88 Q128 66 128 22 Z', baixo = 'M158 92 L162 92 Q192 114 192 158 L128 158 Q128 114 158 92 Z';
+        const defs = el('defs', {}, svg); el('path', { d: cima }, el('clipPath', { id: ida }, defs)); el('path', { d: baixo }, el('clipPath', { id: idb }, defs));
+        const areiaC = el('rect', { x: 120, width: 80, fill: C.tinta, 'clip-path': `url(#${ida})` }, svg);
+        const areiaB = el('rect', { x: 120, width: 80, fill: C.tinta, 'clip-path': `url(#${idb})` }, svg);
+        const fio = el('line', { x1: 160, x2: 160, y1: 88, stroke: C.tinta, 'stroke-width': 1.4 }, svg);
+        [cima, baixo].forEach(d => el('path', { d, fill: 'none', stroke: C.tinta, 'stroke-width': 1.6 }, svg));
+        [16, 164].forEach(y => el('rect', { x: 118, y, width: 84, height: 6, fill: C.tinta }, svg));
+        return anima(2600, (e, k) => { const v = PV * e; areiaC.setAttribute('y', 22 + 66 * v); areiaC.setAttribute('height', 66 * (1 - v));
+            const hb = 66 * v; areiaB.setAttribute('y', 158 - hb); areiaB.setAttribute('height', hb); fio.setAttribute('y2', k < 1 ? 158 - hb : 88); },
+          () => { if (P >= 1) chegou(); });
+      },
+      velocimetro(palco) {
+        palco.innerHTML = '';
+        const svg = el('svg', { viewBox: '0 0 320 180' }, palco), cx = 160, cy = 150, r = 112;
+        const pto = (f, rr) => { const a = Math.PI * (1 - f); return [cx + Math.cos(a) * rr, cy - Math.sin(a) * rr]; };
+        const arco = (f0, f1, rr) => { const [a, b] = pto(f0, rr), [c, d] = pto(f1, rr); return `M${a} ${b} A${rr} ${rr} 0 0 1 ${c} ${d}`; };
+        el('path', { d: arco(0, 1, r), fill: 'none', stroke: C.linha, 'stroke-width': 8 }, svg);
+        el('path', { d: arco(0.9, 1, r), fill: 'none', stroke: C.acento, 'stroke-width': 8 }, svg);
+        const feito = el('path', { fill: 'none', stroke: C.tinta, 'stroke-width': 8 }, svg);
+        for (let i = 0; i <= 10; i++) { const [a, b] = pto(i / 10, r - 14), [c, d] = pto(i / 10, r - (i % 5 ? 20 : 26)); el('line', { x1: a, y1: b, x2: c, y2: d, stroke: C.tinta, 'stroke-width': i % 5 ? 1 : 1.6 }, svg);
+          if (i % 5 === 0) { const [tx, ty] = pto(i / 10, r - 40); el('text', { x: tx, y: ty + 4, 'text-anchor': 'middle', 'font-family': C.sans, 'font-size': 10, fill: C.cinza }, svg).textContent = i * 10; } }
+        const ponteiro = el('line', { x1: cx, y1: cy, stroke: C.tinta, 'stroke-width': 2, 'stroke-linecap': 'round' }, svg);
+        el('circle', { cx, cy, r: 7, fill: C.tinta }, svg);
+        return anima(2200, e => { const f = PV * e, [x, y] = pto(f, r - 30); ponteiro.setAttribute('x2', x); ponteiro.setAttribute('y2', y); feito.setAttribute('d', f > 0.001 ? arco(0, f, r) : ''); },
+          () => { if (P >= 1) { ponteiro.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(-3deg)' }, { transform: 'rotate(2deg)' }, { transform: 'rotate(0deg)' }], { duration: 300, iterations: 4, transformOrigin: cx + 'px ' + cy + 'px' }); chegou(); } });
+      },
+    };
+
+    // 100%: selo "Meta batida" com fio amarelo e uma chuva fina de papel (preto, prata e amarelo)
+    function chegou() {
+      document.getElementById('selo').classList.add('on');
+      const festa = document.getElementById('festa'), cores = [C.tinta, C.tinta, C.claro, C.acento];
+      festa.innerHTML = '';
+      for (let i = 0; i < 70; i++) { const c = document.createElement('i');
+        c.style.left = Math.random() * 100 + '%'; c.style.background = cores[i % cores.length];
+        c.style.setProperty('--dx', (Math.random() * 120 - 60) + 'px'); c.style.setProperty('--rot', (Math.random() * 900 - 450) + 'deg');
+        c.style.animationDuration = (2.4 + Math.random() * 2) + 's'; c.style.animationDelay = (Math.random() * 0.8) + 's';
+        c.style.height = (8 + Math.random() * 10) + 'px'; festa.appendChild(c); }
+      setTimeout(() => { festa.innerHTML = ''; }, 5500);
+    }
+
+    let parar = null;
+    function mostrar(m) {
+      if (parar) parar();
+      document.getElementById('selo').classList.remove('on');
+      document.querySelectorAll('#modos button').forEach(b => { b.classList.toggle('on', b.dataset.m === m); if (b.dataset.m === m) b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); });
+      const palco = document.getElementById('palco'); palco.classList.toggle('baixo', m === 'barra');
+      parar = MODOS[m](palco);
+      try { localStorage.setItem('meta_modo', m); } catch (e) {}
+    }
+    document.getElementById('modos').addEventListener('click', e => { const b = e.target.closest('button'); if (b) mostrar(b.dataset.m); });
+
+    // Números
+    document.getElementById('periodo').textContent = M.rotulo;
+    document.getElementById('l-ontem').textContent = M.ontemRotulo;
+    document.getElementById('l-dias').textContent = M.diasRotulo;
+    anima(1600, e => { document.getElementById('t-pct').textContent = Math.round(P * 100 * e); document.getElementById('t-feito').textContent = n(tot.feito * e); });
+    document.getElementById('t-meta').textContent = n(tot.meta);
+    document.getElementById('t-ontem').textContent = M.ontemTexto;
+    document.getElementById('t-dias').textContent = M.diasTexto;
+    const PAT = innerWidth >= 1000 ? 60 : 44;   // tamanho do patinete das operações (maior no PC)
+    document.getElementById('ops').innerHTML = OPS.map(o => { const q = o.feito / o.meta;
+      return '<div class="op"><div class="logo ' + o.cls + '"><img src="' + o.logo + '" alt="' + o.nome + '"></div>' +
+        '<div><div class="op-nome">' + o.nome + '</div><div class="op-num">' + n(o.feito) + ' <span>/ ' + n(o.meta) + '</span></div>' + (M.estado === 'antes' ? '' : '<div class="op-ontem">+' + n(o.ontem) + ' ' + M.ontemRotulo.toLowerCase() + '</div>') + '</div>' +
+        '<div class="op-pct">' + Math.round(q * 100) + '<small>%</small>' + (q >= 1 ? '<span class="ok">meta batida</span>' : '') + '</div>' +
+        '<div class="trilho"><div class="enche" data-w="' + Math.min(100, q * 100) + '" style="background:' + o.cor + '"></div><div class="carro-op" data-w="' + Math.min(100, q * 100) + '" style="position:absolute;left:0;bottom:2px;transform:translateX(-' + (PAT - 4) + 'px)">' + veiculoHTML('patinete', PAT) + '</div></div>' +
+        '<div class="premio-op' + (q >= 1 ? ' ganhou' : '') + '"><span>' +
+        (q >= 1 ? 'Sorteio do patinete garantido' : 'Bateu 100%, sorteio de um patinete · faltam ' + n(o.meta - o.feito) + ' peças') + '</span></div></div>'; }).join('');
+    document.getElementById('pg-s').textContent = P >= 1 ? 'Garantido! Meta do grupo batida' : 'Faltam ' + n(tot.meta - tot.feito) + ' peças';
+    document.getElementById('premio-grupo').classList.toggle('ganhou', P >= 1);
+    anima(2200, e => document.querySelectorAll('.op .enche, .op .carro-op').forEach(x => { const w = x.dataset.w * e; if (x.classList.contains('enche')) { x.style.width = w + '%'; return; }
+      x.style.left = `max(${w}%, ${PAT - 4}px)`; rodar(x, 'patinete', PAT, (w - (x._antes || 0)) / 100 * x.parentElement.clientWidth); x._antes = w; }));
+    let modo = 'barra'; try { modo = localStorage.getItem('meta_modo') || 'barra'; } catch (e) {}
+    mostrar(MODOS[modo] ? modo : 'barra');
+    }
+
+    (async function iniciar() {
+      try {
+        const { data, error } = await sb.rpc('meta_pecas_publica');
+        if (error || !data) throw error || new Error('sem meta cadastrada');
+        app(resumoMeta(data));
+      } catch (e) {
+        document.getElementById('periodo').textContent = 'Não consegui carregar agora. Tente de novo em instantes.';
+      }
+      setTimeout(() => location.reload(), 30 * 60 * 1000);   // TV da loja: atualiza sozinha a cada 30 min
+    })();
+  </script>
+</body>
+</html>

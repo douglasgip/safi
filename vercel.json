@@ -17,6 +17,7 @@
     { "source": "/cascata", "destination": "/cascata.html" },
     { "source": "/tesouraria", "destination": "/tesouraria.html" },
     { "source": "/fluxo-otb", "destination": "/otb.html" },
+    { "source": "/meta", "destination": "/meta.html" },
     { "source": "/reunioes", "destination": "/reunioes.html" },
     { "source": "/geraudio", "destination": "/geraudio.html" }
   ],
