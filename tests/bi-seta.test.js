@@ -249,7 +249,7 @@ test('robô do Seta (26/11): no fim, se deu certo, o GerônIA mostra o resumo do
   assert.match(seguro, /json\.dump/);
   assert.match(seguro, /janela_separada\(\['pronto'/);
   const tela = py.match(/def aviso_pronto\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
-  assert.match(py, /URL_BI = 'https://topfinds.com.br/bi'/, 'o SAFI fica em topfinds.com.br (painel.topfinds.com.br não existe)');
+  assert.ok(py.includes("URL_BI = 'https://topfinds.com.br/bi'"), 'o SAFI fica em topfinds.com.br (painel.topfinds.com.br não existe)');
   for (const s of ['Abrir o BI', 'webbrowser.open(URL_BI)', 'sem vendas', "'<Return>'", "'<Escape>'", 'moldura_geronia(']) assert.ok(tela.includes(s), 'falta ' + s);
   assert.match(py, /args\[0\] == 'pronto'/);
 });
