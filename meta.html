@@ -7,10 +7,11 @@
   <meta name="description" content="Meta de peças das lojas e do e-commerce do Grupo Sacoman.">
   <meta property="og:title" content="Meta de peças · Grupo Sacoman">
   <meta property="og:description" content="Acompanhe a meta do mês: Exposição Paulista, Via Closet e GIP E-commerce.">
-  <meta property="og:image" content="/public/meta/moto.png">
+  <meta property="og:image" content="https://topfinds.com.br/public/meta/moto.png">
   <link rel="icon" type="image/png" href="/public/favicon.png">
   <meta name="theme-color" content="#faf9f6">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&family=Jost:wght@300;400;500&family=Playfair+Display:wght@400;500&family=Montserrat:wght@300;400;500&family=Josefin+Sans:wght@300;400&family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
   <style>
@@ -101,6 +102,8 @@
     .trilho .enche { position: absolute; inset: 0 auto 0 0; width: 0; border-radius: 4px; overflow: hidden; }
     .trilho .enche::after { content: ''; position: absolute; top: 0; bottom: 0; width: 70px; background: linear-gradient(90deg, transparent, rgba(255,255,255,.55), transparent); animation: brilho 2.8s 1.6s infinite; left: -70px; }
     @keyframes brilho { from { left: -70px; } to { left: 100%; } }
+    .capturando .trilho .enche::after { display: none; }
+    [data-tema="editorial"] .capturando .op:nth-child(3) { box-shadow: none; border: 1px solid #e6e2d8; }
     .trilho .ponto { position: absolute; top: 50%; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--fundo); border: 2px solid var(--tinta); left: 0; }
 
     /* Meta batida (100%) */
@@ -257,6 +260,29 @@
       const ops = M.ops.map(o => pc(o.meta ? o.feito / o.meta : 0) + ' ' + (NOMES[o.operacao] || o.operacao)).join('\n');
       return 'Progresso da meta do patinete e da motinha\n*' + pc(P) + ' Total*\n' + frase + '\n\n' + ops +
         '\n\nAcompanhe ao vivo! \u{1F447}\nhttps://topfinds.com.br/meta';
+    }
+
+    // Imagem da meta para mandar junto no WhatsApp (botão e robô das 17:30): o topo, o total e os cards das
+    // operações, do jeito que a pessoa vê na tela (sem os botões de gráfico, o cartão do prêmio e o botão).
+    async function imagemDaMeta() {
+      const partes = [document.querySelector('.topo'), document.querySelector('.total'), document.getElementById('ops')];
+      const fundo = getComputedStyle(document.body).backgroundColor;
+      const fora = el => el.id === 'modos' || el.id === 'premio-grupo' || el.id === 'zap';
+      const telas = [];
+      // durante a foto (classe .capturando): sem o brilho que corre na barra (sairia congelado no meio) e com borda
+      // comum no card do GIP (a sombra interna dele sai como uma moldura grossa na imagem)
+      document.body.classList.add('capturando');
+      try {
+        for (const el of partes) telas.push(await html2canvas(el, { backgroundColor: fundo, scale: 2, ignoreElements: fora, logging: false }));
+      } finally { document.body.classList.remove('capturando'); }
+      const m = 48, W = Math.max(...telas.map(c => c.width)) + 2 * m, H = telas.reduce((a, c) => a + c.height, 0) + m * (telas.length + 1);
+      const cv = document.createElement('canvas');
+      cv.width = W; cv.height = H;
+      const g = cv.getContext('2d');
+      g.fillStyle = fundo; g.fillRect(0, 0, W, H);
+      let y = m;
+      for (const c of telas) { g.drawImage(c, (W - c.width) / 2, y); y += c.height + m; }
+      return new Promise(r => cv.toBlob(r, 'image/png'));
     }
 
     // Patinete e motinha (fotos recortadas): as rodas giram por baixo; para-lama, garfo e braÃ§o ficam parados por cima
@@ -623,6 +649,22 @@
     const zap = document.getElementById('zap');
     zap.href = 'https://wa.me/?text=' + encodeURIComponent(mensagemWhatsApp(M));
     zap.hidden = false;
+    // No celular, manda a imagem da meta junto (menu de compartilhar do aparelho). A imagem é preparada antes,
+    // depois das animações, porque o celular só deixa abrir o compartilhar logo após o toque.
+    // No computador (ou se não der), fica o link normal do WhatsApp só com o texto.
+    let arquivoMeta = null;
+    setTimeout(async () => {
+      try { const b = await imagemDaMeta(); if (b) arquivoMeta = new File([b], 'meta-de-pecas.png', { type: 'image/png' }); } catch (e) {}
+    }, 3500);
+    zap.addEventListener('click', ev => {
+      const celular = matchMedia('(pointer: coarse)').matches;
+      if (!celular || !arquivoMeta || !navigator.canShare || !navigator.canShare({ files: [arquivoMeta] })) return;
+      ev.preventDefault();
+      const texto = mensagemWhatsApp(M);
+      // no iPhone o WhatsApp às vezes ignora o texto que vai junto da imagem: deixa copiado para colar na legenda
+      try { navigator.clipboard.writeText(texto).catch(() => {}); } catch (e) {}
+      navigator.share({ files: [arquivoMeta], text: texto }).catch(err => { if (err.name !== 'AbortError') location.href = zap.href; });
+    });
     }
 
     (async function iniciar() {

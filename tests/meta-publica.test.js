@@ -121,3 +121,25 @@ test('meta: rota /meta publicada e as imagens existem', () => {
   assert.match(ler('vercel.json'), /"source": "\/meta", "destination": "\/meta\.html"/);
   for (const m of html.matchAll(/\/public\/meta\/([\w.]+)/g)) assert.ok(fs.existsSync(caminho('public/meta/' + m[1])), 'falta public/meta/' + m[1]);
 });
+
+// Imagem da meta (26/11): vai junto no WhatsApp, pelo botão (celular) e pelo robô das 17:30.
+test('meta: imagem para compartilhar = topo + total + operações, sem os botões de gráfico, o cartão do prêmio e o botão', () => {
+  assert.match(html, /cdnjs\.cloudflare\.com\/ajax\/libs\/html2canvas\/1\.4\.1\/html2canvas\.min\.js/);
+  const f = codigo.match(/async function imagemDaMeta\(\)[\s\S]*?\n    }\n/)[0];
+  assert.match(f, /\.topo'\), document\.querySelector\('\.total'\), document\.getElementById\('ops'\)/);
+  assert.match(f, /el\.id === 'modos' \|\| el\.id === 'premio-grupo' \|\| el\.id === 'zap'/);
+  // durante a foto: sem o brilho da barra e sem a sombra interna do card do GIP (sairia moldura grossa)
+  assert.match(f, /classList\.add\('capturando'\)[\s\S]*finally \{ document\.body\.classList\.remove\('capturando'\)/);
+  assert.match(html, /\.capturando \.trilho \.enche::after \{ display: none; \}/);
+});
+
+test('meta: no celular o botão manda a imagem junto (preparada antes do toque); no computador fica o link só com texto', () => {
+  assert.match(codigo, /setTimeout\(async \(\) => \{\s*try \{ const b = await imagemDaMeta\(\)/);
+  assert.match(codigo, /matchMedia\('\(pointer: coarse\)'\)/);
+  assert.match(codigo, /navigator\.share\(\{ files: \[arquivoMeta\], text: texto \}\)/);
+  assert.match(codigo, /if \(err\.name !== 'AbortError'\) location\.href = zap\.href/);
+});
+
+test('meta: prévia do link no WhatsApp usa endereço completo da imagem', () => {
+  assert.match(html, /<meta property="og:image" content="https:\/\/topfinds\.com\.br\/public\/meta\/moto\.png">/);
+});
