@@ -914,7 +914,7 @@ def aviso_pronto(resumo, segundos=AVISO_PRONTO_SEGUNDOS):
     """Fim da rotina: o GerônIA confirma que as vendas foram para o SAFI e mostra o resumo de cada loja/dia
     (faturamento, vendas, ticket, margem). [Abrir o BI] abre o BI das Lojas; [OK] (Enter/Esc) fecha."""
     import webbrowser
-    lojas = {'Exposicao': 'Exposição', 'ViaCloset': 'Via Closet'}
+    lojas = {'Exposicao': 'Exposição', 'ViaCloset': 'Via Closet', 'GIP': 'E-commerce'}
     linhas = [l for l in resumo if l.get('tipo') == 'venda']
     sem = [l for l in resumo if l.get('tipo') == 'sem']
     n = len(linhas) + len(sem)
@@ -1028,14 +1028,50 @@ def mostrar_pronto_seguro(resumo):
     janela_separada(['pronto', ULTIMO_ENVIO], AVISO_PRONTO_SEGUNDOS + 60, tentativas=2, espera=30)
 
 
+def gefinance_do_dia(cfg):
+    """E-commerce (GeFinance), uma vez por dia. Não usa mouse nem tela (roda até com o PC bloqueado).
+    Erro aqui não atrapalha o Seta: fica registrado e tenta de novo no próximo gatilho."""
+    hoje = date.today().isoformat()
+    est = ler_estado()
+    if est.get('GeFinance') == hoje:
+        return None
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))  # o Agendador chama com -P
+        import gefinance_robo
+        linhas = gefinance_robo.rodar_gefinance(cfg)
+        est = ler_estado()
+        est['GeFinance'] = hoje
+        gravar_estado(est)
+        return linhas
+    except Exception as e:
+        log('GeFinance: ERRO (tento no próximo gatilho):', e)
+        return None
+
+
+def resumo_gefinance():
+    """Para o aviso de "pronto": o dia mais recente que o GeFinance mandou HOJE (se mandou)."""
+    import json
+    try:
+        with open(os.path.join(PASTA, 'ultimo_gefinance.json'), encoding='utf-8') as f:
+            u = json.load(f)
+    except Exception:
+        return []
+    if u.get('quando') != date.today().isoformat() or not u.get('linhas'):
+        return []
+    return [dict(u['linhas'][-1], tipo='venda')]
+
+
 def agendado(cfg):
     """Chamado pelo Agendador do Windows (08:32, ao entrar e ao desbloquear). Só age se faltar dia:
     tela bloqueada -> deixa para o desbloqueio; Seta aberto -> espera; senão avisa (com "Adiar") e roda."""
     if not sou_administrador():
         log('agendado: precisa rodar como administrador (marque "privilégios mais altos" na tarefa)')
         return 1
+    ge = gefinance_do_dia(cfg)
     for _ in range(TENTATIVAS_NO_DIA):
         if not faltam_dias(ler_estado(), date.today()):
+            if ge and not tela_bloqueada():
+                mostrar_pronto_seguro(resumo_gefinance())  # só o e-commerce tinha o que mandar
             return 0
         if tela_bloqueada():
             log('agendado: tela bloqueada, fica para quando desbloquear')
@@ -1050,6 +1086,7 @@ def agendado(cfg):
             continue
         log('agendado: começando')
         rc = rodar(cfg)
+        RESUMO.extend(resumo_gefinance())
         if RESUMO:
             log('agendado: pronto; mostrando o resumo')
             mostrar_pronto_seguro(RESUMO)
@@ -1082,14 +1119,16 @@ def criar_token():
     return 0
 
 
-def enviar(cfg, planilhas, ensaio=False):
-    """Manda as planilhas cruas ao SAFI; com ensaio=True o SAFI só calcula e devolve (não grava)."""
+def enviar(cfg, planilhas=None, ensaio=False, linhas=None):
+    """Manda ao SAFI as planilhas cruas do Seta (planilhas=) ou linhas já prontas, como as do GeFinance (linhas=).
+    Com ensaio=True o SAFI só calcula e devolve (não grava)."""
     import json
     import urllib.request
     token = cfg.get('safi', 'token', fallback='').strip()
     if not token:
         raise RuntimeError('falta o token do SAFI no ' + CONFIG)
-    corpo = json.dumps({"planilhas": planilhas, "ensaio": ensaio}).encode('utf-8')
+    corpo = json.dumps({"linhas": linhas, "ensaio": ensaio} if linhas is not None
+                       else {"planilhas": planilhas, "ensaio": ensaio}).encode('utf-8')
     req = urllib.request.Request(URL_SAFI, data=corpo, method='POST', headers={
         'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
     try:
