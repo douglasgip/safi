@@ -85,6 +85,38 @@ test('meta: cada operação que bate 100% solta confete do próprio card quando 
   assert.match(codigo, /o\.feito >= o\.meta/);
 });
 
+// Botão "Compartilhar no WhatsApp": mensagem pronta com o % total, uma frase que muda conforme o total e o % de cada operação.
+// (O 👇 da mensagem foi pedido do Douglas e vai só no texto do WhatsApp, escrito como \u{1F447} no código; a página continua sem emoji.)
+const mensagemWhatsApp = extrairFuncao(codigo, 'mensagemWhatsApp', {});
+const comTotal = (fE, fV, fG, hoje = '2026-12-19') => resumoMeta(dez(hoje, '2026-12-18', [
+  { operacao: 'Exposicao', meta: 48000, feito: fE, ontem: 0 }, { operacao: 'ViaCloset', meta: 8000, feito: fV, ontem: 0 }, { operacao: 'GIP', meta: 80000, feito: fG, ontem: 0 }]));
+
+test('meta: mensagem do WhatsApp com total, frase do momento, cada operação e o link', () => {
+  const m = mensagemWhatsApp(comTotal(32400, 5100, 81600));   // 88% total; 68% / 64% / 102%
+  assert.strictEqual(m, 'Progresso da meta do patinete e da motinha\n*88% Total*\nReta final à vista. Não dá para tirar o pé agora!\n\n' +
+    '68% Exposição\n64% Via\n102% GIP\n\nAcompanhe ao vivo! \u{1F447}\nhttps://topfinds.com.br/meta');
+});
+
+test('meta: a frase do WhatsApp muda conforme o % total (e não diz 100% antes de bater)', () => {
+  const frase = r => mensagemWhatsApp(r).split('\n')[2];
+  assert.strictEqual(frase(resumoMeta(dez('2026-11-26', null))), 'Largada em 01/12. Bora, time!');
+  assert.strictEqual(frase(comTotal(3000, 500, 5000)), 'Largamos! Cada peça vendida conta.');           // 6%
+  assert.strictEqual(frase(comTotal(10000, 2000, 10000)), 'Motores aquecidos. Bora acelerar!');         // 16%
+  assert.strictEqual(frase(comTotal(20000, 3000, 20000)), 'Já passamos de um quarto do caminho. Ritmo forte, time!'); // 32%
+  assert.strictEqual(frase(comTotal(30000, 5000, 40000)), 'Passamos da metade! A motinha está cada vez mais perto.'); // 55%
+  assert.strictEqual(frase(comTotal(45000, 7500, 72000)), 'Falta muito pouco! Último gás, time!');      // 92%
+  const quase = comTotal(48000, 8000, 79400);                                                           // 99,6%
+  assert.match(mensagemWhatsApp(quase), /\*99% Total\*\nFalta muito pouco!/);
+  assert.match(mensagemWhatsApp(quase), /\n99% GIP\n/);
+  assert.strictEqual(frase(comTotal(49120, 8240, 81900)), 'META BATIDA! A motinha elétrica vai ser sorteada!');
+  assert.strictEqual(frase(comTotal(40000, 6000, 60000, '2027-01-05')), 'Meta encerrada. Obrigado pelo esforço de cada um!');
+});
+
+test('meta: botão de compartilhar abre o WhatsApp com a mensagem pronta', () => {
+  assert.match(html, /id="zap"/);
+  assert.match(codigo, /'https:\/\/wa\.me\/\?text=' \+ encodeURIComponent\(mensagemWhatsApp\(M\)\)/);
+});
+
 test('meta: rota /meta publicada e as imagens existem', () => {
   assert.match(ler('vercel.json'), /"source": "\/meta", "destination": "\/meta\.html"/);
   for (const m of html.matchAll(/\/public\/meta\/([\w.]+)/g)) assert.ok(fs.existsSync(caminho('public/meta/' + m[1])), 'falta public/meta/' + m[1]);
