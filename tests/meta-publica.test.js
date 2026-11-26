@@ -73,6 +73,12 @@ test('meta: meta geral batida abre o presente (caixa cai, treme, explode e apare
   assert.ok(fs.existsSync(caminho('public/meta/caixa.png')), 'falta a imagem da caixa de presente');
 });
 
+test('meta: a caixa segura o suspense (treme por uns 3 s) antes de estourar', () => {
+  const t = +codigo.match(/const TEMPO_ESTOURO = (\d+);/)[1];
+  assert.ok(t >= 3500, 'estoura cedo demais: ' + t + ' ms');
+  assert.match(codigo, /\}, TEMPO_ESTOURO\);/);
+});
+
 test('meta: cada operação que bate 100% solta confete do próprio card quando ele aparece na tela', () => {
   assert.match(codigo, /function explodirConfete\(/);
   assert.match(codigo, /new IntersectionObserver\([\s\S]*?explodirConfete\(/);
