@@ -109,6 +109,20 @@
     .selo-meta span { display: inline-block; padding-bottom: 4px; background: linear-gradient(var(--amarelo), var(--amarelo)) no-repeat left bottom / 0 2px; transition: background-size 1.2s .5s ease; }
     .selo-meta.on span { background-size: 100% 2px; }
     .festa { position: fixed; inset: 0; pointer-events: none; z-index: 9; overflow: hidden; }
+    .festa b, .presente b { position: absolute; display: block; border-radius: 1px; pointer-events: none; }
+    /* Presente: meta do grupo batida */
+    .presente { position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden;
+      background: radial-gradient(circle at 50% 42%, rgba(28,24,10,.94), rgba(0,0,0,.97) 70%); opacity: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+    .pr-palco { position: relative; width: min(320px, 72vw); height: min(320px, 72vw); display: flex; align-items: center; justify-content: center; }
+    .pr-caixa { width: 100%; height: auto; transform: translateY(-120vh); filter: drop-shadow(0 24px 40px rgba(0,0,0,.55)); }
+    .pr-luz { position: absolute; width: 70%; height: 70%; border-radius: 50%; transform: scale(0); pointer-events: none;
+      background: radial-gradient(circle, #fff8d6 0%, #f2c200 38%, rgba(242,194,0,0) 70%); }
+    .pr-moto { position: absolute; opacity: 0; }
+    .pr-texto { text-align: center; margin-top: 18px; opacity: 0; color: #fff; padding: 0 22px; }
+    .pr-l { font-size: 11px; letter-spacing: 4px; text-transform: uppercase; color: #f2c200; }
+    .pr-t { font-family: var(--serifa); font-size: 27px; margin-top: 8px; line-height: 1.2; }
+    .pr-s { font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase; color: #8a8a8a; margin-top: 16px; }
+    @media (min-width: 1000px) { .pr-palco { width: 380px; height: 380px; } .pr-t { font-size: 36px; } }
     .festa i { position: absolute; top: -20px; width: 3px; height: 14px; animation: cai linear forwards; }
     @keyframes cai { 0% { transform: translate(0, 0) rotate(0deg); } 100% { transform: translate(var(--dx), 110vh) rotate(var(--rot)); } }
     .tremula { animation: tremula 0.6s ease-in-out infinite alternate; transform-box: fill-box; transform-origin: left center; }
@@ -227,6 +241,55 @@
     // gira as rodas conforme o veÃ­culo anda (distÃ¢ncia Ã· raio)
     function rodar(el, tipo, largura, dx) { const raio = VEIC[tipo].rodas[0].r * largura; el._giro = (el._giro || 0) + dx / raio * 180 / Math.PI;
       el.querySelectorAll('.roda').forEach(r => { r.style.transform = 'rotate(' + el._giro + 'deg)'; }); }
+    // Confete em explosão: sai de (x, y) para todos os lados e cai. `pai` = onde desenhar (padrão: camada de festa).
+    function explodirConfete(x, y, n, cores, alcance, pai) {
+      const alvo = pai || document.getElementById('festa');
+      for (let i = 0; i < n; i++) {
+        const b = document.createElement('b'), a = Math.random() * Math.PI * 2, d = alcance * (0.35 + Math.random() * 0.65);
+        const dx = Math.cos(a) * d, dy = Math.sin(a) * d - alcance * 0.25, r = Math.random() * 1080 - 540;
+        b.style.cssText = 'left:' + x + 'px;top:' + y + 'px;width:' + (3 + Math.random() * 4) + 'px;height:' + (7 + Math.random() * 9) + 'px;background:' + cores[i % cores.length] + ';position:fixed';
+        alvo.appendChild(b);
+        b.animate([{ transform: 'translate(0,0) rotate(0deg)', opacity: 1 },
+                   { transform: `translate(${dx}px,${dy}px) rotate(${r}deg)`, opacity: 1, offset: 0.6 },
+                   { transform: `translate(${dx * 1.15}px,${dy + alcance * 0.6}px) rotate(${r * 1.6}deg)`, opacity: 0 }],
+                  { duration: 1600 + Math.random() * 1200, easing: 'cubic-bezier(.12,.7,.3,1)' }).onfinish = () => b.remove();
+      }
+    }
+
+    // Meta do grupo batida: a caixa de presente cai, treme, explode num clarão dourado e de dentro sai a motinha
+    let presenteAberto = false;
+    function abrirPresente() {
+      const ov = document.createElement('div');
+      ov.className = 'presente';
+      ov.innerHTML = '<div class="pr-palco"><div class="pr-luz"></div><img class="pr-caixa" src="/public/meta/caixa.png" alt="">' +
+        '<div class="pr-moto">' + veiculoHTML('moto', Math.round(Math.min(innerWidth >= 1000 ? 360 : 300, innerWidth * 0.74))) + '</div></div>' +
+        '<div class="pr-texto"><div class="pr-l">Meta do grupo batida</div><div class="pr-t">Sorteio da motinha elétrica garantido</div><div class="pr-s">toque para fechar</div></div>';
+      document.body.appendChild(ov);
+      const caixa = ov.querySelector('.pr-caixa'), luz = ov.querySelector('.pr-luz'), moto = ov.querySelector('.pr-moto'), texto = ov.querySelector('.pr-texto');
+      const ouro = ['#f2c200', '#e3dc00', '#ffd84d', '#111', '#ffffff', '#c9c9c9'];
+      ov.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, fill: 'forwards' });
+      caixa.animate([{ transform: 'translateY(-120vh) scale(.7) rotate(-8deg)' }, { transform: 'translateY(0) scale(1.06) rotate(2deg)', offset: 0.72 }, { transform: 'translateY(0) scale(1) rotate(0deg)' }],
+        { duration: 1000, easing: 'cubic-bezier(.3,1.3,.5,1)', fill: 'forwards' });
+      setTimeout(() => caixa.animate([0, 3, -3, 5, -5, 7, -7, 9, -9, 11, -11, 0].map((g, i) => ({ transform: `rotate(${g}deg) scale(${1 + i * 0.012})` })),
+        { duration: 1100, easing: 'ease-in', fill: 'forwards' }), 1050);
+      setTimeout(() => {
+        const r = caixa.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2, alcance = Math.max(innerWidth, innerHeight) * 0.55;
+        caixa.animate([{ transform: 'scale(1.13)', opacity: 1 }, { transform: 'scale(1.6)', opacity: 0 }], { duration: 300, easing: 'ease-out', fill: 'forwards' });
+        luz.animate([{ transform: 'scale(0)', opacity: 1 }, { transform: 'scale(3.4)', opacity: 0 }], { duration: 1000, easing: 'ease-out', fill: 'forwards' });
+        explodirConfete(cx, cy, 160, ouro, alcance, ov);
+        moto.animate([{ transform: 'scale(.15) translateY(60px)', opacity: 0 }, { transform: 'scale(1.12) translateY(0)', opacity: 1, offset: 0.7 }, { transform: 'scale(1)', opacity: 1 }],
+          { duration: 850, delay: 120, easing: 'cubic-bezier(.3,1.4,.5,1)', fill: 'forwards' });
+        moto.querySelectorAll('.roda').forEach(w => w.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 650, iterations: Infinity }));
+        texto.animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: 550, fill: 'forwards' });
+        setTimeout(() => explodirConfete(innerWidth * 0.2, innerHeight * 0.25, 60, ouro, alcance * 0.6, ov), 700);
+        setTimeout(() => explodirConfete(innerWidth * 0.8, innerHeight * 0.25, 60, ouro, alcance * 0.6, ov), 1000);
+      }, 2200);
+      let fechado = false;
+      const fechar = () => { if (fechado) return; fechado = true; ov.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 450, fill: 'forwards' }).onfinish = () => ov.remove(); };
+      ov.addEventListener('click', fechar);
+      setTimeout(fechar, 12000);
+    }
+
     function app(M) {
     const OPS = M.ops.map(o => Object.assign({}, VISUAL[o.operacao] || { nome: o.operacao, logo: '', cls: '', cor: 'var(--tinta)' }, o));
     const NS = 'http://www.w3.org/2000/svg';
@@ -478,6 +541,7 @@
         c.style.animationDuration = (2.4 + Math.random() * 2) + 's'; c.style.animationDelay = (Math.random() * 0.8) + 's';
         c.style.height = (8 + Math.random() * 10) + 'px'; festa.appendChild(c); }
       setTimeout(() => { festa.innerHTML = ''; }, 5500);
+      if (!presenteAberto) { presenteAberto = true; setTimeout(abrirPresente, 700); }
     }
 
     let parar = null;
@@ -511,6 +575,16 @@
     document.getElementById('premio-grupo').classList.toggle('ganhou', P >= 1);
     anima(2200, e => document.querySelectorAll('.op .enche, .op .carro-op').forEach(x => { const w = x.dataset.w * e; if (x.classList.contains('enche')) { x.style.width = w + '%'; return; }
       x.style.left = `max(${w}%, ${PAT - 4}px)`; rodar(x, 'patinete', PAT, (w - (x._antes || 0)) / 100 * x.parentElement.clientWidth); x._antes = w; }));
+    // Operação que bateu 100%: confete saindo do próprio card, nas cores da marca, quando ele aparece na tela
+    const CORES_OP = { Exposicao: ['#e3dc00', '#f2c200', '#111', '#fff6a0'], ViaCloset: ['#c9c9c9', '#111', '#ffffff', '#8d8d8d'], GIP: ['#111', '#ffffff', '#d9d5cc', '#f2c200'] };
+    const cards = document.querySelectorAll('#ops .op');
+    const vigia = new IntersectionObserver(ents => ents.forEach(en => {
+      if (!en.isIntersecting) return;
+      vigia.unobserve(en.target);
+      const r = en.target.getBoundingClientRect(), o = OPS[+en.target.dataset.i];
+      setTimeout(() => explodirConfete(r.left + r.width * 0.78, r.top + 40, 70, CORES_OP[o.operacao] || ['#111', '#f2c200'], Math.min(innerWidth, 700) * 0.4), 2300);
+    }), { threshold: 0.6 });
+    OPS.forEach((o, i) => { if (o.feito >= o.meta) { cards[i].dataset.i = i; vigia.observe(cards[i]); } });
     let modo = 'barra'; try { modo = localStorage.getItem('meta_modo') || 'barra'; } catch (e) {}
     mostrar(MODOS[modo] ? modo : 'barra');
     }

@@ -64,6 +64,21 @@ test('meta: com a meta perto de 0% a motinha e os patinetes ficam "estacionados"
   assert.match(codigo, /x\.style\.left = `max\(\$\{w\}%, \$\{PAT - 4\}px\)`/);
 });
 
+test('meta: meta geral batida abre o presente (caixa cai, treme, explode e aparece a motinha) uma vez por visita', () => {
+  const ap = codigo.match(/function abrirPresente\([\s\S]*?\n    }\n/)[0];
+  assert.match(ap, /\/public\/meta\/caixa\.png/);
+  assert.match(ap, /veiculoHTML\('moto'/);
+  assert.match(ap, /explodirConfete\(/);
+  assert.match(codigo, /if \(!presenteAberto\) \{ presenteAberto = true;[^\n]*abrirPresente/);
+  assert.ok(fs.existsSync(caminho('public/meta/caixa.png')), 'falta a imagem da caixa de presente');
+});
+
+test('meta: cada operação que bate 100% solta confete do próprio card quando ele aparece na tela', () => {
+  assert.match(codigo, /function explodirConfete\(/);
+  assert.match(codigo, /new IntersectionObserver\([\s\S]*?explodirConfete\(/);
+  assert.match(codigo, /o\.feito >= o\.meta/);
+});
+
 test('meta: rota /meta publicada e as imagens existem', () => {
   assert.match(ler('vercel.json'), /"source": "\/meta", "destination": "\/meta\.html"/);
   for (const m of html.matchAll(/\/public\/meta\/([\w.]+)/g)) assert.ok(fs.existsSync(caminho('public/meta/' + m[1])), 'falta public/meta/' + m[1]);
