@@ -23,11 +23,16 @@ test('GeFinance: robô existe e usa o Edge já instalado, escondido, com perfil 
   assert.match(py(), /URL_MARGEM = 'https:\/\/app\.ge\.finance\/minha-conta\/dashboard\/margem'/);
 });
 
-test('GeFinance: filtra "Últimos 5 dias" e lê a resposta do painel de Margem (não o desenho da tela)', () => {
+test('GeFinance (26/11): atualiza o MÊS INTEIRO todo dia (o GeFinance vai baixando a margem dos dias passados); nos 5 primeiros dias, desde o mês anterior', () => {
+  const per = fn(py(), 'periodo_de_busca');
+  assert.match(per, /hoje\.day <= 5/);
+  assert.match(per, /hoje - timedelta\(days=1\)/, 'vai até ontem');
   const b = fn(py(), 'buscar');
-  assert.match(b, /'Últimos 5 dias'/);
+  assert.doesNotMatch(b, /Últimos 5 dias/);
+  assert.match(b, /periodo_de_busca\(/);
   assert.match(b, /expect_response\(/);
   assert.match(b, /dashboard-kpis\/margin/);
+  assert.match(b, /firstDate=%s&endDate=%s/, 'confere que o GeFinance filtrou exatamente o período pedido antes de usar');
 });
 
 test('GeFinance: dia a dia = faturamento total, margem de lucro bruto e vendas; só dias fechados; operação GIP', () => {
