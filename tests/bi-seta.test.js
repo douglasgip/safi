@@ -307,3 +307,15 @@ test('robô do Seta (24/11): se der erro, fecha o Seta que ele mesmo abriu (sen�
   assert.match(fn, /fechar_setas_abertos\(\)/);
   assert.match(py, /def fechar_setas_abertos\([\s\S]*?\.kill\(\)/);
 });
+
+test('robô do Seta: clicar no aviso responde na hora (sai do processo sem desmontar a janela, que derrubava o Python)', () => {
+  // 27/11: clicou em "Começar agora", a janela sumiu (Tk caiu com "alloc: invalid block" ao destruir a janela dentro
+  // do clique) e o robô ficou ~1 min tentando abrir o aviso de novo. Agora o clique termina o processo direto
+  // com o código da resposta (0 = começar, 10 = adiar), sem passar pelo destroy.
+  const py = ler('scripts/seta_robo.py');
+  const aviso = py.match(/def perguntar_antes\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  const pronto = py.match(/def aviso_pronto\([\s\S]*?\r?\n\r?\n\r?\n/)[0];
+  assert.match(aviso, /def adiar\(_=None\):\s*\n\s*os\._exit\(10\)/);
+  assert.match(aviso, /def comecar\(_=None\):\s*\n\s*os\._exit\(0\)/);
+  for (const f of [aviso, pronto]) assert.doesNotMatch(f, /root\.destroy\(\)/);
+});

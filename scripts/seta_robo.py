@@ -896,13 +896,13 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
         cv.create_text(x + lg / 2, 431, text=t, font=(L, 9, 'bold'), fill=c.LILAS)
         x += lg + 8
 
+    # 27/11: destruir a janela dentro do clique derrubava o Tk ("alloc: invalid block") e o robô perdia ~1 min
+    # tentando de novo. O aviso roda num processo só dele: a resposta sai direto pelo código de saída.
     def adiar(_=None):
-        res['v'] = 'adiar'
-        g.root.destroy()
+        os._exit(10)
 
     def comecar(_=None):
-        res['v'] = 'agora'
-        g.root.destroy()
+        os._exit(0)
 
     g.botao(cx - 130, 466, 120, '▶  Começar agora', True, comecar)
     g.botao(cx + 130, 466, 120, '❚❚  Adiar %d min' % ADIAR_MINUTOS, False, adiar)
@@ -914,8 +914,7 @@ def perguntar_antes(segundos=AVISO_SEGUNDOS):
 
     def tick():
         if n['s'] <= 0:
-            g.root.destroy()
-            return
+            os._exit(0)
         fim = n['s'] <= 10
         cv.itemconfig(numero, text=str(n['s']), fill=c.VERMELHO if fim else c.AMBAR2)
         cv.itemconfig(anel, extent=-359.9 * n['s'] / segundos, outline=c.VERMELHO if fim else c.AMBAR)
@@ -988,13 +987,13 @@ def aviso_pronto(resumo, segundos=AVISO_PRONTO_SEGUNDOS):
     y += 34
 
     def fechar(_=None):
-        g.root.destroy()
+        os._exit(0)  # ver perguntar_antes: sem desmontar a janela dentro do clique
 
     def abrir_bi(_=None):
         try:
             webbrowser.open(URL_BI)
         finally:
-            g.root.destroy()
+            os._exit(0)
 
     g.botao(cx - 130, y, 120, '▦  Abrir o BI', True, abrir_bi)
     g.botao(cx + 130, y, 120, '✓  OK', False, fechar)
@@ -1005,8 +1004,7 @@ def aviso_pronto(resumo, segundos=AVISO_PRONTO_SEGUNDOS):
 
     def tick():
         if falta['s'] <= 0:
-            g.root.destroy()
-            return
+            os._exit(0)
         cv.itemconfig(conta, text='fecha sozinho em %d s   ·   Enter ou Esc = OK' % falta['s'])
         g.pisca()
         falta['s'] -= 1
