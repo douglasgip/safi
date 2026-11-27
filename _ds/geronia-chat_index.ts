@@ -163,15 +163,26 @@ function sumRows(rows: any[]) {
   return s
 }
 
+// Anos lidos do DRE (virada 2027): o do mês de referência (mês anterior ao atual, pois o DRE fecha com um mês de
+// atraso) e o anterior a ele, sem ir antes de 2026 (não há dados). Jan/2027 → [2026]; fev/2027 → [2026, 2027].
+function anosDosDados(hoje: Date): number[] {
+  const ref = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1).getFullYear()
+  const out: number[] = []
+  for (let a = Math.max(2026, ref - 1); a <= ref; a++) out.push(a)
+  return out
+}
+
+// rowsByMes: chave = ano * 100 + mês (ex.: 202612), para a série atravessar a virada do ano.
 function opSummaryText(label: string, rowsByMes: Record<number, any[]>) {
   const meses = Object.keys(rowsByMes).map(Number).sort((a, b) => a - b)
   if (!meses.length) return `${label}: sem dados disponíveis no painel.`
   const lines: string[] = []
-  for (const mes of meses) {
-    const s = sumRows(rowsByMes[mes])
+  for (const chave of meses) {
+    const ano = Math.floor(chave / 100), mes = chave % 100
+    const s = sumRows(rowsByMes[chave])
     const mcPct = s.receita_bruta > 0 ? (s.margem_contribuicao / s.receita_bruta * 100).toFixed(1) : '0'
     const impostos = s.icms_grpr + s.simples_das + s.outros_impostos
-    lines.push(`  ${MES_NOME[mes]}/2026: faturamento ${fmtR(s.receita_bruta)}, receita líquida ${fmtR(s.receita_liquida)}, margem de contribuição ${fmtR(s.margem_contribuicao)} (${mcPct}%), resultado líquido ${fmtR(s.resultado_liquido)}, impostos recolhidos ${fmtR(impostos)}.`)
+    lines.push(`  ${MES_NOME[mes]}/${ano}: faturamento ${fmtR(s.receita_bruta)}, receita líquida ${fmtR(s.receita_liquida)}, margem de contribuição ${fmtR(s.margem_contribuicao)} (${mcPct}%), resultado líquido ${fmtR(s.resultado_liquido)}, impostos recolhidos ${fmtR(impostos)}.`)
   }
   return `${label}:\n${lines.join('\n')}`
 }
@@ -201,7 +212,7 @@ function funcSummaryText(labels: string[], rows: any[]) {
   return `DADOS DE FUNCIONÁRIOS (hoje: ${todayBR}; TOTAL: ${total} colaborador(es) nestes dados, cada um em uma linha própria. Ao responder perguntas que peçam filtrar, contar, agrupar ou listar por mês/data/período/empresa, releia TODAS as linhas de TODAS as empresas abaixo, uma por uma, sem pular nem duplicar ninguém — ao terminar, some quantos você listou e confira se bate com ${total}; se não bater, refaça antes de responder. Use as datas de admissão para calcular tempo de casa e as datas de nascimento para calcular idade quando perguntarem):\n\n${blocks.join('\n\n')}`
 }
 
-function lancamentosDetailText(rows: any[]) {
+function lancamentosDetailText(rows: any[], anos: number[]) {
   const byOp: Record<OpKey, any[]> = { EPGIP: [], Exposicao: [], ViaCloset: [] }
   for (const r of rows) {
     const op = (Object.keys(OP_EMPRESA_IDS) as OpKey[]).find(k => OP_EMPRESA_IDS[k].includes(r.empresa_id))
@@ -213,11 +224,12 @@ function lancamentosDetailText(rows: any[]) {
     if (!opRows.length) return `${OP_LABEL[op]}: sem lançamentos detalhados cadastrados.`
 
     const byMes: Record<number, any[]> = {}
-    for (const r of opRows) (byMes[r.mes] ??= []).push(r)
+    for (const r of opRows) (byMes[r.ano * 100 + r.mes] ??= []).push(r)
     const meses = Object.keys(byMes).map(Number).sort((a, b) => a - b)
 
-    const mesTexts = meses.map(mes => {
-      const sorted = byMes[mes].slice().sort((a, b) => {
+    const mesTexts = meses.map(chave => {
+      const ano = Math.floor(chave / 100), mes = chave % 100
+      const sorted = byMes[chave].slice().sort((a, b) => {
         const ca = a.lancamentos_subcampos?.lancamentos_campos?.lancamentos_classes?.ordem ?? 0
         const cb = b.lancamentos_subcampos?.lancamentos_campos?.lancamentos_classes?.ordem ?? 0
         if (ca !== cb) return ca - cb
@@ -234,13 +246,13 @@ function lancamentosDetailText(rows: any[]) {
           const subcampo = r.lancamentos_subcampos?.nome || '—'
           return `    ${classe} > ${campo} > ${subcampo}: ${fmtR(Number(r.valor))}`
         })
-      return `  ${MES_NOME[mes]}/2026:\n${lines.join('\n') || '    sem valores lançados.'}`
+      return `  ${MES_NOME[mes]}/${ano}:\n${lines.join('\n') || '    sem valores lançados.'}`
     })
 
     return `${OP_LABEL[op]}:\n${mesTexts.join('\n')}`
   })
 
-  return `DETALHAMENTO DE LANÇAMENTOS (linha a linha, por classe > campo > subcampo, série mensal de 2026):\n\n${opTexts.join('\n\n')}`
+  return `DETALHAMENTO DE LANÇAMENTOS (linha a linha, por classe > campo > subcampo, série mensal de ${anos.join(' e ')}):\n\n${opTexts.join('\n\n')}`
 }
 
 // ============ Extras: telas acessíveis, indicadores do conselho, reuniões ============
@@ -456,13 +468,14 @@ Deno.serve(async (req: Request) => {
       dreAccessText = `Acesso a dados FINANCEIROS (DRE): RESTRITO a "${labels}". Você NÃO pode falar, comparar, estimar ou mencionar números de nenhuma outra operação nem do consolidado do grupo. Se a pergunta atual pedir dados fora disso, recuse educadamente só essa pergunta e ofereça ajuda sobre ${labels}.`
     }
 
+    const anos = anosDosDados(new Date())
     let dreDataText = ''
     if (dreOps.length) {
       const empresaIds = dreOps.flatMap(op => OP_EMPRESA_IDS[op])
       const { data: dreRows } = await sb
         .from('dre_consolidado')
-        .select('empresa_id, mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
-        .eq('ano', 2026)
+        .select('empresa_id, ano, mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
+        .in('ano', anos)
         .in('empresa_id', empresaIds)
 
       const opTexts = dreOps.map(op => {
@@ -470,7 +483,7 @@ Deno.serve(async (req: Request) => {
         const rowsByMes: Record<number, any[]> = {}
         for (const r of dreRows || []) {
           if (!ids.includes(r.empresa_id)) continue
-          ;(rowsByMes[r.mes] ??= []).push(r)
+          ;(rowsByMes[r.ano * 100 + r.mes] ??= []).push(r)
         }
         return opSummaryText(OP_LABEL[op], rowsByMes)
       })
@@ -479,14 +492,14 @@ Deno.serve(async (req: Request) => {
       if (dreOps.length === ALL_OPS.length) {
         const { data: consRows } = await sb
           .from('dre_consolidado')
-          .select('mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
-          .eq('ano', 2026).eq('empresa_id', 'Consolidado')
+          .select('ano, mes, receita_bruta, receita_liquida, margem_contribuicao, resultado_liquido, icms_grpr, simples_das, outros_impostos, cmv')
+          .in('ano', anos).eq('empresa_id', 'Consolidado')
         const rowsByMes: Record<number, any[]> = {}
-        for (const r of consRows || []) (rowsByMes[r.mes] ??= []).push(r)
+        for (const r of consRows || []) (rowsByMes[r.ano * 100 + r.mes] ??= []).push(r)
         consolidadoTxt = '\n\n' + opSummaryText('CONSOLIDADO DO GRUPO', rowsByMes)
       }
 
-      dreDataText = `DADOS DO PAINEL (série mensal completa de 2026 disponível no painel):\n\n${opTexts.join('\n\n')}${consolidadoTxt}`
+      dreDataText = `DADOS DO PAINEL (série mensal completa de ${anos.join(' e ')} disponível no painel):\n\n${opTexts.join('\n\n')}${consolidadoTxt}`
     }
 
     // ---- Permissões: Funcionários ----
@@ -537,15 +550,15 @@ Deno.serve(async (req: Request) => {
       for (let off = 0; ; off += 1000) {
         const { data: pag } = await sb
           .from('lancamentos_valores')
-          .select('empresa_id, mes, valor, lancamentos_subcampos(nome, ordem, lancamentos_campos(nome, ordem, lancamentos_classes(nome, ordem)))')
-          .eq('ano', 2026)
+          .select('empresa_id, ano, mes, valor, lancamentos_subcampos(nome, ordem, lancamentos_campos(nome, ordem, lancamentos_classes(nome, ordem)))')
+          .in('ano', anos)
           .order('id')
           .range(off, off + 999)
         if (!pag || !pag.length) break
         lancRows.push(...pag)
         if (pag.length < 1000) break
       }
-      lancamentosDataText = lancamentosDetailText(lancRows as never[])
+      lancamentosDataText = lancamentosDetailText(lancRows as never[], anos)
     }
 
     // ---- Extras: manual do SAFI + indicadores do conselho, reuniões ----

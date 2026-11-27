@@ -690,6 +690,15 @@
         </a>
       </div>
       <div id="dc-nav-right" style="display:flex;align-items:center;gap:8px">
+        <div title="Ano" style="position:relative;display:inline-flex;align-items:center;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 14px 9px 14px">
+          <span style="font-size:9px;color:#475569;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap;margin-right:8px">Ano</span>
+          <select value="{{ anoTxt }}" onChange="{{ setAno }}" aria-label="Ano" style="appearance:none;-webkit-appearance:none;background:transparent;border:none;color:#f1f5f9;font-family:Inter,sans-serif;font-size:14px;font-weight:600;cursor:pointer;outline:none;padding-right:18px">
+            <sc-for list="{{ anoOpts }}" as="ao" hint-placeholder-count="2">
+              <option value="{{ ao.v }}">{{ ao.label }}</option>
+            </sc-for>
+          </select>
+          <svg style="position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
         <div id="dc-period-label" style="font-size:15px;font-weight:700;color:#f59e0b;white-space:nowrap">{{ periodLabel }}</div>
         <sc-if value="{{ tab0Active }}" hint-placeholder-val="{{ true }}">
           <div style="display:flex;align-items:center;gap:10px;background:rgba(15,23,42,0.8);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 16px 9px 14px">
@@ -1069,7 +1078,7 @@
           <sc-if value="{{ compareIguais }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;align-items:center;gap:8px;margin-top:12px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.18);border-radius:10px;padding:11px 14px">
               <span style="font-size:13px;flex-shrink:0">💡</span>
-              <span style="font-size:10.5px;color:#a8a29e;line-height:1.5">O lado B está igual ao A. Escolha outro período (ou outras operações) em B para ver a comparação — se A começa em Jan/2026 não existe período anterior na base.</span>
+              <span style="font-size:10.5px;color:#a8a29e;line-height:1.5">O lado B está igual ao A. Escolha outro período (ou outras operações) em B para ver a comparação — se A começa em Janeiro não existe período anterior na base.</span>
             </div>
           </sc-if>
 
@@ -1098,7 +1107,7 @@
       <!-- Evolução Mensal — full width -->
       <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:12px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Evolução Mensal — 2026</div>
+          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Evolução Mensal — {{ anoTxt }}</div>
           <div style="display:flex;align-items:center;gap:5px">
             <sc-for list="{{ metricBtns }}" as="mb" hint-placeholder-count="3">
               <button onClick="{{ mb.setFn }}" style="padding:3px 9px;background:{{ mb.bg }};border:1px solid {{ mb.border }};color:{{ mb.color }};font-family:Inter,sans-serif;font-size:10px;font-weight:600;cursor:pointer;border-radius:{{ mb.radius }}">{{ mb.label }}</button>
@@ -1121,7 +1130,7 @@
       <div id="dre-charts-2col" style="display:grid;grid-template-columns:1fr 300px;gap:10px;margin-bottom:10px">
         <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Margem — 2026</div>
+            <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Margem — {{ anoTxt }}</div>
             <button onClick="{{ openDreMargemChart }}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-size:13px;width:24px;height:24px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">⤢</button>
           </div>
           <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
@@ -1154,7 +1163,7 @@
       <!-- Evolução do Resultado — full width -->
       <div style="background:rgba(15,23,42,0.75);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:18px 20px;margin-bottom:16px;backdrop-filter:blur(12px);box-shadow:0 4px 16px rgba(0,0,0,0.35)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Evolução do Resultado — 2026 · arraste para comparar períodos</div>
+          <div style="font-size:9px;font-weight:700;color:#64748b;letter-spacing:1.5px;text-transform:uppercase">Evolução do Resultado — {{ anoTxt }} · arraste para comparar períodos</div>
           <button onClick="{{ openLineChart }}" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);color:#64748b;font-size:13px;width:24px;height:24px;border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">⤢</button>
         </div>
         <div style="display:flex;gap:12px;margin-bottom:8px;flex-wrap:wrap">
@@ -1470,18 +1479,32 @@
     if (e.target.closest('[data-action="sidebar-close"]')) { dcSidebarClose(); return; }
   });
 
+  // ── Ano do DRE/Resumo Contábil (virada 2027, testado em tests/virada-2027.test.js) ──
+  // Mês de referência = mês ANTERIOR ao atual (o DRE fecha com um mês de atraso): em janeiro/2027 ainda é dez/2026.
+  function dcAnoRef(hoje) { const d = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); return { ano: d.getFullYear(), idx: d.getMonth() }; }
+  // ?ano=AAAA na URL escolhe o ano (de 2026, quando começam os dados, até o ano atual); sem ele, o ano de referência.
+  function dcAnoEscolhido(busca, hoje) {
+    const m = /[?&]ano=(\d{4})/.exec(busca || '');
+    const a = m ? +m[1] : dcAnoRef(hoje).ano;
+    return Math.min(Math.max(a, 2026), hoje.getFullYear());
+  }
+  // Índice (0 = jan) do mês de referência dentro do ano mostrado: ano que já passou = dezembro; ano ainda sem DRE = janeiro.
+  function dcMesRefIdx(ano, hoje) { const r = dcAnoRef(hoje); return ano < r.ano ? 11 : ano > r.ano ? 0 : r.idx; }
+  function dcAnosDisponiveis(hoje) { const out = []; for (let a = 2026; a <= hoje.getFullYear(); a++) out.push(a); return out; }
+  window.DC_ANO = dcAnoEscolhido(location.search, new Date());
+
 </script>
 
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
   // Mês padrão = mês anterior ao atual (não mais fixo em Julho) — mesmo critério já usado
-  // no card de resumo da Home. Índice dentro de _months (0=Jan/2026); em Janeiro cai pro
-  // próprio Jan/2026 já que não existe entrada de Dez/2025 nesse array.
+  // no card de resumo da Home, agora dentro do ano mostrado (dcMesRefIdx: ano que já passou
+  // abre em dezembro; em janeiro/2027 o ano padrão ainda é 2026 — ver dcAnoRef).
   // DRE (aba 1) abre em YTD — Jan até o mês anterior ao atual — porque nunca existe
   // DRE fechado do mês corrente. Resumo Contábil (aba 0) continua abrindo num único
   // mês (Competência), esse sim o mês anterior. As duas abas dividem monthStart/
   // monthEnd; por isso o cálculo do tab inicial é repetido aqui pra decidir o range.
-  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?1:0, monthStart: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?0:(function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), monthEnd: (function(){var i=new Date().getMonth()-1;return i<0?0:i;})(), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'],
+  state = { tab: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?1:0, monthStart: (window.location.pathname==='/dre'||window.location.hash==='#dre'||window.location.hash==='#lancamentos-detalhados')?0:dcMesRefIdx(window.DC_ANO,new Date()), monthEnd: dcMesRefIdx(window.DC_ANO,new Date()), selectedCos: ['EPGIP','Exposicao','ViaCloset'], chartMetric: 'resultado', barCos:['Consolidado','EP','GIP','Exposicao','ViaCloset'], barSeries:['entrada','saida','despesa'], expandedChart: null, resumoSel:['EP','GIP','Exposicao','ViaCloset','RP'],
     // Comparação de período nos gráficos da DRE — sólido (período atual) x tracejado
     // (período de comparação). Por padrão desligada; ao ligar, o período de comparação
     // começa como o intervalo anterior equivalente (mesmo tamanho, imediatamente antes),
@@ -1514,12 +1537,13 @@ class Component extends DCLogic {
   // aqui, nunca até Dezembro), no "Trim." (os 3 meses terminando aqui) e no destaque
   // de mês atual dos Lançamentos Detalhados — mudar aqui corrige todos eles de uma vez.
   get _mesAtualIdx(){
-    const i = new Date().getMonth() - 1;
-    return Math.max(0, Math.min(i, this._months.length-1));
+    return Math.max(0, Math.min(dcMesRefIdx(this._ano, new Date()), this._months.length-1));
   }
   _c = {};
 
-  _months = ['Jan/2026','Fev/2026','Mar/2026','Abr/2026','Mai/2026','Jun/2026','Jul/2026','Ago/2026','Set/2026','Out/2026','Nov/2026','Dez/2026'];
+  // Ano mostrado (?ano= na URL ou o do mês de referência) — trocar de ano recarrega a página (setAno).
+  _ano = window.DC_ANO;
+  _months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'].map(m => m + '/' + window.DC_ANO);
   // Rótulos/cores por empresa "crua" (usados no Resumo Contábil e como fallback) — nomes dos responsáveis
   _coLabels = {'EP':'EP','GIP':'Guilherme','Exposicao':'Isabela','ViaCloset':'Juliane','Consolidado':'Consolidado','RP':'RP'};
   _coColors = {'EP':'#ffffff','GIP':'#ffffff','Exposicao':'#fff115','ViaCloset':'#d4526e','Consolidado':'#1E293B','RP':'#6B7280'};
@@ -1627,13 +1651,13 @@ class Component extends DCLogic {
     try {
       const requests = [
         fetch(`${B}/rest/v1/empresas?select=*&order=ordem`, {headers:hU}),
-        fetch(`${B}/rest/v1/resumo_mensal?select=*&ano=eq.2026&order=empresa_id`, {headers:hU}),
-        fetch(`${B}/rest/v1/dre_consolidado?select=*&ano=eq.2026&order=mes`, {headers:hU}),
+        fetch(`${B}/rest/v1/resumo_mensal?select=*&ano=eq.${this._ano}&order=empresa_id`, {headers:hU}),
+        fetch(`${B}/rest/v1/dre_consolidado?select=*&ano=eq.${this._ano}&order=mes`, {headers:hU}),
         userId ? fetch(`${B}/rest/v1/user_profiles?select=*&id=eq.${userId}`, {headers:hU}) : Promise.resolve(null),
         fetch(`${B}/rest/v1/lancamentos_classes?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_campos?select=*&order=ordem`, {headers:hU}),
         fetch(`${B}/rest/v1/lancamentos_subcampos?select=*&order=ordem`, {headers:hU}),
-        buscarTodasPaginasREST(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.2026&order=id`, hU).then(linhas => ({ json: async () => linhas })),
+        buscarTodasPaginasREST(`${B}/rest/v1/lancamentos_valores?select=subcampo_id,empresa_id,ano,mes,valor&ano=eq.${this._ano}&order=id`, hU).then(linhas => ({ json: async () => linhas })),
         fetch(`${B}/rest/v1/creditos_tributarios?select=empresa_id,icms,pis,cofins,total,atualizado_em`, {headers:hU})
       ];
       const [r1,r2,r3,r4,r5,r6,r7,r8,r9] = await Promise.all(requests);
@@ -2619,7 +2643,7 @@ class Component extends DCLogic {
       mkPreset('mes','Mês',`Somente ${this._months[mAtual]}`,mAtual,mAtual),
       mkPreset('tri','Trim.',`Últimos 3 meses — ${this._months[triIni]} a ${this._months[mAtual]}`,triIni,mAtual),
       mkPreset('ytd','YTD',`Acumulado do ano — Jan a ${this._months[mAtual]}`,0,mAtual),
-      mkPreset('ano','Ano','Ano inteiro — Jan a Dez/2026',0,this._months.length-1),
+      mkPreset('ano','Ano',`Ano inteiro — Jan a Dez/${this._ano}`,0,this._months.length-1),
     ];
 
     // ══ Comparação A × B nos gráficos ═══════════════════════════════════════
@@ -2766,7 +2790,7 @@ class Component extends DCLogic {
       lancMkPreset('Mês', `Somente ${this._months[mAtual]}`, mAtual, mAtual),
       lancMkPreset('Trim.', `Últimos 3 meses — ${this._months[triIni]} a ${this._months[mAtual]}`, triIni, mAtual),
       lancMkPreset('YTD', `Acumulado do ano — Jan a ${this._months[mAtual]}`, 0, mAtual),
-      lancMkPreset('Ano', 'Ano inteiro — Jan a Dez/2026', 0, this._months.length-1),
+      lancMkPreset('Ano', `Ano inteiro — Jan a Dez/${this._ano}`, 0, this._months.length-1),
     ];
 
     const lancDet=lancOpen?this._lancDetalheRows(lancCos,lancMs+1,lancMe+1,lancPorCnpj):{rows:[],months:[]};
@@ -2783,7 +2807,7 @@ class Component extends DCLogic {
     // e fica por cima das linhas ao rolar; com transparência o texto das linhas
     // por baixo vazava através do destaque âmbar. #22211f = mistura opaca
     // equivalente a âmbar 10% sobre o fundo #0a0f1e.
-    const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/2026','/26'), color:cur?'#f59e0b':'#64748b', bg:cur?'#22211f':'#0a0f1e'};});
+    const lancHeaderCols=lancDet.months.map(m=>{const cur=(m-1)===mAtual; return {label:this._months[m-1].replace('/'+this._ano,'/'+String(this._ano).slice(2)), color:cur?'#f59e0b':'#64748b', bg:cur?'#22211f':'#0a0f1e'};});
     // Formata uma célula {v,av,ah} → texto do valor + AV%/AH% igual a AV/AH da
     // tabela principal do DRE: AV% = |valor| sobre a Receita Bruta do mês; AH% =
     // variação vs o mês anterior. Valor positivo em verde, negativo em vermelho.
@@ -2900,8 +2924,12 @@ class Component extends DCLogic {
       months,empresas,totals,coButtons,selLabel,metricBtns,dreRows,dreKPI,ahBaseLabel,companyKPIs,creditosTributarios,
       barSeriesBtns,barCosBtns,dreChartLegend,drePieLegend:dreChartLegend,barLegend,modalIsCompanyChart,modalIsSeriesChart,
       modalOpen:!!this.state.expandedChart,
-      modalTitle:{bar:'Entrada / Saída / Despesa por Empresa',line:'Evolução do Resultado — 2026','dre-evo':'Evolução Mensal — 2026','dre-pie':'Faturamento por Operação','dre-margem':'Margem por Operação'}[this.state.expandedChart]||'',
+      modalTitle:{bar:'Entrada / Saída / Despesa por Empresa',line:'Evolução do Resultado — '+this._ano,'dre-evo':'Evolução Mensal — '+this._ano,'dre-pie':'Faturamento por Operação','dre-margem':'Margem por Operação'}[this.state.expandedChart]||'',
       closeModal:()=>this.setState({expandedChart:null}),
+      anoTxt:String(this._ano),
+      anoOpts:dcAnosDisponiveis(new Date()).map(a=>({v:a,label:String(a)})),
+      // Trocar o ano recarrega a página com ?ano= (todos os dados e filtros são montados a partir do ano).
+      setAno:e=>{const a=parseInt(e.target.value);if(a&&a!==this._ano)location.href=location.pathname+'?ano='+a+location.hash;},
       closeIfBackdrop:e=>{if(e.target===e.currentTarget)this.setState({expandedChart:null});},
       openBarChart:()=>this.setState({expandedChart:'bar'}),
       openLineChart:()=>this.setState({expandedChart:'line'}),
