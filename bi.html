@@ -142,6 +142,13 @@
     .chip.on { background: rgba(56,189,248,0.15); border-color: rgba(56,189,248,0.45); color: #7dd3fc; }
     .chip.todos { color: #94a3b8; }
     .f-resumo { font-size: 11.5px; color: #64748b; margin: -8px 0 16px 2px; }
+    /* Até que dia cada operação está atualizada (aviso de dado atrasado) */
+    .atual { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; font-size: 12px; color: #94a3b8; margin: -6px 0 18px; }
+    .atual-l { font-size: 9.5px; font-weight: 700; letter-spacing: 1.4px; text-transform: uppercase; color: #64748b; }
+    .atual-op b { font-weight: 600; color: #cbd5e1; }
+    .atual-op.ambar { color: #fbbf24; } .atual-op.ambar b { color: #fbbf24; }
+    .atual-op.vermelho { color: #f87171; } .atual-op.vermelho b { color: #f87171; }
+    .atual-motivo { flex-basis: 100%; font-size: 11.5px; color: #94a3b8; border-left: 2px solid #f59e0b; padding: 2px 0 2px 10px; line-height: 1.5; }
     .delta { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 800; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.05); }
     .delta.up { color: #4ade80; } .delta.down { color: #f87171; }
     .cmp { font-size: 11px; color: #64748b; margin-top: 4px; }
@@ -195,6 +202,7 @@
       </div>
     </div>
     <div class="f-resumo" id="f-resumo"></div>
+    <div class="atual" id="bi-atualizado" aria-live="polite"></div>
 
     <div class="kpis" id="kpis"></div>
 
@@ -411,12 +419,15 @@
     const metaDia = (op, s) => { const v = metasDia[op + '|' + s]; return v == null ? null : v; };
     const hojeIso = () => iso(new Date());
 
+    let atualizacao = [];
     async function carregar() {
-      const [k, m] = await Promise.all([
+      const [k, m, a] = await Promise.all([
         sb.from('bi_kpi_diario').select('operacao,data,faturamento,margem,ticket_medio,pecas_atendimento,qtd_vendas').order('data').range(0, 49999),
         sb.from('bi_meta_diaria').select('operacao,data,meta').order('data').range(0, 49999),
+        sb.from('bi_atualizacao').select('operacao,conferido_ate,atualizado_em,ultimo_erro,erro_em'),
       ]);
       if (k.error) throw k.error; if (m.error) throw m.error;
+      atualizacao = a.error ? [] : (a.data || []);
       linhas = k.data || []; metasDia = {};
       (m.data || []).forEach(r => { metasDia[r.operacao + '|' + r.data] = +r.meta; });
     }
@@ -653,6 +664,37 @@
     });
     window.addEventListener('beforeunload', e => { if (Object.keys({ ...metaEdit, ...metaOrig }).some(k => metaEdit[k] !== metaOrig[k])) { e.preventDefault(); e.returnValue = ''; } });
 
+    // ── Até que dia cada operação está atualizada (testado em tests/bi-atraso.test.js) ──
+    // Dias de atraso do último dia CONFERIDO pelo robô (com ou sem venda). O robô roda de manhã: depois das 9h o
+    // esperado é ontem; antes, anteontem. null = ainda sem registro.
+    function atrasoBI(conferidoAte, agora) {
+      if (!conferidoAte) return null;
+      const esperado = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() - (agora.getHours() >= 9 ? 1 : 2));
+      const [y, m, d] = conferidoAte.split('-').map(Number);
+      return Math.max(0, Math.round((esperado - new Date(y, m - 1, d)) / 864e5));
+    }
+    // Faixa sempre visível: "Exposição até 26/11 · ..."; atrasada fica âmbar (1 dia) ou vermelha (2+).
+    // O admin vê também o motivo (último erro do robô) e o que fazer.
+    function faixaAtualizacao(regs, ops, agora, admin) {
+      const ddmm = s => s.slice(8, 10) + '/' + s.slice(5, 7);
+      const hora = s => { const d = new Date(s); return ddmm(iso(d)) + ' às ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+      const partes = [], motivos = [];
+      ops.forEach(op => {
+        const r = regs.find(x => x.operacao === op.id) || {};
+        const atraso = atrasoBI(r.conferido_ate, agora);
+        if (atraso == null) { partes.push('<span class="atual-op"><b>' + esc(op.nome) + '</b> sem registro ainda</span>'); return; }
+        const cls = atraso >= 2 ? 'vermelho' : atraso === 1 ? 'ambar' : '';
+        partes.push('<span class="atual-op ' + cls + '"><b>' + esc(op.nome) + '</b> até ' + ddmm(r.conferido_ate) +
+          (atraso ? ' · ' + atraso + (atraso === 1 ? ' dia' : ' dias') + ' de atraso' : '') + '</span>');
+        if (admin && atraso) {
+          motivos.push('<b>' + esc(op.nome) + ':</b> ' + (r.ultimo_erro && r.erro_em
+            ? esc(r.ultimo_erro) + ' (' + hora(r.erro_em) + '). O robô tenta de novo ao desbloquear o PC e às 08:32; se preferir, rode na mão.'
+            : 'o robô não rodou desde então (PC desligado?). Ele roda sozinho ao ligar ou desbloquear o PC.'));
+        }
+      });
+      return '<span class="atual-l">Atualizado</span>' + partes.join('') + (motivos.length ? '<div class="atual-motivo">' + motivos.join('<br>') + '</div>' : '');
+    }
+
     async function init() {
       const { data } = await sb.auth.getSession();
       if (!data.session) return window.location.replace('/login');
@@ -686,6 +728,7 @@
       g('mt-mes').innerHTML = meses.map(m => '<option value="' + m + '">' + MESES[+m.slice(5) - 1] + '/' + m.slice(0, 4) + '</option>').join('');
       g('mt-mes').value = atual; g('mt-op').value = F.ops[0];
 
+      g('bi-atualizado').innerHTML = faixaAtualizacao(atualizacao, OPS.filter(o => opsPermitidas.includes(o.id)), new Date(), !!prof.is_admin);
       g('bi-loading').style.display = 'none';
       g('bi-main').style.display = 'block';
       renderFiltros(); renderMeta(); render();

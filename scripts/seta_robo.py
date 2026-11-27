@@ -641,6 +641,13 @@ def rodar(cfg, ensaio=False, pedidos=None, antes_de_enviar=None):
     hoje = date.today()
     planilhas = []
     falha = None  # se um dia der erro, manda ao SAFI o que já deu certo e só depois acusa o erro
+    falhas = {}   # loja -> erro (para o aviso de dado atrasado do BI)
+
+    def informar():
+        # Rotina normal (não dia avulso nem ensaio): até que dia cada loja está conferida, ou o erro dela.
+        if pedidos is None and not ensaio:
+            informar_situacao(cfg, {l: ({'erro': motivo_amigavel(falhas[l])} if l in falhas else {'conferido_ate': est.get(l)})
+                                    for l in ('Exposicao', 'ViaCloset') if l in falhas or est.get(l)})
     # Com outras janelas abertas o Seta abre por baixo e o Windows não deixa trazê-lo para a frente:
     # minimiza tudo antes de abrir e, no fim, devolve as janelas como estavam (25/11).
     minimizei = False
@@ -679,6 +686,7 @@ def rodar(cfg, ensaio=False, pedidos=None, antes_de_enviar=None):
                 log('ERRO na loja', loja, '->', e, '(os dias que já deram certo seguem para o SAFI)')
                 PROGRESSO.falhou(i, 'deu erro (ver robo.log)')
                 falha = falha or e
+                falhas[loja] = e
                 fechar_setas_abertos()
     finally:
         if minimizei:
@@ -687,6 +695,7 @@ def rodar(cfg, ensaio=False, pedidos=None, antes_de_enviar=None):
         antes_de_enviar()  # o e-commerce (GeFinance) entra aqui, entre as lojas e o envio
     if not planilhas:
         PROGRESSO.feito(3, 'nada novo das lojas')
+        informar()
         if falha:
             raise falha
         return 0
@@ -706,6 +715,9 @@ def rodar(cfg, ensaio=False, pedidos=None, antes_de_enviar=None):
         log('  sem vendas:', s)
     if r.get('erro'):
         PROGRESSO.falhou(3, 'o SAFI não gravou')
+        for l in ('Exposicao', 'ViaCloset'):
+            falhas.setdefault(l, RuntimeError('SAFI: ' + str(r['erro'])))
+        informar()
         raise RuntimeError('SAFI: ' + str(r['erro']))
     PROGRESSO.feito(3, '%s dia(s) gravado(s)' % r.get('gravadas'))
     if not ensaio:
@@ -721,6 +733,7 @@ def rodar(cfg, ensaio=False, pedidos=None, antes_de_enviar=None):
                     break
                 est[loja] = p['data']
         gravar_estado(est)
+    informar()
     if falha:
         raise falha
     return 0
@@ -1360,11 +1373,13 @@ def gefinance_do_dia(cfg):
         est['GeFinance'] = hoje
         gravar_estado(est)
         u = linhas[-1]
+        informar_situacao(cfg, {'GIP': {'conferido_ate': u['data']}})
         PROGRESSO.feito(2, 'mês atualizado · %s %s' % (u['data'][8:10] + '/' + u['data'][5:7], brl(u['faturamento']).split(',')[0]))
         return linhas
     except Exception as e:
         log('GeFinance: ERRO (tento no próximo gatilho):', e)
         PROGRESSO.falhou(2, 'não consegui ler o GeFinance')
+        informar_situacao(cfg, {'GIP': {'erro': 'não consegui ler o GeFinance: ' + motivo_amigavel(e)}})
         return None
 
 
@@ -1465,6 +1480,37 @@ def enviar(cfg, planilhas=None, ensaio=False, linhas=None):
             return json.loads(r.read().decode('utf-8'))
     except urllib.error.HTTPError as e:
         return json.loads(e.read().decode('utf-8') or '{}') | {'ok': False, 'status': e.code}
+
+
+def motivo_amigavel(e):
+    """Erro do robô em português, para o aviso de dado atrasado do BI (o admin vê; detalhe fica no robo.log)."""
+    t = str(e)
+    if 'window handle' in t or 'não abriu' in t:
+        return 'o Seta não abriu direito'
+    if 'No module named' in t:
+        return 'falta uma peça do robô no PC'
+    if 'Seta já está aberto' in t:
+        return 'o Seta estava aberto (o robô só roda com ele fechado)'
+    if 'SAFI' in t:
+        return 'o SAFI não gravou o envio'
+    return t[:200]
+
+
+def informar_situacao(cfg, situacao):
+    """Conta ao SAFI até que dia o robô conferiu cada operação (com ou sem venda) ou o erro da tentativa.
+    É o que o BI mostra no topo ("Exposição até 26/11"). Falhar aqui nunca derruba o robô."""
+    import json
+    import urllib.request
+    token = cfg.get('safi', 'token', fallback='').strip()
+    if not token or not situacao:
+        return
+    try:
+        req = urllib.request.Request(URL_SAFI, data=json.dumps({"situacao": situacao}).encode('utf-8'), method='POST',
+                                     headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            r.read()
+    except Exception as e:
+        log('não consegui informar a situação ao SAFI:', e)
 
 
 def main(args):

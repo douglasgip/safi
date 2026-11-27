@@ -10,6 +10,10 @@
 // Ou POST { "planilhas": [ { operacao, data, resumo: [...], listagem: [...] } ], "ensaio"?: true } — o robô do Seta
 // (scripts/seta_robo.py) manda as planilhas cruas e as contas são feitas aqui (ver kpiDasPlanilhas). Ensaio não grava.
 // Resposta: { ok, recebidas, gravadas, erros: [{ linha, motivo }] } — linhas com erro não impedem as boas.
+// Situação do robô (aviso de dado atrasado no BI, 27/11/2026): junto ou sozinho, "situacao": { "Exposicao":
+// { "conferido_ate": "2026-11-26" }, "GIP": { "erro": "não consegui ler o GeFinance" } } — até que dia ele conferiu
+// cada operação (com ou sem venda) ou o erro da última tentativa. Fica em bi_atualizacao (o BI mostra no topo).
+// POST { "consulta": true } devolve bi_atualizacao (o alerta das 10h no WhatsApp do Douglas usa).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.112.4'
 
@@ -83,6 +87,22 @@ function prepararLote(linhas: unknown[], hoje: string) {
   return { boas: [...boas.values()], erros }
 }
 
+// Valida a situação mandada pelo robô: operação conhecida, data aaaa-mm-dd que não seja futura, erro até 300 letras.
+function normalizarSituacao(sit: unknown, hoje: string) {
+  const itens: Record<string, unknown>[] = [], erros: string[] = []
+  if (!sit || typeof sit !== 'object') return { itens, erros }
+  for (const [nome, v] of Object.entries(sit as Record<string, any>)) {
+    const operacao = normalizarOperacao(nome)
+    if (!operacao) { erros.push('situação: operação desconhecida ' + JSON.stringify(nome)); continue }
+    const it: Record<string, unknown> = { operacao }
+    const d = String(v?.conferido_ate ?? '')
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d) && d <= hoje) it.conferido_ate = d
+    if (v?.erro) it.erro = String(v.erro).slice(0, 300)
+    if (it.conferido_ate || it.erro) itens.push(it)
+  }
+  return { itens, erros }
+}
+
 // ---------- Planilhas do Seta (robô do PC do Douglas) ----------
 // O robô só exporta, de cada loja e dia, o "01 - Resumo das Vendas" e a "02 - Listagem das Vendas" em Excel e
 // manda as linhas cruas: resumo [{ quantidade, total, lucro, frete }] e listagem [{ codigo, data, total }].
@@ -150,9 +170,14 @@ Deno.serve(async (req: Request) => {
 
   let corpo: any
   try { corpo = await req.json() } catch { return json({ ok: false, erro: 'JSON inválido.' }, 400) }
+  const sbAdm = () => createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { autoRefreshToken: false, persistSession: false } })
+  if (corpo?.consulta === true) {
+    const { data, error } = await sbAdm().from('bi_atualizacao').select('*').order('operacao')
+    return json(error ? { ok: false, erro: error.message } : { ok: true, situacao: data }, error ? 500 : 200)
+  }
   const planilhas = Array.isArray(corpo?.planilhas) ? corpo.planilhas : null
-  const linhas = planilhas || (Array.isArray(corpo?.linhas) ? corpo.linhas : null)
-  if (!linhas) return json({ ok: false, erro: 'Envie { "linhas": [ ... ] } ou { "planilhas": [ ... ] }.' }, 400)
+  const linhas = planilhas || (Array.isArray(corpo?.linhas) ? corpo.linhas : (corpo?.situacao ? [] : null))
+  if (!linhas) return json({ ok: false, erro: 'Envie { "linhas": [ ... ] }, { "planilhas": [ ... ] } ou { "situacao": { ... } }.' }, 400)
   if (linhas.length > LIMITE_LINHAS) return json({ ok: false, erro: 'Máximo de ' + LIMITE_LINHAS + ' linhas por envio.' }, 400)
 
   // "Hoje" no horário de Brasília (o Supabase roda em UTC).
@@ -162,14 +187,39 @@ Deno.serve(async (req: Request) => {
   // Ensaio: calcula e devolve o que SERIA gravado, sem gravar nada (para testar o robô).
   if (corpo?.ensaio === true) return json({ ok: true, ensaio: true, recebidas: linhas.length, gravadas: 0, linhas: boas, erros, semVendas })
 
-  const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { autoRefreshToken: false, persistSession: false } })
+  const sb = sbAdm()
   let gravadas = 0, erroBanco: string | null = null
   if (boas.length) {
     const agora = new Date().toISOString()
     const { error } = await sb.from('bi_kpi_diario').upsert(boas.map(b => ({ ...b, atualizado_em: agora })), { onConflict: 'operacao,data' })
     if (error) erroBanco = error.message; else gravadas = boas.length
   }
+  // Situação do robô: "conferido_ate" só avança (conferido_ate: maior entre o gravado e o novo) e limpa o erro;
+  // "erro" guarda o motivo e a hora, sem mexer no dia conferido.
+  const sit = normalizarSituacao(corpo?.situacao, hoje)
+  erros.push(...sit.erros.map(m => ({ linha: 0, motivo: m })))
+  if (sit.itens.length) {
+    const ops = sit.itens.map(i => i.operacao as string)
+    const { data: atuais } = await sb.from('bi_atualizacao').select('operacao, conferido_ate').in('operacao', ops)
+    const antes: Record<string, string | null> = Object.fromEntries((atuais || []).map((a: any) => [a.operacao, a.conferido_ate]))
+    const agoraSit = new Date().toISOString()
+    for (const it of sit.itens) {
+      const op = it.operacao as string
+      const reg: Record<string, unknown> = { operacao: op }
+      if (it.conferido_ate) {
+        const anterior = antes[op] || ''
+        reg.conferido_ate = anterior > (it.conferido_ate as string) ? anterior : it.conferido_ate
+        reg.atualizado_em = agoraSit
+        if (!it.erro) { reg.ultimo_erro = null; reg.erro_em = null }
+      }
+      if (it.erro) { reg.ultimo_erro = it.erro; reg.erro_em = agoraSit }
+      const { error } = await sb.from('bi_atualizacao').upsert(reg, { onConflict: 'operacao' })
+      if (error && !erroBanco) erroBanco = error.message
+    }
+  }
   const resposta = { ok: !erroBanco, recebidas: linhas.length, gravadas, linhas: boas, erros, semVendas, ...(erroBanco ? { erro: 'Falha ao gravar: ' + erroBanco } : {}) }
-  await sb.from('bi_importacoes').insert({ recebidas: linhas.length, gravadas, erros: erros.length ? erros.slice(0, 50) : null, erro: erroBanco })
+  // Envio só de situação (sem linhas e sem erro) não entra no histórico de importações.
+  if (linhas.length || erros.length || erroBanco)
+    await sb.from('bi_importacoes').insert({ recebidas: linhas.length, gravadas, erros: erros.length ? erros.slice(0, 50) : null, erro: erroBanco })
   return json(resposta, erroBanco ? 500 : 200)
 })

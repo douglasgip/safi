@@ -14,6 +14,7 @@ Uso:
   python whatsapp_robo.py ensaio    -> escondido, digita a mensagem no grupo mas NÃO envia (apaga em seguida)
   python whatsapp_robo.py agora     -> manda já, fora do horário (ex.: lembrou depois). Ainda só uma vez por dia.
   python whatsapp_robo.py teste     -> manda de verdade, mas só na conversa "Meu numero (você)" (não conta como o dia)
+  python whatsapp_robo.py alerta-bi -> (10h) se o BI tiver operação atrasada, avisa no "Meu numero" do Douglas
 """
 import base64
 import json
@@ -21,7 +22,7 @@ import os
 import sys
 import time
 import urllib.parse
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import seta_robo as base  # noqa: E402  (log e a pasta do robô são os mesmos)
@@ -207,8 +208,70 @@ def gravar_ultimo(texto):
         json.dump({'quando': date.today().isoformat(), 'hora': time.strftime('%H:%M'), 'mensagem': texto}, f, ensure_ascii=False)
 
 
+# ── Alerta das 10h: BI com dado atrasado (decidido com o Douglas em 27/11/2026) ──
+NOMES_BI = {'Exposicao': 'Exposição', 'ViaCloset': 'Via Closet', 'GIP': 'E-commerce'}
+
+
+def atraso_bi(conferido_ate, agora):
+    """Mesma regra do BI (atrasoBI em bi.html): depois das 9h o esperado é ontem; antes, anteontem."""
+    if not conferido_ate:
+        return None
+    hora = agora.hour
+    esperado = agora.date() - timedelta(days=1 if hora >= 9 else 2)
+    return max(0, (esperado - date.fromisoformat(conferido_ate)).days)
+
+
+def situacao_bi(cfg):
+    """Até que dia cada operação está conferida, lido do SAFI (o mesmo que o BI mostra)."""
+    import urllib.request
+    token = cfg.get('safi', 'token', fallback='').strip()
+    req = urllib.request.Request(base.URL_SAFI, data=json.dumps({'consulta': True}).encode('utf-8'), method='POST',
+                                 headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode('utf-8')).get('situacao') or []
+
+
+def texto_alerta_bi(regs, agora):
+    """Mensagem do alerta, ou '' se tudo estiver em dia."""
+    linhas, atrasou = [], False
+    for op in ('Exposicao', 'ViaCloset', 'GIP'):
+        r = next((x for x in regs if x.get('operacao') == op), {})
+        a = atraso_bi(r.get('conferido_ate'), agora)
+        nome = NOMES_BI[op]
+        if a is None:
+            linhas.append('%s: sem registro.' % nome)
+        elif a == 0:
+            linhas.append('%s: em dia (até %s).' % (nome, r['conferido_ate'][8:10] + '/' + r['conferido_ate'][5:7]))
+        else:
+            atrasou = True
+            t = '%s: até %s, %d dia%s de atraso.' % (nome, r['conferido_ate'][8:10] + '/' + r['conferido_ate'][5:7], a, '' if a == 1 else 's')
+            if r.get('ultimo_erro'):
+                t += ' Motivo: %s.' % r['ultimo_erro']
+            else:
+                t += ' O robô não rodou (PC desligado?).'
+            linhas.append(t)
+    if not atrasou:
+        return ''
+    return 'SAFI · BI com dado atrasado\n\n' + '\n'.join(linhas) + '\n\nVer no BI: https://topfinds.com.br/bi'
+
+
+def alerta_bi(ctx, texto):
+    """Manda o alerta só para a conversa do Douglas com ele mesmo (GRUPO_TESTE), nunca para o grupo."""
+    page = abrir_whatsapp(ctx)
+    abrir_grupo(page, GRUPO_TESTE)
+    antes = escrever_no_grupo(page, texto)
+    confirmar_envio(page, texto, antes)
+    base.log('WhatsApp: alerta de BI atrasado enviado no', GRUPO_TESTE)
+
+
 def rodar(modo=''):
     from playwright.sync_api import sync_playwright
+    texto_alerta = ''
+    if modo == 'alerta-bi':
+        texto_alerta = texto_alerta_bi(situacao_bi(base.carregar_config()), datetime.now())
+        if not texto_alerta:
+            base.log('WhatsApp: BI em dia, sem alerta')
+            return
     visivel = modo == 'entrar'  # o ensaio roda escondido, igual ao envio de todo dia
     os.makedirs(PERFIL, exist_ok=True)
     with sync_playwright() as p:
@@ -216,6 +279,8 @@ def rodar(modo=''):
             PERFIL, channel='msedge', headless=not visivel, viewport={'width': 1280, 'height': 860},
             locale='pt-BR', timezone_id='America/Sao_Paulo', user_agent=None if visivel else AGENTE)
         try:
+            if modo == 'alerta-bi':
+                return alerta_bi(ctx, texto_alerta)
             if modo == 'entrar':
                 base.log('WhatsApp: escaneie o QR no Edge que abriu (tenho 5 minutos)')
                 abrir_whatsapp(ctx, espera_login=300)
